@@ -25,6 +25,7 @@ public class BashpileMain {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         BashpileParser parser = new BashpileParser(tokens);
         ParseTree tree = parser.prog();
-        System.out.println(tree.toStringTree(parser));
+        BashpileVisitor eval = new BashpileVisitor();
+        eval.visit(tree);
     }
 }

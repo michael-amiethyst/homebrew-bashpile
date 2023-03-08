@@ -3,12 +3,14 @@ options { tokenVocab = BashpileLexer; }
 
 prog: stat+;
 
-stat: expr NL
-    | ID EQ expr NL
-    | NL;
+stat: expr NL       # printExpr
+    | ID EQ expr NL # assign
+    | NL            # blank
+    ;
 
-expr: expr (MUL|DIV) expr
-    | expr (ADD|SUB) expr
-    | INT
-    | ID
-    | OPAREN expr CPAREN;
+expr: expr op=(MUL|DIV) expr# MulDiv
+    | expr op=(ADD|SUB) expr# AddSub
+    | INT                   # int
+    | ID                    # id
+    | OPAREN expr CPAREN    # parens
+    ;
