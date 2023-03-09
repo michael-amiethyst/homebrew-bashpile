@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import com.bashpile.renderers.WslBashRenderer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -11,6 +12,7 @@ import java.io.*;
 
 import static com.bashpile.ArrayUtils.arrayOf;
 
+/** Entry point into the program */
 public class BashpileMain {
 
     private static final Logger log = LogManager.getLogger(BashpileMain.class);
@@ -35,6 +37,7 @@ public class BashpileMain {
         return parse(is);
     }
 
+    /** antlr calls */
     private static String[] parse(InputStream is) throws IOException {
         log.trace("Starting parse");
         // lexer
@@ -54,8 +57,9 @@ public class BashpileMain {
         try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
              BashpileVisitor bashpileLogic = new BashpileVisitor(byteOutput)) {
 
-            bashpileLogic.visit(tree);  // writes to byteOutput here
-
+            AstNode astRoot = bashpileLogic.visit(tree);  // writes to byteOutput here
+            WslBashRenderer renderer = new WslBashRenderer();
+            renderer.render(astRoot);
             return byteOutput.toString().split("\r?\n");
         }
     }

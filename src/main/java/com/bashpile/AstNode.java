@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Abstract Syntax Tree node.  Just has children and value for now.
+ * Abstract Syntax Tree node.  Analogous to the DOM in front-end programming.
  */
 public class AstNode {
 
