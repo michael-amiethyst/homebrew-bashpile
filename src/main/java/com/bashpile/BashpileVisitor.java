@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +28,15 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode<List<Inte
         AstNode ret = super.visit(tree);
         output.flush();
         return ret;
+    }
+
+    @Override
+    public AstNode<List<Integer>> visitProg(BashpileParser.ProgContext ctx) {
+        final List<Integer> ret = new LinkedList<>();
+        for (BashpileParser.StatContext lineContext : ctx.stat()) {
+            ret.addAll(visit(lineContext).getValue());
+        }
+        return new AstNode<>(ret);
     }
 
     @Override
@@ -62,7 +72,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode<List<Inte
             if (memory.containsKey(id)) {
                 return new AstNode<>(List.of(memory.get(id)));
             }
-            // TODO verify
             throw new RuntimeException("ID %s not found".formatted(id));
         });
     }

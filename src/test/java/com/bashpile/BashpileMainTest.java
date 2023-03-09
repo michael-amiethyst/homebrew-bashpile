@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
+import java.util.List;
+
 import org.apache.logging.log4j.Logger;
 
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
@@ -36,6 +36,20 @@ class BashpileMainTest {
         assertEquals(2, ret.length);
         assertEquals("2", ret[0]);
         assertEquals("0", ret[1]);
+    }
+
+    @Test
+    @Order(3)
+    public void assign() throws IOException {
+        String[] ret = runFile("src/test/resources/assign.bashpile");
+        assertEquals(2, ret[0]);
+        assertEquals(4, ret[1]);
+    }
+
+    @Test
+    @Order(4)
+    public void badAssign() {
+        assertThrows(RuntimeException.class, () -> runFile("src/test/resources/badAssign.bashpile"));
     }
 
     private String[] runFile(String file) throws IOException {
