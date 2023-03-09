@@ -4,21 +4,12 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.ConsoleAppender;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
-import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 
 import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
+
+import static com.bashpile.ArrayUtils.arrayOf;
 
 public class BashpileMain {
 
@@ -29,7 +20,7 @@ public class BashpileMain {
     }
 
     public static String[] processArg(String filename) throws IOException {
-        return processArgs(filename.split(" "));
+        return processArgs(arrayOf(filename));
     }
 
     public static String[] processArgs(String[] args) throws IOException {
