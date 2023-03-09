@@ -7,26 +7,26 @@ import java.util.function.Supplier;
 /**
  * Abstract Syntax Tree node.  Analogous to the DOM in front-end programming.
  */
-public class AstNode {
+public class AstNode <T> {
 
     // TODO impl
-    public List<AstNode> children = new ArrayList<>();
+    public List<AstNode<T>> children = new ArrayList<>();
 
-    private final Integer value;
+    private final T value;
 
-    public final Supplier<AstNode> logic;
+    public final Supplier<AstNode<T>> logic;
 
-    public AstNode(Integer value) {
+    public AstNode(T value) {
         this.value = value;
         this.logic = null;
     }
 
-    public AstNode(Supplier<AstNode> logic) {
+    public AstNode(Supplier<AstNode<T>> logic) {
         this.value = null;
         this.logic = logic;
     }
 
-    public Integer getValue() {
+    public T getValue() {
         if (value != null) {
             return value;
         } // else

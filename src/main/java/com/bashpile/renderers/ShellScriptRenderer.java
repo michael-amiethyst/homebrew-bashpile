@@ -4,5 +4,5 @@ import com.bashpile.AstNode;
 
 /** Analogous to the renderer in front-end programming */
 public interface ShellScriptRenderer <T> {
-    T render(AstNode root);
+    T render(AstNode<T> root);
 }

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Antlr4 calls these methods and we create an AST */
-public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode> implements Closeable {
+public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode<Integer>> implements Closeable {
     private final Map<String, Integer> memory = new HashMap<>();
 
     private final PrintStream output;
@@ -30,37 +30,37 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode> implemen
     }
 
     @Override
-    public AstNode visitAssign(BashpileParser.AssignContext ctx) {
+    public AstNode<Integer> visitAssign(BashpileParser.AssignContext ctx) {
         String id = ctx.ID().getText();
-        AstNode rightSideNode = visit(ctx.expr());
+        AstNode<Integer> rightSideNode = visit(ctx.expr());
 
-        return new AstNode(() -> {
+        return new AstNode<>(() -> {
             int value = rightSideNode.getValue();
             memory.put(id, value);
-            return new AstNode(value);
+            return new AstNode<>(value);
         });
     }
 
     @Override
-    public AstNode visitPrintExpr(BashpileParser.PrintExprContext ctx) {
+    public AstNode<Integer> visitPrintExpr(BashpileParser.PrintExprContext ctx) {
         Integer value = visit(ctx.expr()).getValue();
         return new AstNode(() -> {
-            print(value.toString());
-            return new AstNode(value);
+            System.out.println(value);
+            return new AstNode<>(value);
         });
     }
 
     @Override
-    public AstNode visitInt(BashpileParser.IntContext ctx) {
-        return new AstNode(Integer.valueOf(ctx.INT().getText()));
+    public AstNode<Integer> visitInt(BashpileParser.IntContext ctx) {
+        return new AstNode<>(Integer.valueOf(ctx.INT().getText()));
     }
 
     @Override
-    public AstNode visitId(BashpileParser.IdContext ctx) {
+    public AstNode<Integer> visitId(BashpileParser.IdContext ctx) {
         String id = ctx.ID().getText();
-        return new AstNode(() -> {
+        return new AstNode<>(() -> {
             if (memory.containsKey(id)) {
-                return new AstNode(memory.get(id));
+                return new AstNode<>(memory.get(id));
             }
             // TODO verify
             throw new RuntimeException("ID %s not found".formatted(id));
@@ -68,33 +68,33 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode> implemen
     }
 
     @Override
-    public AstNode visitMulDiv(BashpileParser.MulDivContext ctx) {
+    public AstNode<Integer> visitMulDiv(BashpileParser.MulDivContext ctx) {
         int left = visit(ctx.expr(0)).getValue();
         int right = visit(ctx.expr(1)).getValue();
         boolean multiply = ctx.op.getType() == BashpileParser.MUL;
-        return new AstNode(() -> {
+        return new AstNode<>(() -> {
             if (multiply) {
-                return new AstNode(left * right);
+                return new AstNode<>(left * right);
             } // else divide
-            return new AstNode(left / right);
+            return new AstNode<>(left / right);
         });
     }
 
     @Override
-    public AstNode visitAddSub(BashpileParser.AddSubContext ctx) {
+    public AstNode<Integer> visitAddSub(BashpileParser.AddSubContext ctx) {
         int left = visit(ctx.expr(0)).getValue();
         int right = visit(ctx.expr(1)).getValue();
         boolean add = ctx.op.getType() == BashpileParser.ADD;
-        return new AstNode(() -> {
+        return new AstNode<>(() -> {
             if (add) {
-                return new AstNode(left + right);
+                return new AstNode<>(left + right);
             } // else subtract
-            return new AstNode(left - right);
+            return new AstNode<>(left - right);
         });
     }
 
     @Override
-    public AstNode visitParens(BashpileParser.ParensContext ctx) {
+    public AstNode<Integer> visitParens(BashpileParser.ParensContext ctx) {
         return visit(ctx.expr());
     }
 
