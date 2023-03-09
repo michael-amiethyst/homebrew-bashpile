@@ -32,16 +32,22 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode> implemen
     @Override
     public AstNode visitAssign(BashpileParser.AssignContext ctx) {
         String id = ctx.ID().getText();
-        int value = visit(ctx.expr()).value;
-        memory.put(id, value);
-        return new AstNode(value);
+        AstNode rightSideNode = visit(ctx.expr());
+
+        return new AstNode(() -> {
+            int value = rightSideNode.getValue();
+            memory.put(id, value);
+            return new AstNode(value);
+        });
     }
 
     @Override
     public AstNode visitPrintExpr(BashpileParser.PrintExprContext ctx) {
-        Integer value = visit(ctx.expr()).value;
-        print(value.toString());
-        return new AstNode(value);
+        Integer value = visit(ctx.expr()).getValue();
+        return new AstNode(() -> {
+            print(value.toString());
+            return new AstNode(value);
+        });
     }
 
     @Override
@@ -52,30 +58,39 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode> implemen
     @Override
     public AstNode visitId(BashpileParser.IdContext ctx) {
         String id = ctx.ID().getText();
-        if (memory.containsKey(id)) {
-            return new AstNode(memory.get(id));
-        }
-        throw new RuntimeException("ID %s not found".formatted(id));
+        return new AstNode(() -> {
+            if (memory.containsKey(id)) {
+                return new AstNode(memory.get(id));
+            }
+            // TODO verify
+            throw new RuntimeException("ID %s not found".formatted(id));
+        });
     }
 
     @Override
     public AstNode visitMulDiv(BashpileParser.MulDivContext ctx) {
-        int left = visit(ctx.expr(0)).value;
-        int right = visit(ctx.expr(1)).value;
-        if (ctx.op.getType() == BashpileParser.MUL) {
-            return new AstNode(left * right);
-        } // else divide
-        return new AstNode(left / right);
+        int left = visit(ctx.expr(0)).getValue();
+        int right = visit(ctx.expr(1)).getValue();
+        boolean multiply = ctx.op.getType() == BashpileParser.MUL;
+        return new AstNode(() -> {
+            if (multiply) {
+                return new AstNode(left * right);
+            } // else divide
+            return new AstNode(left / right);
+        });
     }
 
     @Override
     public AstNode visitAddSub(BashpileParser.AddSubContext ctx) {
-        int left = visit(ctx.expr(0)).value;
-        int right = visit(ctx.expr(1)).value;
-        if (ctx.op.getType() == BashpileParser.ADD) {
-            return new AstNode(left + right);
-        } // else subtract
-        return new AstNode(left - right);
+        int left = visit(ctx.expr(0)).getValue();
+        int right = visit(ctx.expr(1)).getValue();
+        boolean add = ctx.op.getType() == BashpileParser.ADD;
+        return new AstNode(() -> {
+            if (add) {
+                return new AstNode(left + right);
+            } // else subtract
+            return new AstNode(left - right);
+        });
     }
 
     @Override
