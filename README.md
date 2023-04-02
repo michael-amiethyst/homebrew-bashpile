@@ -23,6 +23,8 @@ WSL file system.  At your favorite command prompt in the Linux shell update your
 `sudo apt update && sudo apt upgrade`.  Then we can install Homebrew.  The site has all of these details for Linux 
 distros but you just install the script as normal (besides some extra post-install steps) and it handles the details.
 
+Do a 'brew install git'.
+
 We'll 'git clone' this code base there and open with our IDE.
 
 ## Legal
