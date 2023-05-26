@@ -12,20 +12,25 @@ import java.io.InputStream;
 public class BashpileMain {
 
     public static void main(String[] args) throws IOException {
-        String inputFile = null;
-        if (args.length > 0) {
-            inputFile = args[0];
-        }
+        // stream is either stdin or the first argument
         InputStream is = System.in;
-        if (inputFile != null) {
+        boolean argsExist = args.length > 0;
+        if (argsExist) {
+            String inputFile = args[0];
             is = new FileInputStream(inputFile);
         }
+
+        // lexer
         CharStream input = CharStreams.fromStream(is);
         BashpileLexer lexer = new BashpileLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
+
+        // parser
         BashpileParser parser = new BashpileParser(tokens);
         ParseTree tree = parser.prog();
+
+        // visitor
         BashpileVisitor eval = new BashpileVisitor();
-        eval.visit(tree);
+        eval.visit(tree); // return dropped
     }
 }
