@@ -1,11 +1,15 @@
 package com.bashpile;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.spi.LoggerContext;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
+import org.apache.logging.log4j.Logger;
+
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -13,9 +17,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
 
+    private static final Logger log = LogManager.getLogger("com.bashpile");
+
+    static {
+        LoggerContext ctx = LogManager.getContext(false);
+//        ctx.
+        log.error(log.getLevel().name());
+    }
+
     @Test
     @Order(1)
     public void simpleTest() throws IOException {
+        log.error("Test error");
         String[] ret = runFile("0001-simple.bashpile");
         assertNotNull(ret);
         assertEquals(1, ret.length);
@@ -33,7 +46,8 @@ class BashpileMainTest {
     }
 
     private String[] runFile(String file) throws IOException {
-        System.out.printf("Start of %s%n", file);
+        log.debug("Start of {}", file);
+        log.debug("Start");
         String filename = "src/test/resources/%s".formatted(file);
         return BashpileMain.processArg(filename);
 
