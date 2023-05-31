@@ -22,6 +22,8 @@ import java.util.List;
 
 public class BashpileMain {
 
+    private static Logger log = LogManager.getLogger(BashpileMain.class);
+
     public static void main(String[] args) throws IOException {
         BashpileMain bashpile = new BashpileMain();
         bashpile.processArgs(args);
@@ -44,25 +46,7 @@ public class BashpileMain {
     }
 
     private static String[] parse(InputStream is) throws IOException {
-        ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
-        builder.setStatusLevel(Level.DEBUG);
-        builder.setConfigurationName("BuilderTest");
-        builder.add(builder.newFilter("ThresholdFilter", Filter.Result.ACCEPT, Filter.Result.NEUTRAL)
-                .addAttribute("level", Level.DEBUG));
-        AppenderComponentBuilder appenderBuilder = builder.newAppender("Stdout", "CONSOLE").addAttribute("target",
-                ConsoleAppender.Target.SYSTEM_OUT);
-        appenderBuilder.add(builder.newLayout("PatternLayout")
-                .addAttribute("pattern", "%d [%t] %-5level: %msg%n%throwable"));
-        appenderBuilder.add(builder.newFilter("MarkerFilter", Filter.Result.DENY, Filter.Result.NEUTRAL)
-                .addAttribute("marker", "FLOW"));
-        builder.add(appenderBuilder);
-        builder.add(builder.newLogger("com.bashpile", Level.DEBUG)
-                .add(builder.newAppenderRef("Stdout")).addAttribute("additivity", false));
-        builder.add(builder.newRootLogger(Level.DEBUG).add(builder.newAppenderRef("Stdout")));
-        LoggerContext ctx = Configurator.initialize(builder.build());
-        Logger log = ctx.getLogger(BashpileMain.class);
-        log.debug("debug");
-        log.error("error");
+        log.trace("Starting parse");
         // lexer
         CharStream input = CharStreams.fromStream(is);
         BashpileLexer lexer = new BashpileLexer(input);

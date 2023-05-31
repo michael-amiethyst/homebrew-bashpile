@@ -17,18 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
 
-    private static final Logger log = LogManager.getLogger("com.bashpile");
-
-    static {
-        LoggerContext ctx = LogManager.getContext(false);
-//        ctx.
-        log.error(log.getLevel().name());
-    }
+    private static final Logger log = LogManager.getLogger(BashpileMainTest.class);
 
     @Test
     @Order(1)
     public void simpleTest() throws IOException {
-        log.error("Test error");
         String[] ret = runFile("0001-simple.bashpile");
         assertNotNull(ret);
         assertEquals(1, ret.length);
@@ -47,7 +40,6 @@ class BashpileMainTest {
 
     private String[] runFile(String file) throws IOException {
         log.debug("Start of {}", file);
-        log.debug("Start");
         String filename = "src/test/resources/%s".formatted(file);
         return BashpileMain.processArg(filename);
 
