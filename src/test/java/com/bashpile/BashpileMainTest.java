@@ -12,11 +12,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class BashpileMainTest {
 
     @Test
-    public void mainTest() throws IOException {
-        String[] filename = "src/test/resources/test.bashpile".split(" ");
-        String[] ret = BashpileMain.processArgs(filename);
+    public void simpleTest() throws IOException {
+        String[] ret = runFile("simple.bashpile");
         assertNotNull(ret);
         assertEquals(1, ret.length);
         assertEquals("2", ret[0]);
+    }
+
+    private String[] runFile(String file) throws IOException {
+        String filename = "src/test/resources/%s".formatted(file);
+        return BashpileMain.processArg(filename);
+
     }
 }

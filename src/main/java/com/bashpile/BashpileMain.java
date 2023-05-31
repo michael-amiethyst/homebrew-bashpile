@@ -16,6 +16,10 @@ public class BashpileMain {
         bashpile.processArgs(args);
     }
 
+    public static String[] processArg(String filename) throws IOException {
+        return processArgs(filename.split(" "));
+    }
+
     public static String[] processArgs(String[] args) throws IOException {
         // stream is either stdin or the first argument
         InputStream is = System.in;
