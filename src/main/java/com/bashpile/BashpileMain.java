@@ -5,10 +5,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,7 +16,7 @@ public class BashpileMain {
         bashpile.processArgs(args);
     }
 
-    public static List<String> processArgs(String[] args) throws IOException {
+    public static String[] processArgs(String[] args) throws IOException {
         // stream is either stdin or the first argument
         InputStream is = System.in;
         boolean argsExist = args.length > 0;
@@ -31,7 +28,7 @@ public class BashpileMain {
         return parse(is);
     }
 
-    private static LinkedList<String> parse(InputStream is) throws IOException {
+    private static String[] parse(InputStream is) throws IOException {
         // lexer
         CharStream input = CharStreams.fromStream(is);
         BashpileLexer lexer = new BashpileLexer(input);
@@ -44,10 +41,14 @@ public class BashpileMain {
         return applyBashpileLogic(tree);
     }
 
-    private static LinkedList<String> applyBashpileLogic(ParseTree tree) {
+    private static String[] applyBashpileLogic(ParseTree tree) throws IOException {
         // visitor
-        BashpileVisitor eval = new BashpileVisitor();
-        eval.visit(tree);
-        return new LinkedList<>();
+        try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+             BashpileVisitor bashpileLogic = new BashpileVisitor(byteOutput)) {
+
+            bashpileLogic.visit(tree);  // writes to byteOutput here
+
+            return byteOutput.toString().split("\r?\n");
+        }
     }
 }

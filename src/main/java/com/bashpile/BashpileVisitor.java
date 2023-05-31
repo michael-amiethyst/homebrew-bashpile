@@ -1,11 +1,32 @@
 package com.bashpile;
 
+import org.antlr.v4.runtime.tree.ParseTree;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class BashpileVisitor extends BashpileParserBaseVisitor<Integer> {
+public class BashpileVisitor extends BashpileParserBaseVisitor<Integer> implements Closeable {
+    private final Map<String, Integer> memory = new HashMap<>();
 
-    Map<String, Integer> memory = new HashMap<>();
+    private final PrintStream output;
+
+    public BashpileVisitor(OutputStream os) {
+        output = new PrintStream(os);
+    }
+
+    // visitors
+
+    @Override
+    public Integer visit(ParseTree tree) {
+        Integer ret = super.visit(tree);
+        output.flush();
+        return ret;
+    }
 
     @Override
     public Integer visitAssign(BashpileParser.AssignContext ctx) {
@@ -18,7 +39,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Integer> {
     @Override
     public Integer visitPrintExpr(BashpileParser.PrintExprContext ctx) {
         Integer value = visit(ctx.expr());
-        System.out.println(value);
+        print(value.toString());
         return 0;
     }
 
@@ -59,5 +80,17 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Integer> {
     @Override
     public Integer visitParens(BashpileParser.ParensContext ctx) {
         return visit(ctx.expr());
+    }
+
+    // helpers
+
+    protected void print(String line) {
+        output.println(line);
+        System.out.println(line);
+    }
+
+    @Override
+    public void close() throws IOException {
+        output.close();
     }
 }
