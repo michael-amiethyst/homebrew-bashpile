@@ -22,11 +22,10 @@ import java.util.List;
 
 public class BashpileMain {
 
-    private static Logger log = LogManager.getLogger(BashpileMain.class);
+    private static final Logger log = LogManager.getLogger(BashpileMain.class);
 
     public static void main(String[] args) throws IOException {
-        BashpileMain bashpile = new BashpileMain();
-        bashpile.processArgs(args);
+        processArgs(args);
     }
 
     public static String[] processArg(String filename) throws IOException {
