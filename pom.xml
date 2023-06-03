@@ -17,6 +17,7 @@
     </properties>
 
     <dependencies>
+        <!-- Core -->
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4</artifactId>
@@ -27,6 +28,13 @@
             <artifactId>antlr4-runtime</artifactId>
             <version>${antlr.version}</version>
         </dependency>
+        <!-- Utils -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
+        </dependency>
+        <!-- Test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>

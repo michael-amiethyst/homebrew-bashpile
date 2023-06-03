@@ -4,33 +4,27 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.ConsoleAppender;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
-import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
-import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 
-import java.io.*;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
+import static com.bashpile.ArrayUtils.arrayOf;
+
+/** Entry point into the program */
 public class BashpileMain {
 
-    private static Logger log = LogManager.getLogger(BashpileMain.class);
+    private static final Logger log = LogManager.getLogger(BashpileMain.class);
 
     public static void main(String[] args) throws IOException {
-        BashpileMain bashpile = new BashpileMain();
-        bashpile.processArgs(args);
+        processArgs(args);
     }
 
     public static String[] processArg(String filename) throws IOException {
-        return processArgs(filename.split(" "));
+        return processArgs(arrayOf(filename));
     }
 
     public static String[] processArgs(String[] args) throws IOException {
@@ -45,6 +39,7 @@ public class BashpileMain {
         return parse(is);
     }
 
+    /** antlr calls */
     private static String[] parse(InputStream is) throws IOException {
         log.trace("Starting parse");
         // lexer
@@ -65,7 +60,6 @@ public class BashpileMain {
              BashpileVisitor bashpileLogic = new BashpileVisitor(byteOutput)) {
 
             bashpileLogic.visit(tree);  // writes to byteOutput here
-
             return byteOutput.toString().split("\r?\n");
         }
     }
