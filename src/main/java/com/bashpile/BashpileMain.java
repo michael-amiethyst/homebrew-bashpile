@@ -1,6 +1,5 @@
 package com.bashpile;
 
-import com.bashpile.renderers.WslBashRenderer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -8,7 +7,10 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import static com.bashpile.ArrayUtils.arrayOf;
 
@@ -57,9 +59,7 @@ public class BashpileMain {
         try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
              BashpileVisitor bashpileLogic = new BashpileVisitor(byteOutput)) {
 
-            AstNode astRoot = bashpileLogic.visit(tree);  // writes to byteOutput here
-            WslBashRenderer renderer = new WslBashRenderer();
-            renderer.render(astRoot);
+            bashpileLogic.visit(tree);  // writes to byteOutput here
             return byteOutput.toString().split("\r?\n");
         }
     }
