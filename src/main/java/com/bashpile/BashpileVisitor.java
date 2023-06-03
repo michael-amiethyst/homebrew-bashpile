@@ -24,8 +24,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode<List<Inte
     // visitors
 
     @Override
-    public AstNode visit(ParseTree tree) {
-        AstNode ret = super.visit(tree);
+    public AstNode<List<Integer>> visit(ParseTree tree) {
+        AstNode<List<Integer>> ret = super.visit(tree);
         output.flush();
         return ret;
     }
@@ -55,7 +55,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode<List<Inte
     public AstNode<List<Integer>> visitPrintExpr(BashpileParser.PrintExprContext ctx) {
         Integer value = visit(ctx.expr()).getValue().get(0);
         return new AstNode<>(() -> {
-            System.out.println(value);
+            print(value);
             return new AstNode<>(List.of(value));
         });
     }
@@ -108,6 +108,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<AstNode<List<Inte
     }
 
     // helpers
+
+    protected void print(Integer line) {
+        // who's line is it anyway?
+        print(line.toString());
+    }
 
     protected void print(String line) {
         output.println(line);
