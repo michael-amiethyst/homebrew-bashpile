@@ -2,20 +2,19 @@ package com.bashpile;
 
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 
-/** Antlr4 calls these methods and we create an AST */
+/** Antlr4 calls these methods  */
 public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> implements Closeable {
     private final Map<String, Integer> memory = new HashMap<>();
 
+    private final ByteArrayOutputStream byteStream = new ByteArrayOutputStream(1024);
+
     private final PrintStream output;
 
-    public BashpileVisitor(OutputStream os) {
-        output = new PrintStream(os);
+    public BashpileVisitor() {
+        output = new PrintStream(byteStream);
     }
 
     // visitors
@@ -105,8 +104,13 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
         System.out.println(line);
     }
 
+    public String getOutput(ParseTree parseTree) {
+        visit(parseTree);
+        return byteStream.toString();
+    }
+
     @Override
-    public void close() throws IOException {
+    public void close() {
         output.close();
     }
 }
