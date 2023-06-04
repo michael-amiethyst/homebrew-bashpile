@@ -56,7 +56,9 @@ public class BashpileMain {
     private static String[] applyBashpileLogic(ParseTree tree) {
         // visitor
         try (BashpileVisitor bashpileLogic = new BashpileVisitor()) {
-            return bashpileLogic.getOutput(tree).split("\r?\n");
+            String bashScript = bashpileLogic.getOutput(tree);
+            String output = ShellInterface.run(bashScript);
+            return output.split("\r?\n");
         }
     }
 }

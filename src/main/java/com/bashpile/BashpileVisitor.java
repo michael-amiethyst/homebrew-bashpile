@@ -5,7 +5,9 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.io.*;
 import java.util.*;
 
-/** Antlr4 calls these methods  */
+/**
+ * Antlr4 calls these methods.  Both walks the parse tree and buffers all output.
+ */
 public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> implements Closeable {
     private final Map<String, Integer> memory = new HashMap<>();
 
@@ -106,7 +108,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
 
     public String getOutput(ParseTree parseTree) {
         visit(parseTree);
-        return byteStream.toString();
+        //return byteStream.toString();
+        // TODO implement stub return
+        return  """
+                bc <<< "1 + 1"
+                """.stripIndent();
     }
 
     @Override
