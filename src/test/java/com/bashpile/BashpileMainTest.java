@@ -48,7 +48,7 @@ class BashpileMainTest {
     @Test
     @Order(4)
     public void badAssign() {
-        assertThrows(RuntimeException.class, () -> runFile("004-badAssign.bashpile"));
+        assertThrows(BashpileUncheckedException.class, () -> runFile("004-badAssign.bashpile"));
     }
 
     // helpers

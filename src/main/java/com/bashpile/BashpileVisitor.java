@@ -7,8 +7,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -68,7 +66,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Void> implements 
         if (memory.containsKey(id)) {
             return null;
         }
-        throw new RuntimeException("ID %s not found".formatted(id));
+        throw new BashpileUncheckedException("ID %s not found".formatted(id));
     }
 
     @Override
