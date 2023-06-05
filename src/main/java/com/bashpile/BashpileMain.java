@@ -10,6 +10,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static com.bashpile.ArrayUtils.arrayOf;
 
@@ -59,6 +61,10 @@ public class BashpileMain {
             String bashScript = bashpileLogic.getOutput(tree);
             String output = ShellInterface.run(bashScript);
             return output.split("\r?\n");
+        } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
+            log.error(e);
+            e.printStackTrace();
+            return ArrayUtils.arrayOf(e.getMessage());
         }
     }
 }
