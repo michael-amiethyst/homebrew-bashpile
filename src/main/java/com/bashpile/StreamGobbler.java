@@ -7,7 +7,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-/** Adapted from https://www.baeldung.com/run-shell-command-in-java */
+/** Adapted from <a href="https://www.baeldung.com/run-shell-command-in-java">a tutorial</a>. */
 public class StreamGobbler implements Runnable {
     private final InputStream inputStream;
     private final FailableConsumer<String, Exception> consumer;

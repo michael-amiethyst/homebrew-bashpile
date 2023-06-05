@@ -12,8 +12,6 @@ public class ShellInterface {
     private static final Pattern bogusScreenLine = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r\n");
 
-    private static final Logger log = LogManager.getLogger();
-
     public static String run(String bashText) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         boolean isWindows = System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
