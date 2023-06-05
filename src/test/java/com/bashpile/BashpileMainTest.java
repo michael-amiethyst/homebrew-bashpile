@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
+import java.util.StringJoiner;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +23,7 @@ class BashpileMainTest {
         String[] ret = runFile("0001-simple.bashpile");
         assertNotNull(ret);
         assertEquals(1, ret.length);
-        assertEquals("2", ret[0]);
+        assertEquals("2", ret[0], "Unexpected output: %s".formatted(String.join("\n", ret)));
     }
 
     @Test

@@ -59,7 +59,7 @@ public class BashpileMain {
         // visitor
         try (BashpileVisitor bashpileLogic = new BashpileVisitor()) {
             String bashScript = bashpileLogic.getOutput(tree);
-            String output = ShellInterface.run(bashScript);
+            String output = Shell.run(bashScript);
             return output.split("\r?\n");
         } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
             log.error(e);

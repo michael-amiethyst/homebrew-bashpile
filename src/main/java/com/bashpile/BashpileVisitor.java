@@ -70,24 +70,14 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
 
     @Override
     public List<Integer> visitMulDiv(BashpileParser.MulDivContext ctx) {
-        int left = visit(ctx.expr(0)).get(0);
-        int right = visit(ctx.expr(1)).get(0);
-        boolean multiply = ctx.op.getType() == BashpileParser.MUL;
-        if (multiply) {
-            return List.of(left * right);
-        } // else divide
-        return List.of(left / right);
+        output.printf("bc <<< \"%s\"\n", ctx.getText());
+        return List.of();
     }
 
     @Override
     public List<Integer> visitAddSub(BashpileParser.AddSubContext ctx) {
-        int left = visit(ctx.expr(0)).get(0);
-        int right = visit(ctx.expr(1)).get(0);
-        boolean add = ctx.op.getType() == BashpileParser.ADD;
-        if (add) {
-            return List.of(left + right);
-        } // else subtract
-        return List.of(left - right);
+        output.printf("bc <<< \"%s\"\n", ctx.getText());
+        return List.of();
     }
 
     @Override
@@ -108,11 +98,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
 
     public String getOutput(ParseTree parseTree) {
         visit(parseTree);
-        //return byteStream.toString();
-        // TODO implement stub return
-        return  """
-                bc <<< "1 + 1"
-                """.stripIndent();
+        return byteStream.toString();
     }
 
     @Override

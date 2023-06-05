@@ -7,12 +7,15 @@ import java.io.*;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
-public class ShellInterface {
+public class Shell {
 
     private static final Pattern bogusScreenLine = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r\n");
 
+    private static final Logger log = LogManager.getLogger();
+
     public static String run(String bashText) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        log.info("Executing bash text:\n" + bashText);
         boolean isWindows = System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
         ProcessBuilder builder = new ProcessBuilder();
@@ -47,6 +50,6 @@ public class ShellInterface {
             throw new RuntimeException(Integer.toString(exitCode));
         }
         // return buffer stripped of random error lines
-        return bogusScreenLine.matcher(stdout.toString()).replaceAll("");
+        return bogusScreenLine.matcher(stdout.toString()).replaceAll("").trim();
     }
 }
