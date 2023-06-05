@@ -14,7 +14,7 @@ public class Shell {
 
     private static final Logger log = LogManager.getLogger();
 
-    public static String run(String bashText) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public static String run(String bashText) throws IOException {
         log.info("Executing bash text:\n" + bashText);
         boolean isWindows = System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
@@ -29,15 +29,17 @@ public class Shell {
         builder.directory(new File(System.getProperty("user.home")))
                 .redirectErrorStream(true);
         Process process = builder.start();
-        // TODO close streams
-        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-        PrintStream stdoutWriter = new PrintStream(stdout);
-        StreamGobbler streamGobbler =
-                new StreamGobbler(process.getInputStream(), stdoutWriter::println);
+
         int exitCode;
-        try (
+        try (   // so many closable resources
+                // process related
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
-                BufferedWriter bufferedWriter = process.outputWriter()) {
+                BufferedWriter bufferedWriter = process.outputWriter();
+                // to get the child process's STDOUT
+                ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+                PrintStream stdoutWriter = new PrintStream(stdout)) {
+            StreamGobbler streamGobbler =
+                    new StreamGobbler(process.getInputStream(), stdoutWriter::println);
             Future<?> future = executorService.submit(streamGobbler);
 
             bufferedWriter.write("cd\n");
@@ -48,12 +50,15 @@ public class Shell {
             exitCode = process.waitFor();
 
             future.get(10, TimeUnit.SECONDS);
+
+            if (exitCode != 0) {
+                throw new RuntimeException(Integer.toString(exitCode));
+            }
+            // return buffer stripped of random error lines
+            log.trace("Shell output before processing: [{}]", stdout.toString());
+            return bogusScreenLine.matcher(stdout.toString()).replaceAll("").trim();
+        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+            throw new BashpileUncheckedException(e);
         }
-        if (exitCode != 0) {
-            throw new RuntimeException(Integer.toString(exitCode));
-        }
-        // return buffer stripped of random error lines
-        log.trace("Shell output before processing: [{}]", stdout.toString());
-        return bogusScreenLine.matcher(stdout.toString()).replaceAll("").trim();
     }
 }

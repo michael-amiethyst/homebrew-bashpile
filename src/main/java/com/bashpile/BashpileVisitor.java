@@ -94,7 +94,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
     public List<Integer> visitAddSub(BashpileParser.AddSubContext ctx) {
         // find all IDs in ctx
         if (bashOutputting) {
-            output.printf("bc <<< \"%s\"\n", getBashText(ctx)); // TODO uncomment
+            output.printf("bc <<< \"%s\"\n", getBashText(ctx));
         }
         int left = visit(ctx.expr(0)).get(0);
         int right = visit(ctx.expr(1)).get(0);
