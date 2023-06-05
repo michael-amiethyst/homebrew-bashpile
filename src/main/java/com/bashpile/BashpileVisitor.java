@@ -15,6 +15,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
 
     private final PrintStream output;
 
+    private boolean bashOutputting = true;
+
     public BashpileVisitor() {
         output = new PrintStream(byteStream);
     }
@@ -40,17 +42,19 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
     @Override
     public List<Integer> visitAssign(BashpileParser.AssignContext ctx) {
         String id = ctx.ID().getText();
-        List<Integer> rightSide = visit(ctx.expr());
-
-        int value = rightSide.get(0);
-        memory.put(id, value);
-        return rightSide;
+        bashOutputting = false; // TODO fix this ugly hack
+        List<Integer> rightRet = visit(ctx.expr()); // verify all ids are defined
+        bashOutputting = true;
+        String rightSide = ctx.expr().getText();
+        output.printf("export %s=%s\n", id, rightSide);
+        memory.put(id, rightRet.get(0));
+        return rightRet;
     }
 
     @Override
     public List<Integer> visitPrintExpr(BashpileParser.PrintExprContext ctx) {
         List<Integer> value = visit(ctx.expr());
-        print(value);
+        //print(value);
         return value;
     }
 
@@ -70,14 +74,37 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
 
     @Override
     public List<Integer> visitMulDiv(BashpileParser.MulDivContext ctx) {
+        // get all id's, make sure they are defined
         output.printf("bc <<< \"%s\"\n", ctx.getText());
-        return List.of();
+
+        int left = visit(ctx.expr(0)).get(0);
+        int right = visit(ctx.expr(1)).get(0);
+        boolean multiply = ctx.op.getType() == BashpileParser.MUL;
+        if (multiply) {
+            return List.of(left * right);
+        } // else divide
+        return List.of(left / right);
     }
 
     @Override
     public List<Integer> visitAddSub(BashpileParser.AddSubContext ctx) {
-        output.printf("bc <<< \"%s\"\n", ctx.getText());
-        return List.of();
+        // find all IDs in ctx
+        if (bashOutputting) {
+            ParseTree leftParseTree = ctx.children.get(0);
+            String equation = ctx.getText();
+            // TODO stub
+            if ("someVar".compareTo(leftParseTree.getText()) == 0) {
+                equation = equation.replace("someVar", "$someVar");
+            }
+            output.printf("bc <<< \"%s\"\n", equation);
+        }
+        int left = visit(ctx.expr(0)).get(0);
+        int right = visit(ctx.expr(1)).get(0);
+        boolean add = ctx.op.getType() == BashpileParser.ADD;
+        if (add) {
+            return List.of(left + right);
+        } // else subtract
+        return List.of(left - right);
     }
 
     @Override
@@ -86,15 +113,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
     }
 
     // helpers
-
-    protected void print(List<Integer> integers) {
-        integers.stream().map(Object::toString).forEach(this::printLn);
-    }
-
-    protected void printLn(String line) {
-        output.println(line);
-        System.out.println(line);
-    }
 
     public String getOutput(ParseTree parseTree) {
         visit(parseTree);
