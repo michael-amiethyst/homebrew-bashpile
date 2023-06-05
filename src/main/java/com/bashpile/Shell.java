@@ -20,13 +20,16 @@ public class Shell {
                 .toLowerCase().startsWith("windows");
         ProcessBuilder builder = new ProcessBuilder();
         if (isWindows) {
+            log.trace("Detected windows");
             builder.command("wsl");
         } else {
-            builder.command("sh", "-c", "ls");
+            log.trace("Detected 'nix");
+            builder.command("bash");
         }
         builder.directory(new File(System.getProperty("user.home")))
                 .redirectErrorStream(true);
         Process process = builder.start();
+        // TODO close streams
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         PrintStream stdoutWriter = new PrintStream(stdout);
         StreamGobbler streamGobbler =
@@ -50,6 +53,7 @@ public class Shell {
             throw new RuntimeException(Integer.toString(exitCode));
         }
         // return buffer stripped of random error lines
+        log.trace("Shell output before processing: [{}]", stdout.toString());
         return bogusScreenLine.matcher(stdout.toString()).replaceAll("").trim();
     }
 }

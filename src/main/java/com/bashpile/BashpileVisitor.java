@@ -1,9 +1,15 @@
 package com.bashpile;
 
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Antlr4 calls these methods.  Both walks the parse tree and buffers all output.
@@ -53,9 +59,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
 
     @Override
     public List<Integer> visitPrintExpr(BashpileParser.PrintExprContext ctx) {
-        List<Integer> value = visit(ctx.expr());
-        //print(value);
-        return value;
+        return visit(ctx.expr());
     }
 
     @Override
@@ -90,13 +94,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
     public List<Integer> visitAddSub(BashpileParser.AddSubContext ctx) {
         // find all IDs in ctx
         if (bashOutputting) {
-            ParseTree leftParseTree = ctx.children.get(0);
-            String equation = ctx.getText();
-            // TODO stub
-            if ("someVar".compareTo(leftParseTree.getText()) == 0) {
-                equation = equation.replace("someVar", "$someVar");
-            }
-            output.printf("bc <<< \"%s\"\n", equation);
+            output.printf("bc <<< \"%s\"\n", getBashText(ctx)); // TODO uncomment
         }
         int left = visit(ctx.expr(0)).get(0);
         int right = visit(ctx.expr(1)).get(0);
@@ -107,12 +105,28 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
         return List.of(left - right);
     }
 
+    private String getBashText(RuleContext ctx) {
+        if (ctx.getChildCount() == 0) {
+            return "";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < ctx.getChildCount(); i++) {
+            ParseTree currentChild = ctx.getChild(i);
+            boolean isId = currentChild instanceof BashpileParser.IdContext;
+            if (isId) {
+                builder.append('$');
+            }
+            builder.append(currentChild.getText());
+        }
+
+        return builder.toString();
+    }
+
     @Override
     public List<Integer> visitParens(BashpileParser.ParensContext ctx) {
         return visit(ctx.expr());
     }
-
-    // helpers
 
     public String getOutput(ParseTree parseTree) {
         visit(parseTree);
