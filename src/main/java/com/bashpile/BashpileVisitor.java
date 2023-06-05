@@ -14,13 +14,14 @@ import java.util.Map;
 /**
  * Antlr4 calls these methods.  Both walks the parse tree and buffers all output.
  */
-public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> implements Closeable {
+public class BashpileVisitor extends BashpileParserBaseVisitor<Void> implements Closeable {
     private final Map<String, Integer> memory = new HashMap<>();
 
     private final ByteArrayOutputStream byteStream = new ByteArrayOutputStream(1024);
 
     private final PrintStream output;
 
+    // occasionally need to suppress writing to output
     private boolean bashOutputting = true;
 
     public BashpileVisitor() {
@@ -30,79 +31,64 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
     // visitors
 
     @Override
-    public List<Integer> visit(ParseTree tree) {
-        List<Integer> ret = super.visit(tree);
+    public Void visit(ParseTree tree) {
+        super.visit(tree);
         output.flush();
-        return ret;
+        return null;
     }
 
     @Override
-    public List<Integer> visitProg(BashpileParser.ProgContext ctx) {
-        final List<Integer> ret = new LinkedList<>();
+    public Void visitProg(BashpileParser.ProgContext ctx) {
         for (BashpileParser.StatContext lineContext : ctx.stat()) {
-            ret.addAll(visit(lineContext));
+            visit(lineContext);
         }
-        return ret;
+        return null;
     }
 
     @Override
-    public List<Integer> visitAssign(BashpileParser.AssignContext ctx) {
+    public Void visitAssign(BashpileParser.AssignContext ctx) {
         String id = ctx.ID().getText();
-        bashOutputting = false; // TODO fix this ugly hack
-        List<Integer> rightRet = visit(ctx.expr()); // verify all ids are defined
+        bashOutputting = false; // no better ideas, it's a bit of a hack
+        visit(ctx.expr()); // verify all ids are defined
         bashOutputting = true;
         String rightSide = ctx.expr().getText();
         output.printf("export %s=%s\n", id, rightSide);
-        memory.put(id, rightRet.get(0));
-        return rightRet;
+        memory.put(id, 1);
+        return null;
     }
 
     @Override
-    public List<Integer> visitPrintExpr(BashpileParser.PrintExprContext ctx) {
+    public Void visitPrintExpr(BashpileParser.PrintExprContext ctx) {
         return visit(ctx.expr());
     }
 
     @Override
-    public List<Integer> visitInt(BashpileParser.IntContext ctx) {
-        return List.of(Integer.valueOf(ctx.INT().getText()));
-    }
-
-    @Override
-    public List<Integer> visitId(BashpileParser.IdContext ctx) {
+    public Void visitId(BashpileParser.IdContext ctx) {
         String id = ctx.ID().getText();
         if (memory.containsKey(id)) {
-            return List.of(memory.get(id));
+            return null;
         }
         throw new RuntimeException("ID %s not found".formatted(id));
     }
 
     @Override
-    public List<Integer> visitMulDiv(BashpileParser.MulDivContext ctx) {
-        // get all id's, make sure they are defined
-        output.printf("bc <<< \"%s\"\n", ctx.getText());
-
-        int left = visit(ctx.expr(0)).get(0);
-        int right = visit(ctx.expr(1)).get(0);
-        boolean multiply = ctx.op.getType() == BashpileParser.MUL;
-        if (multiply) {
-            return List.of(left * right);
-        } // else divide
-        return List.of(left / right);
-    }
-
-    @Override
-    public List<Integer> visitAddSub(BashpileParser.AddSubContext ctx) {
-        // find all IDs in ctx
+    public Void visitMulDiv(BashpileParser.MulDivContext ctx) {
         if (bashOutputting) {
             output.printf("bc <<< \"%s\"\n", getBashText(ctx));
         }
-        int left = visit(ctx.expr(0)).get(0);
-        int right = visit(ctx.expr(1)).get(0);
-        boolean add = ctx.op.getType() == BashpileParser.ADD;
-        if (add) {
-            return List.of(left + right);
-        } // else subtract
-        return List.of(left - right);
+        visit(ctx.expr(0));
+        visit(ctx.expr(1));
+        return null;
+    }
+
+    @Override
+    public Void visitAddSub(BashpileParser.AddSubContext ctx) {
+        if (bashOutputting) {
+            output.printf("bc <<< \"%s\"\n", getBashText(ctx));
+        }
+        visit(ctx.expr(0));
+        visit(ctx.expr(1));
+        return null;
     }
 
     private String getBashText(RuleContext ctx) {
@@ -124,7 +110,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<List<Integer>> im
     }
 
     @Override
-    public List<Integer> visitParens(BashpileParser.ParensContext ctx) {
+    public Void visitParens(BashpileParser.ParensContext ctx) {
         return visit(ctx.expr());
     }
 
