@@ -5,8 +5,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.util.concurrent.*;
+import java.util.regex.Pattern;
 
 public class ShellInterface {
+
+    private static final Pattern bogusScreenLine = Pattern.compile(
+            "your \\d+x\\d+ screen size is bogus. expect trouble\r\n");
 
     private static final Logger log = LogManager.getLogger();
 
@@ -23,10 +27,9 @@ public class ShellInterface {
                 .redirectErrorStream(true);
         Process process = builder.start();
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-        OutputStreamWriter stdoutWriter = new OutputStreamWriter(stdout);
-        // TODO write to stdoutWriter
+        PrintStream stdoutWriter = new PrintStream(stdout);
         StreamGobbler streamGobbler =
-                new StreamGobbler(process.getInputStream(), System.out::println);
+                new StreamGobbler(process.getInputStream(), stdoutWriter::println);
         int exitCode;
         try (
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -34,7 +37,7 @@ public class ShellInterface {
             Future<?> future = executorService.submit(streamGobbler);
 
             bufferedWriter.write("cd\n");
-            bufferedWriter.write("ls\n");
+            bufferedWriter.write(bashText + "\n");
             bufferedWriter.write("exit\n");
             bufferedWriter.flush();
 
@@ -45,6 +48,7 @@ public class ShellInterface {
         if (exitCode != 0) {
             throw new RuntimeException(Integer.toString(exitCode));
         }
-        return "2"; // TODO stub
+        // return buffer stripped of random error lines
+        return bogusScreenLine.matcher(stdout.toString()).replaceAll("");
     }
 }
