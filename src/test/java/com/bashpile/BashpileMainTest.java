@@ -37,7 +37,7 @@ class BashpileMainTest {
 
     @Test
     @Order(3)
-    public void assign() throws IOException {
+    public void assignTest() throws IOException {
         String[] ret = runFile("003-assign.bashpile");
         assertEquals("4", ret[0]);
     }
@@ -49,6 +49,14 @@ class BashpileMainTest {
     @Order(4)
     public void badAssign() {
         assertThrows(BashpileUncheckedException.class, () -> runFile("004-badAssign.bashpile"));
+    }
+
+    @Test
+    @Order(5)
+    public void parenTest() throws IOException {
+        String[] ret = runFile("005-paren.bashpile");
+        assertEquals(1, ret.length, "Unexpected number of lines");
+        assertEquals("4", ret[0]);
     }
 
     // helpers

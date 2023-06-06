@@ -74,18 +74,26 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Void> implements 
         if (bashOutputting) {
             output.printf("bc <<< \"%s\"\n", getBashText(ctx));
         }
+        bashOutputting = false;
         visit(ctx.expr(0));
         visit(ctx.expr(1));
+        bashOutputting = true;
         return null;
     }
 
     @Override
     public Void visitAddSub(BashpileParser.AddSubContext ctx) {
+        boolean cachedBashOutputting = bashOutputting;
         if (bashOutputting) {
             output.printf("bc <<< \"%s\"\n", getBashText(ctx));
         }
+        bashOutputting = false;
         visit(ctx.expr(0));
         visit(ctx.expr(1));
+        if (cachedBashOutputting) {
+            // only reset if we are the outputter
+            bashOutputting = true;
+        }
         return null;
     }
 
@@ -109,7 +117,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Void> implements 
 
     @Override
     public Void visitParens(BashpileParser.ParensContext ctx) {
-        return visit(ctx.expr());
+        visit(ctx.expr());
+        return null;
     }
 
     public String getOutput(ParseTree parseTree) {
