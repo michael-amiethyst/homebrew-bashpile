@@ -1,11 +1,13 @@
 package com.bashpile;
 
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.PrintStream;
+import java.util.stream.Collectors;
 
 /**
  * Antlr4 calls these methods.  Both walks the parse tree and buffers all output.
@@ -15,6 +17,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> implement
     private final ByteArrayOutputStream translationBackingStore = new ByteArrayOutputStream(1024);
 
     private final PrintStream translation = new PrintStream(translationBackingStore);
+
+    private final Logger log = LogManager.getLogger();
 
     // visitors
 
@@ -43,27 +47,13 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> implement
 
     @Override
     public String visitCalc(BashpileParser.CalcContext ctx) {
-        translation.printf("bc <<< \"%s\"\n", getBashText(ctx));
+        log.trace("In Calc with {} children", ctx.children.size());
+        // convert "var" to "$var" for Bash
+        String text = ctx.children.stream().map(
+                x -> x instanceof BashpileParser.IdContext ? "$" + x.getText() : x.getText())
+                .collect(Collectors.joining());
+        translation.printf("bc <<< \"%s\"\n", text);
         return null;
-    }
-
-    // TODO simplify with parser actions
-    private String getBashText(RuleContext ctx) {
-        if (ctx.getChildCount() == 0) {
-            return "";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < ctx.getChildCount(); i++) {
-            ParseTree currentChild = ctx.getChild(i);
-            boolean isId = currentChild instanceof BashpileParser.IdContext;
-            if (isId) {
-                builder.append('$');
-            }
-            builder.append(currentChild.getText());
-        }
-
-        return builder.toString();
     }
 
     @Override
