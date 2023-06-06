@@ -6,97 +6,54 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Antlr4 calls these methods.  Both walks the parse tree and buffers all output.
  */
-public class BashpileVisitor extends BashpileParserBaseVisitor<Void> implements Closeable {
-    private final Map<String, Integer> memory = new HashMap<>();
+public class BashpileVisitor extends BashpileParserBaseVisitor<String> implements Closeable {
 
-    private final ByteArrayOutputStream byteStream = new ByteArrayOutputStream(1024);
+    private final ByteArrayOutputStream translationBackingStore = new ByteArrayOutputStream(1024);
 
-    private final PrintStream output;
-
-    // occasionally need to suppress writing to output
-    private boolean bashOutputting = true;
-
-    public BashpileVisitor() {
-        output = new PrintStream(byteStream);
-    }
+    private final PrintStream translation = new PrintStream(translationBackingStore);
 
     // visitors
 
     @Override
-    public Void visit(ParseTree tree) {
+    public String visit(ParseTree tree) {
         super.visit(tree);
-        output.flush();
+        translation.flush();
+        return translationBackingStore.toString();
+    }
+
+    @Override
+    public String visitProg(BashpileParser.ProgContext ctx) {
+        translation.print("set -euo pipefail\n");
+        translation.print("export IFS=$'\\n\\t'\n");
+        super.visitProg(ctx);
         return null;
     }
 
     @Override
-    public Void visitProg(BashpileParser.ProgContext ctx) {
-        for (BashpileParser.StatContext lineContext : ctx.stat()) {
-            visit(lineContext);
-        }
-        return null;
-    }
-
-    @Override
-    public Void visitAssign(BashpileParser.AssignContext ctx) {
+    public String visitAssign(BashpileParser.AssignContext ctx) {
         String id = ctx.ID().getText();
-        bashOutputting = false; // no better ideas, it's a bit of a hack
-        visit(ctx.expr()); // verify all ids are defined
-        bashOutputting = true;
         String rightSide = ctx.expr().getText();
-        output.printf("export %s=%s\n", id, rightSide);
-        memory.put(id, 1);
+        translation.printf("export %s=%s\n", id, rightSide);
         return null;
     }
 
     @Override
-    public Void visitPrintExpr(BashpileParser.PrintExprContext ctx) {
-        return visit(ctx.expr());
-    }
-
-    @Override
-    public Void visitId(BashpileParser.IdContext ctx) {
-        String id = ctx.ID().getText();
-        if (memory.containsKey(id)) {
-            return null;
-        }
-        throw new BashpileUncheckedException("ID %s not found".formatted(id));
-    }
-
-    @Override
-    public Void visitMulDiv(BashpileParser.MulDivContext ctx) {
-        if (bashOutputting) {
-            output.printf("bc <<< \"%s\"\n", getBashText(ctx));
-        }
-        bashOutputting = false;
-        visit(ctx.expr(0));
-        visit(ctx.expr(1));
-        bashOutputting = true;
+    public String visitMulDiv(BashpileParser.MulDivContext ctx) {
+        translation.printf("bc <<< \"%s\"\n", getBashText(ctx));
         return null;
     }
 
     @Override
-    public Void visitAddSub(BashpileParser.AddSubContext ctx) {
-        boolean cachedBashOutputting = bashOutputting;
-        if (bashOutputting) {
-            output.printf("bc <<< \"%s\"\n", getBashText(ctx));
-        }
-        bashOutputting = false;
-        visit(ctx.expr(0));
-        visit(ctx.expr(1));
-        if (cachedBashOutputting) {
-            // only reset if we are the outputter
-            bashOutputting = true;
-        }
+    public String visitAddSub(BashpileParser.AddSubContext ctx) {
+        translation.printf("bc <<< \"%s\"\n", getBashText(ctx));
         return null;
     }
 
+    // TODO simplify with parser actions
     private String getBashText(RuleContext ctx) {
         if (ctx.getChildCount() == 0) {
             return "";
@@ -116,18 +73,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Void> implements 
     }
 
     @Override
-    public Void visitParens(BashpileParser.ParensContext ctx) {
-        visit(ctx.expr());
-        return null;
-    }
-
-    public String getOutput(ParseTree parseTree) {
-        visit(parseTree);
-        return byteStream.toString();
-    }
-
-    @Override
     public void close() {
-        output.close();
+        translation.close();
     }
 }

@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,7 +22,7 @@ public class Shell {
         ProcessBuilder builder = new ProcessBuilder();
         if (isWindows) {
             log.trace("Detected windows");
-            builder.command("wsl");
+            builder.command("wsl", "bash");
         } else {
             log.trace("Detected 'nix");
             builder.command("bash");
@@ -43,7 +44,7 @@ public class Shell {
             Future<?> future = executorService.submit(streamGobbler);
 
             bufferedWriter.write("cd\n");
-            bufferedWriter.write(bashText + "\n");
+            bufferedWriter.write(StringUtils.appendIfMissing(bashText, "\n"));
             bufferedWriter.write("exit\n");
             bufferedWriter.flush();
 
@@ -51,12 +52,14 @@ public class Shell {
 
             future.get(10, TimeUnit.SECONDS);
 
+            String stdoutString = stdout.toString();
             if (exitCode != 0) {
-                throw new RuntimeException(Integer.toString(exitCode));
+                throw new BashpileUncheckedException(
+                        "Found failing (non-0) 'nix exit code: " + exitCode + ".  Full text results:\n" + stdoutString);
             }
             // return buffer stripped of random error lines
-            log.trace("Shell output before processing: [{}]", stdout.toString());
-            return bogusScreenLine.matcher(stdout.toString()).replaceAll("").trim();
+            log.trace("Shell output before processing: [{}]", stdoutString);
+            return bogusScreenLine.matcher(stdoutString).replaceAll("").trim();
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new BashpileUncheckedException(e);
         }

@@ -1,8 +1,14 @@
 # Features
 
-## Code Nodes
+## Whitespace ignoring
 
-We support function hoisting and multiple target shells with code nodes.
+The Bash command `export var = "value"` fails but a Bashpile assign can be `var = value`.
 
-A Code Node is a (think linked list node) Java Object that represents a 'chunk' of code (e.g. a method declaration).
-It is an abstraction of the user's intent.  As an example a HashMap CodeNode may translate to something very wierd in Bash3, which doesn't have HashMaps natively.
+## Easy Calculations
+
+You can use floating point math easily as well as parenthesis.  
+The *nix command `bc` is used under the hood.
+
+## Automatic 'Strict Mode'
+We add a `set -euo pipefail` at the top of the generated Bash script for easy debugging.
+See [Bash Strict Mode](http://redsymbol.net/articles/unofficial-bash-strict-mode/).
