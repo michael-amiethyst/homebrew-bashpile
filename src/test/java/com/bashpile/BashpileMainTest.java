@@ -21,8 +21,10 @@ class BashpileMainTest {
     public void simpleTest() throws IOException {
         String[] ret = runFile("0001-simple.bashpile");
         assertNotNull(ret);
-        assertEquals(1, ret.length);
-        assertEquals("2", ret[0]);
+        final int expectedLines = 1;
+        assertEquals(expectedLines, ret.length, "Unexpected output length, expected %d lines but found: %s"
+                .formatted(expectedLines, String.join("\n", ret)));
+        assertEquals("2", ret[0], "Unexpected output: %s".formatted(String.join("\n", ret)));
     }
 
     @Test
@@ -37,7 +39,7 @@ class BashpileMainTest {
 
     @Test
     @Order(3)
-    public void assign() throws IOException {
+    public void assignTest() throws IOException {
         String[] ret = runFile("003-assign.bashpile");
         assertEquals("4", ret[0]);
     }
@@ -48,7 +50,15 @@ class BashpileMainTest {
     @Test
     @Order(4)
     public void badAssign() {
-        assertThrows(RuntimeException.class, () -> runFile("004-badAssign.bashpile"));
+        assertThrows(BashpileUncheckedException.class, () -> runFile("004-badAssign.bashpile"));
+    }
+
+    @Test
+    @Order(5)
+    public void parenTest() throws IOException {
+        String[] ret = runFile("005-paren.bashpile");
+        assertEquals(1, ret.length, "Unexpected number of lines");
+        assertEquals("4", ret[0]);
     }
 
     // helpers

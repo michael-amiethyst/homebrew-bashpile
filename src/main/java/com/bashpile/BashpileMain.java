@@ -7,7 +7,6 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,13 +53,16 @@ public class BashpileMain {
         return applyBashpileLogic(tree);
     }
 
-    private static String[] applyBashpileLogic(ParseTree tree) throws IOException {
+    private static String[] applyBashpileLogic(ParseTree tree) {
         // visitor
-        try (ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
-             BashpileVisitor bashpileLogic = new BashpileVisitor(byteOutput)) {
-
-            bashpileLogic.visit(tree);  // writes to byteOutput here
-            return byteOutput.toString().split("\r?\n");
+        try (BashpileVisitor bashpileLogic = new BashpileVisitor()) {
+            String bashScript = bashpileLogic.visit(tree);
+            String output = Shell.run(bashScript);
+            return output.split("\r?\n");
+        } catch (IOException e) {
+            log.error(e);
+            e.printStackTrace();
+            return ArrayUtils.arrayOf(e.getMessage());
         }
     }
 }
