@@ -42,13 +42,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> implement
     }
 
     @Override
-    public String visitMulDiv(BashpileParser.MulDivContext ctx) {
-        translation.printf("bc <<< \"%s\"\n", getBashText(ctx));
-        return null;
-    }
-
-    @Override
-    public String visitAddSub(BashpileParser.AddSubContext ctx) {
+    public String visitCalc(BashpileParser.CalcContext ctx) {
         translation.printf("bc <<< \"%s\"\n", getBashText(ctx));
         return null;
     }
