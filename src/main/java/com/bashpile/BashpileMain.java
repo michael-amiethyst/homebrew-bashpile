@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import com.bashpile.engine.BashTranslationEngine;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -55,7 +56,7 @@ public class BashpileMain {
 
     private static String[] applyBashpileLogic(ParseTree tree) {
         // visitor
-        try (BashpileVisitor bashpileLogic = new BashpileVisitor()) {
+        try (BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine())) {
             String bashScript = bashpileLogic.visit(tree);
             String output = Shell.run(bashScript);
             return output.split("\r?\n");
