@@ -1,13 +1,9 @@
 package com.bashpile;
 
 import com.bashpile.engine.TranslationEngine;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.PrintStream;
 import java.util.stream.Collectors;
 
 /**
