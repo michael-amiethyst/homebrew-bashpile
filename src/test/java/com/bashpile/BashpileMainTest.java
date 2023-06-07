@@ -61,6 +61,21 @@ class BashpileMainTest {
         assertEquals("4", ret[0]);
     }
 
+    @Test
+    @Order(6)
+    public void idTest() {
+        // outputs "var", a bad command, leading to an exception for a bad return value
+        // TODO get just the bash translation and assert
+        // TODO make exception for code 127 -- command not found
+        assertThrows(BashpileUncheckedException.class, () -> runFile("006-id.bashpile"));
+    }
+
+    @Test
+    @Order(7)
+    public void intTest() {
+        assertThrows(BashpileUncheckedException.class, () -> runFile("007-int.bashpile"));
+    }
+
     // helpers
 
     private String[] runFile(String file) throws IOException {

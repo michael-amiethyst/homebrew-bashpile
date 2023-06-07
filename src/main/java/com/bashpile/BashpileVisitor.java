@@ -8,16 +8,12 @@ import org.apache.logging.log4j.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.PrintStream;
+import java.util.stream.Collectors;
 
 /**
  * Antlr4 calls these methods.  Both walks the parse tree and buffers all output.
  */
-public class BashpileVisitor extends BashpileParserBaseVisitor<String> implements Closeable {
-
-    private final ByteArrayOutputStream translationBackingStore = new ByteArrayOutputStream(1024);
-
-    /** The resulting shell commands */
-    private final PrintStream translation = new PrintStream(translationBackingStore);
+public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     private final TranslationEngine translator;
 
@@ -30,36 +26,40 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> implement
     // visitors
 
     @Override
-    public String visit(ParseTree tree) {
-        super.visit(tree);
-        translation.flush();
-        return translationBackingStore.toString();
+    public String visitProg(BashpileParser.ProgContext ctx) {
+        return translator.strictMode() + ctx.stat().stream().map(this::visit).collect(Collectors.joining());
     }
 
     @Override
-    public String visitProg(BashpileParser.ProgContext ctx) {
-        translation.print(translator.strictMode());
-        super.visitProg(ctx);
-        return null;
+    public String visitPrintExpr(BashpileParser.PrintExprContext ctx) {
+        return visit(ctx.expr());
     }
 
     @Override
     public String visitAssign(BashpileParser.AssignContext ctx) {
         String id = ctx.ID().getText();
         String rightSide = ctx.expr().getText();
-        translation.printf(translator.assign(id, rightSide));
-        return null;
+        return translator.assign(id, rightSide);
     }
 
     @Override
     public String visitCalc(BashpileParser.CalcContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
-        translation.print(translator.calc(ctx));
-        return null;
+        return translator.calc(ctx);
     }
 
     @Override
-    public void close() {
-        translation.close();
+    public String visitParens(BashpileParser.ParensContext ctx) {
+        return visit(ctx.expr());
+    }
+
+    @Override
+    public String visitId(BashpileParser.IdContext ctx) {
+        return ctx.ID().getText();
+    }
+
+    @Override
+    public String visitInt(BashpileParser.IntContext ctx) {
+        return ctx.INT().getText();
     }
 }
