@@ -32,7 +32,8 @@ class BashpileMainTest {
     public void multilineTest() throws IOException {
         String[] ret = runFile("0002-multiline.bashpile");
         assertNotNull(ret);
-        assertEquals(2, ret.length);
+        int expected = 2;
+        assertEquals(expected, ret.length, "Expected %d lines but got %d".formatted(expected, ret.length));
         assertEquals("2", ret[0]);
         assertEquals("0", ret[1]);
     }
@@ -82,6 +83,6 @@ class BashpileMainTest {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);
-        return bashpile.execute();
+        return bashpile.execute().split("\r?\n");
     }
 }

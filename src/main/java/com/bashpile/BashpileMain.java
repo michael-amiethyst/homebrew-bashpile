@@ -10,21 +10,24 @@ import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.concurrent.Callable;
 
 /** Entry point into the program */
 @CommandLine.Command(
-        name = "execute",
+        name = "bashpile",
         description = "Converts Bashpile lines to bash and executes them, printing the results"
 )
-public class BashpileMain implements Runnable {
+public class BashpileMain implements Callable<Integer> {
 
     private static final Logger log = LogManager.getLogger(BashpileMain.class);
 
     @CommandLine.Option(names = {"-i", "--inputFile"})
     private String inputFile;
+
+    private CommandLine commandLine;
 
     public BashpileMain() {}
 
@@ -33,35 +36,49 @@ public class BashpileMain implements Runnable {
     }
 
     public static void main(String[] args) {
-        CommandLine argProcessor = new CommandLine(new BashpileMain());
+        BashpileMain bashpile = new BashpileMain();
+        CommandLine argProcessor = new CommandLine(bashpile);
+        bashpile.setCommandLine(argProcessor);
         System.exit(argProcessor.execute(args));
     }
 
     @Override
-    public void run() {
-        try {
-            System.out.println("Enter your bashpile program, ending with a newline and EOF (ctrl-D).");
-            String[] executedBashResults = execute();
-            System.out.println(Arrays.toString(executedBashResults));
-        } catch (IOException e) {
-            throw new BashpileUncheckedException(e);
-        }
+    public Integer call() {
+        commandLine.usage(System.out);
+        return -1;
     }
 
-    public String[] execute() throws IOException {
-        // stream is either stdin or the first argument
-        InputStream is;
+    @CommandLine.Command(name = "execute")
+    public void executeCommand() throws IOException {
+        System.out.println(execute());
+        System.exit(0);
+    }
+
+    public String execute() throws IOException {
+        String bashScript = parse(getInputStream());
+        return CommandLineExecutor.run(bashScript);
+    }
+
+    @CommandLine.Command(name = "transpile")
+    public void transpileCommand() throws IOException {
+        System.out.println(parse(getInputStream()));
+        System.exit(0);
+    }
+
+    private InputStream getInputStream() throws FileNotFoundException {
         if (inputFile != null) {
-            is = new FileInputStream(inputFile);
+            return new FileInputStream(inputFile);
         } else {
-            is = System.in;
+            System.out.println("Enter your bashpile program, ending with a newline and EOF (ctrl-D).");
+            return System.in;
         }
-
-        String bashScript = parse(is);
-
-        String output = CommandLineExecutor.run(bashScript);
-        return output.split("\r?\n");
     }
+
+    public void setCommandLine(CommandLine commandLine) {
+        this.commandLine = commandLine;
+    }
+
+    // static helpers
 
     /** antlr calls */
     private static String parse(InputStream is) throws IOException {
@@ -78,10 +95,10 @@ public class BashpileMain implements Runnable {
         return transpile(tree);
     }
 
+    /** Returns bash text block */
     private static String transpile(ParseTree tree) {
         // visitor
         BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
-        String bashScript = bashpileLogic.visit(tree);
-        return bashScript;
+        return bashpileLogic.visit(tree);
     }
 }
