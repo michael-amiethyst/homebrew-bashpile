@@ -10,30 +10,30 @@ class ShellTest {
 
     @Test
     void runTest() throws IOException {
-        assertEquals("hello world", Shell.run("echo hello world"));
+        assertEquals("hello world", CommandLine.run("echo hello world"));
     }
 
     @Test
     void runWithLessThanTest() throws IOException {
-        assertEquals("<<<", Shell.run("echo \"<<<\""));
+        assertEquals("<<<", CommandLine.run("echo \"<<<\""));
     }
 
     @Test
     void runWithFullCalcTest() throws IOException {
-        assertEquals("2", Shell.run("bc <<< \"(1+1)\""));
+        assertEquals("2", CommandLine.run("bc <<< \"(1+1)\""));
     }
 
     @Test
     void runWithEchoETest() throws IOException {
 //        String ret = Shell.run("bash --version");
-        String ret = Shell.run("echo -e");
+        String ret = CommandLine.run("echo -e");
         assertEquals("", ret, "Unexpected output: %s".formatted(String.join("\n", ret)));
     }
 
     @Test
     void runWithSetETest() throws IOException {
 //        String ret = Shell.run("bash --version");
-        String ret = Shell.run("set -e");
+        String ret = CommandLine.run("set -e");
         assertEquals("", ret, "Unexpected output: %s".formatted(String.join("\n", ret)));
     }
 }

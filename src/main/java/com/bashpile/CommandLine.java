@@ -8,12 +8,13 @@ import java.io.*;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
-public class Shell {
+/** Runs `wsl` in Windows */
+public class CommandLine {
 
     private static final Pattern bogusScreenLine = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r\n");
 
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger log = LogManager.getLogger(CommandLine.class);
 
     public static String run(String bashText) throws IOException {
         log.info("Executing bash text:\n" + bashText);

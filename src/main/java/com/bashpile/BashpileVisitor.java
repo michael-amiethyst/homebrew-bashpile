@@ -13,7 +13,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     private final TranslationEngine translator;
 
-    private final Logger log = LogManager.getLogger();
+    private final Logger log = LogManager.getLogger(BashpileVisitor.class);
 
     public BashpileVisitor(TranslationEngine translator) {
         this.translator = translator;
