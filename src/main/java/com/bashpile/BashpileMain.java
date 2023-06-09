@@ -1,10 +1,5 @@
 package com.bashpile;
 
-import com.bashpile.engine.BashTranslationEngine;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
@@ -15,10 +10,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Callable;
 
+import static com.bashpile.AntlrUtils.parse;
+
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
-        description = "Converts Bashpile lines to bash and executes them, printing the results"
+        description = "Converts Bashpile lines to Bash"
 )
 public class BashpileMain implements Callable<Integer> {
 
@@ -48,7 +45,7 @@ public class BashpileMain implements Callable<Integer> {
         return -1;
     }
 
-    @CommandLine.Command(name = "execute")
+    @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
     public void executeCommand() throws IOException {
         System.out.println(execute());
         System.exit(0);
@@ -59,7 +56,7 @@ public class BashpileMain implements Callable<Integer> {
         return CommandLineExecutor.run(bashScript);
     }
 
-    @CommandLine.Command(name = "transpile")
+    @CommandLine.Command(name = "transpile", description = "Converts Bashpile lines to bash")
     public void transpileCommand() throws IOException {
         System.out.println(parse(getInputStream()));
         System.exit(0);
@@ -76,29 +73,5 @@ public class BashpileMain implements Callable<Integer> {
 
     public void setCommandLine(CommandLine commandLine) {
         this.commandLine = commandLine;
-    }
-
-    // static helpers
-
-    /** antlr calls */
-    private static String parse(InputStream is) throws IOException {
-        log.trace("Starting parse");
-        // lexer
-        CharStream input = CharStreams.fromStream(is);
-        BashpileLexer lexer = new BashpileLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-
-        // parser
-        BashpileParser parser = new BashpileParser(tokens);
-        ParseTree tree = parser.prog();
-
-        return transpile(tree);
-    }
-
-    /** Returns bash text block */
-    private static String transpile(ParseTree tree) {
-        // visitor
-        BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
-        return bashpileLogic.visit(tree);
     }
 }
