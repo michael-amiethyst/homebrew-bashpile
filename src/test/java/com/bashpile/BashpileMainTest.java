@@ -81,6 +81,7 @@ class BashpileMainTest {
     private String[] runFile(String file) throws IOException {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);
-        return BashpileMain.processArg(filename);
+        BashpileMain bashpile = new BashpileMain(filename);
+        return bashpile.execute();
     }
 }

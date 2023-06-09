@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-import static com.bashpile.ArrayUtils.arrayOf;
-
 /** Entry point into the program */
 @CommandLine.Command(
         name = "execute",
@@ -23,11 +21,18 @@ import static com.bashpile.ArrayUtils.arrayOf;
 )
 public class BashpileMain implements Runnable {
 
-    private static String[] commandLineArgs;
     private static final Logger log = LogManager.getLogger(BashpileMain.class);
 
+    @CommandLine.Option(names = {"-i", "--inputFile"})
+    private String inputFile;
+
+    public BashpileMain() {}
+
+    public BashpileMain(String inputFile) {
+        this.inputFile = inputFile;
+    }
+
     public static void main(String[] args) {
-        commandLineArgs = args;
         CommandLine argProcessor = new CommandLine(new BashpileMain());
         System.exit(argProcessor.execute(args));
     }
@@ -36,31 +41,30 @@ public class BashpileMain implements Runnable {
     public void run() {
         try {
             System.out.println("Enter your bashpile program, ending with a newline and EOF (ctrl-D).");
-            String[] executedBashResults = processArgs(BashpileMain.commandLineArgs);
+            String[] executedBashResults = execute();
             System.out.println(Arrays.toString(executedBashResults));
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }
     }
 
-    public static String[] processArg(String filename) throws IOException {
-        return processArgs(arrayOf(filename));
-    }
-
-    public static String[] processArgs(String[] args) throws IOException {
+    public String[] execute() throws IOException {
         // stream is either stdin or the first argument
-        InputStream is = System.in;
-        boolean argsExist = args.length > 0;
-        if (argsExist) {
-            String inputFile = args[0];
+        InputStream is;
+        if (inputFile != null) {
             is = new FileInputStream(inputFile);
+        } else {
+            is = System.in;
         }
 
-        return parse(is);
+        String bashScript = parse(is);
+
+        String output = CommandLineExecutor.run(bashScript);
+        return output.split("\r?\n");
     }
 
     /** antlr calls */
-    private static String[] parse(InputStream is) throws IOException {
+    private static String parse(InputStream is) throws IOException {
         log.trace("Starting parse");
         // lexer
         CharStream input = CharStreams.fromStream(is);
@@ -71,9 +75,7 @@ public class BashpileMain implements Runnable {
         BashpileParser parser = new BashpileParser(tokens);
         ParseTree tree = parser.prog();
 
-        String bashScript = transpile(tree);
-        String output = CommandLineExecutor.run(bashScript);
-        return output.split("\r?\n");
+        return transpile(tree);
     }
 
     private static String transpile(ParseTree tree) {
