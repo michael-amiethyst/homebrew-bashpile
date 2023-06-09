@@ -8,13 +8,15 @@ import java.io.*;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
-/** Runs `wsl` in Windows */
-public class CommandLine {
+/**
+ * Runs commands in Bash.  Runs `wsl bash` in Windows.
+ */
+public class CommandLineExecutor {
 
     private static final Pattern bogusScreenLine = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r\n");
 
-    private static final Logger log = LogManager.getLogger(CommandLine.class);
+    private static final Logger log = LogManager.getLogger(CommandLineExecutor.class);
 
     public static String run(String bashText) throws IOException {
         log.info("Executing bash text:\n" + bashText);
@@ -40,9 +42,9 @@ public class CommandLine {
                 // to get the child process's STDOUT
                 ByteArrayOutputStream stdout = new ByteArrayOutputStream();
                 PrintStream stdoutWriter = new PrintStream(stdout)) {
-            StreamGobbler streamGobbler =
-                    new StreamGobbler(process.getInputStream(), stdoutWriter::println);
-            Future<?> future = executorService.submit(streamGobbler);
+            FailableStreamConsumer failableStreamConsumer =
+                    new FailableStreamConsumer(process.getInputStream(), stdoutWriter::println);
+            Future<?> future = executorService.submit(failableStreamConsumer);
 
             bufferedWriter.write("cd\n");
             bufferedWriter.write(StringUtils.appendIfMissing(bashText, "\n"));

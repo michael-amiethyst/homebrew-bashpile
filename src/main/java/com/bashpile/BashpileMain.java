@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import picocli.CommandLine;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,7 +17,7 @@ import java.util.Arrays;
 import static com.bashpile.ArrayUtils.arrayOf;
 
 /** Entry point into the program */
-@org.apache.logging.log4j.core.tools.picocli.CommandLine.Command(
+@CommandLine.Command(
         name = "execute",
         description = "Converts Bashpile lines to bash and executes them, printing the results"
 )
@@ -27,7 +28,8 @@ public class BashpileMain implements Runnable {
 
     public static void main(String[] args) {
         commandLineArgs = args;
-        org.apache.logging.log4j.core.tools.picocli.CommandLine.run(new BashpileMain(), System.out, args);
+        CommandLine argProcessor = new CommandLine(new BashpileMain());
+        System.exit(argProcessor.execute(args));
     }
 
     @Override
@@ -69,20 +71,15 @@ public class BashpileMain implements Runnable {
         BashpileParser parser = new BashpileParser(tokens);
         ParseTree tree = parser.prog();
 
-        return applyBashpileLogic(tree);
+        String bashScript = transpile(tree);
+        String output = CommandLineExecutor.run(bashScript);
+        return output.split("\r?\n");
     }
 
-    private static String[] applyBashpileLogic(ParseTree tree) {
+    private static String transpile(ParseTree tree) {
         // visitor
-        try {
-            BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
-            String bashScript = bashpileLogic.visit(tree);
-            String output = CommandLine.run(bashScript);
-            return output.split("\r?\n");
-        } catch (IOException e) {
-            log.error(e);
-            e.printStackTrace();
-            return ArrayUtils.arrayOf(e.getMessage());
-        }
+        BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
+        String bashScript = bashpileLogic.visit(tree);
+        return bashScript;
     }
 }
