@@ -8,11 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
+
+    public static final Pattern lines = Pattern.compile("\r?\n");
 
     private static final Logger log = LogManager.getLogger(BashpileMainTest.class);
 
@@ -83,6 +86,6 @@ class BashpileMainTest {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);
-        return bashpile.execute().split("\r?\n");
+        return lines.split(bashpile.execute());
     }
 }
