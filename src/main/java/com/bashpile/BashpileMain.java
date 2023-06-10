@@ -42,7 +42,7 @@ public class BashpileMain implements Callable<Integer> {
     @Override
     public Integer call() {
         commandLine.usage(System.out);
-        return -1;
+        return 1;
     }
 
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
@@ -53,7 +53,7 @@ public class BashpileMain implements Callable<Integer> {
 
     public String execute() throws IOException {
         String bashScript = parse(getInputStream());
-        return CommandLineExecutor.run(bashScript);
+        return CommandLineExecutor.run(bashScript).getLeft();
     }
 
     @CommandLine.Command(name = "transpile", description = "Converts Bashpile lines to bash")
