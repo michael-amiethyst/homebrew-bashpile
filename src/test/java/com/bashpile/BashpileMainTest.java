@@ -8,11 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
+
+    public static final Pattern lines = Pattern.compile("\r?\n");
 
     private static final Logger log = LogManager.getLogger(BashpileMainTest.class);
 
@@ -32,7 +35,8 @@ class BashpileMainTest {
     public void multilineTest() throws IOException {
         String[] ret = runFile("0002-multiline.bashpile");
         assertNotNull(ret);
-        assertEquals(2, ret.length);
+        int expected = 2;
+        assertEquals(expected, ret.length, "Expected %d lines but got %d".formatted(expected, ret.length));
         assertEquals("2", ret[0]);
         assertEquals("0", ret[1]);
     }
@@ -61,11 +65,27 @@ class BashpileMainTest {
         assertEquals("4", ret[0]);
     }
 
+    @Test
+    @Order(6)
+    public void idTest() {
+        // outputs "var", a bad command, leading to an exception for a bad return value
+        // TODO get just the bash translation and assert
+        // TODO make exception for code 127 -- command not found
+        assertThrows(BashpileUncheckedException.class, () -> runFile("006-id.bashpile"));
+    }
+
+    @Test
+    @Order(7)
+    public void intTest() {
+        assertThrows(BashpileUncheckedException.class, () -> runFile("007-int.bashpile"));
+    }
+
     // helpers
 
     private String[] runFile(String file) throws IOException {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);
-        return BashpileMain.processArg(filename);
+        BashpileMain bashpile = new BashpileMain(filename);
+        return lines.split(bashpile.execute());
     }
 }

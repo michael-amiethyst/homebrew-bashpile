@@ -12,3 +12,6 @@ The *nix command `bc` is used under the hood.
 ## Automatic 'Strict Mode'
 We add a `set -euo pipefail` at the top of the generated Bash script for easy debugging.
 See [Bash Strict Mode](http://redsymbol.net/articles/unofficial-bash-strict-mode/).
+
+## Multiple Shell Support
+Bashpile is written to be extensible with different target script languages, not just Bash 5.

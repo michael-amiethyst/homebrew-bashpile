@@ -1,63 +1,61 @@
 package com.bashpile;
 
-import org.antlr.v4.runtime.tree.ParseTree;
+import com.bashpile.engine.TranslationEngine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.PrintStream;
 import java.util.stream.Collectors;
 
 /**
  * Antlr4 calls these methods.  Both walks the parse tree and buffers all output.
  */
-public class BashpileVisitor extends BashpileParserBaseVisitor<String> implements Closeable {
+public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
-    private final ByteArrayOutputStream translationBackingStore = new ByteArrayOutputStream(1024);
+    private final TranslationEngine translator;
 
-    private final PrintStream translation = new PrintStream(translationBackingStore);
+    private final Logger log = LogManager.getLogger(BashpileVisitor.class);
 
-    private final Logger log = LogManager.getLogger();
+    public BashpileVisitor(TranslationEngine translator) {
+        this.translator = translator;
+    }
 
     // visitors
 
     @Override
-    public String visit(ParseTree tree) {
-        super.visit(tree);
-        translation.flush();
-        return translationBackingStore.toString();
+    public String visitProg(BashpileParser.ProgContext ctx) {
+        return translator.strictMode() + ctx.stat().stream().map(this::visit).collect(Collectors.joining());
     }
 
     @Override
-    public String visitProg(BashpileParser.ProgContext ctx) {
-        translation.print("set -euo pipefail\n");
-        translation.print("export IFS=$'\\n\\t'\n");
-        super.visitProg(ctx);
-        return null;
+    public String visitPrintExpr(BashpileParser.PrintExprContext ctx) {
+        return visit(ctx.expr());
     }
 
     @Override
     public String visitAssign(BashpileParser.AssignContext ctx) {
         String id = ctx.ID().getText();
         String rightSide = ctx.expr().getText();
-        translation.printf("export %s=%s\n", id, rightSide);
-        return null;
+        return translator.assign(id, rightSide);
     }
 
     @Override
     public String visitCalc(BashpileParser.CalcContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
-        // convert "var" to "$var" for Bash
-        String text = ctx.children.stream().map(
-                x -> x instanceof BashpileParser.IdContext ? "$" + x.getText() : x.getText())
-                .collect(Collectors.joining());
-        translation.printf("bc <<< \"%s\"\n", text);
-        return null;
+        return translator.calc(ctx);
     }
 
     @Override
-    public void close() {
-        translation.close();
+    public String visitParens(BashpileParser.ParensContext ctx) {
+        return visit(ctx.expr());
+    }
+
+    @Override
+    public String visitId(BashpileParser.IdContext ctx) {
+        return ctx.ID().getText();
+    }
+
+    @Override
+    public String visitInt(BashpileParser.IntContext ctx) {
+        return ctx.INT().getText();
     }
 }
