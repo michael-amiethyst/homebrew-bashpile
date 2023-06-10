@@ -46,20 +46,26 @@ public class BashpileMain implements Callable<Integer> {
     }
 
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
-    public void executeCommand() throws IOException {
+    public int executeCommand() throws IOException {
         System.out.println(execute());
-        System.exit(0);
+        return 0;
     }
 
     public String execute() throws IOException {
-        String bashScript = parse(getInputStream());
-        return CommandLineExecutor.run(bashScript).getLeft();
+        log.debug("In {}", System.getProperty("user.dir"));
+        String bashScript = "<stream unparsed>";
+        try {
+            bashScript = parse(getInputStream());
+            return CommandLineExecutor.run(bashScript).getLeft();
+        } catch (Throwable e) {
+            throw new BashpileUncheckedException(e, "Couldn't run `%s`.".formatted(bashScript));
+        }
     }
 
     @CommandLine.Command(name = "transpile", description = "Converts Bashpile lines to bash")
-    public void transpileCommand() throws IOException {
+    public int transpileCommand() throws IOException {
         System.out.println(parse(getInputStream()));
-        System.exit(0);
+        return 0;
     }
 
     private InputStream getInputStream() throws FileNotFoundException {

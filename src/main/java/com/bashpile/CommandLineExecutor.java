@@ -30,10 +30,8 @@ public class CommandLineExecutor {
     private static Pair<String, Integer> runHelper(
             String bashText, boolean throwOnBadExitCode, boolean cd) throws IOException {
         log.info("Executing bash text:\n" + bashText);
-        boolean isWindows = System.getProperty("os.name")
-                .toLowerCase().startsWith("windows");
         ProcessBuilder builder = new ProcessBuilder();
-        if (isWindows) {
+        if (isWindows()) {
             log.trace("Detected windows");
             builder.command("wsl");
         } else {
@@ -85,5 +83,11 @@ public class CommandLineExecutor {
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new BashpileUncheckedException(e);
         }
+    }
+
+    public static boolean isWindows() {
+        boolean isWindows = System.getProperty("os.name")
+                .toLowerCase().startsWith("windows");
+        return isWindows;
     }
 }
