@@ -86,8 +86,7 @@ public class CommandLineExecutor {
     }
 
     public static boolean isWindows() {
-        boolean isWindows = System.getProperty("os.name")
+        return System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
-        return isWindows;
     }
 }

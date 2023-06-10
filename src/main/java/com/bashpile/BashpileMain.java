@@ -46,12 +46,12 @@ public class BashpileMain implements Callable<Integer> {
     }
 
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
-    public int executeCommand() throws IOException {
+    public int executeCommand() {
         System.out.println(execute());
         return 0;
     }
 
-    public String execute() throws IOException {
+    public String execute() {
         log.debug("In {}", System.getProperty("user.dir"));
         String bashScript = "<stream unparsed>";
         try {
