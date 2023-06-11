@@ -21,7 +21,7 @@ class BashpileMainTest {
 
     @Test
     @Order(1)
-    public void simpleTest() throws IOException {
+    public void simpleTest() {
         String[] ret = runFile("0001-simple.bashpile");
         assertNotNull(ret);
         final int expectedLines = 1;
@@ -32,7 +32,7 @@ class BashpileMainTest {
 
     @Test
     @Order(2)
-    public void multilineTest() throws IOException {
+    public void multilineTest() {
         String[] ret = runFile("0002-multiline.bashpile");
         assertNotNull(ret);
         int expected = 2;
@@ -43,8 +43,8 @@ class BashpileMainTest {
 
     @Test
     @Order(3)
-    public void assignTest() throws IOException {
-        String[] ret = runFile("003-assign.bashpile");
+    public void assignTest() {
+        String[] ret = runFile("0003-assign.bashpile");
         assertEquals("4", ret[0]);
     }
 
@@ -54,35 +54,59 @@ class BashpileMainTest {
     @Test
     @Order(4)
     public void badAssign() {
-        assertThrows(BashpileUncheckedException.class, () -> runFile("004-badAssign.bashpile"));
+        assertThrows(BashpileUncheckedException.class, () -> runFile("0004-badAssign.bashpile"));
     }
 
     @Test
     @Order(5)
-    public void parenTest() throws IOException {
-        String[] ret = runFile("005-paren.bashpile");
+    public void parenTest() {
+        String[] ret = runFile("0005-paren.bashpile");
         assertEquals(1, ret.length, "Unexpected number of lines");
         assertEquals("4", ret[0]);
     }
 
     @Test
     @Order(6)
-    public void idTest() {
-        // outputs "var", a bad command, leading to an exception for a bad return value
-        // TODO get just the bash translation and assert
-        // TODO make exception for code 127 -- command not found
-        assertThrows(BashpileUncheckedException.class, () -> runFile("006-id.bashpile"));
+    public void idTest() throws IOException {
+        String[] bashLines = transpileFile("0006-id.bashpile");
+        assertEquals("var", bashLines[bashLines.length - 1]);
     }
 
     @Test
     @Order(7)
-    public void intTest() {
-        assertThrows(BashpileUncheckedException.class, () -> runFile("007-int.bashpile"));
+    public void intTest() throws IOException {
+        String[] bashLines = transpileFile("0007-int.bashpile");
+        assertEquals("42", bashLines[bashLines.length - 1]);
+    }
+
+    @Test
+    @Order(8)
+    public void blockTest() {
+        runFile("0008-block.bashpile");
+    }
+
+    @Test
+    @Order(9)
+    public void lexicalScopingTest() {
+        assertThrows(BashpileUncheckedException.class, () -> runFile("0009-lexicalscoping.bashpile"));
+    }
+
+    @Test
+    @Order(10)
+    public void floatsTest() {
+        runFile("0010-floats.bashpile");
     }
 
     // helpers
 
-    private String[] runFile(String file) throws IOException {
+    private String[] transpileFile(String file) throws IOException {
+        log.debug("Start of {}", file);
+        String filename = "src/test/resources/%s".formatted(file);
+        BashpileMain bashpile = new BashpileMain(filename);
+        return lines.split(bashpile.transpile());
+    }
+
+    private String[] runFile(String file) {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);

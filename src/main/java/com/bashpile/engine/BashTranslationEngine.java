@@ -1,10 +1,14 @@
 package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
+import com.bashpile.BashpileVisitor;
 
 import java.util.stream.Collectors;
 
 public class BashTranslationEngine implements TranslationEngine {
+
+    private boolean inBlock = false;
+
     @Override
     public String strictMode() {
         return """
@@ -15,7 +19,18 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public String assign(String variable, String value) {
-        return "export %s=%s\n".formatted(variable, value);
+        String localText = inBlock ? "local " : "";
+        return "%s%s=%s\n".formatted(localText, variable, value);
+    }
+
+    @Override
+    public String block(BashpileVisitor visitor, BashpileParser.BlockContext ctx) {
+        inBlock = true;
+        String block = "anon () {\n" +
+                ctx.stat().stream().map(visitor::visit).map(s -> "   " + s).collect(Collectors.joining()) +
+                "}; anon\n";
+        inBlock = false;
+        return block;
     }
 
     @Override
