@@ -42,9 +42,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     @Override
     public String visitBlock(BashpileParser.BlockContext ctx) {
-        return "anon () {\n" +
-                ctx.expr().stream().map(this::visit).map(s -> "\t" + s).collect(Collectors.joining()) +
-                "}; anon\n";
+        return translator.block(this, ctx);
     }
 
     // visit expressions

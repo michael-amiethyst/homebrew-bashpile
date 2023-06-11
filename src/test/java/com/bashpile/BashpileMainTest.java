@@ -44,7 +44,7 @@ class BashpileMainTest {
     @Test
     @Order(3)
     public void assignTest() throws IOException {
-        String[] ret = runFile("003-assign.bashpile");
+        String[] ret = runFile("0003-assign.bashpile");
         assertEquals("4", ret[0]);
     }
 
@@ -54,13 +54,13 @@ class BashpileMainTest {
     @Test
     @Order(4)
     public void badAssign() {
-        assertThrows(BashpileUncheckedException.class, () -> runFile("004-badAssign.bashpile"));
+        assertThrows(BashpileUncheckedException.class, () -> runFile("0004-badAssign.bashpile"));
     }
 
     @Test
     @Order(5)
     public void parenTest() throws IOException {
-        String[] ret = runFile("005-paren.bashpile");
+        String[] ret = runFile("0005-paren.bashpile");
         assertEquals(1, ret.length, "Unexpected number of lines");
         assertEquals("4", ret[0]);
     }
@@ -68,14 +68,14 @@ class BashpileMainTest {
     @Test
     @Order(6)
     public void idTest() throws IOException {
-        String[] bashLines = transpileFile("006-id.bashpile");
+        String[] bashLines = transpileFile("0006-id.bashpile");
         assertEquals("var", bashLines[bashLines.length - 1]);
     }
 
     @Test
     @Order(7)
     public void intTest() throws IOException {
-        String[] bashLines = transpileFile("007-int.bashpile");
+        String[] bashLines = transpileFile("0007-int.bashpile");
         assertEquals("42", bashLines[bashLines.length - 1]);
     }
 
@@ -83,6 +83,12 @@ class BashpileMainTest {
     @Order(8)
     public void blockTest() {
         runFile("008-block.bashpile");
+    }
+
+    @Test
+    @Order(9)
+    public void lexicalScopingTest() {
+        assertThrows(BashpileUncheckedException.class, () -> runFile("0009-lexicalscoping.bashpile"));
     }
 
     // helpers

@@ -3,10 +3,10 @@ options { tokenVocab = BashpileLexer; }
 
 prog: stat+;
 
-stat: expr NL                       # printExpr
-    | ID EQ expr NL                 # assign
-    | BLOCK INDENT expr+ NL? DEDENT # block
-    | NL                            # blank
+stat: expr NL                   # printExpr
+    | ID EQ expr NL             # assign
+    | BLOCK INDENT stat+ DEDENT # block
+    | NL                        # blank
     ;
 
 expr: expr (MUL|DIV|ADD|SUB) expr # Calc

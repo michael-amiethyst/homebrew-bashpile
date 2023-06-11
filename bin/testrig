@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt
+export MAVEN_CLASSPATH=$(cat cpath.txt)
+rm cpath.txt
+java -cp target/classes:"$MAVEN_CLASSPATH" org.antlr.v4.gui.TestRig "$@"
