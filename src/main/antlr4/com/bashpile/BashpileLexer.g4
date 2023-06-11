@@ -19,6 +19,7 @@ tokens { INDENT, DEDENT }
   }
 }
 
+FUNCTION: 'function';
 BLOCK: 'block';
 
 ID: [a-zA-Z]+;
@@ -46,6 +47,7 @@ MUL: '*';
 DIV: '/';
 ADD: '+';
 SUB: '-';
+COL: ':';
 
 /// nonzerodigit   ::=  "1"..."9"
 fragment NON_ZERO_DIGIT

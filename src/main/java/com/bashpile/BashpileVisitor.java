@@ -41,8 +41,13 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitBlock(BashpileParser.BlockContext ctx) {
-        return translator.block(this, ctx);
+    public String visitFunctionDecl(BashpileParser.FunctionDeclContext ctx) {
+        return translator.functionDecl(this, ctx);
+    }
+
+    @Override
+    public String visitAnonBlock(BashpileParser.AnonBlockContext ctx) {
+        return translator.anonBlock(this, ctx);
     }
 
     // visit expressions

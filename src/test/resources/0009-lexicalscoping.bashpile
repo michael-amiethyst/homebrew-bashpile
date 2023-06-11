@@ -1,4 +1,4 @@
 (38 + 5) * 3
-block
+block:
     x = 5
 x * x

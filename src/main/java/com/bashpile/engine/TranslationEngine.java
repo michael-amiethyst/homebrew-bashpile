@@ -9,7 +9,9 @@ public interface TranslationEngine {
 
     String assign(String variable, String value);
 
-    String block(BashpileVisitor visitor, BashpileParser.BlockContext ctx);
+    String functionDecl(BashpileVisitor bashpileVisitor, BashpileParser.FunctionDeclContext ctx);
+
+    String anonBlock(BashpileVisitor visitor, BashpileParser.AnonBlockContext ctx);
 
     String calc(BashpileParser.CalcContext ctx);
 }

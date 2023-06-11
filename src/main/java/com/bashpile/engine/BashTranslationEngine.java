@@ -9,6 +9,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private boolean inBlock = false;
 
+    private int anonBlockCounter = 0;
+
     @Override
     public String strictMode() {
         return """
@@ -24,13 +26,24 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public String block(BashpileVisitor visitor, BashpileParser.BlockContext ctx) {
+    public String functionDecl(BashpileVisitor visitor, BashpileParser.FunctionDeclContext ctx) {
         inBlock = true;
-        String block = "anon () {\n" +
-                ctx.stat().stream().map(visitor::visit).map(s -> "   " + s).collect(Collectors.joining()) +
-                "}; anon\n";
+        String block = "%s () {\n%s}\n".formatted(ctx.ID().getText(), visitBlock(ctx.block(), visitor));
         inBlock = false;
         return block;
+    }
+
+    @Override
+    public String anonBlock(BashpileVisitor visitor, BashpileParser.AnonBlockContext ctx) {
+        inBlock = true;
+        String label = "anon" + anonBlockCounter++;
+        String block = "%s () {\n%s}; %s\n".formatted(label, visitBlock(ctx.block(), visitor), label);
+        inBlock = false;
+        return block;
+    }
+
+    private static String visitBlock(BashpileParser.BlockContext ctx, BashpileVisitor visitor) {
+        return ctx.stat().stream().map(visitor::visit).map(s -> "   " + s).collect(Collectors.joining());
     }
 
     @Override
