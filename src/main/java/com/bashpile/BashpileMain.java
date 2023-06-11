@@ -55,7 +55,7 @@ public class BashpileMain implements Callable<Integer> {
         log.debug("In {}", System.getProperty("user.dir"));
         String bashScript = "<stream unparsed>";
         try {
-            bashScript = parse(getInputStream());
+            bashScript = transpile();
             return CommandLineExecutor.run(bashScript).getLeft();
         } catch (Throwable e) {
             throw new BashpileUncheckedException(e, "Couldn't run `%s`.".formatted(bashScript));
@@ -64,8 +64,12 @@ public class BashpileMain implements Callable<Integer> {
 
     @CommandLine.Command(name = "transpile", description = "Converts Bashpile lines to bash")
     public int transpileCommand() throws IOException {
-        System.out.println(parse(getInputStream()));
+        System.out.println(transpile());
         return 0;
+    }
+
+    public String transpile() throws IOException {
+        return parse(getInputStream());
     }
 
     private InputStream getInputStream() throws FileNotFoundException {

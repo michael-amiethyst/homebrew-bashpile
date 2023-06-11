@@ -26,6 +26,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
         return translator.strictMode() + ctx.stat().stream().map(this::visit).collect(Collectors.joining());
     }
 
+    // visit statements
+
     @Override
     public String visitPrintExpr(BashpileParser.PrintExprContext ctx) {
         return visit(ctx.expr());
@@ -37,6 +39,15 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
         String rightSide = ctx.expr().getText();
         return translator.assign(id, rightSide);
     }
+
+    @Override
+    public String visitBlock(BashpileParser.BlockContext ctx) {
+        return "anon () {\n" +
+                ctx.expr().stream().map(this::visit).map(s -> "\t" + s).collect(Collectors.joining()) +
+                "}; anon\n";
+    }
+
+    // visit expressions
 
     @Override
     public String visitCalc(BashpileParser.CalcContext ctx) {

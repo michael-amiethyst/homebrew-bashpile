@@ -4,6 +4,7 @@
 2. Functions + tags
 3. Forward Declarations for Functions 
    1. (impl note: use a TokenStreamRewriter, page 209 of the Antlr4 book)
+4. Floats
 
 # Later
 Automatic script line detection

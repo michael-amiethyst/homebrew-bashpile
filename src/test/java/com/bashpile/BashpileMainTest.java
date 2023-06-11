@@ -67,22 +67,34 @@ class BashpileMainTest {
 
     @Test
     @Order(6)
-    public void idTest() {
-        // outputs "var", a bad command, leading to an exception for a bad return value
-        // TODO get just the bash translation and assert
-        // TODO make exception for code 127 -- command not found
-        assertThrows(BashpileUncheckedException.class, () -> runFile("006-id.bashpile"));
+    public void idTest() throws IOException {
+        String[] bashLines = transpileFile("006-id.bashpile");
+        assertEquals("var", bashLines[bashLines.length - 1]);
     }
 
     @Test
     @Order(7)
-    public void intTest() {
-        assertThrows(BashpileUncheckedException.class, () -> runFile("007-int.bashpile"));
+    public void intTest() throws IOException {
+        String[] bashLines = transpileFile("007-int.bashpile");
+        assertEquals("42", bashLines[bashLines.length - 1]);
+    }
+
+    @Test
+    @Order(8)
+    public void blockTest() {
+        runFile("008-block.bashpile");
     }
 
     // helpers
 
-    private String[] runFile(String file) throws IOException {
+    private String[] transpileFile(String file) throws IOException {
+        log.debug("Start of {}", file);
+        String filename = "src/test/resources/%s".formatted(file);
+        BashpileMain bashpile = new BashpileMain(filename);
+        return lines.split(bashpile.transpile());
+    }
+
+    private String[] runFile(String file) {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);
