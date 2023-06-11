@@ -10,7 +10,7 @@ stat: expr NL                   # printExpr
     ;
 
 expr: expr (MUL|DIV|ADD|SUB) expr # Calc
-    | INT                         # int
+    | NUMBER                      # number
     | ID                          # id
     | OPAREN expr CPAREN          # parens
     ;

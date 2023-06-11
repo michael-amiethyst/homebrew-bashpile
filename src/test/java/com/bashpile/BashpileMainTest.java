@@ -21,7 +21,7 @@ class BashpileMainTest {
 
     @Test
     @Order(1)
-    public void simpleTest() throws IOException {
+    public void simpleTest() {
         String[] ret = runFile("0001-simple.bashpile");
         assertNotNull(ret);
         final int expectedLines = 1;
@@ -32,7 +32,7 @@ class BashpileMainTest {
 
     @Test
     @Order(2)
-    public void multilineTest() throws IOException {
+    public void multilineTest() {
         String[] ret = runFile("0002-multiline.bashpile");
         assertNotNull(ret);
         int expected = 2;
@@ -43,7 +43,7 @@ class BashpileMainTest {
 
     @Test
     @Order(3)
-    public void assignTest() throws IOException {
+    public void assignTest() {
         String[] ret = runFile("0003-assign.bashpile");
         assertEquals("4", ret[0]);
     }
@@ -59,7 +59,7 @@ class BashpileMainTest {
 
     @Test
     @Order(5)
-    public void parenTest() throws IOException {
+    public void parenTest() {
         String[] ret = runFile("0005-paren.bashpile");
         assertEquals(1, ret.length, "Unexpected number of lines");
         assertEquals("4", ret[0]);
@@ -82,13 +82,19 @@ class BashpileMainTest {
     @Test
     @Order(8)
     public void blockTest() {
-        runFile("008-block.bashpile");
+        runFile("0008-block.bashpile");
     }
 
     @Test
     @Order(9)
     public void lexicalScopingTest() {
         assertThrows(BashpileUncheckedException.class, () -> runFile("0009-lexicalscoping.bashpile"));
+    }
+
+    @Test
+    @Order(10)
+    public void floatsTest() {
+        runFile("0010-floats.bashpile");
     }
 
     // helpers

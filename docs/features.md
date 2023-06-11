@@ -15,3 +15,13 @@ See [Bash Strict Mode](http://redsymbol.net/articles/unofficial-bash-strict-mode
 
 ## Multiple Shell Support
 Bashpile is written to be extensible with different target script languages, not just Bash 5.
+
+## Anonymous Blocks and automatic Lexcical Scoping
+
+With a simple
+```
+block
+    pythonLikeBlocks = 1.0
+```
+you can declare an anonymous block and all declarations within will be lexically scoped
+(undefined outside of the block).

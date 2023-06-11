@@ -64,7 +64,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitInt(BashpileParser.IntContext ctx) {
-        return ctx.INT().getText();
+    public String visitNumber(BashpileParser.NumberContext ctx) {
+        return ctx.NUMBER().getText();
     }
 }
