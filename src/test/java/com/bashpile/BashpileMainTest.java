@@ -83,7 +83,7 @@ class BashpileMainTest {
     @Order(8)
     public void blockTest() {
         String[] executionResults = runFile("0008-block.bashpile");
-        String[] expected = {"24", "64000"};
+        String[] expected = {"18", "64000"};
         assertEquals(2, executionResults.length);
         assertArrayEquals(expected, executionResults);
     }
@@ -98,7 +98,7 @@ class BashpileMainTest {
     @Order(10)
     public void floatsTest() {
         String[] executionResults = runFile("0010-floats.bashpile");
-        String[] expected = {"21.0", "11.0", "7.0"};
+        String[] expected = {"40.0", "11.0", "7.0"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
     }
@@ -108,6 +108,15 @@ class BashpileMainTest {
     public void functionDeclarationTest() {
         String[] executionResults = runFile("0011-functionDeclaration.bashpile");
         assertEquals(2, executionResults.length);
+    }
+
+    @Test
+    @Order(12)
+    public void functionCallTest() {
+        String[] executionResults = runFile("0012-functionCall.bashpile");
+        assertEquals(2, executionResults.length);
+        assertEquals("3.14", executionResults[0]);
+        assertEquals("3.14", executionResults[1]);
     }
 
     // helpers

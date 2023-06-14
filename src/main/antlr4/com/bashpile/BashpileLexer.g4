@@ -46,7 +46,7 @@ EQ: '=';
 MUL: '*';
 DIV: '/';
 ADD: '+';
-SUB: '-';
+MINUS: '-';
 COL: ':';
 
 /// nonzerodigit   ::=  "1"..."9"

@@ -7,7 +7,11 @@ import java.util.stream.Collectors;
 
 public class BashTranslationEngine implements TranslationEngine {
 
+    // TODO change to int
     private boolean inBlock = false;
+
+    // TODO make auto closable incrementer
+    private int inCalc = 0;
 
     private int anonBlockCounter = 0;
 
@@ -47,11 +51,13 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public String calc(BashpileParser.CalcContext ctx) {
+    public String calc(BashpileVisitor visitor, BashpileParser.CalcContext ctx) {
         // prepend $ to variable name, e.g. "var" becomes "$var"
+        inCalc++;
         String text = ctx.children.stream().map(
-                        x -> x instanceof BashpileParser.IdContext ? "$" + x.getText() : x.getText())
+                        x -> x instanceof BashpileParser.IdContext ? "$" + x.getText() : visitor.visit(x))
                 .collect(Collectors.joining());
-        return "bc <<< \"%s\"\n".formatted(text);
+        inCalc--;
+        return inCalc == 0 ? "bc <<< \"%s\"\n".formatted(text) : text;
     }
 }

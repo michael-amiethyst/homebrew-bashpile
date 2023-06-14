@@ -13,5 +13,5 @@ public interface TranslationEngine {
 
     String anonBlock(BashpileVisitor visitor, BashpileParser.AnonBlockContext ctx);
 
-    String calc(BashpileParser.CalcContext ctx);
+    String calc(BashpileVisitor visitor, BashpileParser.CalcContext ctx);
 }

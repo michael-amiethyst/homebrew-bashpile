@@ -1,0 +1,4 @@
+function circleArea(r):
+    3.14 * r * r
+circleArea(1)
+circleArea(-1)

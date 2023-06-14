@@ -9,6 +9,7 @@
 5. comments
 
 # Later
+exponents
 Automatic script line detection
 Script blocks
 Scriptinos and caching

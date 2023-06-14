@@ -10,11 +10,15 @@ stat: expr NL                           # printExpr
     | NL                                # blank
     ;
 
-paramaters: OPAREN ID* CPAREN;
+paramaters: OPAREN expr* CPAREN;
 block: INDENT stat+ DEDENT;
 
-expr: expr (MUL|DIV|ADD|SUB) expr # Calc
-    | NUMBER                      # number
-    | ID                          # id
-    | OPAREN expr CPAREN          # parens
+expr: ID paramaters                 # functionCall
+    | expr (MUL|DIV|ADD|MINUS) expr # Calc
+    | MINUS? NUMBER                 # number
+    | idRule                        # id
+    | OPAREN expr CPAREN            # parens
     ;
+
+// TODO simplify
+idRule: ID;

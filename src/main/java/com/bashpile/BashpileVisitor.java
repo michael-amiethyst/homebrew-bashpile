@@ -1,6 +1,8 @@
 package com.bashpile;
 
 import com.bashpile.engine.TranslationEngine;
+import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,7 +57,15 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     @Override
     public String visitCalc(BashpileParser.CalcContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
-        return translator.calc(ctx);
+        return translator.calc(this, ctx);
+    }
+
+    @Override
+    public String visitFunctionCall(BashpileParser.FunctionCallContext ctx) {
+        // TODO move to translation engine
+        // TODO refactor visits out of translation engine
+        return ctx.ID().getText() + " " + ctx.paramaters().expr().stream()
+                .map(RuleContext::getText).collect(Collectors.joining(" ")) + "\n";
     }
 
     @Override
@@ -65,11 +75,16 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     @Override
     public String visitId(BashpileParser.IdContext ctx) {
-        return ctx.ID().getText();
+        return ctx.idRule().ID().getText();
     }
 
     @Override
     public String visitNumber(BashpileParser.NumberContext ctx) {
-        return ctx.NUMBER().getText();
+        return ctx.getText();
+    }
+
+    @Override
+    public String visitTerminal(TerminalNode node) {
+        return node.getText();
     }
 }
