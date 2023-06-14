@@ -16,9 +16,6 @@ block: INDENT stat+ DEDENT;
 expr: ID paramaters                 # functionCall
     | expr (MUL|DIV|ADD|MINUS) expr # Calc
     | MINUS? NUMBER                 # number
-    | idRule                        # id
+    | ID                            # id
     | OPAREN expr CPAREN            # parens
     ;
-
-// TODO simplify
-idRule: ID;

@@ -10,9 +10,6 @@ public class BashTranslationEngine implements TranslationEngine {
     // TODO change to int
     private boolean inBlock = false;
 
-    // TODO make auto closable incrementer
-    private int inCalc = 0;
-
     private int anonBlockCounter = 0;
 
     @Override
@@ -53,11 +50,14 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public String calc(BashpileVisitor visitor, BashpileParser.CalcContext ctx) {
         // prepend $ to variable name, e.g. "var" becomes "$var"
-        inCalc++;
-        String text = ctx.children.stream().map(
-                        x -> x instanceof BashpileParser.IdContext ? "$" + x.getText() : visitor.visit(x))
-                .collect(Collectors.joining());
-        inCalc--;
-        return inCalc == 0 ? "bc <<< \"%s\"\n".formatted(text) : text;
+        final String name = "calc";
+        String text;
+        try (LevelCounter counter = new LevelCounter(name)) {
+            counter.noop();
+            text = ctx.children.stream().map(
+                            x -> x instanceof BashpileParser.IdContext ? "$" + x.getText() : visitor.visit(x))
+                    .collect(Collectors.joining());
+        }
+        return LevelCounter.in("calc") ? text : "bc <<< \"%s\"\n".formatted(text);
     }
 }

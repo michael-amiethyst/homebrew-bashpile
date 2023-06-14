@@ -75,7 +75,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     @Override
     public String visitId(BashpileParser.IdContext ctx) {
-        return ctx.idRule().ID().getText();
+        return ctx.ID().getText();
     }
 
     @Override
