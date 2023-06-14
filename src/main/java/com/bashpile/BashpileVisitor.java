@@ -19,6 +19,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     public BashpileVisitor(TranslationEngine translator) {
         this.translator = translator;
+        translator.setVisitor(this);
     }
 
     // visitors
@@ -44,12 +45,12 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     @Override
     public String visitFunctionDecl(BashpileParser.FunctionDeclContext ctx) {
-        return translator.functionDecl(this, ctx);
+        return translator.functionDecl(ctx);
     }
 
     @Override
     public String visitAnonBlock(BashpileParser.AnonBlockContext ctx) {
-        return translator.anonBlock(this, ctx);
+        return translator.anonBlock(ctx);
     }
 
     // visit expressions
@@ -57,15 +58,12 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     @Override
     public String visitCalc(BashpileParser.CalcContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
-        return translator.calc(this, ctx);
+        return translator.calc(ctx);
     }
 
     @Override
     public String visitFunctionCall(BashpileParser.FunctionCallContext ctx) {
-        // TODO move to translation engine
-        // TODO refactor visits out of translation engine
-        return ctx.ID().getText() + " " + ctx.paramaters().expr().stream()
-                .map(RuleContext::getText).collect(Collectors.joining(" ")) + "\n";
+        return translator.functionCall(ctx);
     }
 
     @Override

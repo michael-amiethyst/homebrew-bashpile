@@ -5,13 +5,17 @@ import com.bashpile.BashpileVisitor;
 
 public interface TranslationEngine {
 
+    void setVisitor(BashpileVisitor visitor);
+
     String strictMode();
 
     String assign(String variable, String value);
 
-    String functionDecl(BashpileVisitor bashpileVisitor, BashpileParser.FunctionDeclContext ctx);
+    String functionDecl(BashpileParser.FunctionDeclContext ctx);
 
-    String anonBlock(BashpileVisitor visitor, BashpileParser.AnonBlockContext ctx);
+    String anonBlock(BashpileParser.AnonBlockContext ctx);
 
-    String calc(BashpileVisitor visitor, BashpileParser.CalcContext ctx);
+    String calc(BashpileParser.CalcContext ctx);
+
+    String functionCall(BashpileParser.FunctionCallContext ctx);
 }
