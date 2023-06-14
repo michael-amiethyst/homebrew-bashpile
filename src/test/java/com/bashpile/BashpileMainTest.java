@@ -96,7 +96,6 @@ class BashpileMainTest {
     @Test
     @Order(9)
     public void lexicalScopingTest() throws IOException {
-        // TODO more checks
         String filename = "0009-lexicalscoping.bashpile";
         String[] bashLines = transpileFile(filename);
         assertEquals(10, bashLines.length);

@@ -37,6 +37,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public String functionDecl(BashpileParser.FunctionDeclContext ctx) {
         String block;
         try (LevelCounter counter = new LevelCounter("block")) {
+            counter.noop();
             String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
             block = "%s () {\n%s%s}\n".formatted(ctx.ID().getText(), visitBlock(ctx.block()), endIndent);
         }
@@ -47,6 +48,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public String anonBlock(BashpileParser.AnonBlockContext ctx) {
         String block;
         try (LevelCounter counter = new LevelCounter("block")) {
+            counter.noop();
             String label = "anon" + anonBlockCounter++;
             String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
             block = "%s () {\n%s%s}; %s\n".formatted(label, visitBlock(ctx.block()), endIndent, label);

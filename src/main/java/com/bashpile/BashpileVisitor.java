@@ -1,7 +1,6 @@
 package com.bashpile;
 
 import com.bashpile.engine.TranslationEngine;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

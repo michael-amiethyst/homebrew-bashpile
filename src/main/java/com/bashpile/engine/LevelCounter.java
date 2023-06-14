@@ -1,7 +1,6 @@
 package com.bashpile.engine;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.HashMap;
 
 public class LevelCounter implements Closeable {
