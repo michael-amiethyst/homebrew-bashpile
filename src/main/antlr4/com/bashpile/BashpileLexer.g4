@@ -21,6 +21,7 @@ tokens { INDENT, DEDENT }
 
 FUNCTION: 'function';
 BLOCK: 'block';
+RETURN: 'return';
 
 ID: [a-zA-Z]+;
 NUMBER

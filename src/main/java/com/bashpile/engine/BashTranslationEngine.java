@@ -63,6 +63,11 @@ public class BashTranslationEngine implements TranslationEngine {
         return block;
     }
 
+    @Override
+    public String returnStmt(BashpileParser.ReturnStmtContext ctx) {
+        return "printf -v int '%%d\\n' $(%s); return $int\n".formatted(visitor.visit(ctx.expr()));
+    }
+
     private String visitBlock(BashpileParser.BlockContext ctx) {
         String indent = TAB.repeat(LevelCounter.getIndent());
         return ctx.stat().stream().map(visitor::visit).map(s -> indent + s).collect(Collectors.joining());
@@ -79,12 +84,12 @@ public class BashTranslationEngine implements TranslationEngine {
                             x -> x instanceof BashpileParser.IdContext ? "$" + x.getText() : visitor.visit(x))
                     .collect(Collectors.joining());
         }
-        return LevelCounter.in("calc") ? text : "bc <<< \"%s\"\n".formatted(text);
+        return LevelCounter.in("calc") ? text : "bc <<< \"%s\"".formatted(text);
     }
 
     @Override
     public String functionCall(BashpileParser.FunctionCallContext ctx) {
         return ctx.ID().getText() + " " + ctx.arglist().expr().stream()
-                .map(RuleContext::getText).collect(Collectors.joining(" ")) + "\n";
+                .map(RuleContext::getText).collect(Collectors.joining(" "));
     }
 }

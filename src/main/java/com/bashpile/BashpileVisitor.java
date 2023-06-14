@@ -32,7 +32,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     @Override
     public String visitPrintExpr(BashpileParser.PrintExprContext ctx) {
-        return visit(ctx.expr());
+        return visit(ctx.expr()) + "\n";
     }
 
     @Override
@@ -50,6 +50,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     @Override
     public String visitAnonBlock(BashpileParser.AnonBlockContext ctx) {
         return translator.anonBlock(ctx);
+    }
+
+    @Override
+    public String visitReturnStmt(BashpileParser.ReturnStmtContext ctx) {
+        return translator.returnStmt(ctx);
     }
 
     // visit expressions

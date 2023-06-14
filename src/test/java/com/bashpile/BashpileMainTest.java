@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
@@ -23,7 +24,7 @@ class BashpileMainTest {
     @Test
     @Order(10)
     public void simpleTest() {
-        String[] ret = runFile("0010-simple.bashpile");
+        String[] ret = runFile("0010-simple.bashpile").getLeft();
         assertNotNull(ret);
         final int expectedLines = 1;
         assertEquals(expectedLines, ret.length, "Unexpected output length, expected %d lines but found: %s"
@@ -34,7 +35,7 @@ class BashpileMainTest {
     @Test
     @Order(20)
     public void multilineTest() {
-        String[] ret = runFile("0020-multiline.bashpile");
+        String[] ret = runFile("0020-multiline.bashpile").getLeft();
         assertNotNull(ret);
         int expected = 2;
         assertEquals(expected, ret.length, "Expected %d lines but got %d".formatted(expected, ret.length));
@@ -45,7 +46,7 @@ class BashpileMainTest {
     @Test
     @Order(30)
     public void assignTest() {
-        String[] ret = runFile("0030-assign.bashpile");
+        String[] ret = runFile("0030-assign.bashpile").getLeft();
         assertEquals("4", ret[0]);
     }
 
@@ -55,13 +56,16 @@ class BashpileMainTest {
     @Test
     @Order(40)
     public void badAssign() {
-        assertThrows(BashpileUncheckedException.class, () -> runFile("0040-badAssign.bashpile"));
+        Pair<String[], Integer> runResults = runFile("0040-badAssign.bashpile");
+        assertEquals(1, runResults.getRight());
+        String errorLine = runResults.getLeft()[0];
+        assertTrue(errorLine.endsWith("unbound variable"), "Unexpected error line: " + errorLine);
     }
 
     @Test
     @Order(50)
     public void parenTest() {
-        String[] ret = runFile("0050-paren.bashpile");
+        String[] ret = runFile("0050-paren.bashpile").getLeft();
         assertEquals(1, ret.length, "Unexpected number of lines");
         assertEquals("4", ret[0]);
     }
@@ -87,7 +91,7 @@ class BashpileMainTest {
         String[] bashLines = transpileFile(filename);
         assertTrue(bashLines[6].contains("64+64"), "Wrong line");
         assertTrue(bashLines[6].startsWith("        "), "Wrong indention");
-        String[] executionResults = runFile(filename);
+        String[] executionResults = runFile(filename).getLeft();
         String[] expected = {"18", "64000", "128"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
@@ -101,13 +105,16 @@ class BashpileMainTest {
         assertEquals(10, bashLines.length);
         assertTrue(bashLines[4].startsWith(TAB + "local"), "No local decl, line 5");
         assertTrue(bashLines[6].startsWith(TAB + TAB + "local"), "No local decl, line 6");
-        assertThrows(BashpileUncheckedException.class, () -> runFile(filename));
+        var ret = runFile(filename);
+        assertEquals(1, ret.getRight());
+        String line = ret.getLeft()[ret.getLeft().length - 1];
+        assertTrue(line.endsWith("unbound variable"), "Unexpected error line: " + line);
     }
 
     @Test
     @Order(100)
     public void floatsTest() {
-        String[] executionResults = runFile("0100-floats.bashpile");
+        String[] executionResults = runFile("0100-floats.bashpile").getLeft();
         String[] expected = {"40.0", "11.0", "7.0"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
@@ -116,17 +123,24 @@ class BashpileMainTest {
     @Test
     @Order(110)
     public void functionDeclarationTest() {
-        String[] executionResults = runFile("0110-functionDeclaration.bashpile");
+        String[] executionResults = runFile("0110-functionDeclaration.bashpile").getLeft();
         assertEquals(2, executionResults.length);
     }
 
     @Test
     @Order(120)
     public void functionCallTest() {
-        String[] executionResults = runFile("0120-functionCall.bashpile");
+        String[] executionResults = runFile("0120-functionCall.bashpile").getLeft();
         assertEquals(2, executionResults.length);
         assertEquals("3.14", executionResults[0]);
         assertEquals("3.14", executionResults[1]);
+    }
+
+    @Test
+    @Order(121)
+    public void functionCallMultipleParamsTest() {
+        Pair<String[], Integer> executionResults = runFile("0121-functionCall-multipleParams.bashpile");
+        assertEquals(12, executionResults.getRight());
     }
 
     // helpers
@@ -138,10 +152,11 @@ class BashpileMainTest {
         return lines.split(bashpile.transpile());
     }
 
-    private String[] runFile(String file) {
+    private Pair<String[], Integer> runFile(String file) {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);
-        return lines.split(bashpile.execute());
+        Pair<String, Integer> runResults = bashpile.execute();
+        return Pair.of(lines.split(runResults.getLeft()), runResults.getRight());
     }
 }

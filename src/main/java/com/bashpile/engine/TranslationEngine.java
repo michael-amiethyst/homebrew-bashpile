@@ -15,6 +15,8 @@ public interface TranslationEngine {
 
     String anonBlock(BashpileParser.AnonBlockContext ctx);
 
+    String returnStmt(BashpileParser.ReturnStmtContext ctx);
+
     String calc(BashpileParser.CalcContext ctx);
 
     String functionCall(BashpileParser.FunctionCallContext ctx);
