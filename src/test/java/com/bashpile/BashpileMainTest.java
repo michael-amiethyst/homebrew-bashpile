@@ -143,6 +143,14 @@ class BashpileMainTest {
         assertEquals(12, executionResults.getRight());
     }
 
+    // TODO uncomment
+//    @Test
+//    @Order(122)
+//    public void functionCallReturnStringTest() {
+//        Pair<String[], Integer> executionResults = runFile("0122-functionCall-returnString.bashpile");
+//        assertEquals(12, executionResults.getRight());
+//    }
+
     // helpers
 
     private String[] transpileFile(String file) throws IOException {

@@ -35,7 +35,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public String functionDecl(BashpileParser.FunctionDeclContext ctx) {
+    public String functionDecl(BashpileParser.FunctionDeclStmtContext ctx) {
         String block;
         try (LevelCounter counter = new LevelCounter("block")) {
             counter.noop();
@@ -52,7 +52,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public String anonBlock(BashpileParser.AnonBlockContext ctx) {
+    public String anonBlock(BashpileParser.AnonBlockStmtContext ctx) {
         String block;
         try (LevelCounter counter = new LevelCounter("block")) {
             counter.noop();
@@ -70,25 +70,25 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private String visitBlock(BashpileParser.BlockContext ctx) {
         String indent = TAB.repeat(LevelCounter.getIndent());
-        return ctx.stat().stream().map(visitor::visit).map(s -> indent + s).collect(Collectors.joining());
+        return ctx.stmt().stream().map(visitor::visit).map(s -> indent + s).collect(Collectors.joining());
     }
 
     @Override
-    public String calc(BashpileParser.CalcContext ctx) {
+    public String calc(BashpileParser.CalcExprContext ctx) {
         // prepend $ to variable name, e.g. "var" becomes "$var"
         final String name = "calc";
         String text;
         try (LevelCounter counter = new LevelCounter(name)) {
             counter.noop();
             text = ctx.children.stream().map(
-                            x -> x instanceof BashpileParser.IdContext ? "$" + x.getText() : visitor.visit(x))
+                            x -> x instanceof BashpileParser.IdExprContext ? "$" + x.getText() : visitor.visit(x))
                     .collect(Collectors.joining());
         }
         return LevelCounter.in("calc") ? text : "bc <<< \"%s\"".formatted(text);
     }
 
     @Override
-    public String functionCall(BashpileParser.FunctionCallContext ctx) {
+    public String functionCall(BashpileParser.FunctionCallExprContext ctx) {
         return ctx.ID().getText() + " " + ctx.arglist().expr().stream()
                 .map(RuleContext::getText).collect(Collectors.joining(" "));
     }

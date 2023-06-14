@@ -25,30 +25,30 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     @Override
     public String visitProg(BashpileParser.ProgContext ctx) {
-        return translator.strictMode() + ctx.stat().stream().map(this::visit).collect(Collectors.joining());
+        return translator.strictMode() + ctx.stmt().stream().map(this::visit).collect(Collectors.joining());
     }
 
     // visit statements
 
     @Override
-    public String visitPrintExpr(BashpileParser.PrintExprContext ctx) {
+    public String visitExprStmt(BashpileParser.ExprStmtContext ctx) {
         return visit(ctx.expr()) + "\n";
     }
 
     @Override
-    public String visitAssign(BashpileParser.AssignContext ctx) {
+    public String visitAssignStmt(BashpileParser.AssignStmtContext ctx) {
         String id = ctx.ID().getText();
         String rightSide = ctx.expr().getText();
         return translator.assign(id, rightSide);
     }
 
     @Override
-    public String visitFunctionDecl(BashpileParser.FunctionDeclContext ctx) {
+    public String visitFunctionDeclStmt(BashpileParser.FunctionDeclStmtContext ctx) {
         return translator.functionDecl(ctx);
     }
 
     @Override
-    public String visitAnonBlock(BashpileParser.AnonBlockContext ctx) {
+    public String visitAnonBlockStmt(BashpileParser.AnonBlockStmtContext ctx) {
         return translator.anonBlock(ctx);
     }
 
@@ -60,28 +60,28 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     // visit expressions
 
     @Override
-    public String visitCalc(BashpileParser.CalcContext ctx) {
+    public String visitCalcExpr(BashpileParser.CalcExprContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
         return translator.calc(ctx);
     }
 
     @Override
-    public String visitFunctionCall(BashpileParser.FunctionCallContext ctx) {
+    public String visitFunctionCallExpr(BashpileParser.FunctionCallExprContext ctx) {
         return translator.functionCall(ctx);
     }
 
     @Override
-    public String visitParens(BashpileParser.ParensContext ctx) {
+    public String visitParensExpr(BashpileParser.ParensExprContext ctx) {
         return visit(ctx.expr());
     }
 
     @Override
-    public String visitId(BashpileParser.IdContext ctx) {
+    public String visitIdExpr(BashpileParser.IdExprContext ctx) {
         return ctx.ID().getText();
     }
 
     @Override
-    public String visitNumber(BashpileParser.NumberContext ctx) {
+    public String visitNumberExpr(BashpileParser.NumberExprContext ctx) {
         return ctx.getText();
     }
 

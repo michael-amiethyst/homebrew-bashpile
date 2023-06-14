@@ -1,25 +1,23 @@
 parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
-prog: stat+;
+prog: stmt+;
 
-// TODO rename to stmt, have all labels end with _stmt
-stat: expr NL                           # printExpr
-    | ID EQ expr NL                     # assign
-    | FUNCTION ID paramaters COL block  # functionDecl
-    | BLOCK COL block                   # anonBlock
+stmt: expr NL                           # exprStmt
+    | ID EQ expr NL                     # assignStmt
+    | FUNCTION ID paramaters COL block  # functionDeclStmt
+    | BLOCK COL block                   # anonBlockStmt
     | RETURN expr NL                    # returnStmt
-    | NL                                # blank
+    | NL                                # blankStmt
     ;
 
 paramaters: OPAREN (ID (COMMA ID)*)? CPAREN;
 arglist: expr (COMMA expr)*;
-block: INDENT stat+ DEDENT;
+block: INDENT stmt+ DEDENT;
 
-// TODO have all expresson labels end with _expr
-expr: ID OPAREN arglist CPAREN      # functionCall
-    | expr (MUL|DIV|ADD|MINUS) expr # Calc
-    | MINUS? NUMBER                 # number
-    | ID                            # id
-    | OPAREN expr CPAREN            # parens
+expr: ID OPAREN arglist CPAREN      # functionCallExpr
+    | expr (MUL|DIV|ADD|MINUS) expr # calcExpr
+    | MINUS? NUMBER                 # numberExpr
+    | ID                            # idExpr
+    | OPAREN expr CPAREN            # parensExpr
     ;
