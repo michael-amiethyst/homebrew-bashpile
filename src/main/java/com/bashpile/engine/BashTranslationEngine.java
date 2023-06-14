@@ -4,6 +4,7 @@ import com.bashpile.BashpileParser;
 import com.bashpile.BashpileVisitor;
 import org.antlr.v4.runtime.RuleContext;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class BashTranslationEngine implements TranslationEngine {
@@ -39,7 +40,13 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter counter = new LevelCounter("block")) {
             counter.noop();
             String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
-            block = "%s () {\n%s%s}\n".formatted(ctx.ID().getText(), visitBlock(ctx.block()), endIndent);
+            AtomicInteger i = new AtomicInteger(1);
+            String namedParams = TAB.repeat(LevelCounter.getIndent()) + ctx.paramaters().ID().stream()
+                    .map(visitor::visit)
+                    .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
+                    .collect(Collectors.joining(" "));
+            block = "%s () {\n%s\n%s%s}\n".formatted(
+                    ctx.ID().getText(), namedParams, visitBlock(ctx.block()), endIndent);
         }
         return block;
     }
@@ -77,7 +84,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public String functionCall(BashpileParser.FunctionCallContext ctx) {
-        return ctx.ID().getText() + " " + ctx.paramaters().expr().stream()
+        return ctx.ID().getText() + " " + ctx.arglist().expr().stream()
                 .map(RuleContext::getText).collect(Collectors.joining(" ")) + "\n";
     }
 }

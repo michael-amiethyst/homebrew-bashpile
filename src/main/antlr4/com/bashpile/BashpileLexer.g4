@@ -48,6 +48,7 @@ DIV: '/';
 ADD: '+';
 MINUS: '-';
 COL: ':';
+COMMA: ',';
 
 /// nonzerodigit   ::=  "1"..."9"
 fragment NON_ZERO_DIGIT

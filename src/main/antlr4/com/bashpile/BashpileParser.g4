@@ -10,10 +10,11 @@ stat: expr NL                           # printExpr
     | NL                                # blank
     ;
 
-paramaters: OPAREN expr* CPAREN;
+paramaters: OPAREN (ID (COMMA ID)*)? CPAREN;
+arglist: expr (COMMA expr)*;
 block: INDENT stat+ DEDENT;
 
-expr: ID paramaters                 # functionCall
+expr: ID OPAREN arglist CPAREN      # functionCall
     | expr (MUL|DIV|ADD|MINUS) expr # Calc
     | MINUS? NUMBER                 # number
     | ID                            # id
