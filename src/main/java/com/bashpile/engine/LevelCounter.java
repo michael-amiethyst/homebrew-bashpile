@@ -23,6 +23,14 @@ public class LevelCounter implements Closeable {
 
     public void noop() {}
 
+    public static int getIndent() {
+        return counters.getOrDefault("block", 0);
+    }
+
+    public static int getIndentMinusOne() {
+        return Math.max(getIndent() - 1, 0);
+    }
+
     public static boolean in(String name) {
         return counters.containsKey(name);
     }

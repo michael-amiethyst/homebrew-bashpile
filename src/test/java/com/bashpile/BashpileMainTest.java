@@ -10,6 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
+import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -81,17 +82,27 @@ class BashpileMainTest {
 
     @Test
     @Order(8)
-    public void blockTest() {
-        String[] executionResults = runFile("0008-block.bashpile");
-        String[] expected = {"18", "64000"};
-        assertEquals(2, executionResults.length);
+    public void blockTest() throws IOException {
+        String filename = "0008-block.bashpile";
+        String[] bashLines = transpileFile(filename);
+        assertTrue(bashLines[6].contains("64+64"), "Wrong line");
+        assertTrue(bashLines[6].startsWith("        "), "Wrong indention");
+        String[] executionResults = runFile(filename);
+        String[] expected = {"18", "64000", "128"};
+        assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
     }
 
     @Test
     @Order(9)
-    public void lexicalScopingTest() {
-        assertThrows(BashpileUncheckedException.class, () -> runFile("0009-lexicalscoping.bashpile"));
+    public void lexicalScopingTest() throws IOException {
+        // TODO more checks
+        String filename = "0009-lexicalscoping.bashpile";
+        String[] bashLines = transpileFile(filename);
+        assertEquals(10, bashLines.length);
+        assertTrue(bashLines[4].startsWith(TAB + "local"), "No local decl, line 5");
+        assertTrue(bashLines[6].startsWith(TAB + TAB + "local"), "No local decl, line 6");
+        assertThrows(BashpileUncheckedException.class, () -> runFile(filename));
     }
 
     @Test

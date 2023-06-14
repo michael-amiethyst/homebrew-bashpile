@@ -8,10 +8,9 @@ import java.util.stream.Collectors;
 
 public class BashTranslationEngine implements TranslationEngine {
 
-    private BashpileVisitor visitor;
+    public static final String TAB = "    ";
 
-    // TODO use LevelCounter instead
-    private boolean inBlock = false;
+    private BashpileVisitor visitor;
 
     private int anonBlockCounter = 0;
 
@@ -30,29 +29,34 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public String assign(String variable, String value) {
-        String localText = inBlock ? "local " : "";
+        String localText = LevelCounter.getIndent() != 0 ? "local " : "";
         return "%s%s=%s\n".formatted(localText, variable, value);
     }
 
     @Override
     public String functionDecl(BashpileParser.FunctionDeclContext ctx) {
-        inBlock = true;
-        String block = "%s () {\n%s}\n".formatted(ctx.ID().getText(), visitBlock(ctx.block(), visitor));
-        inBlock = false;
+        String block;
+        try (LevelCounter counter = new LevelCounter("block")) {
+            String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
+            block = "%s () {\n%s%s}\n".formatted(ctx.ID().getText(), visitBlock(ctx.block()), endIndent);
+        }
         return block;
     }
 
     @Override
     public String anonBlock(BashpileParser.AnonBlockContext ctx) {
-        inBlock = true;
-        String label = "anon" + anonBlockCounter++;
-        String block = "%s () {\n%s}; %s\n".formatted(label, visitBlock(ctx.block(), visitor), label);
-        inBlock = false;
+        String block;
+        try (LevelCounter counter = new LevelCounter("block")) {
+            String label = "anon" + anonBlockCounter++;
+            String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
+            block = "%s () {\n%s%s}; %s\n".formatted(label, visitBlock(ctx.block()), endIndent, label);
+        }
         return block;
     }
 
-    private static String visitBlock(BashpileParser.BlockContext ctx, BashpileVisitor visitor) {
-        return ctx.stat().stream().map(visitor::visit).map(s -> "   " + s).collect(Collectors.joining());
+    private String visitBlock(BashpileParser.BlockContext ctx) {
+        String indent = TAB.repeat(LevelCounter.getIndent());
+        return ctx.stat().stream().map(visitor::visit).map(s -> indent + s).collect(Collectors.joining());
     }
 
     @Override
