@@ -12,6 +12,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Translates to Bash5 with four spaces as a tab.
+ */
 public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";

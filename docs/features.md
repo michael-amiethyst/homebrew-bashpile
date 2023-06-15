@@ -20,8 +20,15 @@ Bashpile is written to be extensible with different target script languages, not
 
 With a simple
 ```
-block
+block:
     pythonLikeBlocks = 1.0
 ```
 you can declare an anonymous block and all declarations within will be lexically scoped
 (undefined outside of the block).
+
+## Simplified Functions
+
+In bashpile you can return strings from functions and don't need to worry about
+the shell silently suppressing silly sub-shell slip-ups, circumventing superior string subroutines simply.
+
+Without the alliteration we handle the portability of the syntax, subshell complexities and exit code quirks of Bash.

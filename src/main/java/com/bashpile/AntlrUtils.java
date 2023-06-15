@@ -32,7 +32,7 @@ public class AntlrUtils {
 
     /** Returns bash text block */
     private static String transpile(ParseTree tree) {
-        // visitor
+        // visitor and engine linked in visitor constructor
         BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
         return bashpileLogic.visit(tree);
     }
