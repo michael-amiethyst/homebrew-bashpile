@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileVisitor;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 public interface TranslationEngine {
 
@@ -19,7 +20,7 @@ public interface TranslationEngine {
 
     String returnRule(BashpileParser.ReturnRuleContext ctx);
 
-    String calc(BashpileParser.CalcExprContext ctx);
+    String calc(ParserRuleContext ctx);
 
     String functionCall(BashpileParser.FunctionCallExprContext ctx);
 }

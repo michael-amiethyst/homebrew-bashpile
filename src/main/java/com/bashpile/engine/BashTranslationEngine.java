@@ -104,16 +104,16 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public String calc(BashpileParser.CalcExprContext ctx) {
+    public String calc(ParserRuleContext ctx) {
         // prepend $ to variable name, e.g. "var" becomes "$var"
-        final String name = "calc";
+        final String calcLabel = "calc";
         String text;
-        try (LevelCounter counter = new LevelCounter(name)) {
+        try (LevelCounter counter = new LevelCounter(calcLabel)) {
             counter.noop();
             text = ctx.children.stream().map(translateIdsOrVisit)
                     .collect(Collectors.joining());
         }
-        return LevelCounter.in("calc") ? text : "$(bc <<< \"%s\")".formatted(text);
+        return LevelCounter.in(calcLabel) ? text : "$(bc <<< \"%s\")".formatted(text);
     }
 
     @Override

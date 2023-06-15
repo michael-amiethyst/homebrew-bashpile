@@ -77,7 +77,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
 
     @Override
     public String visitParensExpr(BashpileParser.ParensExprContext ctx) {
-        return visit(ctx.expr());
+        return translator.calc(ctx);
     }
 
     @Override

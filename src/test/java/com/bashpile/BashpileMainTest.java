@@ -67,7 +67,7 @@ class BashpileMainTest {
     public void parenTest() {
         String[] ret = runFile("0050-paren.bashpile").getLeft();
         assertEquals(1, ret.length, "Unexpected number of lines");
-        assertEquals("14", ret[0]);
+        assertEquals("21", ret[0]);
     }
 
     @Test
@@ -101,7 +101,7 @@ class BashpileMainTest {
         assertTrue(bashLines[6].contains("64+64"), "Wrong line");
         assertTrue(bashLines[6].startsWith("        "), "Wrong indention");
         String[] executionResults = runFile(filename).getLeft();
-        String[] expected = {"18", "64000", "128"};
+        String[] expected = {"24", "64000", "128"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
     }
@@ -124,7 +124,7 @@ class BashpileMainTest {
     @Order(100)
     public void floatsTest() {
         String[] executionResults = runFile("0100-floats.bashpile").getLeft();
-        String[] expected = {"40.0", "11.0", "7.0"};
+        String[] expected = {"21.0", "11.0", "7.0"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
     }
