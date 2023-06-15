@@ -1,2 +1,2 @@
 someVar = 1 + 1
-someVar + 2
+print(someVar + 2)

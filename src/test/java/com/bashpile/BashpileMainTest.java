@@ -67,7 +67,7 @@ class BashpileMainTest {
     public void parenTest() {
         String[] ret = runFile("0050-paren.bashpile").getLeft();
         assertEquals(1, ret.length, "Unexpected number of lines");
-        assertEquals("4", ret[0]);
+        assertEquals("14", ret[0]);
     }
 
     @Test
@@ -115,7 +115,7 @@ class BashpileMainTest {
         assertTrue(bashLines[4].startsWith(TAB + "local"), "No local decl, line 5");
         assertTrue(bashLines[6].startsWith(TAB + TAB + "local"), "No local decl, line 6");
         var ret = runFile(filename);
-        assertEquals(1, ret.getRight());
+        assertEquals(0, ret.getRight(), "Unexpected exit code");
         String line = ret.getLeft()[ret.getLeft().length - 1];
         assertTrue(line.endsWith("unbound variable"), "Unexpected error line: " + line);
     }
@@ -158,7 +158,9 @@ class BashpileMainTest {
     @Order(122)
     public void functionCallReturnStringTest() {
         Pair<String[], Integer> executionResults = runFile("0122-functionCall-returnString.bashpile");
-        assertEquals(12, executionResults.getRight());
+        assertEquals(0, executionResults.getRight());
+        assertEquals(1, executionResults.getLeft().length);
+        assertEquals("hello world", executionResults.getLeft()[0]);
     }
 
     // helpers

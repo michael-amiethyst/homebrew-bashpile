@@ -95,7 +95,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public String returnRule(BashpileParser.ReturnRuleContext ctx) {
         String ret = visitor.visit(ctx.expr());
-        return "echo $(%s)\n".formatted(ret);
+        return "echo %s\n".formatted(ret);
     }
 
     private String visitBlock(Stream<ParserRuleContext> stmtStream) {
@@ -113,7 +113,7 @@ public class BashTranslationEngine implements TranslationEngine {
             text = ctx.children.stream().map(translateIdsOrVisit)
                     .collect(Collectors.joining());
         }
-        return LevelCounter.in("calc") ? text : "bc <<< \"%s\"".formatted(text);
+        return LevelCounter.in("calc") ? text : "$(bc <<< \"%s\")".formatted(text);
     }
 
     @Override
