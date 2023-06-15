@@ -1,4 +1,4 @@
 function circleArea(r):
-    3.14 * r * r
-circleArea(1)
-circleArea(-1)
+    return 3.14 * r * r
+print(circleArea(1))
+print(circleArea(-1))

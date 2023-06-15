@@ -43,6 +43,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     }
 
     @Override
+    public String visitPrintStmt(BashpileParser.PrintStmtContext ctx) {
+        return translator.print(ctx);
+    }
+
+    @Override
     public String visitFunctionDeclStmt(BashpileParser.FunctionDeclStmtContext ctx) {
         return translator.functionDecl(ctx);
     }
@@ -53,8 +58,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitReturnStmt(BashpileParser.ReturnStmtContext ctx) {
-        return translator.returnStmt(ctx);
+    public String visitReturnRule(BashpileParser.ReturnRuleContext ctx) {
+        return translator.returnRule(ctx);
     }
 
     // visit expressions

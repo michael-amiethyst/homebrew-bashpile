@@ -11,11 +11,13 @@ public interface TranslationEngine {
 
     String assign(String variable, String value);
 
+    String print(BashpileParser.PrintStmtContext ctx);
+
     String functionDecl(BashpileParser.FunctionDeclStmtContext ctx);
 
     String anonBlock(BashpileParser.AnonBlockStmtContext ctx);
 
-    String returnStmt(BashpileParser.ReturnStmtContext ctx);
+    String returnRule(BashpileParser.ReturnRuleContext ctx);
 
     String calc(BashpileParser.CalcExprContext ctx);
 

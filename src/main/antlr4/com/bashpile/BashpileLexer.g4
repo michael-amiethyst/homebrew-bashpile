@@ -22,6 +22,7 @@ tokens { INDENT, DEDENT }
 FUNCTION: 'function';
 BLOCK: 'block';
 RETURN: 'return';
+PRINT: 'print';
 
 ID: [a-zA-Z]+;
 NUMBER
@@ -50,6 +51,11 @@ ADD: '+';
 MINUS: '-';
 COL: ':';
 COMMA: ',';
+
+STRING
+ : '\'' ( ~[\\\r\n\f'] )* '\''
+ | '"' ( ~[\\\r\n\f"] )* '"'
+ ;
 
 /// nonzerodigit   ::=  "1"..."9"
 fragment NON_ZERO_DIGIT

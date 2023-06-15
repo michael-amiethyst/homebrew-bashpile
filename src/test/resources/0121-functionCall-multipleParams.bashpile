@@ -1,3 +1,3 @@
 function rectArea(w, l):
     return w * l
-rectArea(3, 4)
+print(rectArea(3, 4))

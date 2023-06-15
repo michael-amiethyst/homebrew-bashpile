@@ -85,6 +85,15 @@ class BashpileMainTest {
     }
 
     @Test
+    @Order(71)
+    public void stringTest() {
+        var runResult = runFile("0071-string.bashpile");
+        assertEquals(0, runResult.getRight());
+        String[] outLines = runResult.getLeft();
+        assertEquals("world", outLines[outLines.length - 1]);
+    }
+
+    @Test
     @Order(80)
     public void blockTest() throws IOException {
         String filename = "0080-block.bashpile";
@@ -140,16 +149,17 @@ class BashpileMainTest {
     @Order(121)
     public void functionCallMultipleParamsTest() {
         Pair<String[], Integer> executionResults = runFile("0121-functionCall-multipleParams.bashpile");
-        assertEquals(12, executionResults.getRight());
+        assertEquals(0, executionResults.getRight());
+        assertEquals(1, executionResults.getLeft().length);
+        assertEquals("12", executionResults.getLeft()[0]);
     }
 
-    // TODO uncomment
-//    @Test
-//    @Order(122)
-//    public void functionCallReturnStringTest() {
-//        Pair<String[], Integer> executionResults = runFile("0122-functionCall-returnString.bashpile");
-//        assertEquals(12, executionResults.getRight());
-//    }
+    @Test
+    @Order(122)
+    public void functionCallReturnStringTest() {
+        Pair<String[], Integer> executionResults = runFile("0122-functionCall-returnString.bashpile");
+        assertEquals(12, executionResults.getRight());
+    }
 
     // helpers
 
