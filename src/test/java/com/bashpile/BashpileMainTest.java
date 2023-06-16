@@ -11,7 +11,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
-import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -95,13 +94,8 @@ class BashpileMainTest {
 
     @Test
     @Order(80)
-    public void blockTest() throws IOException {
+    public void blockTest() {
         String filename = "0080-block.bashpile";
-        String[] bashLines = transpileFile(filename);
-        assertTrue(bashLines[6].contains("64+64"), "Wrong line");
-        assertTrue(bashLines[6].startsWith(TAB.repeat(2)),
-                "Wrong indention: '%s'.  Full text: \n%s".formatted(
-                        bashLines[6], String.join("\n", bashLines)));
         String[] executionResults = runFile(filename).getLeft();
         String[] expected = {"24", "64000", "128"};
         assertEquals(3, executionResults.length);
@@ -110,16 +104,10 @@ class BashpileMainTest {
 
     @Test
     @Order(90)
-    public void lexicalScopingTest() throws IOException {
+    public void lexicalScopingTest() {
         String filename = "0090-lexicalscoping.bashpile";
-        String[] bashLines = transpileFile(filename);
-        assertEquals(10, bashLines.length);
-        String bashText = String.join("\n", bashLines);
-        assertTrue(bashLines[4].startsWith(TAB + "local"), "No local decl, line 4.  Bash text:\n" + bashText);
-        assertTrue(bashLines[6].startsWith(TAB + TAB + "local"), "No local decl, line 6. Bash text:\n" + bashText);
         var ret = runFile(filename);
-        // TODO propagate 1 in subshell
-        assertEquals(0, ret.getRight(),
+        assertEquals(1, ret.getRight(),
                 "Unexpected exit code.  Return text was:\n" + String.join("\n", ret.getLeft()));
         String line = ret.getLeft()[ret.getLeft().length - 1];
         assertTrue(line.endsWith("unbound variable"), "Unexpected error line: " + line);

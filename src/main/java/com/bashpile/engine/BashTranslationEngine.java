@@ -24,8 +24,10 @@ public class BashTranslationEngine implements TranslationEngine {
     private BashpileVisitor visitor;
 
     private int anonBlockCounter = 0;
-    private final Function<ParseTree, String> translateIdsOrVisit =
-            x -> x instanceof BashpileParser.IdExprContext ? "$" + x.getText() : visitor.visit(x).text();
+    private final Function<ParseTree, Translation> translateIdsOrVisit =
+            x -> x instanceof BashpileParser.IdExprContext ?
+                    toStringTranslation("$" + x.getText())
+                    : visitor.visit(x);
 
     @Override
     public void setVisitor(BashpileVisitor visitor) {
@@ -50,8 +52,16 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation print(BashpileParser.PrintStmtContext ctx) {
-        String printText = "echo %s\n".formatted(ctx.arglist().expr().stream()
+        String printText = "%s\n".formatted(ctx.arglist().expr().stream()
                 .map(translateIdsOrVisit)
+                .map(tr -> !tr.isSubshell() ?
+                        "echo " + tr.text()
+                        // bash chicanery to prevent loss of error exit code in a line like `echo $(badCommand)`
+                        : """
+                        __textReturn=%s
+                        __exitCode=$?
+                        if [ "$__exitCode" -ne 0 ]; then exit "$__exitCode"; fi
+                        echo "$__textReturn";""".formatted(tr.text()))
                 .collect(Collectors.joining(" ")));
         return toStringTranslation(printText);
     }
@@ -124,7 +134,9 @@ public class BashTranslationEngine implements TranslationEngine {
         String text;
         try (LevelCounter counter = new LevelCounter(calcLabel)) {
             counter.noop();
-            text = ctx.children.stream().map(translateIdsOrVisit)
+            text = ctx.children.stream()
+                    .map(translateIdsOrVisit)
+                    .map(Translation::text)
                     .collect(Collectors.joining());
         }
         return LevelCounter.in(calcLabel) ?

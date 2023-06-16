@@ -3,7 +3,7 @@ package com.bashpile.engine;
 public enum TranslationType {
     STRING,
     // Bash example: (commands)
-    SUBSHELL,
+    SUBSHELL_COMPOUND,
     // Bash example: $(commands)
     SUBSHELL_SUBSTITUTION
 

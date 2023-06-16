@@ -12,4 +12,8 @@ public record Translation(String text, TranslationType type) {
     public Translation add(String appendText) {
         return new Translation(text + appendText, type);
     }
+
+    public boolean isSubshell() {
+        return type.equals(TranslationType.SUBSHELL_COMPOUND) || type.equals(TranslationType.SUBSHELL_SUBSTITUTION);
+    }
 }
