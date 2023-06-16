@@ -11,7 +11,7 @@ public interface TranslationEngine {
 
     /**
      * Our {@link BashpileVisitor} needs a TranslationEngine and we need a BashpileVisitor.
-     *
+     * <br>
      * So you make a TranslationEngine, pass to the BashpileVisitor then set the visitor.
      */
     void setVisitor(BashpileVisitor visitor);

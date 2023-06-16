@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -33,7 +34,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public String strictMode() {
         return """
-                set -euo pipefail
+                set -euo pipefail -o posix
                 export IFS=$'\\n\\t'
                 """;
     }
@@ -103,7 +104,12 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private String visitBlock(Stream<ParserRuleContext> stmtStream) {
         String indent = TAB.repeat(LevelCounter.getIndent());
-        return stmtStream.map(visitor::visit).map(s -> indent + s).collect(Collectors.joining());
+        return stmtStream.map(visitor::visit)
+                // visit results may be multiline strings, convert to array of single lines
+                .map(str -> str.split("\n"))
+                // stream the lines, indent each line, then flatten
+                .flatMap(lines -> Arrays.stream(lines).sequential().map(s -> TAB + s + "\n"))
+                .collect(Collectors.joining());
     }
 
     @Override

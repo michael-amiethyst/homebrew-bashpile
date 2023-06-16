@@ -112,10 +112,13 @@ class BashpileMainTest {
         String filename = "0090-lexicalscoping.bashpile";
         String[] bashLines = transpileFile(filename);
         assertEquals(10, bashLines.length);
-        assertTrue(bashLines[4].startsWith(TAB + "local"), "No local decl, line 5");
-        assertTrue(bashLines[6].startsWith(TAB + TAB + "local"), "No local decl, line 6");
+        String bashText = String.join("\n", bashLines);
+        assertTrue(bashLines[4].startsWith(TAB + "local"), "No local decl, line 4.  Bash text:\n" + bashText);
+        assertTrue(bashLines[6].startsWith(TAB + TAB + "local"), "No local decl, line 6. Bash text:\n" + bashText);
         var ret = runFile(filename);
-        assertEquals(0, ret.getRight(), "Unexpected exit code");
+        // TODO propagate 1 in subshell
+        assertEquals(0, ret.getRight(),
+                "Unexpected exit code.  Return text was:\n" + String.join("\n", ret.getLeft()));
         String line = ret.getLeft()[ret.getLeft().length - 1];
         assertTrue(line.endsWith("unbound variable"), "Unexpected error line: " + line);
     }
@@ -161,6 +164,15 @@ class BashpileMainTest {
         assertEquals(0, executionResults.getRight());
         assertEquals(1, executionResults.getLeft().length);
         assertEquals("hello world", executionResults.getLeft()[0]);
+    }
+
+    @Test
+    @Order(123)
+    public void functionCallTagsTest() {
+        Pair<String[], Integer> executionResults = runFile("0123-functionCall-tags.bashpile");
+        assertEquals(0, executionResults.getRight());
+        assertEquals(2, executionResults.getLeft().length);
+        assertEquals("3.14", executionResults.getLeft()[0]);
     }
 
     // helpers

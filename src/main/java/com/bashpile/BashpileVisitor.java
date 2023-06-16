@@ -58,6 +58,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<String> {
     }
 
     @Override
+    public String visitBlock(BashpileParser.BlockContext ctx) {
+        return "";  // pure comments for now
+    }
+
+    @Override
     public String visitReturnRule(BashpileParser.ReturnRuleContext ctx) {
         return translator.returnRule(ctx);
     }

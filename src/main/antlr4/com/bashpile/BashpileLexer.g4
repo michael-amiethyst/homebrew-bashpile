@@ -51,6 +51,8 @@ ADD: '+';
 MINUS: '-';
 COL: ':';
 COMMA: ',';
+OBRACKET: '[';
+CBRACKET: ']';
 
 STRING
  : '\'' ( ~[\\\r\n\f'] )* '\''
