@@ -32,3 +32,15 @@ In bashpile you can return strings from functions and don't need to worry about
 the shell silently suppressing silly sub-shell slip-ups, circumventing superior string subroutines simply.
 
 Without the alliteration we handle the portability of the syntax, subshell complexities and exit code quirks of Bash.
+
+### Tags for functions and anonymous blocks
+
+You can tag functions with the syntax
+
+```
+function name(args) ["tag1" "tag2" "etc"]:
+    ...
+```
+
+future tooling will pick up on these embedded comments.  
+Tag functions for a given data flow, a layer or whatever you can think of!
