@@ -19,7 +19,10 @@ tokens { INDENT, DEDENT }
   }
 }
 
+FUNCTION: 'function';
 BLOCK: 'block';
+RETURN: 'return';
+PRINT: 'print';
 
 ID: [a-zA-Z]+;
 NUMBER
@@ -45,7 +48,16 @@ EQ: '=';
 MUL: '*';
 DIV: '/';
 ADD: '+';
-SUB: '-';
+MINUS: '-';
+COL: ':';
+COMMA: ',';
+OBRACKET: '[';
+CBRACKET: ']';
+
+STRING
+ : '\'' ( ~[\\\r\n\f'] )* '\''
+ | '"' ( ~[\\\r\n\f"] )* '"'
+ ;
 
 /// nonzerodigit   ::=  "1"..."9"
 fragment NON_ZERO_DIGIT

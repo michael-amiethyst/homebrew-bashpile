@@ -27,6 +27,10 @@ public class CommandLineExecutor {
         return runHelper(bashText, false, false);
     }
 
+    public static Pair<String, Integer> failableRun(String bashText) throws IOException {
+        return runHelper(bashText, false, true);
+    }
+
     private static Pair<String, Integer> runHelper(
             String bashText, boolean throwOnBadExitCode, boolean cd) throws IOException {
         log.info("Executing bash text:\n" + bashText);

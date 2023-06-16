@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
@@ -47,16 +48,16 @@ public class BashpileMain implements Callable<Integer> {
 
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
     public int executeCommand() {
-        System.out.println(execute());
+        System.out.println(execute().getLeft());
         return 0;
     }
 
-    public String execute() {
+    public Pair<String, Integer> execute() {
         log.debug("In {}", System.getProperty("user.dir"));
         String bashScript = "<stream unparsed>";
         try {
             bashScript = transpile();
-            return CommandLineExecutor.run(bashScript).getLeft();
+            return CommandLineExecutor.failableRun(bashScript);
         } catch (Throwable e) {
             throw new BashpileUncheckedException(e, "Couldn't run `%s`.".formatted(bashScript));
         }

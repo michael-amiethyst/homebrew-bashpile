@@ -1,0 +1,6 @@
+print((38 + 5) * 3)
+block:
+    x = 5
+    block:
+        y = 7
+print(x * x)

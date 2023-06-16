@@ -30,7 +30,7 @@ public class BashpileMainIntegrationTest {
     @Test
     public void executeTest() throws IOException {
         log.debug("In executeTest");
-        String command = "bin/bashpile -i=src/test/resources/0001-simple.bashpile execute";
+        String command = "bin/bashpile -i=src/test/resources/0010-simple.bashpile execute";
         Pair<String, Integer> executionResults = CommandLineExecutor.failableRunInPlace(command);
         String outputText = executionResults.getLeft();
         log.debug("Output text:\n{}", outputText);
@@ -44,7 +44,7 @@ public class BashpileMainIntegrationTest {
     @Test
     public void transpileTest() throws IOException {
         log.debug("In transpileTest");
-        String command = "bin/bashpile -i src/test/resources/0001-simple.bashpile transpile";
+        String command = "bin/bashpile -i src/test/resources/0010-simple.bashpile transpile";
         Pair<String, Integer> executionResults = CommandLineExecutor.failableRunInPlace(command);
         String outputText = executionResults.getLeft();
         log.debug("Output text:\n{}", outputText);
@@ -52,6 +52,6 @@ public class BashpileMainIntegrationTest {
         assertEquals(0, executionResults.getRight());
         assertTrue(lines.length > 0, "No output");
         int lastLineIndex = lines.length - 1;
-        assertEquals("bc <<< \"1+1\"", lines[lastLineIndex], "Unexpected output: %s".formatted(outputText));
+        assertEquals("echo \"$__textReturn\";", lines[lastLineIndex], "Unexpected output: %s".formatted(outputText));
     }
 }

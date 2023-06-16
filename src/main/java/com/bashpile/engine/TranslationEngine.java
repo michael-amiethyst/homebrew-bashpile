@@ -1,15 +1,33 @@
 package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
-import com.bashpile.BashpileVisitor;
+import org.antlr.v4.runtime.ParserRuleContext;
 
+/**
+ * Methods translate small parser rules (e.g. statements and expressions) to the target language.
+ */
 public interface TranslationEngine {
 
-    String strictMode();
+    /**
+     * Our {@link BashpileVisitor} needs a TranslationEngine and we need a BashpileVisitor.
+     * <br>
+     * So you make a TranslationEngine, pass to the BashpileVisitor then set the visitor.
+     */
+    void setVisitor(BashpileVisitor visitor);
 
-    String assign(String variable, String value);
+    Translation strictMode();
 
-    String block(BashpileVisitor visitor, BashpileParser.BlockContext ctx);
+    Translation assign(String variable, String value);
 
-    String calc(BashpileParser.CalcContext ctx);
+    Translation print(BashpileParser.PrintStmtContext ctx);
+
+    Translation functionDecl(BashpileParser.FunctionDeclStmtContext ctx);
+
+    Translation anonBlock(BashpileParser.AnonBlockStmtContext ctx);
+
+    Translation returnRule(BashpileParser.ReturnRuleContext ctx);
+
+    Translation calc(ParserRuleContext ctx);
+
+    Translation functionCall(BashpileParser.FunctionCallExprContext ctx);
 }
