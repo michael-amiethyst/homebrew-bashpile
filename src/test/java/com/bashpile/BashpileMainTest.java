@@ -99,7 +99,9 @@ class BashpileMainTest {
         String filename = "0080-block.bashpile";
         String[] bashLines = transpileFile(filename);
         assertTrue(bashLines[6].contains("64+64"), "Wrong line");
-        assertTrue(bashLines[6].startsWith("        "), "Wrong indention");
+        assertTrue(bashLines[6].startsWith(TAB.repeat(2)),
+                "Wrong indention: '%s'.  Full text: \n%s".formatted(
+                        bashLines[6], String.join("\n", bashLines)));
         String[] executionResults = runFile(filename).getLeft();
         String[] expected = {"24", "64000", "128"};
         assertEquals(3, executionResults.length);

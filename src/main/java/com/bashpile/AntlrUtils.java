@@ -1,6 +1,7 @@
 package com.bashpile;
 
 import com.bashpile.engine.BashTranslationEngine;
+import com.bashpile.engine.BashpileVisitor;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -34,6 +35,6 @@ public class AntlrUtils {
     private static String transpile(ParseTree tree) {
         // visitor and engine linked in visitor constructor
         BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
-        return bashpileLogic.visit(tree);
+        return bashpileLogic.visit(tree).text();
     }
 }
