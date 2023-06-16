@@ -24,6 +24,8 @@ public class BashTranslationEngine implements TranslationEngine {
     private BashpileVisitor visitor;
 
     private int anonBlockCounter = 0;
+
+    /** prepend $ to variable name, e.g. "var" becomes "$var" */
     private final Function<ParseTree, Translation> translateIdsOrVisit =
             x -> x instanceof BashpileParser.IdExprContext ?
                     toStringTranslation("$" + x.getText())
@@ -103,7 +105,7 @@ public class BashTranslationEngine implements TranslationEngine {
             counter.noop();
             String label = "anon" + anonBlockCounter++;
             String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
-            // explicit cast needed
+            // map of x to x needed for upcasting to parent type
             Stream<ParserRuleContext> stmtStream = ctx.stmt().stream().map(x -> x);
             block = "%s () {\n%s%s}; %s\n".formatted(label, visitBlock(stmtStream).text(), endIndent, label);
         }

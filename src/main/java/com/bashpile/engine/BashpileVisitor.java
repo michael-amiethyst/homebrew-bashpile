@@ -6,12 +6,15 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.InputStream;
 import java.util.stream.Collectors;
 
 import static com.bashpile.engine.Translation.toStringTranslation;
 
 /**
- * Antlr4 calls these methods.  Both walks the parse tree and buffers all output.
+ * Antlr4 calls these methods.
+ * 
+ * @see com.bashpile.AntlrUtils#parse(InputStream)
  */
 public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
@@ -29,11 +32,12 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public Translation visitProg(BashpileParser.ProgContext ctx) {
         // prepend strictMode text to the statement results
-        String translatedTextBlock = translator.strictMode().text() + ctx.stmt().stream()
+        String header = translator.strictMode().text();
+        String translatedTextBlock = ctx.stmt().stream()
                 .map(this::visit)
                 .map(Translation::text)
                 .collect(Collectors.joining());
-        return toStringTranslation(translatedTextBlock);
+        return toStringTranslation(header + translatedTextBlock);
     }
 
     // visit statements
