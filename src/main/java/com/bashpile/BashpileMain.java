@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import static com.bashpile.AntlrUtils.parse;
@@ -54,7 +55,8 @@ public class BashpileMain implements Callable<Integer> {
 
     public Pair<String, Integer> execute() {
         log.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = "<stream unparsed>";
+        String bashScript = "<unparsed stream: %s>".formatted(
+                Objects.requireNonNullElse(inputFile, "System.in"));
         try {
             bashScript = transpile();
             return CommandLineExecutor.failableRun(bashScript);

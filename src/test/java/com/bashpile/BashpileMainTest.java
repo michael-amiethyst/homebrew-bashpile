@@ -130,6 +130,13 @@ class BashpileMainTest {
     }
 
     @Test
+    @Order(111)
+    public void functionDeclarationParamsTest() {
+        String[] executionResults = runFile("0111-functionDeclaration-params.bashpile").getLeft();
+        assertEquals(2, executionResults.length);
+    }
+
+    @Test
     @Order(120)
     public void functionCallTest() {
         String[] executionResults = runFile("0120-functionCall.bashpile").getLeft();
@@ -161,6 +168,16 @@ class BashpileMainTest {
     public void functionCallTagsTest() {
         Pair<String[], Integer> executionResults = runFile("0123-functionCall-tags.bashpile");
         assertEquals(0, executionResults.getRight());
+        assertEquals(2, executionResults.getLeft().length);
+        assertEquals("3.14", executionResults.getLeft()[0]);
+    }
+
+    @Test
+    @Order(130)
+    public void functionForwardDeclarationTest() {
+        Pair<String[], Integer> executionResults = runFile("0130-functionForwardDecl.bashpile");
+        assertEquals(0, executionResults.getRight());
+        // TODO fix this part
         assertEquals(2, executionResults.getLeft().length);
         assertEquals("3.14", executionResults.getLeft()[0]);
     }

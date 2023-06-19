@@ -6,7 +6,8 @@ prog: stmt+;
 stmt: expr NL                                   # exprStmt
     | ID EQ expr NL                             # assignStmt
     | PRINT OPAREN arglist? CPAREN NL           # printStmt
-    | FUNCTION ID paramaters tags? COL block   # functionDeclStmt
+    | FUNCTION ID paramaters                    # functionForwardDeclStmt
+    | FUNCTION ID paramaters tags? COL block    # functionDeclStmt
     | BLOCK tags? COL INDENT stmt+ DEDENT       # anonBlockStmt
     | returnRule                                # returnStmt
     | NL                                        # blankStmt

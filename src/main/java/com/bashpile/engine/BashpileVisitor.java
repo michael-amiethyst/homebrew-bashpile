@@ -60,6 +60,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
+    public Translation visitFunctionForwardDeclStmt(BashpileParser.FunctionForwardDeclStmtContext ctx) {
+        return translator.functionForwardDecl(ctx);
+    }
+
+    @Override
     public Translation visitFunctionDeclStmt(BashpileParser.FunctionDeclStmtContext ctx) {
         return translator.functionDecl(ctx);
     }

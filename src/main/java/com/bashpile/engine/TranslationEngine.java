@@ -21,6 +21,8 @@ public interface TranslationEngine {
 
     Translation print(BashpileParser.PrintStmtContext ctx);
 
+    Translation functionForwardDecl(BashpileParser.FunctionForwardDeclStmtContext ctx);
+
     Translation functionDecl(BashpileParser.FunctionDeclStmtContext ctx);
 
     Translation anonBlock(BashpileParser.AnonBlockStmtContext ctx);

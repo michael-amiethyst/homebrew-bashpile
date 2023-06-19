@@ -69,6 +69,11 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
+    public Translation functionForwardDecl(BashpileParser.FunctionForwardDeclStmtContext ctx) {
+        return toStringTranslation("<forward decl>");
+    }
+
+    @Override
     public Translation functionDecl(BashpileParser.FunctionDeclStmtContext ctx) {
         String block;
         try (LevelCounter counter = new LevelCounter("block")) {
