@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.assertTextBlock;
 import static com.bashpile.Asserts.assertTextLine;
+import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.TranslationType.SUBSHELL_SUBSTITUTION;
 
@@ -27,16 +28,6 @@ import static com.bashpile.engine.TranslationType.SUBSHELL_SUBSTITUTION;
 public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";
-
-    // TODO move to LineCounter
-    /** LevelCounter label */
-    public static final String BLOCK = "block";
-
-    /** LevelCounter label */
-    private static final String CALC = "calc";
-
-    /** LevelCounter label */
-    private static final String FORWARD_DECL = "forwardDecl";
 
     private static String getLocalText() {
         return LevelCounter.getIndent() != 0 ? "local" : "export";

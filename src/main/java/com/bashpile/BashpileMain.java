@@ -24,6 +24,13 @@ public class BashpileMain implements Callable<Integer> {
 
     private static final Logger log = LogManager.getLogger(BashpileMain.class);
 
+    public static void main(String[] args) {
+        BashpileMain bashpile = new BashpileMain();
+        CommandLine argProcessor = new CommandLine(bashpile);
+        bashpile.setCommandLine(argProcessor);
+        System.exit(argProcessor.execute(args));
+    }
+
     @CommandLine.Option(names = {"-i", "--inputFile"})
     private String inputFile;
 
@@ -33,13 +40,6 @@ public class BashpileMain implements Callable<Integer> {
 
     public BashpileMain(String inputFile) {
         this.inputFile = inputFile;
-    }
-
-    public static void main(String[] args) {
-        BashpileMain bashpile = new BashpileMain();
-        CommandLine argProcessor = new CommandLine(bashpile);
-        bashpile.setCommandLine(argProcessor);
-        System.exit(argProcessor.execute(args));
     }
 
     @Override
