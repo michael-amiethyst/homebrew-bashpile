@@ -22,9 +22,9 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     private final TranslationEngine translator;
 
-    private ParserRuleContext contextRoot;
-
     private final Logger log = LogManager.getLogger(BashpileVisitor.class);
+
+    private ParserRuleContext contextRoot;
 
     public BashpileVisitor(TranslationEngine translator) {
         this.translator = translator;
@@ -49,7 +49,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         contextRoot = ctx;
 
         // prepend strictMode text to the statement results
-        String header = translator.strictMode().text();
+        final String header = translator.strictMode().text();
         assertTextBlock(header);
         String translatedTextBlock = ctx.stmt().stream()
                 .map(this::visit)

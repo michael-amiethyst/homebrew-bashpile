@@ -23,7 +23,7 @@ public class FailableStreamConsumer implements Runnable {
 
     @Override
     public void run() {
-        Streams.stream(new BufferedReader(new InputStreamReader(inputStream)).lines())
-                .forEach(consumer);
+        final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        Streams.stream(bufferedReader.lines()).forEach(consumer);
     }
 }

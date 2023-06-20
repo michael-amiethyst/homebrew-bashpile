@@ -35,7 +35,7 @@ public class CommandLineExecutor {
     private static Pair<String, Integer> runHelper(
             String bashText, boolean throwOnBadExitCode, boolean cd) throws IOException {
         log.info("Executing bash text:\n" + bashText);
-        ProcessBuilder builder = new ProcessBuilder();
+        final ProcessBuilder builder = new ProcessBuilder();
         if (isWindows()) {
             log.trace("Detected windows");
             builder.command("wsl");
@@ -45,19 +45,21 @@ public class CommandLineExecutor {
         }
         builder.directory(new File(System.getProperty("user.dir")))
                 .redirectErrorStream(true);
-        Process process = builder.start();
+        final Process process = builder.start();
 
         int exitCode;
+        // TODO clean this up with an object like closableAggregate?
         try (   // so many closable resources
                 // process related
-                ExecutorService executorService = Executors.newSingleThreadExecutor();
-                BufferedWriter bufferedWriter = process.outputWriter();
+                final ExecutorService executorService = Executors.newSingleThreadExecutor();
+                final BufferedWriter bufferedWriter = process.outputWriter();
                 // to get the child process's STDOUT
-                ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-                PrintStream stdoutWriter = new PrintStream(stdout)) {
-            FailableStreamConsumer failableStreamConsumer =
+                final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+                final PrintStream stdoutWriter = new PrintStream(stdout)) {
+
+            final FailableStreamConsumer failableStreamConsumer =
                     new FailableStreamConsumer(process.getInputStream(), stdoutWriter::println);
-            Future<?> future = executorService.submit(failableStreamConsumer);
+            final Future<?> future = executorService.submit(failableStreamConsumer);
 
             // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
             bufferedWriter.write("bash\n");
@@ -76,14 +78,15 @@ public class CommandLineExecutor {
 
             future.get(10, TimeUnit.SECONDS);
 
-            String stdoutString = stdout.toString();
+            final String stdoutString = stdout.toString();
             if (exitCode != 0 && throwOnBadExitCode) {
                 throw new BashpileUncheckedException(
                         "Found failing (non-0) 'nix exit code: " + exitCode + ".  Full text results:\n" + stdoutString);
             }
             // return buffer stripped of random error lines
             log.trace("Shell output before processing: [{}]", stdoutString);
-            String processedCommandResultText = bogusScreenLine.matcher(stdoutString).replaceAll("").trim();
+            final String processedCommandResultText =
+                    bogusScreenLine.matcher(stdoutString).replaceAll("").trim();
             return Pair.of(processedCommandResultText, exitCode);
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new BashpileUncheckedException(e);

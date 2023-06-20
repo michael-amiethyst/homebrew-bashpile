@@ -20,13 +20,13 @@ public class AntlrUtils {
     public static String parse(InputStream is) throws IOException {
         log.trace("Starting parse");
         // lexer
-        CharStream input = CharStreams.fromStream(is);
-        BashpileLexer lexer = new BashpileLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        final CharStream input = CharStreams.fromStream(is);
+        final BashpileLexer lexer = new BashpileLexer(input);
+        final CommonTokenStream tokens = new CommonTokenStream(lexer);
 
         // parser
-        BashpileParser parser = new BashpileParser(tokens);
-        ParseTree tree = parser.prog();
+        final BashpileParser parser = new BashpileParser(tokens);
+        final ParseTree tree = parser.prog();
 
         return transpile(tree);
     }
@@ -34,7 +34,7 @@ public class AntlrUtils {
     /** Returns bash text block */
     private static String transpile(ParseTree tree) {
         // visitor and engine linked in visitor constructor
-        BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
+        final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
         return bashpileLogic.visit(tree).text();
     }
 }

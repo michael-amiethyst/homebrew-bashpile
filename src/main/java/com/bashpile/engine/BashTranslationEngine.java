@@ -37,6 +37,11 @@ public class BashTranslationEngine implements TranslationEngine {
         return LevelCounter.in(FORWARD_DECL) ? " (hoisted)" : "";
     }
 
+    private static void append(AtomicReference<String> strRef, String toAppend) {
+        final String appended = strRef.get() + toAppend;
+        strRef.set(appended);
+    }
+
     private BashpileVisitor visitor;
 
     /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
@@ -69,16 +74,16 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation assign(BashpileParser.AssignStmtContext ctx) {
         // TODO implement final keyword with vigor
-        String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        String variable = ctx.ID().getText();
-        String value = ctx.expr().getText();
+        final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
+        final String variable = ctx.ID().getText();
+        final String value = ctx.expr().getText();
         return toStringTranslation("%s\n%s %s=%s\n".formatted(lineComment, getLocalText(), variable, value));
     }
 
     @Override
     public Translation print(BashpileParser.PrintStmtContext ctx) {
-        String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
-        String printText = ("%s\n%s\n").formatted(lineComment, ctx.arglist().expr().stream()
+        final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
+        final String printText = ("%s\n%s\n").formatted(lineComment, ctx.arglist().expr().stream()
                 .map(translateIdsOrVisit)
                 .map(tr -> !tr.isSubshell() ?
                         "echo " + tr.text()
@@ -97,8 +102,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(ctx);
         try (LevelCounter forwardDeclCounter = new LevelCounter(FORWARD_DECL)) {
             forwardDeclCounter.noop();
-            String lineComment = "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
-            String ret = "%s\n%s".formatted(lineComment, visitor.visit(functionDeclCtx).text());
+            final String lineComment = "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
+            final String ret = "%s\n%s".formatted(lineComment, visitor.visit(functionDeclCtx).text());
             return toStringTranslation(ret);
         } finally {
             foundForwardDeclarations.add(ctx.ID().getText());
@@ -108,9 +113,9 @@ public class BashTranslationEngine implements TranslationEngine {
     /** Helper to {@link #functionDecl(BashpileParser.FunctionDeclStmtContext)} */
     private ParserRuleContext getFunctionDeclCtx(BashpileParser.FunctionForwardDeclStmtContext ctx) {
         final String functionName = ctx.ID().getText();
-        Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
+        final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
         // TODO make sure args match too
-        Predicate<ParserRuleContext> namesMatch =
+        final Predicate<ParserRuleContext> namesMatch =
                 x -> {
                     boolean isDeclaration = x instanceof BashpileParser.FunctionDeclStmtContext;
                     // is a function declaration and the names match
@@ -152,10 +157,10 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter counter = new LevelCounter(BLOCK)) {
             counter.noop();
             // handles nested blocks
-            String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
-            AtomicInteger i = new AtomicInteger(1);
+            final String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
+            final AtomicInteger i = new AtomicInteger(1);
             // the empty string or ...
-            String namedParams = ctx.paramaters().ID().isEmpty() ? "" :
+            final String namedParams = ctx.paramaters().ID().isEmpty() ? "" :
                     // local var1=$1; local var2=$2; etc
                     "%s%s\n".formatted(TAB.repeat(LevelCounter.getIndent()),
                             ctx.paramaters().ID().stream()
@@ -163,9 +168,9 @@ public class BashTranslationEngine implements TranslationEngine {
                                     .map(str -> "local %s=$%s;".formatted(str.text(), i.getAndIncrement()))
                                     .collect(Collectors.joining(" ")));
             assertTextLine(namedParams);
-            String blockText = visitBlock(addContexts(ctx.block().stmt(), ctx.block().returnRule())).text();
+            final String blockText = visitBlock(addContexts(ctx.block().stmt(), ctx.block().returnRule())).text();
             assertTextBlock(blockText);
-            String functionComment = "# function declaration, Bashpile line %d%s"
+            final String functionComment = "# function declaration, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
             block = (functionComment + "\n%s () {\n%s%s%s}\n")
                     .formatted(ctx.ID().getText(), namedParams, blockText, endIndent);
@@ -177,7 +182,7 @@ public class BashTranslationEngine implements TranslationEngine {
     private Stream<ParserRuleContext> addContexts(
             List<BashpileParser.StmtContext> stmts, BashpileParser.ReturnRuleContext ctx) {
         // map of x to x needed for upcasting to parent type
-        Stream<ParserRuleContext> stmt = stmts.stream().map(x -> x);
+        final Stream<ParserRuleContext> stmt = stmts.stream().map(x -> x);
         return Stream.concat(stmt, Stream.of(ctx));
     }
 
@@ -186,13 +191,14 @@ public class BashTranslationEngine implements TranslationEngine {
         String block;
         try (LevelCounter counter = new LevelCounter(BLOCK)) {
             counter.noop();
-            String label = "anon" + anonBlockCounter++;
-            String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
+            final String label = "anon" + anonBlockCounter++;
+            final String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
             // map of x to x needed for upcasting to parent type
-            Stream<ParserRuleContext> stmtStream = ctx.stmt().stream().map(x -> x);
-            String blockBodyTextBlock = visitBlock(stmtStream).text();
+            final Stream<ParserRuleContext> stmtStream = ctx.stmt().stream().map(x -> x);
+            final String blockBodyTextBlock = visitBlock(stmtStream).text();
             assertTextBlock(blockBodyTextBlock);
-            String lineComment = "# anonymous block, Bashpile line %d%s".formatted(ctx.start.getLine(), getHoisted());
+            final String lineComment = "# anonymous block, Bashpile line %d%s"
+                    .formatted(ctx.start.getLine(), getHoisted());
             // define function and then call immediately with no arguments
             block = "%s\n%s () {\n%s%s}; %s\n"
                     .formatted(lineComment, label, blockBodyTextBlock, endIndent, label);
@@ -202,19 +208,19 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation returnRule(BashpileParser.ReturnRuleContext ctx) {
-        Translation ret = visitor.visit(ctx.expr());
+        final Translation ret = visitor.visit(ctx.expr());
         // insert echo right at start of last line
         // not a text block, ret.text() does not end in newline
-        String exprText = "# return statement, Bashpile line %d%s\n%s"
+        final String exprText = "# return statement, Bashpile line %d%s\n%s"
                 .formatted(ctx.start.getLine(), getHoisted(), ret.text());
-        String[] retLines = exprText.split("\n");
+        final String[] retLines = exprText.split("\n");
         retLines[retLines.length - 1] = "echo " + retLines[retLines.length - 1];
-        String retText = String.join("\n", retLines) + "\n";
+        final String retText = String.join("\n", retLines) + "\n";
         return toStringTranslation(retText);
     }
 
     private Translation visitBlock(Stream<ParserRuleContext> stmtStream) {
-        String translationText = stmtStream.map(visitor::visit)
+        final String translationText = stmtStream.map(visitor::visit)
                 .map(Translation::text)
                 // visit results may be multiline strings, convert to array of single lines
                 .map(str -> str.split("\n"))
@@ -230,10 +236,10 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation calc(ParserRuleContext ctx) {
         // prepend $ to variable name, e.g. "var" becomes "$var"
         String text;
-        AtomicReference<String> subshellVarText = new AtomicReference<>("");
+        final AtomicReference<String> subshellVarText = new AtomicReference<>("");
         try (LevelCounter counter = new LevelCounter(CALC)) {
             counter.noop();
-            AtomicInteger varTextCount = new AtomicInteger(0);
+            final AtomicInteger varTextCount = new AtomicInteger(0);
             text = ctx.children.stream()
                     .map(translateIdsOrVisit)
                     .map(translation -> {
@@ -241,9 +247,10 @@ public class BashTranslationEngine implements TranslationEngine {
                             return translation.text();
                         } else {
                             // need to unpack the recursion
-                            String varName = "__bp_%d".formatted(varTextCount.getAndIncrement());
-                            subshellVarText.set(subshellVarText.get() + "%s %s=%s\n".formatted(
-                                    getLocalText(), varName, translation.text()));
+                            final String varName = "__bp_%d".formatted(varTextCount.getAndIncrement());
+                            final String assignString = "%s %s=%s\n"
+                                    .formatted(getLocalText(), varName, translation.text());
+                            append(subshellVarText, assignString);
                             return "$" + varName;
                         }
                     })
@@ -257,10 +264,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation functionCall(BashpileParser.FunctionCallExprContext ctx) {
-        String id = ctx.ID().getText();
-        boolean hasArgs = ctx.arglist() != null;
+        final String id = ctx.ID().getText();
+        final boolean hasArgs = ctx.arglist() != null;
         // empty list or ' arg1Text arg2Text etc'
-        String args = hasArgs ? " " + ctx.arglist().expr().stream()
+        final String args = hasArgs ? " " + ctx.arglist().expr().stream()
                 .map(translateIdsOrVisit)
                 .map(Translation::text)
                 .collect(Collectors.joining(" "))

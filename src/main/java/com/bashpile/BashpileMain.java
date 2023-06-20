@@ -25,8 +25,8 @@ public class BashpileMain implements Callable<Integer> {
     private static final Logger log = LogManager.getLogger(BashpileMain.class);
 
     public static void main(String[] args) {
-        BashpileMain bashpile = new BashpileMain();
-        CommandLine argProcessor = new CommandLine(bashpile);
+        final BashpileMain bashpile = new BashpileMain();
+        final CommandLine argProcessor = new CommandLine(bashpile);
         bashpile.setCommandLine(argProcessor);
         System.exit(argProcessor.execute(args));
     }
@@ -44,10 +44,12 @@ public class BashpileMain implements Callable<Integer> {
 
     @Override
     public Integer call() {
+        // prints help text and returns 'general error'
         commandLine.usage(System.out);
         return 1;
     }
 
+    /** Called by the picocli framework */
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
     public int executeCommand() {
         System.out.println(execute().getLeft());
@@ -66,6 +68,7 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
+    /** Called by Picocli framework */
     @CommandLine.Command(name = "transpile", description = "Converts Bashpile lines to bash")
     public int transpileCommand() throws IOException {
         System.out.println(transpile());
