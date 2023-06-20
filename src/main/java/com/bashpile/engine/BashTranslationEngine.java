@@ -1,7 +1,7 @@
 package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
-import com.bashpile.BashpileUncheckedException;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -16,7 +16,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.bashpile.Asserts.assertTextBlock;
+import static com.bashpile.Asserts.assertTextLine;
 import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.TranslationType.SUBSHELL_SUBSTITUTION;
 
 /**
  * Translates to Bash5 with four spaces as a tab.
@@ -143,7 +146,9 @@ public class BashTranslationEngine implements TranslationEngine {
                                     .map(visitor::visit)
                                     .map(str -> "local %s=$%s;".formatted(str.text(), i.getAndIncrement()))
                                     .collect(Collectors.joining(" ")));
+            assertTextLine(namedParams);
             String blockText = visitBlock(addContexts(ctx.block().stmt(), ctx.block().returnRule())).text();
+            assertTextBlock(blockText);
             block = "%s () {\n%s%s%s}\n".formatted(ctx.ID().getText(), namedParams, blockText, endIndent);
         }
         return toStringTranslation(block);
@@ -166,7 +171,10 @@ public class BashTranslationEngine implements TranslationEngine {
             String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
             // map of x to x needed for upcasting to parent type
             Stream<ParserRuleContext> stmtStream = ctx.stmt().stream().map(x -> x);
-            block = "%s () {\n%s%s}; %s\n".formatted(label, visitBlock(stmtStream).text(), endIndent, label);
+            String blockBodyTextBlock = visitBlock(stmtStream).text();
+            assertTextBlock(blockBodyTextBlock);
+            // define function and then call immediately with no arguments
+            block = "%s () {\n%s%s}; %s\n".formatted(label, blockBodyTextBlock, endIndent, label);
         }
         return toStringTranslation(block);
     }
@@ -216,9 +224,10 @@ public class BashTranslationEngine implements TranslationEngine {
                     })
                     .collect(Collectors.joining());
         }
+        assertTextBlock(subshellVarText.get());
         return LevelCounter.in(calcLabel) ?
                 toStringTranslation(text)
-                : new Translation("%s$(bc <<< \"%s\")".formatted(subshellVarText, text), TranslationType.SUBSHELL_SUBSTITUTION);
+                : new Translation("%s$(bc <<< \"%s\")".formatted(subshellVarText, text), SUBSHELL_SUBSTITUTION);
     }
 
     @Override
@@ -231,6 +240,6 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(Translation::text)
                 .collect(Collectors.joining(" "))
                 : "";
-        return new Translation("$(%s%s)".formatted(id, args), TranslationType.SUBSHELL_SUBSTITUTION);
+        return new Translation("$(%s%s)".formatted(id, args), SUBSHELL_SUBSTITUTION);
     }
 }

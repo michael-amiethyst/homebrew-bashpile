@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,7 +62,7 @@ public class BashpileMain implements Callable<Integer> {
             bashScript = transpile();
             return CommandLineExecutor.failableRun(bashScript);
         } catch (Throwable e) {
-            throw new BashpileUncheckedException(e, "Couldn't run `%s`.".formatted(bashScript));
+            throw new BashpileUncheckedException("Couldn't run `%s`.".formatted(bashScript), e);
         }
     }
 

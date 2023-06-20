@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.InputStream;
 import java.util.stream.Collectors;
 
+import static com.bashpile.Asserts.assertTextBlock;
 import static com.bashpile.engine.Translation.toStringTranslation;
 
 /**
@@ -49,10 +50,12 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
         // prepend strictMode text to the statement results
         String header = translator.strictMode().text();
+        assertTextBlock(header);
         String translatedTextBlock = ctx.stmt().stream()
                 .map(this::visit)
                 .map(Translation::text)
                 .collect(Collectors.joining());
+        assertTextBlock(translatedTextBlock);
         return toStringTranslation(header + translatedTextBlock);
     }
 

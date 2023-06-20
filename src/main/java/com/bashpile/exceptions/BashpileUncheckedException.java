@@ -1,4 +1,4 @@
-package com.bashpile;
+package com.bashpile.exceptions;
 
 public class BashpileUncheckedException extends RuntimeException {
     public BashpileUncheckedException(String message) {
@@ -8,7 +8,7 @@ public class BashpileUncheckedException extends RuntimeException {
         super(e);
     }
 
-    public BashpileUncheckedException(Throwable e, String message) {
+    public BashpileUncheckedException(String message, Throwable e) {
         super(message, e);
     }
 }
