@@ -1,21 +1,19 @@
 package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
-import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.assertTextBlock;
 import static com.bashpile.Asserts.assertTextLine;
 import static com.bashpile.engine.LevelCounter.*;
@@ -98,7 +96,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation functionForwardDecl(final BashpileParser.FunctionForwardDeclStmtContext ctx) {
-        final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(ctx);
+        final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (LevelCounter forwardDeclCounter = new LevelCounter(FORWARD_DECL)) {
             forwardDeclCounter.noop();
             final String lineComment = "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
@@ -106,41 +104,6 @@ public class BashTranslationEngine implements TranslationEngine {
             return toStringTranslation(ret);
         } finally {
             foundForwardDeclarations.add(ctx.ID().getText());
-        }
-    }
-
-    /** Helper to {@link #functionDecl(BashpileParser.FunctionDeclStmtContext)} */
-    private ParserRuleContext getFunctionDeclCtx(final BashpileParser.FunctionForwardDeclStmtContext ctx) {
-        final String functionName = ctx.ID().getText();
-        final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
-        // TODO make sure args match too
-        final Predicate<ParserRuleContext> namesMatch =
-                x -> {
-                    boolean isDeclaration = x instanceof BashpileParser.FunctionDeclStmtContext;
-                    // is a function declaration and the names match
-                    return isDeclaration && ((BashpileParser.FunctionDeclStmtContext) x)
-                            .ID().getText().equals(functionName);
-                };
-        return allContexts
-                .filter(namesMatch)
-                .findFirst()
-                .orElseThrow(
-                        () -> new BashpileUncheckedException("No matching function declaration for " + functionName));
-    }
-
-    /**
-     * Lazy DFS.  Helper to {@link #getFunctionDeclCtx(BashpileParser.FunctionForwardDeclStmtContext).
-     *
-     * @see <a href="https://stackoverflow.com/questions/26158082/how-to-convert-a-tree-structure-to-a-stream-of-nodes-in-java>Stack Overflow</a>
-     * @param parentNode the root.
-     * @return Flattened stream of parent nodes' rule context children.
-     */
-    private Stream<ParserRuleContext> stream(final ParserRuleContext parentNode) {
-        if (parentNode.getChildCount() == 0) {
-            return Stream.of(parentNode);
-        } else {
-            return Stream.concat(Stream.of(parentNode),
-                    parentNode.getRuleContexts(ParserRuleContext.class).stream().flatMap(this::stream));
         }
     }
 
@@ -167,7 +130,8 @@ public class BashTranslationEngine implements TranslationEngine {
                                     .map(str -> "local %s=$%s;".formatted(str.text(), i.getAndIncrement()))
                                     .collect(Collectors.joining(" ")));
             assertTextLine(namedParams);
-            final String blockText = visitBlock(addContexts(ctx.block().stmt(), ctx.block().returnRule())).text();
+            final Stream<ParserRuleContext> contextStream = addContexts(ctx.block().stmt(), ctx.block().returnRule());
+            final String blockText = visitBlock(visitor, contextStream).text();
             assertTextBlock(blockText);
             final String functionComment = "# function declaration, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
@@ -175,14 +139,6 @@ public class BashTranslationEngine implements TranslationEngine {
                     .formatted(ctx.ID().getText(), namedParams, blockText, endIndent);
         }
         return toStringTranslation(block);
-    }
-
-    /** Concatenates inputs into stream */
-    private Stream<ParserRuleContext> addContexts(
-            final List<BashpileParser.StmtContext> stmts, final BashpileParser.ReturnRuleContext ctx) {
-        // map of x to x needed for upcasting to parent type
-        final Stream<ParserRuleContext> stmt = stmts.stream().map(x -> x);
-        return Stream.concat(stmt, Stream.of(ctx));
     }
 
     @Override
@@ -194,7 +150,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
             // map of x to x needed for upcasting to parent type
             final Stream<ParserRuleContext> stmtStream = ctx.stmt().stream().map(x -> x);
-            final String blockBodyTextBlock = visitBlock(stmtStream).text();
+            final String blockBodyTextBlock = visitBlock(visitor, stmtStream).text();
             assertTextBlock(blockBodyTextBlock);
             final String lineComment = "# anonymous block, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
@@ -216,17 +172,6 @@ public class BashTranslationEngine implements TranslationEngine {
         retLines[retLines.length - 1] = "echo " + retLines[retLines.length - 1];
         final String retText = String.join("\n", retLines) + "\n";
         return toStringTranslation(retText);
-    }
-
-    private Translation visitBlock(final Stream<ParserRuleContext> stmtStream) {
-        final String translationText = stmtStream.map(visitor::visit)
-                .map(Translation::text)
-                // visit results may be multiline strings, convert to array of single lines
-                .map(str -> str.split("\n"))
-                // stream the lines, indent each line, then flatten
-                .flatMap(lines -> Arrays.stream(lines).sequential().map(s -> TAB + s + "\n"))
-                .collect(Collectors.joining());
-        return toStringTranslation(translationText);
     }
 
     // expressions
