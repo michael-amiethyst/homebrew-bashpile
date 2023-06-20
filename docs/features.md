@@ -44,3 +44,34 @@ function name(args) ["tag1" "tag2" "etc"]:
 
 future tooling will pick up on these embedded comments.  
 Tag functions for a given data flow, a layer or whatever you can think of!
+
+### Function forward declarations
+
+In Bash you need to declare a (helper) function before you can use it.  This leads to constructions like:
+
+```
+helperFunction() {
+    ... $1 ... $2 ...
+}
+
+someLargeFunction() {
+    ...
+    helperFunction $x $y
+}
+```
+
+Now you can declare a function beforehand and implement it where it makes sense:
+```
+function helperFunction(arg1, arg2)
+
+function someLargeFunction() ["mainFlow"]:
+   ...
+   helperFunction(x, y)
+   
+function helperFunction(arg1, arg2):
+    ... arg1 ... arg2
+    ...
+print("args are also lexically scoped and undefined here")
+```
+
+This helps let the code flow more naturally from top to bottom.
