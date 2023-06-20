@@ -1,10 +1,9 @@
 # Soon
    
-1. Comments in generated bash
-2. type system (bash infinity?)
+1. type system (bash infinity?)
    1. function x: str (y: str) [tag tag]
-3. default values for functions
-4. Comments in Bashpile
+2. default values for functions
+3. Comments in Bashpile
 
 # Later
 exponents

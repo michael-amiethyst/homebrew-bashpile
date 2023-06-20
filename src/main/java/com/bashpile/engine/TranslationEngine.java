@@ -17,7 +17,7 @@ public interface TranslationEngine {
 
     Translation strictMode();
 
-    Translation assign(String variable, String value);
+    Translation assign(BashpileParser.AssignStmtContext ctx);
 
     Translation print(BashpileParser.PrintStmtContext ctx);
 

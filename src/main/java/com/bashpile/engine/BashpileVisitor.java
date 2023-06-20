@@ -68,9 +68,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitAssignStmt(BashpileParser.AssignStmtContext ctx) {
-        String id = ctx.ID().getText();
-        String rightSide = ctx.expr().getText();
-        return translator.assign(id, rightSide);
+        return translator.assign(ctx);
     }
 
     @Override
