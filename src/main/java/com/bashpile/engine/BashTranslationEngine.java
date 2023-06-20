@@ -1,14 +1,15 @@
 package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
+import com.bashpile.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,11 +71,47 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation functionForwardDecl(BashpileParser.FunctionForwardDeclStmtContext ctx) {
-        return toStringTranslation("<forward decl>");
+        final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(ctx);
+        // TODO add to hashmap of forward declarations
+        return visitor.visit(functionDeclCtx);
+    }
+
+    private ParserRuleContext getFunctionDeclCtx(BashpileParser.FunctionForwardDeclStmtContext ctx) {
+        final String functionName = ctx.ID().getText();
+        Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
+        Predicate<ParserRuleContext> namesMatch =
+                x -> {
+                    boolean isDeclaration = x instanceof BashpileParser.FunctionDeclStmtContext;
+                    // is a function declaration and the names match
+                    return isDeclaration && ((BashpileParser.FunctionDeclStmtContext) x)
+                            .ID().getText().equals(functionName);
+                };
+        return allContexts
+                .filter(namesMatch)
+                .findFirst()
+                .orElseThrow(
+                        () -> new BashpileUncheckedException("No matching function declaration for " + functionName));
+    }
+
+    /**
+     * Lazy DFS.
+     *
+     * @see <a href="https://stackoverflow.com/questions/26158082/how-to-convert-a-tree-structure-to-a-stream-of-nodes-in-java>Stack Overflow</a>
+     * @param parentNode the root.
+     * @return Flattened stream of parent nodes' rule context children.
+     */
+    public Stream<ParserRuleContext> stream(ParserRuleContext parentNode) {
+        if(parentNode.getChildCount() == 0) {
+            return Stream.of(parentNode);
+        } else {
+            return Stream.concat(Stream.of(parentNode),
+                    parentNode.getRuleContexts(ParserRuleContext.class).stream().flatMap(this::stream));
+        }
     }
 
     @Override
     public Translation functionDecl(BashpileParser.FunctionDeclStmtContext ctx) {
+        // TODO skip if in hashmap of forward declarations
         String block;
         try (LevelCounter counter = new LevelCounter("block")) {
             counter.noop();
@@ -157,7 +194,7 @@ public class BashTranslationEngine implements TranslationEngine {
         boolean hasArgs = ctx.arglist() != null;
         // empty list or ' arg1Text arg2Text etc'
         String args = hasArgs ? " " + ctx.arglist().expr().stream()
-                .map(RuleContext::getText)
+                .map(ParserRuleContext::getText)
                 .collect(Collectors.joining(" "))
                 : "";
         return new Translation("$(%s%s)".formatted(id, args), TranslationType.SUBSHELL_SUBSTITUTION);

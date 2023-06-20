@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,6 +21,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     private final TranslationEngine translator;
 
+    private ParserRuleContext contextRoot;
+
     private final Logger log = LogManager.getLogger(BashpileVisitor.class);
 
     public BashpileVisitor(TranslationEngine translator) {
@@ -27,10 +30,23 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         translator.setVisitor(this);
     }
 
+    /**
+     * Do not modify.
+     *
+     * @return The prog context.
+     */
+    public ParserRuleContext getContextRoot() {
+        // pass-by-reference because a deep copy for a non-serializable object is a nightmare
+        return contextRoot;
+    }
+
     // visitors
 
     @Override
     public Translation visitProg(BashpileParser.ProgContext ctx) {
+        // save root for later usage
+        contextRoot = ctx;
+
         // prepend strictMode text to the statement results
         String header = translator.strictMode().text();
         String translatedTextBlock = ctx.stmt().stream()
