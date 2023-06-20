@@ -20,20 +20,20 @@ public class CommandLineExecutor {
 
     private static final Logger log = LogManager.getLogger(CommandLineExecutor.class);
 
-    public static Pair<String, Integer> run(String bashText) throws IOException {
+    public static Pair<String, Integer> run(final String bashText) throws IOException {
         return runHelper(bashText, true, true);
     }
 
-    public static Pair<String, Integer> failableRunInPlace(String bashText) throws IOException {
+    public static Pair<String, Integer> failableRunInPlace(final String bashText) throws IOException {
         return runHelper(bashText, false, false);
     }
 
-    public static Pair<String, Integer> failableRun(String bashText) throws IOException {
+    public static Pair<String, Integer> failableRun(final String bashText) throws IOException {
         return runHelper(bashText, false, true);
     }
 
     private static Pair<String, Integer> runHelper(
-            String bashText, boolean throwOnBadExitCode, boolean cd) throws IOException {
+            final String bashText, final boolean throwOnBadExitCode, final boolean cd) throws IOException {
         log.info("Executing bash text:\n" + bashText);
         final ProcessBuilder builder = new ProcessBuilder();
         if (isWindows()) {

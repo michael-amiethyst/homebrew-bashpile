@@ -1,14 +1,14 @@
 package com.bashpile.exceptions;
 
 public class BashpileUncheckedAssertionException extends BashpileUncheckedException {
-    public BashpileUncheckedAssertionException(String message) {
+    public BashpileUncheckedAssertionException(final String message) {
         super(message);
     }
-    public BashpileUncheckedAssertionException(Throwable e) {
+    public BashpileUncheckedAssertionException(final Throwable e) {
         super(e);
     }
 
-    public BashpileUncheckedAssertionException(String message, Throwable e) {
+    public BashpileUncheckedAssertionException(final String message, final Throwable e) {
         super(message, e);
     }
 }

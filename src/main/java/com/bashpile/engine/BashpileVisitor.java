@@ -26,7 +26,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     private ParserRuleContext contextRoot;
 
-    public BashpileVisitor(TranslationEngine translator) {
+    public BashpileVisitor(final TranslationEngine translator) {
         this.translator = translator;
         translator.setVisitor(this);
     }
@@ -44,7 +44,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visitors
 
     @Override
-    public Translation visitProg(BashpileParser.ProgContext ctx) {
+    public Translation visitProg(final BashpileParser.ProgContext ctx) {
         // save root for later usage
         contextRoot = ctx;
 
@@ -62,75 +62,75 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit statements
 
     @Override
-    public Translation visitExprStmt(BashpileParser.ExprStmtContext ctx) {
+    public Translation visitExprStmt(final BashpileParser.ExprStmtContext ctx) {
         return visit(ctx.expr()).add("\n");
     }
 
     @Override
-    public Translation visitAssignStmt(BashpileParser.AssignStmtContext ctx) {
+    public Translation visitAssignStmt(final BashpileParser.AssignStmtContext ctx) {
         return translator.assign(ctx);
     }
 
     @Override
-    public Translation visitPrintStmt(BashpileParser.PrintStmtContext ctx) {
+    public Translation visitPrintStmt(final BashpileParser.PrintStmtContext ctx) {
         return translator.print(ctx);
     }
 
     @Override
-    public Translation visitFunctionForwardDeclStmt(BashpileParser.FunctionForwardDeclStmtContext ctx) {
+    public Translation visitFunctionForwardDeclStmt(final BashpileParser.FunctionForwardDeclStmtContext ctx) {
         return translator.functionForwardDecl(ctx);
     }
 
     @Override
-    public Translation visitFunctionDeclStmt(BashpileParser.FunctionDeclStmtContext ctx) {
+    public Translation visitFunctionDeclStmt(final BashpileParser.FunctionDeclStmtContext ctx) {
         return translator.functionDecl(ctx);
     }
 
     @Override
-    public Translation visitAnonBlockStmt(BashpileParser.AnonBlockStmtContext ctx) {
+    public Translation visitAnonBlockStmt(final BashpileParser.AnonBlockStmtContext ctx) {
         return translator.anonBlock(ctx);
     }
 
     @Override
-    public Translation visitBlock(BashpileParser.BlockContext ctx) {
+    public Translation visitBlock(final BashpileParser.BlockContext ctx) {
         return Translation.empty;  // pure comments for now
     }
 
     @Override
-    public Translation visitReturnRule(BashpileParser.ReturnRuleContext ctx) {
+    public Translation visitReturnRule(final BashpileParser.ReturnRuleContext ctx) {
         return translator.returnRule(ctx);
     }
 
     // visit expressions
 
     @Override
-    public Translation visitCalcExpr(BashpileParser.CalcExprContext ctx) {
+    public Translation visitCalcExpr(final BashpileParser.CalcExprContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
         return translator.calc(ctx);
     }
 
     @Override
-    public Translation visitFunctionCallExpr(BashpileParser.FunctionCallExprContext ctx) {
+    public Translation visitFunctionCallExpr(final BashpileParser.FunctionCallExprContext ctx) {
         return translator.functionCall(ctx);
     }
 
     @Override
-    public Translation visitParensExpr(BashpileParser.ParensExprContext ctx) {
+    public Translation visitParensExpr(final BashpileParser.ParensExprContext ctx) {
         return translator.calc(ctx);
     }
 
     @Override
-    public Translation visitIdExpr(BashpileParser.IdExprContext ctx) {
+    public Translation visitIdExpr(final BashpileParser.IdExprContext ctx) {
         return toStringTranslation(ctx.ID().getText());
     }
 
     @Override
-    public Translation visitNumberExpr(BashpileParser.NumberExprContext ctx) {
+    public Translation visitNumberExpr(final BashpileParser.NumberExprContext ctx) {
         return toStringTranslation(ctx.getText());
     }
 
     @Override
-    public Translation visitTerminal(TerminalNode node) {
+    public Translation visitTerminal(final TerminalNode node) {
         return toStringTranslation(node.getText());
     }
 }

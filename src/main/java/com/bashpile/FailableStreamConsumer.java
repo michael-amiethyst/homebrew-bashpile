@@ -16,7 +16,7 @@ public class FailableStreamConsumer implements Runnable {
     private final InputStream inputStream;
     private final FailableConsumer<String, Exception> consumer;
 
-    public FailableStreamConsumer(InputStream inputStream, FailableConsumer<String, Exception> consumer) {
+    public FailableStreamConsumer(final InputStream inputStream, final FailableConsumer<String, Exception> consumer) {
         this.inputStream = inputStream;
         this.consumer = consumer;
     }

@@ -24,7 +24,7 @@ public class BashpileMain implements Callable<Integer> {
 
     private static final Logger log = LogManager.getLogger(BashpileMain.class);
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         final BashpileMain bashpile = new BashpileMain();
         final CommandLine argProcessor = new CommandLine(bashpile);
         bashpile.setCommandLine(argProcessor);
@@ -38,7 +38,7 @@ public class BashpileMain implements Callable<Integer> {
 
     public BashpileMain() {}
 
-    public BashpileMain(String inputFile) {
+    public BashpileMain(final String inputFile) {
         this.inputFile = inputFile;
     }
 
@@ -88,7 +88,7 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
-    public void setCommandLine(CommandLine commandLine) {
+    public void setCommandLine(final CommandLine commandLine) {
         this.commandLine = commandLine;
     }
 }

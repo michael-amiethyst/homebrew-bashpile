@@ -15,7 +15,7 @@ public class Asserts {
      *
      * @see #assertTextLine(String)
      */
-    public static void assertTextBlock(String str) {
+    public static void assertTextBlock(final String str) {
         assertMatches(str, textBlock);
     }
 
@@ -24,11 +24,11 @@ public class Asserts {
      *
      * @param str the string to check.
      */
-    public static void assertTextLine(String str) {
+    public static void assertTextLine(final String str) {
         assertMatches(str, textLine);
     }
 
-    public static void assertMatches(String str, Pattern regex) {
+    public static void assertMatches(final String str, final Pattern regex) {
         if (!regex.matcher(str).matches()) {
             throw new BashpileUncheckedAssertionException(
                     "Str %s didn't match regex %s".formatted(str, regex.pattern()));

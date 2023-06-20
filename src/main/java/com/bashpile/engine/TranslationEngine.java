@@ -13,23 +13,23 @@ public interface TranslationEngine {
      * <br>
      * So you make a TranslationEngine, pass to the BashpileVisitor then set the visitor.
      */
-    void setVisitor(BashpileVisitor visitor);
+    void setVisitor(final BashpileVisitor visitor);
 
     Translation strictMode();
 
-    Translation assign(BashpileParser.AssignStmtContext ctx);
+    Translation assign(final BashpileParser.AssignStmtContext ctx);
 
-    Translation print(BashpileParser.PrintStmtContext ctx);
+    Translation print(final BashpileParser.PrintStmtContext ctx);
 
-    Translation functionForwardDecl(BashpileParser.FunctionForwardDeclStmtContext ctx);
+    Translation functionForwardDecl(final BashpileParser.FunctionForwardDeclStmtContext ctx);
 
-    Translation functionDecl(BashpileParser.FunctionDeclStmtContext ctx);
+    Translation functionDecl(final BashpileParser.FunctionDeclStmtContext ctx);
 
-    Translation anonBlock(BashpileParser.AnonBlockStmtContext ctx);
+    Translation anonBlock(final BashpileParser.AnonBlockStmtContext ctx);
 
-    Translation returnRule(BashpileParser.ReturnRuleContext ctx);
+    Translation returnRule(final BashpileParser.ReturnRuleContext ctx);
 
-    Translation calc(ParserRuleContext ctx);
+    Translation calc(final ParserRuleContext ctx);
 
-    Translation functionCall(BashpileParser.FunctionCallExprContext ctx);
+    Translation functionCall(final BashpileParser.FunctionCallExprContext ctx);
 }

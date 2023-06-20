@@ -36,13 +36,13 @@ public class LevelCounter implements Closeable {
     }
 
     /** are we in any level of indention for this label */
-    public static boolean in(String name) {
+    public static boolean in(final String name) {
         return counters.containsKey(name);
     }
 
     private final String label;
 
-    public LevelCounter(String label) {
+    public LevelCounter(final String label) {
         this.label = label;
         if (counters.containsKey(label)) {
             // increment
