@@ -6,7 +6,9 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -24,7 +26,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private BashpileVisitor visitor;
 
+    // need to name the anonymous blocks, anon0, anon1, anon2
     private int anonBlockCounter = 0;
+
+    private final Set<String> foundForwardDeclarations = new HashSet<>();
 
     /** prepend $ to variable name, e.g. "var" becomes "$var" */
     private final Function<ParseTree, Translation> translateIdsOrVisit =
@@ -72,8 +77,11 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation functionForwardDecl(BashpileParser.FunctionForwardDeclStmtContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(ctx);
-        // TODO add to hashmap of forward declarations
-        return visitor.visit(functionDeclCtx);
+        try {
+            return visitor.visit(functionDeclCtx);
+        } finally {
+            foundForwardDeclarations.add(ctx.ID().getText());
+        }
     }
 
     private ParserRuleContext getFunctionDeclCtx(BashpileParser.FunctionForwardDeclStmtContext ctx) {
@@ -111,7 +119,12 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation functionDecl(BashpileParser.FunctionDeclStmtContext ctx) {
-        // TODO skip if in hashmap of forward declarations
+        // avoid translating twice if was part of a forward declaration
+        if (foundForwardDeclarations.contains(ctx.ID().getText())) {
+            return Translation.empty;
+        }
+
+        // regular processing -- no forward declaration
         String block;
         try (LevelCounter counter = new LevelCounter("block")) {
             counter.noop();

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -174,12 +175,15 @@ class BashpileMainTest {
 
     @Test
     @Order(130)
-    public void functionForwardDeclarationTest() {
-        Pair<String[], Integer> executionResults = runFile("0130-functionForwardDecl.bashpile");
-        assertEquals(0, executionResults.getRight());
-        // TODO fix this part
-        assertEquals(2, executionResults.getLeft().length);
-        assertEquals("3.14", executionResults.getLeft()[0]);
+    public void functionForwardDeclarationTest() throws IOException {
+        String filename = "0130-functionForwardDecl.bashpile";
+        String[] bashLines = transpileFile(filename);
+        Pair<String[], Integer> executionResults = runFile(filename);
+        assertEquals(0, executionResults.getRight(), "Bad exit code");
+        assertEquals(1, Arrays.stream(
+                bashLines).filter(x -> x.startsWith("circleArea")).count(),
+                "Wrong circleArea count");
+        assertEquals("6.28", executionResults.getLeft()[0]);
     }
 
     // helpers
