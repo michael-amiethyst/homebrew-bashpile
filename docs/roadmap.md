@@ -1,17 +1,15 @@
 # Soon
    
-1. Forward Declarations for Functions 
-   1. (impl note: use a TokenStreamRewriter, page 209 of the Antlr4 book)
-2. type system (bash infinity?)
+1. type system (bash infinity?)
    1. function x: str (y: str) [tag tag]
-3. default values for functions
-4. comments in Bashpile and generated bash
+2. default values for functions
+3. Comments in Bashpile
 
 # Later
 exponents
-Automatic script line detection
+Automatic script line detection (e.g. can write 'echo ...' or any other bash command)
 Script blocks
-Scriptinos and caching
+Scriptinos and caching, easy testing
 `until`
 conditionals
 loops

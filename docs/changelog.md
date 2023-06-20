@@ -2,3 +2,4 @@
 * 0.2.0 - Factored out translation to script language to support multiple shells
 * 0.3.0 - Anonymous blocks, lexical scoping, floats
 * 0.4.0 - Functions, tags
+* 0.5.0 - Function forward declarations, line number comments in translated Bash

@@ -24,7 +24,8 @@ BLOCK: 'block';
 RETURN: 'return';
 PRINT: 'print';
 
-ID: [a-zA-Z]+;
+ID: ID_START ID_CONTINUE*;
+
 NUMBER
  : INTEGER
  | FLOAT_NUMBER
@@ -58,6 +59,9 @@ STRING
  : '\'' ( ~[\\\r\n\f'] )* '\''
  | '"' ( ~[\\\r\n\f"] )* '"'
  ;
+
+fragment ID_START: [a-zA-Z_];
+fragment ID_CONTINUE: [a-zA-Z0-9_];
 
 /// nonzerodigit   ::=  "1"..."9"
 fragment NON_ZERO_DIGIT

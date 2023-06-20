@@ -1,0 +1,9 @@
+function circleArea(r)
+
+function twoCircleArea(r1, r2):
+    return circleArea(r1) + circleArea(r2)
+
+function circleArea(r) ["helper"]:
+    return 3.14 * r * r
+
+print(twoCircleArea(1, -1))

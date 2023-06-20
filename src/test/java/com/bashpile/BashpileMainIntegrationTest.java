@@ -52,6 +52,7 @@ public class BashpileMainIntegrationTest {
         assertEquals(0, executionResults.getRight());
         assertTrue(lines.length > 0, "No output");
         int lastLineIndex = lines.length - 1;
-        assertEquals("echo \"$__textReturn\";", lines[lastLineIndex], "Unexpected output: %s".formatted(outputText));
+        assertEquals("echo \"$__bp_textReturn\";", lines[lastLineIndex],
+                "Unexpected output: %s".formatted(outputText));
     }
 }
