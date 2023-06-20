@@ -73,10 +73,10 @@ public class BashTranslationEngine implements TranslationEngine {
                         "echo " + tr.text()
                         // bash chicanery to prevent loss of error exit code in a line like `echo $(badCommand)`
                         : """
-                        __textReturn=%s
-                        __exitCode=$?
-                        if [ "$__exitCode" -ne 0 ]; then exit "$__exitCode"; fi
-                        echo "$__textReturn";""".formatted(tr.text()))
+                        __bp_textReturn=%s
+                        __bp_exitCode=$?
+                        if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                        echo "$__bp_textReturn";""".formatted(tr.text()))
                 .collect(Collectors.joining(" ")));
         return toStringTranslation(printText);
     }
