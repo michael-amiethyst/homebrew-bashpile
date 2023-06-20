@@ -4,11 +4,14 @@ import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 
 import java.util.regex.Pattern;
 
+/** Assert stuff, in production as well */
 public class Asserts {
 
+    /** In MULTILINE mode use a non-capturing group to match 0 or more lines */
     private static final Pattern textBlock = Pattern.compile("(?m)(?:^[^\n]*$\n)*");
 
-    private static final Pattern textLine = Pattern.compile("(?:^[^\n]*$\n)*");
+    /** Match a line of text with a Linux line ending at the end OR the empty string */
+    private static final Pattern textLine = Pattern.compile("^[^\n]*$\n|^$");
 
     /**
      * A text block is a group of text lines.

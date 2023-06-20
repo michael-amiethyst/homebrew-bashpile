@@ -44,6 +44,7 @@ public class BashTranslationEngine implements TranslationEngine {
     /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
     private int anonBlockCounter = 0;
 
+    /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
     /** prepend $ to variable name, e.g. "var" becomes "$var" */
@@ -81,14 +82,17 @@ public class BashTranslationEngine implements TranslationEngine {
         final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
         final String printText = ("%s\n%s\n").formatted(lineComment, ctx.arglist().expr().stream()
                 .map(translateIdsOrVisit)
-                .map(tr -> tr.isNotSubshell() ?
-                        "echo " + tr.text()
-                        // bash chicanery to prevent loss of error exit code in a line like `echo $(badCommand)`
-                        : """
-                        __bp_textReturn=%s
-                        __bp_exitCode=$?
-                        if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                        echo "$__bp_textReturn";""".formatted(tr.text()))
+                .map(tr -> {
+                    if (tr.isNotSubshell()) {
+                        return "echo " + tr.text();
+                    }
+                    // we have a subshell -- we need to handle the exit codes and pass them on in case of error
+                    return """
+                            __bp_textReturn=%s
+                            __bp_exitCode=$?
+                            if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                            echo "$__bp_textReturn";""".formatted(tr.text());
+                })
                 .collect(Collectors.joining(" ")));
         return toStringTranslation(printText);
     }
