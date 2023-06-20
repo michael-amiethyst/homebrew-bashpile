@@ -5,7 +5,6 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -147,7 +146,6 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter counter = new LevelCounter(BLOCK)) {
             counter.noop();
             final String label = "anon" + anonBlockCounter++;
-            final String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
             // map of x to x needed for upcasting to parent type
             final Stream<ParserRuleContext> stmtStream = ctx.stmt().stream().map(x -> x);
             final String blockBodyTextBlock = visitBlock(visitor, stmtStream).text();
@@ -155,8 +153,8 @@ public class BashTranslationEngine implements TranslationEngine {
             final String lineComment = "# anonymous block, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
             // define function and then call immediately with no arguments
-            block = "%s\n%s () {\n%s%s}; %s\n"
-                    .formatted(lineComment, label, blockBodyTextBlock, endIndent, label);
+            block = "%s\n%s () {\n%s}; %s\n"
+                    .formatted(lineComment, label, blockBodyTextBlock, label);
         }
         return toStringTranslation(block);
     }
