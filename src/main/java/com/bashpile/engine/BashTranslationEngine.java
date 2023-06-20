@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -54,8 +55,11 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation assign(String variable, String value) {
-        String localText = LevelCounter.getIndent() != 0 ? "local" : "export";
-        return toStringTranslation("%s %s=%s\n".formatted(localText, variable, value));
+        return toStringTranslation("%s %s=%s\n".formatted(getLocalText(), variable, value));
+    }
+
+    private static String getLocalText() {
+        return LevelCounter.getIndent() != 0 ? "local" : "export";
     }
 
     @Override
@@ -108,7 +112,7 @@ public class BashTranslationEngine implements TranslationEngine {
      * @param parentNode the root.
      * @return Flattened stream of parent nodes' rule context children.
      */
-    public Stream<ParserRuleContext> stream(ParserRuleContext parentNode) {
+    private Stream<ParserRuleContext> stream(ParserRuleContext parentNode) {
         if(parentNode.getChildCount() == 0) {
             return Stream.of(parentNode);
         } else {
@@ -169,8 +173,12 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation returnRule(BashpileParser.ReturnRuleContext ctx) {
-        String ret = visitor.visit(ctx.expr()).text();
-        return toStringTranslation("echo %s\n".formatted(ret));
+        Translation ret = visitor.visit(ctx.expr());
+        // insert echo right at start of last line
+        String[] retLines = ret.text().split("\n");
+        retLines[retLines.length - 1] = "echo " + retLines[retLines.length - 1];
+        String retText = String.join("\n", retLines) + "\n";
+        return toStringTranslation(retText);
     }
 
     private Translation visitBlock(Stream<ParserRuleContext> stmtStream) {
@@ -189,16 +197,28 @@ public class BashTranslationEngine implements TranslationEngine {
         // prepend $ to variable name, e.g. "var" becomes "$var"
         final String calcLabel = "calc";
         String text;
+        AtomicReference<String> subshellVarText = new AtomicReference<>("");
         try (LevelCounter counter = new LevelCounter(calcLabel)) {
             counter.noop();
+            AtomicInteger varTextCount = new AtomicInteger(0);
             text = ctx.children.stream()
                     .map(translateIdsOrVisit)
-                    .map(Translation::text)
+                    .map(translation -> {
+                        if (!translation.isSubshell()) {
+                            return translation.text();
+                        } else {
+                            // need to unpack the recursion
+                            String varName = "__bp_%d".formatted(varTextCount.getAndIncrement());
+                            subshellVarText.set(subshellVarText.get() + "%s %s=%s\n".formatted(
+                                    getLocalText(), varName, translation.text()));
+                            return "$" + varName;
+                        }
+                    })
                     .collect(Collectors.joining());
         }
         return LevelCounter.in(calcLabel) ?
                 toStringTranslation(text)
-                : new Translation("$(bc <<< \"%s\")".formatted(text), TranslationType.SUBSHELL_SUBSTITUTION);
+                : new Translation("%s$(bc <<< \"%s\")".formatted(subshellVarText, text), TranslationType.SUBSHELL_SUBSTITUTION);
     }
 
     @Override
@@ -207,7 +227,8 @@ public class BashTranslationEngine implements TranslationEngine {
         boolean hasArgs = ctx.arglist() != null;
         // empty list or ' arg1Text arg2Text etc'
         String args = hasArgs ? " " + ctx.arglist().expr().stream()
-                .map(ParserRuleContext::getText)
+                .map(translateIdsOrVisit)
+                .map(Translation::text)
                 .collect(Collectors.joining(" "))
                 : "";
         return new Translation("$(%s%s)".formatted(id, args), TranslationType.SUBSHELL_SUBSTITUTION);
