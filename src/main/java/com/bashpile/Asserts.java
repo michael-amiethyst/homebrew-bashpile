@@ -2,12 +2,15 @@ package com.bashpile;
 
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.apache.commons.lang3.StringEscapeUtils.escapeJava;
 
 /** Assert stuff, in production as well */
 public class Asserts {
 
-    /** In MULTILINE mode use a non-capturing group to match 0 or more lines */
+    /** In MULTILINE mode use a non-capturing group to match 0 or more lines (or blanks) */
     private static final Pattern textBlock = Pattern.compile("(?m)(?:^[^\n]*$\n)*");
 
     /** Match a line of text with a Linux line ending at the end OR the empty string */
@@ -32,9 +35,12 @@ public class Asserts {
     }
 
     public static void assertMatches(final String str, final Pattern regex) {
-        if (!regex.matcher(str).matches()) {
+        final Matcher matchResults = regex.matcher(str);
+        if (!matchResults.matches()) {
+            final String winNewlines = str.contains("\r") ? "" : "not ";
             throw new BashpileUncheckedAssertionException(
-                    "Str %s didn't match regex %s".formatted(str, regex.pattern()));
+                    "Str [[[%s]]] didn't match regex %s, windows newlines %sfound"
+                            .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
         }
     }
 }

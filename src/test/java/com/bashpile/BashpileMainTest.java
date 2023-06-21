@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -180,7 +181,8 @@ class BashpileMainTest {
         String[] bashLines = transpileFile(filename);
         Pair<String[], Integer> executionResults = runFile(filename);
         assertEquals(0, executionResults.getRight(), "Bad exit code");
-        assertEquals(1, executionResults.getLeft().length, "Wrong length");
+        assertEquals(1, executionResults.getLeft().length
+                , "Wrong length, was: " + join(executionResults.getLeft()));
         assertEquals(1, Arrays.stream(
                 bashLines).filter(x -> x.startsWith("circleArea")).count(),
                 "Wrong circleArea count");

@@ -44,6 +44,12 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visitors
 
     @Override
+    public Translation visitBlankStmt(BashpileParser.BlankStmtContext ctx) {
+        // was returning "\r\n" without an override
+        return toStringTranslation("\n");
+    }
+
+    @Override
     public Translation visitProg(final BashpileParser.ProgContext ctx) {
         // save root for later usage
         contextRoot = ctx;

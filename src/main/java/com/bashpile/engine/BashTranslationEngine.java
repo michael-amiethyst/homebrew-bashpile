@@ -103,7 +103,9 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter forwardDeclCounter = new LevelCounter(FORWARD_DECL)) {
             forwardDeclCounter.noop();
             final String lineComment = "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
-            final String ret = "%s\n%s".formatted(lineComment, visitor.visit(functionDeclCtx).text());
+            final String hoistedFunctionText = visitor.visit(functionDeclCtx).text();
+            assertTextBlock(hoistedFunctionText);
+            final String ret = "%s\n%s".formatted(lineComment, hoistedFunctionText);
             return toStringTranslation(ret);
         } finally {
             foundForwardDeclarations.add(ctx.ID().getText());
@@ -138,9 +140,10 @@ public class BashTranslationEngine implements TranslationEngine {
             assertTextBlock(blockText);
             final String functionComment = "# function declaration, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
-            block = (functionComment + "\n%s () {\n%s%s%s}\n")
-                    .formatted(ctx.ID().getText(), namedParams, blockText, endIndent);
+            block = "%s\n%s () {\n%s%s%s}\n"
+                    .formatted(functionComment, ctx.ID().getText(), namedParams, blockText, endIndent);
         }
+        assertTextBlock(block);
         return toStringTranslation(block);
     }
 
