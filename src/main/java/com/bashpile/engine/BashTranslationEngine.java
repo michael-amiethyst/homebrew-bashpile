@@ -58,15 +58,24 @@ public class BashTranslationEngine implements TranslationEngine {
         this.visitor = visitor;
     }
 
+    /**
+     * We need '-o posix' so that all subshells inherit the -eu options.
+     * @see <a href=https://unix.stackexchange.com/a/23099">Q & A </a>
+     * @return The Strict Mode header
+     */
     @Override
-    public Translation strictMode() {
-        // we need '-o posix' so that all subshells inherit the -eu options
-        // see https://unix.stackexchange.com/a/23099
-        return toStringTranslation("""
-                # strict mode header
+    public Translation strictModeHeader() {
+        String strictMode = """
                 set -euo pipefail -o posix
                 export IFS=$'\\n\\t'
-                """);
+                """;
+        return toStringTranslation("# strict mode header\n%s".formatted(strictMode));
+    }
+
+    @Override
+    public Translation imports() {
+        String text = "# no imports yet (this is a stub)\n";
+        return toStringTranslation(text);
     }
 
     @Override

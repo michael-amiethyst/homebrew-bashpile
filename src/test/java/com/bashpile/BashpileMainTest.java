@@ -128,7 +128,8 @@ class BashpileMainTest {
     @Order(110)
     public void functionDeclarationTest() {
         String[] executionResults = runFile("0110-functionDeclaration.bashpile").getLeft();
-        assertEquals(2, executionResults.length);
+        assertEquals(2, executionResults.length,
+                "Unexpected line length, was:\n" + join(executionResults));
     }
 
     @Test
@@ -189,8 +190,27 @@ class BashpileMainTest {
         assertEquals("6.28", executionResults.getLeft()[0], "Wrong return");
     }
 
+    @Test
+    @Order(140)
+    public void stringTypeTest() {
+        String filename = "0140-stringType.bashpile";
+        Pair<String[], Integer> executionResults = runFile(filename);
+        assertEquals(0, executionResults.getRight(), "Bad exit code");
+        assertEquals(1, executionResults.getLeft().length
+                , "Wrong length, was: " + join(executionResults.getLeft()));
+        assertEquals("to be wild", executionResults.getLeft()[0],
+                "Wrong return");
+    }
+
     // helpers
 
+    /**
+     * Compiles the file into the target shell language.
+     *
+     * @param file The Bashpile file.
+     * @return An array of strings where each string is a compiled line of the target language (e.g. Bash5).
+     * @throws IOException on file read error.
+     */
     private String[] transpileFile(String file) throws IOException {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);

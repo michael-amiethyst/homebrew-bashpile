@@ -15,7 +15,10 @@ public interface TranslationEngine {
      */
     void setVisitor(final BashpileVisitor visitor);
 
-    Translation strictMode();
+    Translation strictModeHeader();
+
+    /** To source our bundled libraries */
+    Translation imports();
 
     Translation assign(final BashpileParser.AssignStmtContext ctx);
 

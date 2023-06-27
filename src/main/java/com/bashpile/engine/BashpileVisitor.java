@@ -49,7 +49,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         contextRoot = ctx;
 
         // prepend strictMode text to the statement results
-        final String header = translator.strictMode().text();
+        final String header = translator.strictModeHeader().text();
         assertTextBlock(header);
         String translatedTextBlock = ctx.stmt().stream()
                 .map(this::visit)
@@ -57,8 +57,9 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
                 .collect(Collectors.joining());
         assertTextBlock(translatedTextBlock);
 
-        // TODO source bash-oo-framework, import types
-        return toStringTranslation(header, translatedTextBlock);
+        final String importLibs = translator.imports().text();
+
+        return toStringTranslation(header, importLibs, translatedTextBlock);
     }
 
     // visit statements

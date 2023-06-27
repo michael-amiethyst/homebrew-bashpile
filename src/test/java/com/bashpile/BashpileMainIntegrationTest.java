@@ -18,7 +18,7 @@ public class BashpileMainIntegrationTest {
     public void noSubCommandTest() throws IOException {
         log.debug("In noSubCommandTest");
         String command = "bin/bashpile";
-        Pair<String, Integer> executionResults = CommandLineExecutor.failableRunInPlace(command);
+        Pair<String, Integer> executionResults = CommandLineExecutor.failableRun(command);
         String outputText = executionResults.getLeft();
         log.debug("Output text:\n{}", outputText);
         String[] lines = BashpileMainTest.lines.split(outputText);
@@ -31,7 +31,7 @@ public class BashpileMainIntegrationTest {
     public void executeTest() throws IOException {
         log.debug("In executeTest");
         String command = "bin/bashpile -i=src/test/resources/0010-simple.bashpile execute";
-        Pair<String, Integer> executionResults = CommandLineExecutor.failableRunInPlace(command);
+        Pair<String, Integer> executionResults = CommandLineExecutor.failableRun(command);
         String outputText = executionResults.getLeft();
         log.debug("Output text:\n{}", outputText);
         String[] lines = BashpileMainTest.lines.split(outputText);
@@ -45,7 +45,7 @@ public class BashpileMainIntegrationTest {
     public void transpileTest() throws IOException {
         log.debug("In transpileTest");
         String command = "bin/bashpile -i src/test/resources/0010-simple.bashpile transpile";
-        Pair<String, Integer> executionResults = CommandLineExecutor.failableRunInPlace(command);
+        Pair<String, Integer> executionResults = CommandLineExecutor.failableRun(command);
         String outputText = executionResults.getLeft();
         log.debug("Output text:\n{}", outputText);
         String[] lines = BashpileMainTest.lines.split(outputText);

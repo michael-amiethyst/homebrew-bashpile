@@ -21,19 +21,15 @@ public class CommandLineExecutor {
     private static final Logger log = LogManager.getLogger(CommandLineExecutor.class);
 
     public static Pair<String, Integer> run(final String bashText) throws IOException {
-        return runHelper(bashText, true, true);
-    }
-
-    public static Pair<String, Integer> failableRunInPlace(final String bashText) throws IOException {
-        return runHelper(bashText, false, false);
+        return runHelper(bashText, true);
     }
 
     public static Pair<String, Integer> failableRun(final String bashText) throws IOException {
-        return runHelper(bashText, false, true);
+        return runHelper(bashText, false);
     }
 
     private static Pair<String, Integer> runHelper(
-            final String bashText, final boolean throwOnBadExitCode, final boolean cd) throws IOException {
+            final String bashText, final boolean throwOnBadExitCode) throws IOException {
         log.info("Executing bash text:\n" + bashText);
         final ProcessBuilder builder = new ProcessBuilder();
         if (isWindows()) {
@@ -43,8 +39,7 @@ public class CommandLineExecutor {
             log.trace("Detected 'nix");
             builder.command("bash");
         }
-        builder.directory(new File(System.getProperty("user.dir")))
-                .redirectErrorStream(true);
+        builder.redirectErrorStream(true);
         final Process process = builder.start();
 
         int exitCode;
@@ -63,9 +58,6 @@ public class CommandLineExecutor {
 
             // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
             bufferedWriter.write("bash\n");
-            if (cd) {
-                bufferedWriter.write("cd\n");
-            }
             // all of this code to run bashText
             bufferedWriter.write(StringUtils.appendIfMissing(bashText, "\n"));
 

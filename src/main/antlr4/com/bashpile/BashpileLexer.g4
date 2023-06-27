@@ -19,6 +19,7 @@ tokens { INDENT, DEDENT }
   }
 }
 
+TYPE: 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
 FUNCTION: 'function';
 BLOCK: 'block';
 RETURN: 'return';

@@ -4,7 +4,7 @@ options { tokenVocab = BashpileLexer; }
 prog: stmt+;
 
 stmt: expr NL                                   # exprStmt
-    | ID EQ expr NL                             # assignStmt
+    | ID (COL TYPE)? EQ expr NL                 # assignStmt
     | PRINT OPAREN arglist? CPAREN NL           # printStmt
     | FUNCTION ID paramaters                    # functionForwardDeclStmt
     | FUNCTION ID paramaters tags? COL block    # functionDeclStmt
