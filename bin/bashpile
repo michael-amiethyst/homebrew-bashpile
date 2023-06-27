@@ -2,10 +2,19 @@
 
 set -euo pipefail
 
-PROJECT_PATH=/mnt/c/Users/desig/win-dev/bashpile/
+# get script directory
+SOURCE=${BASH_SOURCE[0]}
+while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "$SOURCE")
+  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+
+PROJECT_PATH="$DIR/.."
 PLUGIN=org.apache.maven.plugins:maven-help-plugin:3.4.0::evaluate
 # sed heavy magic from
 # https://stackoverflow.com/questions/3545292/how-to-get-maven-project-version-to-the-bash-command-line
 VERSION=$(cd "$PROJECT_PATH" && mvn $PLUGIN -Dexpression=project.version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')
-JAR_PATH="${PROJECT_PATH}target/bashpile-${VERSION}-jar-with-dependencies.jar"
+JAR_PATH="${PROJECT_PATH}/target/bashpile-${VERSION}-jar-with-dependencies.jar"
 java -jar "$JAR_PATH" "$@"

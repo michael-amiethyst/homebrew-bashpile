@@ -44,12 +44,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visitors
 
     @Override
-    public Translation visitBlankStmt(BashpileParser.BlankStmtContext ctx) {
-        // was returning "\r\n" without an override
-        return toStringTranslation("\n");
-    }
-
-    @Override
     public Translation visitProg(final BashpileParser.ProgContext ctx) {
         // save root for later usage
         contextRoot = ctx;
@@ -62,10 +56,18 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
                 .map(Translation::text)
                 .collect(Collectors.joining());
         assertTextBlock(translatedTextBlock);
-        return toStringTranslation(header + translatedTextBlock);
+
+        // TODO source bash-oo-framework, import types
+        return toStringTranslation(header, translatedTextBlock);
     }
 
     // visit statements
+
+    @Override
+    public Translation visitBlankStmt(BashpileParser.BlankStmtContext ctx) {
+        // was returning "\r\n" without an override
+        return toStringTranslation("\n");
+    }
 
     @Override
     public Translation visitExprStmt(final BashpileParser.ExprStmtContext ctx) {
