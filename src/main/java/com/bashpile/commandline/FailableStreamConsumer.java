@@ -1,4 +1,4 @@
-package com.bashpile;
+package com.bashpile.commandline;
 
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.stream.Streams;

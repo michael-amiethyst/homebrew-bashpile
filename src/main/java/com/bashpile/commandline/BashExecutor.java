@@ -1,4 +1,4 @@
-package com.bashpile;
+package com.bashpile.commandline;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.lang3.StringUtils;
@@ -13,12 +13,12 @@ import java.util.regex.Pattern;
 /**
  * Runs commands in Bash.  Runs `wsl bash` in Windows.
  */
-public class CommandLineExecutor {
+public class BashExecutor {
 
     private static final Pattern bogusScreenLine = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r\n");
 
-    private static final Logger log = LogManager.getLogger(CommandLineExecutor.class);
+    private static final Logger log = LogManager.getLogger(BashExecutor.class);
 
     public static Pair<String, Integer> run(final String bashText) throws IOException {
         return runHelper(bashText, true);
@@ -40,37 +40,21 @@ public class CommandLineExecutor {
             builder.command("bash");
         }
         builder.redirectErrorStream(true);
-        final Process process = builder.start();
 
         int exitCode;
-        // TODO clean this up with an object like closableAggregate?
-        try (   // so many closable resources
-                // process related
-                final ExecutorService executorService = Executors.newSingleThreadExecutor();
-                final BufferedWriter bufferedWriter = process.outputWriter();
-                // to get the child process's STDOUT
-                final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-                final PrintStream stdoutWriter = new PrintStream(stdout)) {
-
-            final FailableStreamConsumer failableStreamConsumer =
-                    new FailableStreamConsumer(process.getInputStream(), stdoutWriter::println);
-            final Future<?> future = executorService.submit(failableStreamConsumer);
+        try (final CommandLineExecutor commandLine = CommandLineExecutor.create(builder.start())) {
 
             // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
-            bufferedWriter.write("bash\n");
-            // all of this code to run bashText
-            bufferedWriter.write(StringUtils.appendIfMissing(bashText, "\n"));
+            commandLine.write("bash\n");
+            commandLine.write(StringUtils.appendIfMissing(bashText, "\n"));
 
             // exit from sub shell and shell
-            bufferedWriter.write("exit $?\n");
-            bufferedWriter.write("exit $?\n");
-            bufferedWriter.flush();
+            commandLine.write("exit $?\n");
+            commandLine.write("exit $?\n");
 
-            exitCode = process.waitFor();
+            exitCode = commandLine.join();
 
-            future.get(10, TimeUnit.SECONDS);
-
-            final String stdoutString = stdout.toString();
+            final String stdoutString = commandLine.getStdOut();
             if (exitCode != 0 && throwOnBadExitCode) {
                 throw new BashpileUncheckedException(
                         "Found failing (non-0) 'nix exit code: " + exitCode + ".  Full text results:\n" + stdoutString);
