@@ -117,14 +117,14 @@ public class BashTranslationEngine implements TranslationEngine {
             final String ret = "%s\n%s".formatted(lineComment, hoistedFunctionText);
             return toStringTranslation(ret);
         } finally {
-            foundForwardDeclarations.add(ctx.ID().getText());
+            foundForwardDeclarations.add(ctx.typedId().ID().getText());
         }
     }
 
     @Override
     public Translation functionDecl(final BashpileParser.FunctionDeclStmtContext ctx) {
         // avoid translating twice if was part of a forward declaration
-        if (foundForwardDeclarations.contains(ctx.ID().getText())) {
+        if (foundForwardDeclarations.contains(ctx.typedId().ID().getText())) {
             return Translation.empty;
         }
 
@@ -136,12 +136,14 @@ public class BashTranslationEngine implements TranslationEngine {
             final String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
             final AtomicInteger i = new AtomicInteger(1);
             // the empty string or ...
-            final String namedParams = ctx.paramaters().ID().isEmpty() ? "" :
+            final String namedParams = ctx.paramaters().typedId().isEmpty() ? "" :
                     // local var1=$1; local var2=$2; etc
                     "%s%s\n".formatted(TAB.repeat(LevelCounter.getIndent()),
-                            ctx.paramaters().ID().stream()
+                            ctx.paramaters().typedId().stream()
+                                    .map(BashpileParser.TypedIdContext::ID)
                                     .map(visitor::visit)
-                                    .map(str -> "local %s=$%s;".formatted(str.text(), i.getAndIncrement()))
+                                    .map(Translation::text)
+                                    .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
                                     .collect(Collectors.joining(" ")));
             assertTextLine(namedParams);
             final Stream<ParserRuleContext> contextStream = addContexts(ctx.block().stmt(), ctx.block().returnRule());
@@ -150,7 +152,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final String functionComment = "# function declaration, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
             block = "%s\n%s () {\n%s%s%s}\n"
-                    .formatted(functionComment, ctx.ID().getText(), namedParams, blockText, endIndent);
+                    .formatted(functionComment, ctx.typedId().ID().getText(), namedParams, blockText, endIndent);
         }
         assertTextBlock(block);
         return toStringTranslation(block);

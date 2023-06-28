@@ -2,6 +2,7 @@ package com.bashpile;
 
 import com.bashpile.commandline.BashExecutor;
 import com.bashpile.exceptions.BashpileUncheckedException;
+import com.bashpile.exceptions.UserError;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +17,7 @@ import java.util.concurrent.Callable;
 
 import static com.bashpile.AntlrUtils.parse;
 
+// TODO use @Nullable, @NonNull vigorously
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -64,6 +66,8 @@ public class BashpileMain implements Callable<Integer> {
         try {
             bashScript = transpile();
             return BashExecutor.failableRun(bashScript);
+        } catch (UserError e) {
+            throw e;
         } catch (Throwable e) {
             throw new BashpileUncheckedException("Couldn't run `%s`.".formatted(bashScript), e);
         }

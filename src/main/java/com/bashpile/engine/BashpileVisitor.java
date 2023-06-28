@@ -2,16 +2,21 @@ package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
+import com.bashpile.exceptions.TypeError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.bashpile.Asserts.assertTextBlock;
 import static com.bashpile.engine.Translation.toStringTranslation;
+import static java.util.Objects.requireNonNullElse;
 
 /**
  * Antlr4 calls these methods.
@@ -25,6 +30,9 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     private final Logger log = LogManager.getLogger(BashpileVisitor.class);
 
     private ParserRuleContext contextRoot;
+
+    // TODO make sure this works quickly with large programs (100+ functions)
+    private final Map<String, List<Types>> functionArgumentTypes = HashMap.newHashMap(10);
 
     public BashpileVisitor(final TranslationEngine translator) {
         this.translator = translator;
@@ -92,6 +100,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitFunctionDeclStmt(final BashpileParser.FunctionDeclStmtContext ctx) {
+        final String functionName = ctx.typedId().ID().getText();
+        // TODO require strong typing, impl all types in parser
+        final List<Types> typeList = ctx.paramaters().typedId()
+                .stream().map(Types::valueOf).collect(Collectors.toList());
+        functionArgumentTypes.put(functionName, typeList);
         return translator.functionDecl(ctx);
     }
 
@@ -120,6 +133,29 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitFunctionCallExpr(final BashpileParser.FunctionCallExprContext ctx) {
+        final String functionName = ctx.ID().getText();
+        final List<Types> actualTypes = ctx.arglist() != null
+                ? ctx.arglist().expr().stream().map(x -> x.type).collect(Collectors.toList())
+                : List.of();
+        final List<Types> expectedTypes = requireNonNullElse(functionArgumentTypes.get(functionName), List.of());
+        // TODO move into Asserts, make more tests, use comparator?
+        // check if the argument lengths match
+        boolean typesMatch = actualTypes.size() == expectedTypes.size();
+        // if they match iterate over both lists
+        if (typesMatch) {
+            for (int i = 0; i < actualTypes.size(); i++) {
+                Types expected = expectedTypes.get(i);
+                Types actual = actualTypes.get(i);
+                // the types match if they are equal, UNDEF matches everything, and FLOAT matches INT ('type coercion')
+                typesMatch &= expected.equals(actual)
+                        || expected.equals(Types.UNDEF)
+                        || (expected.equals(Types.FLOAT) && actual.equals(Types.INT));
+            }
+        }
+        if (!typesMatch) {
+            throw new TypeError("Expected %s %s but was %s %s on Bashpile Line %s"
+                    .formatted(functionName, expectedTypes, functionName, actualTypes, ctx.start.getLine()));
+        }
         return translator.functionCall(ctx);
     }
 
