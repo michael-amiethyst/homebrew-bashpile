@@ -6,15 +6,17 @@ prog: stmt+;
 stmt: expr NL                                   # exprStmt
     | ID (COL TYPE)? EQ expr NL                 # assignStmt
     | PRINT OPAREN arglist? CPAREN NL           # printStmt
-    | FUNCTION ID paramaters                    # functionForwardDeclStmt
-    | FUNCTION ID paramaters tags? COL block    # functionDeclStmt
+    | FUNCTION ID (COL TYPE)? paramaters        # functionForwardDeclStmt
+    | FUNCTION ID (COL TYPE)? paramaters
+                              tags? COL block   # functionDeclStmt
     | BLOCK tags? COL INDENT stmt+ DEDENT       # anonBlockStmt
     | returnRule                                # returnStmt
     | NL                                        # blankStmt
     ;
 
 tags: OBRACKET (STRING*) CBRACKET;
-paramaters: OPAREN (ID (COMMA ID)*)? CPAREN;
+// like (x: str, y: str)
+paramaters: OPAREN ( ID (COL TYPE)? (COMMA ID (COL TYPE)?)* )? CPAREN;
 arglist: expr (COMMA expr)*;
 // force the final statement to be a return to work around Bash not allawing the return keyword with a string
 // but will interpret the last line of a function (which may be a string) as the return if no keyword

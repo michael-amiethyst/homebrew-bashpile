@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO break function tests into separate suite
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
 
@@ -200,6 +201,15 @@ class BashpileMainTest {
                 , "Wrong length, was: " + join(executionResults.getLeft()));
         assertEquals("to be wild", executionResults.getLeft()[0],
                 "Wrong return");
+    }
+
+    @Test
+    @Order(150)
+    public void functionDeclTypesTest() {
+        String[] executionResults = runFile("0150-functionDeclTypes.bashpile").getLeft();
+        assertEquals(2, executionResults.length);
+        assertEquals("3.14", executionResults[0]);
+        assertEquals("3.14", executionResults[1]);
     }
 
     // helpers
