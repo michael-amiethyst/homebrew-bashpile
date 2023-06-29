@@ -38,11 +38,11 @@ public class BashTranslationEngine implements TranslationEngine {
     private static @Nonnull String getLocalText(final boolean reassignment) {
         final boolean indented = getIndent() > 0;
         if (indented && !reassignment) {
-            return " local";
+            return "local ";
         } else if (indented) { // and a reassignment
             return "";
         } else { // not indented
-            return " export";
+            return "export ";
         }
     }
 
