@@ -1,5 +1,6 @@
 (38. + 5) * .3
 function functionName:int(x1:int, y2:int):
     return x * y
-x:float = 7.7
+x:float = 7.
+functionName(x,x)
 x * x

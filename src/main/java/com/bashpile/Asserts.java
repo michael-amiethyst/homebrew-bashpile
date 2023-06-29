@@ -53,7 +53,6 @@ public class Asserts {
             @Nonnull final List<Type> actualTypes,
             @Nonnull final BashpileParser.FunctionCallExprContext ctx) {
 
-        // TODO use comperator?
         // check if the argument lengths match
         boolean typesMatch = actualTypes.size() == expectedTypes.size();
         // if they match iterate over both lists
