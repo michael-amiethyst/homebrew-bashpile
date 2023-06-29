@@ -6,6 +6,7 @@ import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
+import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -172,18 +173,22 @@ public class BashTranslationEngine implements TranslationEngine {
         }
     }
 
-    // TODO write test for double declaration
     @Override
     public @Nonnull Translation functionDecl(@Nonnull final BashpileParser.FunctionDeclStmtContext ctx) {
         // avoid translating twice if was part of a forward declaration
-        if (foundForwardDeclarations.contains(ctx.typedId().ID().getText())) {
+        final String functionName = ctx.typedId().ID().getText();
+        if (foundForwardDeclarations.contains(functionName)) {
             return Translation.empty;
+        }
+
+        // check for double declaration
+        if (typeStack.containsFunction(functionName)) {
+            throw new UserError(functionName + " was declared twice (function overloading is not supported)");
         }
 
         // regular processing -- no forward declaration
 
         // register function param types and return type
-        final String functionName = ctx.typedId().ID().getText();
         final List<Type> typeList = ctx.paramaters().typedId()
                 .stream().map(Type::valueOf).collect(Collectors.toList());
         final Type retType = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
@@ -217,7 +222,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final String functionComment = "# function declaration, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
             block = "%s\n%s () {\n%s%s}\n"
-                    .formatted(functionComment, ctx.typedId().ID().getText(), namedParams, blockText);
+                    .formatted(functionComment, functionName, namedParams, blockText);
         } finally {
             typeStack.pop();
         }
@@ -263,6 +268,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // expressions
 
+    // TODO handle string concats
     @Override
     public @Nonnull Translation calc(@Nonnull final ParserRuleContext ctx) {
         // prepend $ to variable name, e.g. "var" becomes "$var"

@@ -57,6 +57,11 @@ public class TypeStack {
         return FunctionTypeInfo.EMPTY;
     }
 
+    public boolean containsFunction(@Nonnull final String functionName) {
+        final FunctionTypeInfo foundFunction = getFunction(functionName);
+        return foundFunction != FunctionTypeInfo.EMPTY;
+    }
+
     public void push() {
         frames.push(TypeStackframe.of());
     }

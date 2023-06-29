@@ -1,6 +1,7 @@
 package com.bashpile;
 
 import com.bashpile.exceptions.TypeError;
+import com.bashpile.exceptions.UserError;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
@@ -38,6 +39,12 @@ class FunctionsTest {
     @Order(112)
     public void functionDeclarationBadParamsTest() {
         assertThrows(TypeError.class, () -> runFile("0112-functionDeclaration-badParams.bashpile"));
+    }
+
+    @Test
+    @Order(113)
+    public void functionDeclarationDoubleDeclTest() {
+        assertThrows(UserError.class, () -> runFile("0113-functionDeclaration-doubleDecl.bashpile"));
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.bashpile.commandline;
 
 import org.apache.commons.io.IOUtils;
 
+import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.concurrent.*;
 
@@ -35,15 +36,18 @@ public class CommandLineExecutor implements Closeable {
     /** We just need this to close down the STDOUT stream reader */
     final private Future<?> childStdOutReaderFuture;
 
-    public static CommandLineExecutor create(final Process childProcess) {
+    public static @Nonnull CommandLineExecutor create(@Nonnull final Process childProcess) {
         final ByteArrayOutputStream childStdOutBuffer = new ByteArrayOutputStream();
         // childProcess.outputWriter() is confusing -- it returns a writer for the child process's STDIN
         return new CommandLineExecutor(childProcess, Executors.newSingleThreadExecutor(), childProcess.outputWriter(),
                 childStdOutBuffer, new PrintStream(childStdOutBuffer));
     }
 
-    private CommandLineExecutor(Process childProcess, ExecutorService executorService, BufferedWriter childStdInWriter,
-                                ByteArrayOutputStream childStdOutBuffer, PrintStream childStdOutWriter) {
+    private CommandLineExecutor(@Nonnull final Process childProcess,
+                                @Nonnull final ExecutorService executorService,
+                                @Nonnull final BufferedWriter childStdInWriter,
+                                @Nonnull final ByteArrayOutputStream childStdOutBuffer,
+                                @Nonnull final PrintStream childStdOutWriter) {
         this.childProcess = childProcess;
         this.executorService = executorService;
         this.childStdInWriter = childStdInWriter;
@@ -55,7 +59,7 @@ public class CommandLineExecutor implements Closeable {
         this.childStdOutReaderFuture = executorService.submit(failableStreamConsumer);
     }
 
-    public void write(String text) throws IOException {
+    public void write(@Nonnull final String text) throws IOException {
         childStdInWriter.write(text);
     }
 
@@ -73,7 +77,7 @@ public class CommandLineExecutor implements Closeable {
         childStdOutWriter.flush();
     }
 
-    public String getStdOut() {
+    public @Nonnull String getStdOut() {
         return childStdOutBuffer.toString();
     }
 

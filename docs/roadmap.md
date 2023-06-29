@@ -18,3 +18,7 @@ reflections api?
 # much later
 tooling (IDE integrations, code highlighting)
 native run instead of just on bash
+
+# maybe
+1. function overloading 
+   1. (behind the scenes name the function name_returnType_arg1Type_arg2Type_...)
