@@ -61,15 +61,21 @@ public class BashpileMain implements Callable<Integer> {
 
     public Pair<String, Integer> execute() {
         log.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = "<unparsed stream: %s>".formatted(
-                Objects.requireNonNullElse(inputFile, "System.in"));
+        String bashScript = Objects.requireNonNullElse(inputFile, "System.in");
         try {
             bashScript = transpile();
             return BashExecutor.failableRun(bashScript);
         } catch (UserError e) {
             throw e;
         } catch (Throwable e) {
-            throw new BashpileUncheckedException("Couldn't run `%s`.".formatted(bashScript), e);
+            String msg = "\nCouldn't run `%s`".formatted(bashScript);
+            if (e.getMessage() != null) {
+                msg += " because of\n`%s`".formatted(e.getMessage());
+            }
+            if (e.getCause() != null) {
+                msg += "\n caused by `%s`".formatted(e.getCause().getMessage());
+            }
+            throw new BashpileUncheckedException(msg, e);
         }
     }
 

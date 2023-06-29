@@ -1,2 +1,2 @@
-worldStr="world"
+worldStr:str="world"
 print(worldStr)

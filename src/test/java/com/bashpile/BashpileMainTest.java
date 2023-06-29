@@ -50,6 +50,14 @@ class BashpileMainTest {
         assertEquals("4", ret[0]);
     }
 
+    @Test
+    @Order(31)
+    public void reassignTest() {
+        // TODO fix, possibly with parser gating
+        String[] ret = runFile("0031-reassign.bashpile").getLeft();
+        assertEquals("5", ret[0]);
+    }
+
     /**
      * References an undeclared variable.
      */

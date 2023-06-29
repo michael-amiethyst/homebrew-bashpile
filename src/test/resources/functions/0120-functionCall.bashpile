@@ -1,4 +1,4 @@
-function circleArea(r):
+function circleArea:float(r:float):
     return 3.14 * r * r
 print(circleArea(1))
 print(circleArea(-1))

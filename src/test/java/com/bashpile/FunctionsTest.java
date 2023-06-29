@@ -39,6 +39,12 @@ class FunctionsTest {
     }
 
     @Test
+    @Order(112)
+    public void functionDeclarationBadParamsTest() {
+        assertThrows(TypeError.class, () -> runFile("0112-functionDeclaration-badParams.bashpile"));
+    }
+
+    @Test
     @Order(120)
     public void functionCallTest() {
         String[] executionResults = runFile("0120-functionCall.bashpile").getLeft();
@@ -114,6 +120,25 @@ class FunctionsTest {
     @Order(160)
     public void functionDeclTypesEnforcedTest() {
         assertThrows(TypeError.class, () -> runFile("0160-functionDeclTypesEnforced.bashpile"));
+    }
+
+    @Test
+    @Order(170)
+    public void functionDeclTypesCalcExprTest() {
+        Pair<String[], Integer> results = runFile("0170-functionDeclTypesEnforced-calcExpr.bashpile");
+        String[] lines = results.getLeft();
+        assertEquals(0, results.getRight());
+        assertEquals(1, lines.length, "Wrong length, was: " + join(lines));
+        assertEquals("3.14", lines[0]);
+    }
+
+    @Test
+    @Order(180)
+    public void functionDeclTypesBadCalcExprTest() {
+        Pair<String[], Integer> results = runFile("0180-functionDeclTypesEnforced-badCalcExpr.bashpile");
+        String[] lines = results.getLeft();
+        assertEquals(1, results.getRight());
+        assertEquals(2, lines.length, "Wrong length, was: " + join(lines, "\n"));
     }
 
     // helpers

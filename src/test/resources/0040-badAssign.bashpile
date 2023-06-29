@@ -1,2 +1,2 @@
-someVar = 1 + 1
+someVar: int = 1 + 1
 someOtherVar + 2

@@ -1,0 +1,3 @@
+function circleArea: float(r: float) ["need to remove the quotes"]:
+    return 3.14 * r * r
+print(circleArea(.5 + .5))

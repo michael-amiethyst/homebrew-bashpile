@@ -1,11 +1,12 @@
 package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
+import com.bashpile.exceptions.TypeError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -16,8 +17,10 @@ import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.assertTextBlock;
 import static com.bashpile.Asserts.assertTextLine;
 import static com.bashpile.engine.LevelCounter.*;
+import static com.bashpile.engine.MetaType.NORMAL;
 import static com.bashpile.engine.Translation.toStringTranslation;
-import static com.bashpile.engine.TranslationType.SUBSHELL_SUBSTITUTION;
+import static com.bashpile.engine.MetaType.SUBSHELL_SUBSTITUTION;
+import static java.util.Objects.requireNonNullElse;
 
 /**
  * Translates to Bash5 with four spaces as a tab.
@@ -39,6 +42,12 @@ public class BashTranslationEngine implements TranslationEngine {
         strRef.set(appended);
     }
 
+    // TODO make sure this works quickly with large programs (100+ functions)
+    /**
+     * A map of function name (ID) to a list of argument types and the return type
+     */
+    private final Map<String, Pair<List<Type>, Type>> functionArgumentTypes = HashMap.newHashMap(10);
+
     private BashpileVisitor visitor;
 
     /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
@@ -50,7 +59,7 @@ public class BashTranslationEngine implements TranslationEngine {
     /** prepend $ to variable name, e.g. "var" becomes "$var" */
     private final Function<ParseTree, Translation> translateIdsOrVisit =
             x -> x instanceof BashpileParser.IdExprContext ?
-                    toStringTranslation("$" + x.getText())
+                    new Translation("$" + x.getText(), visitor.visit(x).type(), NORMAL)
                     : visitor.visit(x);
 
     @Override
@@ -81,7 +90,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation assign(final BashpileParser.AssignStmtContext ctx) {
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String variable = ctx.ID().getText();
+        final String variable = ctx.typedId().ID().getText();
         final String value = ctx.expr().getText();
         return toStringTranslation("%s\n%s %s=%s\n".formatted(lineComment, getLocalText(), variable, value));
     }
@@ -129,6 +138,15 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // regular processing -- no forward declaration
+
+        // register type
+        final String functionName = ctx.typedId().ID().getText();
+        final List<Type> typeList = ctx.paramaters().typedId()
+                .stream().map(Type::valueOf).collect(Collectors.toList());
+        final Type retType = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
+        functionArgumentTypes.put(functionName, Pair.of(typeList, retType));
+
+        // create block
         String block;
         try (LevelCounter counter = new LevelCounter(BLOCK)) {
             counter.noop();
@@ -217,14 +235,55 @@ public class BashTranslationEngine implements TranslationEngine {
                     .collect(Collectors.joining());
         }
         assertTextBlock(subshellVarText.get());
+        // TODO get more accurate translations
         return LevelCounter.in(CALC) ?
                 toStringTranslation(text)
-                : new Translation("%s$(bc <<< \"%s\")".formatted(subshellVarText, text), SUBSHELL_SUBSTITUTION);
+                : new Translation(
+                        "%s$(bc <<< \"%s\")".formatted(subshellVarText, text), Type.NUMBER, SUBSHELL_SUBSTITUTION);
     }
 
     @Override
     public Translation functionCall(final BashpileParser.FunctionCallExprContext ctx) {
         final String id = ctx.ID().getText();
+
+        // check arg types
+        // TODO fix test 0130 with a whole call stack for local data storage of in-scope parameter and variable types
+        final String functionName = ctx.ID().getText();
+        // TODO cache stream results of first map
+        final List<Type> actualTypes = ctx.arglist() != null
+                ? ctx.arglist().expr().stream()
+                    .map(translateIdsOrVisit).map(Translation::type).collect(Collectors.toList())
+                : List.of();
+        @SuppressWarnings("unchecked")
+        final Pair<List<Type>, Type> expectedTypes =
+                (Pair<List<Type>, Type>) requireNonNullElse(functionArgumentTypes.get(functionName), Pair.emptyArray());
+        // TODO move into Asserts, make more tests, use comparator?
+        // check if the argument lengths match
+        boolean typesMatch = actualTypes.size() == expectedTypes.getLeft().size();
+        // if they match iterate over both lists
+        if (typesMatch) {
+            for (int i = 0; i < actualTypes.size(); i++) {
+                Type expected = expectedTypes.getLeft().get(i);
+                Type actual = actualTypes.get(i);
+                // the types match if they are equal
+                typesMatch &= expected.equals(actual)
+                        // UNDEF matches everything
+                        || expected.equals(Type.UNDEF)
+                        // FLOAT also matches INT
+                        || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))
+                        // and NUMBER matches INT or FLOAT
+                        || (expected.equals(Type.NUMBER) && (actual.equals(Type.INT) || actual.equals(Type.FLOAT)))
+                        // INT and FLOAT also match NUMBER
+                        || ((expected.equals(Type.INT) || expected.equals(Type.FLOAT)) && (actual.equals(Type.NUMBER)));
+            }
+        }
+        if (!typesMatch) {
+            throw new TypeError("Expected %s %s but was %s %s on Bashpile Line %s"
+                    .formatted(functionName, expectedTypes, functionName, actualTypes, ctx.start.getLine()));
+        }
+
+        // get arguments
+
         final boolean hasArgs = ctx.arglist() != null;
         // empty list or ' arg1Text arg2Text etc'
         final String args = hasArgs ? " " + ctx.arglist().expr().stream()
@@ -232,6 +291,10 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(Translation::text)
                 .collect(Collectors.joining(" "))
                 : "";
-        return new Translation("$(%s%s)".formatted(id, args), SUBSHELL_SUBSTITUTION);
+
+        // lookup return type of this function
+        final Type retType = functionArgumentTypes.get(id).getRight();
+
+        return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
     }
 }
