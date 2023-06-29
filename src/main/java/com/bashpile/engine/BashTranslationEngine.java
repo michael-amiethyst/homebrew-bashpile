@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,15 +30,15 @@ public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";
 
-    private static String getLocalText() {
+    private static @Nonnull String getLocalText() {
         return LevelCounter.getIndent() != 0 ? "local" : "export";
     }
 
-    private static String getHoisted() {
+    private static @Nonnull String getHoisted() {
         return LevelCounter.in(FORWARD_DECL) ? " (hoisted)" : "";
     }
 
-    private static void append(final AtomicReference<String> strRef, final String toAppend) {
+    private static void append(@Nonnull final AtomicReference<String> strRef, @Nonnull final String toAppend) {
         final String appended = strRef.get() + toAppend;
         strRef.set(appended);
     }
@@ -63,13 +64,13 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** prepend $ to variable name, e.g. "var" becomes "$var" */
     private final Function<ParseTree, Translation> translateIdsOrVisit =
-            x -> x instanceof BashpileParser.IdExprContext ?
-                    new Translation("$" + x.getText(),
-                            variableTypes.get(((BashpileParser.IdExprContext) x).ID().getText()), NORMAL)
-                    : visitor.visit(x);
+            parseTree -> parseTree instanceof BashpileParser.IdExprContext
+                    ? new Translation("$" + parseTree.getText(),
+                            variableTypes.get(((BashpileParser.IdExprContext) parseTree).ID().getText()), NORMAL)
+                    : visitor.visit(parseTree);
 
     @Override
-    public void setVisitor(BashpileVisitor visitor) {
+    public void setVisitor(@Nonnull final BashpileVisitor visitor) {
         this.visitor = visitor;
     }
 
@@ -79,7 +80,7 @@ public class BashTranslationEngine implements TranslationEngine {
      * @return The Strict Mode header
      */
     @Override
-    public Translation strictModeHeader() {
+    public @Nonnull Translation strictModeHeader() {
         String strictMode = """
                 set -euo pipefail -o posix
                 export IFS=$'\\n\\t'
@@ -88,13 +89,13 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation imports() {
+    public @Nonnull Translation imports() {
         String text = "# no imports yet (this is a stub)\n";
         return toStringTranslation(text);
     }
 
     @Override
-    public Translation assign(final BashpileParser.AssignStmtContext ctx) {
+    public @Nonnull Translation assign(@Nonnull final BashpileParser.AssignStmtContext ctx) {
         // add this variable to the type map
         final String variableName = ctx.typedId().ID().getText();
         final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
@@ -108,7 +109,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation reassign(BashpileParser.ReAssignStmtContext ctx) {
+    public @Nonnull Translation reassign(@Nonnull final BashpileParser.ReAssignStmtContext ctx) {
         final String variableName = ctx.ID().getText();
         if (!variableTypes.containsKey(variableName)) {
             throw new TypeError(variableName + " has not been declared");
@@ -120,7 +121,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation print(final BashpileParser.PrintStmtContext ctx) {
+    public @Nonnull Translation print(@Nonnull final BashpileParser.PrintStmtContext ctx) {
         final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
         final String printText = ("%s\n%s\n").formatted(lineComment, ctx.arglist().expr().stream()
                 .map(translateIdsOrVisit)
@@ -140,7 +141,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation functionForwardDecl(final BashpileParser.FunctionForwardDeclStmtContext ctx) {
+    public @Nonnull Translation functionForwardDecl(@Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (LevelCounter forwardDeclCounter = new LevelCounter(FORWARD_DECL)) {
             forwardDeclCounter.noop();
@@ -155,7 +156,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation functionDecl(final BashpileParser.FunctionDeclStmtContext ctx) {
+    public @Nonnull Translation functionDecl(@Nonnull final BashpileParser.FunctionDeclStmtContext ctx) {
         // avoid translating twice if was part of a forward declaration
         if (foundForwardDeclarations.contains(ctx.typedId().ID().getText())) {
             return Translation.empty;
@@ -205,7 +206,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation anonBlock(final BashpileParser.AnonBlockStmtContext ctx) {
+    public @Nonnull Translation anonBlock(@Nonnull final BashpileParser.AnonBlockStmtContext ctx) {
         String block;
         try (LevelCounter counter = new LevelCounter(BLOCK)) {
             counter.noop();
@@ -224,7 +225,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation returnRule(final BashpileParser.ReturnRuleContext ctx) {
+    public @Nonnull Translation returnRule(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
         final Translation ret = visitor.visit(ctx.expr());
         // insert echo right at start of last line
         // not a text block, ret.text() does not end in newline
@@ -239,7 +240,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // expressions
 
     @Override
-    public Translation calc(final ParserRuleContext ctx) {
+    public @Nonnull Translation calc(@Nonnull final ParserRuleContext ctx) {
         // prepend $ to variable name, e.g. "var" becomes "$var"
         String text;
         final AtomicReference<String> subshellVarText = new AtomicReference<>("");
@@ -270,7 +271,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation functionCall(final BashpileParser.FunctionCallExprContext ctx) {
+    public @Nonnull Translation functionCall(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
         final String id = ctx.ID().getText();
 
         // check arg types
@@ -280,7 +281,6 @@ public class BashTranslationEngine implements TranslationEngine {
                 ? ctx.arglist().expr().stream()
                     .map(translateIdsOrVisit).map(Translation::type).collect(Collectors.toList())
                 : List.of();
-        @SuppressWarnings("unchecked")
         final FunctionTypeInfo expectedTypes =
                 (FunctionTypeInfo) requireNonNullElse(functionArgumentTypes.get(functionName), Pair.emptyArray());
         // TODO move into Asserts, make more tests, use comparator?
