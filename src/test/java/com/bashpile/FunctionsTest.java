@@ -141,6 +141,12 @@ class FunctionsTest {
         assertEquals(2, lines.length, "Wrong length, was: " + join(lines, "\n"));
     }
 
+    @Test
+    @Order(190)
+    public void functionDeclTypesBadCalcExprNestedTest() {
+        assertThrows(TypeError.class, () -> runFile("0190-functionDeclTypesEnforced-badCalcExprNested.bashpile"));
+    }
+
     // helpers
 
     /**

@@ -62,6 +62,7 @@ public class BashpileMain implements Callable<Integer> {
         return 0;
     }
 
+    // TODO return a Record instead of a pair
     public @Nonnull Pair<String, Integer> execute() {
         log.debug("In {}", System.getProperty("user.dir"));
         String bashScript = Objects.requireNonNullElse(inputFile, "System.in");

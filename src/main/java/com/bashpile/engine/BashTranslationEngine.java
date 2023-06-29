@@ -33,7 +33,17 @@ public class BashTranslationEngine implements TranslationEngine {
     public static final String TAB = "    ";
 
     private static @Nonnull String getLocalText() {
-        return LevelCounter.getIndent() != 0 ? "local" : "export";
+        return getLocalText(false);
+    }
+    private static @Nonnull String getLocalText(final boolean reassignment) {
+        final boolean indented = getIndent() > 0;
+        if (indented && !reassignment) {
+            return " local";
+        } else if (indented) { // and a reassignment
+            return "";
+        } else { // not indented
+            return " export";
+        }
     }
 
     private static @Nonnull String getHoisted() {
@@ -105,9 +115,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String value = ctx.expr().getText();
+        final String value = visitor.visit(ctx.expr()).text();
         return new Translation(
-                "%s\n%s %s=%s\n".formatted(lineComment, getLocalText(), variableName, value), Type.NA, NORMAL);
+                "%s\n%s%s=%s\n".formatted(lineComment, getLocalText(), variableName, value),
+                Type.NA, NORMAL);
     }
 
     @Override
@@ -117,9 +128,10 @@ public class BashTranslationEngine implements TranslationEngine {
             throw new TypeError(variableName + " has not been declared");
         }
         final String lineComment = "# reassign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String value = ctx.expr().getText();
+        final String value = visitor.visit(ctx.expr()).text();
         return new Translation(
-                "%s\n%s %s=%s\n".formatted(lineComment, getLocalText(), variableName, value), Type.NA, NORMAL);
+                "%s\n%s%s=%s\n".formatted(lineComment, getLocalText(true), variableName, value),
+                Type.NA, NORMAL);
     }
 
     @Override
@@ -182,13 +194,11 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter counter = new LevelCounter(BLOCK)) {
             counter.noop();
             // handles nested blocks
-            final String endIndent = TAB.repeat(LevelCounter.getIndentMinusOne());
             final AtomicInteger i = new AtomicInteger(1);
             // the empty string or ...
             final String namedParams = ctx.paramaters().typedId().isEmpty() ? "" :
                     // local var1=$1; local var2=$2; etc
-                    "%s%s\n".formatted(TAB.repeat(LevelCounter.getIndent()),
-                            ctx.paramaters().typedId().stream()
+                    "%s%s\n".formatted(TAB, ctx.paramaters().typedId().stream()
                                     .map(BashpileParser.TypedIdContext::ID)
                                     .map(visitor::visit)
                                     .map(Translation::text)
@@ -200,8 +210,8 @@ public class BashTranslationEngine implements TranslationEngine {
             assertTextBlock(blockText);
             final String functionComment = "# function declaration, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
-            block = "%s\n%s () {\n%s%s%s}\n"
-                    .formatted(functionComment, ctx.typedId().ID().getText(), namedParams, blockText, endIndent);
+            block = "%s\n%s () {\n%s%s}\n"
+                    .formatted(functionComment, ctx.typedId().ID().getText(), namedParams, blockText);
         }
         assertTextBlock(block);
         return toStringTranslation(block);
