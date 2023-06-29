@@ -1,6 +1,5 @@
 package com.bashpile;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
@@ -9,21 +8,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
 
-    public static final Pattern lines = Pattern.compile("\r?\n");
-
     private static final Logger log = LogManager.getLogger(BashpileMainTest.class);
 
     @Test
     @Order(10)
     public void simpleTest() {
-        String[] ret = runFile("0010-simple.bashpile").getLeft();
+        String[] ret = runFile("0010-simple.bashpile").stdoutLines();
         assertNotNull(ret);
         final int expectedLines = 1;
         assertEquals(expectedLines, ret.length, "Unexpected output length, expected %d lines but found: %s"
@@ -34,7 +30,7 @@ class BashpileMainTest {
     @Test
     @Order(20)
     public void multilineTest() {
-        String[] ret = runFile("0020-multiline.bashpile").getLeft();
+        String[] ret = runFile("0020-multiline.bashpile").stdoutLines();
         assertNotNull(ret);
         int expected = 2;
         assertEquals(expected, ret.length, "Expected %d lines but got %d".formatted(expected, ret.length));
@@ -45,14 +41,14 @@ class BashpileMainTest {
     @Test
     @Order(30)
     public void assignTest() {
-        String[] ret = runFile("0030-assign.bashpile").getLeft();
+        String[] ret = runFile("0030-assign.bashpile").stdoutLines();
         assertEquals("4", ret[0]);
     }
 
     @Test
     @Order(31)
     public void reassignTest() {
-        String[] ret = runFile("0031-reassign.bashpile").getLeft();
+        String[] ret = runFile("0031-reassign.bashpile").stdoutLines();
         assertEquals("5", ret[0]);
     }
 
@@ -62,16 +58,16 @@ class BashpileMainTest {
     @Test
     @Order(40)
     public void badAssign() {
-        Pair<String[], Integer> runResults = runFile("0040-badAssign.bashpile");
-        assertEquals(1, runResults.getRight());
-        String errorLine = runResults.getLeft()[0];
+        ExecutionResults runResults = runFile("0040-badAssign.bashpile");
+        assertEquals(1, runResults.exitCode());
+        String errorLine = runResults.stdoutLines()[0];
         assertTrue(errorLine.endsWith("unbound variable"), "Unexpected error line: " + errorLine);
     }
 
     @Test
     @Order(50)
     public void parenTest() {
-        String[] ret = runFile("0050-paren.bashpile").getLeft();
+        String[] ret = runFile("0050-paren.bashpile").stdoutLines();
         assertEquals(1, ret.length, "Unexpected number of lines");
         assertEquals("21", ret[0]);
     }
@@ -79,14 +75,14 @@ class BashpileMainTest {
     @Test
     @Order(60)
     public void idTest() throws IOException {
-        String[] bashLines = transpileFile("0060-id.bashpile");
+        String[] bashLines = runFile("0060-id.bashpile").stdinLines();
         assertEquals("var", bashLines[bashLines.length - 1]);
     }
 
     @Test
     @Order(70)
     public void intTest() throws IOException {
-        String[] bashLines = transpileFile("0070-int.bashpile");
+        String[] bashLines = runFile("0070-int.bashpile").stdinLines();
         assertEquals("42", bashLines[bashLines.length - 1]);
     }
 
@@ -94,8 +90,8 @@ class BashpileMainTest {
     @Order(71)
     public void stringTest() {
         var runResult = runFile("0071-string.bashpile");
-        assertEquals(0, runResult.getRight());
-        String[] outLines = runResult.getLeft();
+        assertEquals(0, runResult.exitCode());
+        String[] outLines = runResult.stdoutLines();
         assertEquals("world", outLines[outLines.length - 1]);
     }
 
@@ -103,7 +99,7 @@ class BashpileMainTest {
     @Order(80)
     public void blockTest() {
         String filename = "0080-block.bashpile";
-        String[] executionResults = runFile(filename).getLeft();
+        String[] executionResults = runFile(filename).stdoutLines();
         String[] expected = {"24", "64000", "128"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
@@ -114,16 +110,16 @@ class BashpileMainTest {
     public void lexicalScopingTest() {
         String filename = "0090-lexicalscoping.bashpile";
         var ret = runFile(filename);
-        assertEquals(1, ret.getRight(),
-                "Unexpected exit code.  Return text was:\n" + String.join("\n", ret.getLeft()));
-        String line = ret.getLeft()[ret.getLeft().length - 1];
+        assertEquals(1, ret.exitCode(),
+                "Unexpected exit code.  Return text was:\n" + String.join("\n", ret.stdoutLines()));
+        String line = ret.stdoutLines()[ret.stdoutLines().length - 1];
         assertTrue(line.endsWith("unbound variable"), "Unexpected error line: " + line);
     }
 
     @Test
     @Order(100)
     public void floatsTest() {
-        String[] executionResults = runFile("0100-floats.bashpile").getLeft();
+        String[] executionResults = runFile("0100-floats.bashpile").stdoutLines();
         String[] expected = {"21.0", "11.0", "7.0"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
@@ -131,25 +127,10 @@ class BashpileMainTest {
 
     // helpers
 
-    /**
-     * Compiles the file into the target shell language.
-     *
-     * @param file The Bashpile file.
-     * @return An array of strings where each string is a compiled line of the target language (e.g. Bash5).
-     * @throws IOException on file read error.
-     */
-    private String[] transpileFile(String file) throws IOException {
+    private ExecutionResults runFile(String file) {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);
-        return lines.split(bashpile.transpile());
-    }
-
-    private Pair<String[], Integer> runFile(String file) {
-        log.debug("Start of {}", file);
-        String filename = "src/test/resources/%s".formatted(file);
-        BashpileMain bashpile = new BashpileMain(filename);
-        Pair<String, Integer> runResults = bashpile.execute();
-        return Pair.of(lines.split(runResults.getLeft()), runResults.getRight());
+        return bashpile.execute();
     }
 }

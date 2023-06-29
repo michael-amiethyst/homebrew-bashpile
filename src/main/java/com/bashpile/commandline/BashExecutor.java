@@ -1,13 +1,15 @@
 package com.bashpile.commandline;
 
+import com.bashpile.ExecutionResults;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
-import java.util.concurrent.*;
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 /**
@@ -20,16 +22,16 @@ public class BashExecutor {
 
     private static final Logger log = LogManager.getLogger(BashExecutor.class);
 
-    public static Pair<String, Integer> run(final String bashText) throws IOException {
+    public static @Nonnull ExecutionResults run(@Nonnull final String bashText) throws IOException {
         return runHelper(bashText, true);
     }
 
-    public static Pair<String, Integer> failableRun(final String bashText) throws IOException {
+    public static @Nonnull ExecutionResults failableRun(@Nonnull final String bashText) throws IOException {
         return runHelper(bashText, false);
     }
 
-    private static Pair<String, Integer> runHelper(
-            final String bashText, final boolean throwOnBadExitCode) throws IOException {
+    private static @Nonnull ExecutionResults runHelper(
+            @Nonnull final String bashText, final boolean throwOnBadExitCode) throws IOException {
         log.info("Executing bash text:\n" + bashText);
         final ProcessBuilder builder = new ProcessBuilder();
         if (isWindows()) {
@@ -63,7 +65,7 @@ public class BashExecutor {
             log.trace("Shell output before processing: [{}]", stdoutString);
             final String processedCommandResultText =
                     bogusScreenLine.matcher(stdoutString).replaceAll("").trim();
-            return Pair.of(processedCommandResultText, exitCode);
+            return new ExecutionResults(bashText, exitCode, processedCommandResultText);
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new BashpileUncheckedException(e);
         }

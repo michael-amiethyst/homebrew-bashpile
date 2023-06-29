@@ -3,7 +3,6 @@ package com.bashpile;
 import com.bashpile.commandline.BashExecutor;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
@@ -58,12 +57,11 @@ public class BashpileMain implements Callable<Integer> {
     @SuppressWarnings("unused")
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
     public int executeCommand() {
-        System.out.println(execute().getLeft());
+        System.out.println(execute().stdout());
         return 0;
     }
 
-    // TODO return a Record instead of a pair
-    public @Nonnull Pair<String, Integer> execute() {
+    public @Nonnull ExecutionResults execute() {
         log.debug("In {}", System.getProperty("user.dir"));
         String bashScript = Objects.requireNonNullElse(inputFile, "System.in");
         try {
