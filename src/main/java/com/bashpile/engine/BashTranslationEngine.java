@@ -43,10 +43,11 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     // TODO make sure this works quickly with large programs (100+ functions)
+    // TODO use a call stack instead to implement lexical scoping
     /**
-     * A map of function name (ID) to a list of argument types and the return type
+     * A map of function name (ID) to a list of argument types and the return type.  Dynamic scoping
      */
-    private final Map<String, Pair<List<Type>, Type>> functionArgumentTypes = HashMap.newHashMap(10);
+    private final Map<String, FunctionTypeInfo> functionArgumentTypes = HashMap.newHashMap(10);
 
     // TODO use a call stack instead to implement lexical scoping
     /** Map of all variable types -- dynamic scoping */
@@ -63,7 +64,8 @@ public class BashTranslationEngine implements TranslationEngine {
     /** prepend $ to variable name, e.g. "var" becomes "$var" */
     private final Function<ParseTree, Translation> translateIdsOrVisit =
             x -> x instanceof BashpileParser.IdExprContext ?
-                    new Translation("$" + x.getText(), visitor.visit(x).type(), NORMAL)
+                    new Translation("$" + x.getText(),
+                            variableTypes.get(((BashpileParser.IdExprContext) x).ID().getText()), NORMAL)
                     : visitor.visit(x);
 
     @Override
@@ -161,12 +163,16 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // regular processing -- no forward declaration
 
-        // register type
+        // register function param types and return type
         final String functionName = ctx.typedId().ID().getText();
         final List<Type> typeList = ctx.paramaters().typedId()
                 .stream().map(Type::valueOf).collect(Collectors.toList());
         final Type retType = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
-        functionArgumentTypes.put(functionName, Pair.of(typeList, retType));
+        functionArgumentTypes.put(functionName, new FunctionTypeInfo(typeList, retType));
+
+        // register local variable types
+        ctx.paramaters().typedId().forEach(
+                x -> variableTypes.put(x.ID().getText(), Type.valueOf(x.TYPE().getText().toUpperCase())));
 
         // create block
         String block;
@@ -257,7 +263,6 @@ public class BashTranslationEngine implements TranslationEngine {
                     .collect(Collectors.joining());
         }
         assertTextBlock(subshellVarText.get());
-        // TODO get more accurate translations
         return LevelCounter.in(CALC) ?
                 toStringTranslation(text)
                 : new Translation(
@@ -269,7 +274,6 @@ public class BashTranslationEngine implements TranslationEngine {
         final String id = ctx.ID().getText();
 
         // check arg types
-        // TODO fix test 0130 with a whole call stack for local data storage of in-scope parameter and variable types
         final String functionName = ctx.ID().getText();
         // TODO cache stream results of first map
         final List<Type> actualTypes = ctx.arglist() != null
@@ -277,15 +281,15 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(translateIdsOrVisit).map(Translation::type).collect(Collectors.toList())
                 : List.of();
         @SuppressWarnings("unchecked")
-        final Pair<List<Type>, Type> expectedTypes =
-                (Pair<List<Type>, Type>) requireNonNullElse(functionArgumentTypes.get(functionName), Pair.emptyArray());
+        final FunctionTypeInfo expectedTypes =
+                (FunctionTypeInfo) requireNonNullElse(functionArgumentTypes.get(functionName), Pair.emptyArray());
         // TODO move into Asserts, make more tests, use comparator?
         // check if the argument lengths match
-        boolean typesMatch = actualTypes.size() == expectedTypes.getLeft().size();
+        boolean typesMatch = actualTypes.size() == expectedTypes.parameterTypes().size();
         // if they match iterate over both lists
         if (typesMatch) {
             for (int i = 0; i < actualTypes.size(); i++) {
-                Type expected = expectedTypes.getLeft().get(i);
+                Type expected = expectedTypes.parameterTypes().get(i);
                 Type actual = actualTypes.get(i);
                 // the types match if they are equal
                 typesMatch &= expected.equals(actual)
@@ -313,7 +317,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 : "";
 
         // lookup return type of this function
-        final Type retType = functionArgumentTypes.get(id).getRight();
+        final Type retType = functionArgumentTypes.get(id).returnType();
 
         return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
     }

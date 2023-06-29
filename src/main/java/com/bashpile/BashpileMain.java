@@ -8,6 +8,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -41,12 +43,12 @@ public class BashpileMain implements Callable<Integer> {
 
     public BashpileMain() {}
 
-    public BashpileMain(final String inputFile) {
+    public BashpileMain(@Nullable final String inputFile) {
         this.inputFile = inputFile;
     }
 
     @Override
-    public Integer call() {
+    public @Nonnull Integer call() {
         // prints help text and returns 'general error'
         commandLine.usage(System.out);
         return 1;
@@ -59,7 +61,7 @@ public class BashpileMain implements Callable<Integer> {
         return 0;
     }
 
-    public Pair<String, Integer> execute() {
+    public @Nonnull Pair<String, Integer> execute() {
         log.debug("In {}", System.getProperty("user.dir"));
         String bashScript = Objects.requireNonNullElse(inputFile, "System.in");
         try {
@@ -86,11 +88,11 @@ public class BashpileMain implements Callable<Integer> {
         return 0;
     }
 
-    public String transpile() throws IOException {
+    public @Nonnull String transpile() throws IOException {
         return parse(getInputStream());
     }
 
-    private InputStream getInputStream() throws FileNotFoundException {
+    private @Nonnull InputStream getInputStream() throws FileNotFoundException {
         if (inputFile != null) {
             return new FileInputStream(inputFile);
         } else {
@@ -99,7 +101,7 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
-    public void setCommandLine(final CommandLine commandLine) {
+    public void setCommandLine(@Nonnull final CommandLine commandLine) {
         this.commandLine = commandLine;
     }
 }
