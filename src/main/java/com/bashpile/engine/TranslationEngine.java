@@ -22,6 +22,8 @@ public interface TranslationEngine {
 
     Translation assign(final BashpileParser.AssignStmtContext ctx);
 
+    Translation reassign(final BashpileParser.ReAssignStmtContext ctx);
+
     Translation print(final BashpileParser.PrintStmtContext ctx);
 
     Translation functionForwardDecl(final BashpileParser.FunctionForwardDeclStmtContext ctx);

@@ -8,6 +8,7 @@ prog: stmt+;
 
 stmt: expr NL                               # exprStmt
     | typedId EQ expr NL                    # assignStmt
+    | ID EQ expr NL                         # reAssignStmt
     | PRINT OPAREN arglist? CPAREN NL       # printStmt
     | FUNCTION typedId paramaters           # functionForwardDeclStmt
     | FUNCTION typedId paramaters tags?

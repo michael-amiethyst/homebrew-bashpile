@@ -81,6 +81,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
+    public Translation visitReAssignStmt(BashpileParser.ReAssignStmtContext ctx) {
+        return translator.reassign(ctx);
+    }
+
+    @Override
     public Translation visitPrintStmt(final BashpileParser.PrintStmtContext ctx) {
         return translator.print(ctx);
     }

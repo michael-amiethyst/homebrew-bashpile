@@ -48,6 +48,10 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     private final Map<String, Pair<List<Type>, Type>> functionArgumentTypes = HashMap.newHashMap(10);
 
+    // TODO use a call stack instead to implement lexical scoping
+    /** Map of all variable types -- dynamic scoping */
+    private final Map<String, Type> variableTypes = HashMap.newHashMap(10);
+
     private BashpileVisitor visitor;
 
     /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
@@ -89,10 +93,28 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation assign(final BashpileParser.AssignStmtContext ctx) {
+        // add this variable to the type map
+        final String variableName = ctx.typedId().ID().getText();
+        final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
+        variableTypes.put(variableName, type);
+
+        // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String variable = ctx.typedId().ID().getText();
         final String value = ctx.expr().getText();
-        return toStringTranslation("%s\n%s %s=%s\n".formatted(lineComment, getLocalText(), variable, value));
+        return new Translation(
+                "%s\n%s %s=%s\n".formatted(lineComment, getLocalText(), variableName, value), Type.NA, NORMAL);
+    }
+
+    @Override
+    public Translation reassign(BashpileParser.ReAssignStmtContext ctx) {
+        final String variableName = ctx.ID().getText();
+        if (!variableTypes.containsKey(variableName)) {
+            throw new TypeError(variableName + " has not been declared");
+        }
+        final String lineComment = "# reassign statement, Bashpile line %d".formatted(ctx.start.getLine());
+        final String value = ctx.expr().getText();
+        return new Translation(
+                "%s\n%s %s=%s\n".formatted(lineComment, getLocalText(), variableName, value), Type.NA, NORMAL);
     }
 
     @Override
@@ -267,8 +289,6 @@ public class BashTranslationEngine implements TranslationEngine {
                 Type actual = actualTypes.get(i);
                 // the types match if they are equal
                 typesMatch &= expected.equals(actual)
-                        // UNDEF matches everything
-                        || expected.equals(Type.UNDEF)
                         // FLOAT also matches INT
                         || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))
                         // and NUMBER matches INT or FLOAT
