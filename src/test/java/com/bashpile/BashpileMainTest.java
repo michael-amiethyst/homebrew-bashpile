@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import java.io.IOException;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -74,14 +72,14 @@ class BashpileMainTest {
 
     @Test
     @Order(60)
-    public void idTest() throws IOException {
+    public void idTest() {
         String[] bashLines = runFile("0060-id.bashpile").stdinLines();
         assertEquals("var", bashLines[bashLines.length - 1]);
     }
 
     @Test
     @Order(70)
-    public void intTest() throws IOException {
+    public void intTest() {
         String[] bashLines = runFile("0070-int.bashpile").stdinLines();
         assertEquals("42", bashLines[bashLines.length - 1]);
     }

@@ -1,5 +1,8 @@
 package com.bashpile.engine;
 
+import com.bashpile.engine.strongtypes.MetaType;
+import com.bashpile.engine.strongtypes.Type;
+
 import static org.apache.commons.lang3.StringUtils.join;
 
 /** Decorator pattern for a String */

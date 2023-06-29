@@ -26,15 +26,6 @@ public class LevelCounter implements Closeable {
         return counters.getOrDefault(BLOCK, 0);
     }
 
-    /**
-     * Returns our current indention level minus one.  Does not change the indention level.
-     *
-     * @return whole numbers (e.g. never -1 at indention 0)
-     */
-    public static int getIndentMinusOne() {
-        return Math.max(getIndent() - 1, 0);
-    }
-
     /** are we in any level of indention for this label */
     public static boolean in(final String name) {
         return counters.containsKey(name);

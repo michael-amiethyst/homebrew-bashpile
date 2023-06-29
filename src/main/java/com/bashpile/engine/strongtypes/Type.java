@@ -1,4 +1,4 @@
-package com.bashpile.engine;
+package com.bashpile.engine.strongtypes;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.exceptions.TypeError;
@@ -7,6 +7,8 @@ import org.apache.commons.lang3.StringUtils;
 import javax.annotation.Nonnull;
 
 public enum Type {
+    /** Not Found */
+    EMPTY,
     /** Not applicable -- as in for statements */
     NA,
     /** NIL, aka null */
@@ -29,12 +31,14 @@ public enum Type {
         throw new TypeError("No type info for " + ctx.ID());
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static Type parseNumberString(String text) {
         Type type;
         try {
-            Float.parseFloat(text);
-            type = Type.FLOAT;
+            Integer.parseInt(text);
+            type = Type.INT;
         } catch (NumberFormatException ignored) {
+            Float.parseFloat(text);
             type = Type.INT;
         }
         return type;

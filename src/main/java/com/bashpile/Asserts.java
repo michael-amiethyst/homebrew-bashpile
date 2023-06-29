@@ -1,6 +1,6 @@
 package com.bashpile;
 
-import com.bashpile.engine.Type;
+import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.TypeError;
 
@@ -49,9 +49,18 @@ public class Asserts {
     }
 
     public static void assertTypesMatch(
+            @Nonnull final Type expectedType,
+            @Nonnull final Type actualType,
+            @Nonnull final String functionName,
+            int contextStartLine) {
+        assertTypesMatch(List.of(expectedType), List.of(actualType), functionName, contextStartLine);
+    }
+
+    public static void assertTypesMatch(
             @Nonnull final List<Type> expectedTypes,
             @Nonnull final List<Type> actualTypes,
-            @Nonnull final BashpileParser.FunctionCallExprContext ctx) {
+            @Nonnull final String functionName,
+            int contextStartLine) {
 
         // check if the argument lengths match
         boolean typesMatch = actualTypes.size() == expectedTypes.size();
@@ -70,10 +79,9 @@ public class Asserts {
                         || ((expected.equals(Type.INT) || expected.equals(Type.FLOAT)) && (actual.equals(Type.NUMBER)));
             }
         }
-        final String functionName = ctx.ID().getText();
         if (!typesMatch) {
             throw new TypeError("Expected %s %s but was %s %s on Bashpile Line %s"
-                    .formatted(functionName, expectedTypes, functionName, actualTypes, ctx.start.getLine()));
+                    .formatted(functionName, expectedTypes, functionName, actualTypes, contextStartLine));
         }
     }
 }

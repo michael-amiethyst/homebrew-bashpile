@@ -1,7 +1,7 @@
 parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 @parser::header {
-import com.bashpile.engine.Type;
+import com.bashpile.engine.strongtypes.Type;
 }
 
 prog: stmt+;
