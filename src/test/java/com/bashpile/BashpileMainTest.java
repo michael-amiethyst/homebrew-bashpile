@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO break function tests into separate suite
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
 

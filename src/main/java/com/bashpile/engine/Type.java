@@ -1,14 +1,10 @@
 package com.bashpile.engine;
 
-import com.bashpile.BashpileLexer;
 import com.bashpile.BashpileParser;
-import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
-import org.antlr.v4.runtime.Token;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
-import java.util.Objects;
 
 public enum Type {
     UNDEF,
