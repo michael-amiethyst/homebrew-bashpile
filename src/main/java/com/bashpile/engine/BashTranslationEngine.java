@@ -1,5 +1,6 @@
 package com.bashpile.engine;
 
+import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.exceptions.TypeError;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -11,6 +12,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -275,45 +277,26 @@ public class BashTranslationEngine implements TranslationEngine {
         final String id = ctx.ID().getText();
 
         // check arg types
+
+        // get functionName and a stream creator
         final String functionName = ctx.ID().getText();
-        // TODO cache stream results of first map
-        final List<Type> actualTypes = ctx.arglist() != null
-                ? ctx.arglist().expr().stream()
-                    .map(translateIdsOrVisit).map(Translation::type).collect(Collectors.toList())
-                : List.of();
+        final Supplier<Stream<Translation>> argListTranslationStream =
+                () -> ctx.arglist().expr().stream().map(translateIdsOrVisit);
+        // get the expected and actual types
         final FunctionTypeInfo expectedTypes =
                 (FunctionTypeInfo) requireNonNullElse(functionArgumentTypes.get(functionName), Pair.emptyArray());
-        // TODO move into Asserts, make more tests, use comparator?
-        // check if the argument lengths match
-        boolean typesMatch = actualTypes.size() == expectedTypes.parameterTypes().size();
-        // if they match iterate over both lists
-        if (typesMatch) {
-            for (int i = 0; i < actualTypes.size(); i++) {
-                Type expected = expectedTypes.parameterTypes().get(i);
-                Type actual = actualTypes.get(i);
-                // the types match if they are equal
-                typesMatch &= expected.equals(actual)
-                        // FLOAT also matches INT
-                        || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))
-                        // and NUMBER matches INT or FLOAT
-                        || (expected.equals(Type.NUMBER) && (actual.equals(Type.INT) || actual.equals(Type.FLOAT)))
-                        // INT and FLOAT also match NUMBER
-                        || ((expected.equals(Type.INT) || expected.equals(Type.FLOAT)) && (actual.equals(Type.NUMBER)));
-            }
-        }
-        if (!typesMatch) {
-            throw new TypeError("Expected %s %s but was %s %s on Bashpile Line %s"
-                    .formatted(functionName, expectedTypes, functionName, actualTypes, ctx.start.getLine()));
-        }
+        final List<Type> actualTypes = ctx.arglist() != null
+                ? argListTranslationStream.get().map(Translation::type).collect(Collectors.toList())
+                : List.of();
+        // assert equals
+        Asserts.assertTypesMatch(expectedTypes.parameterTypes(), actualTypes, ctx);
 
         // get arguments
 
         final boolean hasArgs = ctx.arglist() != null;
         // empty list or ' arg1Text arg2Text etc'
-        final String args = hasArgs ? " " + ctx.arglist().expr().stream()
-                .map(translateIdsOrVisit)
-                .map(Translation::text)
-                .collect(Collectors.joining(" "))
+        final String args = hasArgs
+                ? " " + argListTranslationStream.get().map(Translation::text).collect(Collectors.joining(" "))
                 : "";
 
         // lookup return type of this function

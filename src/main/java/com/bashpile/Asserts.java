@@ -1,7 +1,11 @@
 package com.bashpile;
 
+import com.bashpile.engine.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
+import com.bashpile.exceptions.TypeError;
 
+import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,7 +25,7 @@ public class Asserts {
      *
      * @see #assertTextLine(String)
      */
-    public static void assertTextBlock(final String str) {
+    public static void assertTextBlock(@Nonnull final String str) {
         assertMatches(str, textBlock);
     }
 
@@ -30,17 +34,47 @@ public class Asserts {
      *
      * @param str the string to check.
      */
-    public static void assertTextLine(final String str) {
+    public static void assertTextLine(@Nonnull final String str) {
         assertMatches(str, textLine);
     }
 
-    public static void assertMatches(final String str, final Pattern regex) {
+    public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
             final String winNewlines = str.contains("\r") ? "" : "not ";
             throw new BashpileUncheckedAssertionException(
                     "Str [[[%s]]] didn't match regex %s, windows newlines %sfound"
                             .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
+        }
+    }
+
+    public static void assertTypesMatch(
+            @Nonnull final List<Type> expectedTypes,
+            @Nonnull final List<Type> actualTypes,
+            @Nonnull final BashpileParser.FunctionCallExprContext ctx) {
+
+        // TODO use comperator?
+        // check if the argument lengths match
+        boolean typesMatch = actualTypes.size() == expectedTypes.size();
+        // if they match iterate over both lists
+        if (typesMatch) {
+            for (int i = 0; i < actualTypes.size(); i++) {
+                Type expected = expectedTypes.get(i);
+                Type actual = actualTypes.get(i);
+                // the types match if they are equal
+                typesMatch &= expected.equals(actual)
+                        // FLOAT also matches INT
+                        || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))
+                        // and NUMBER matches INT or FLOAT
+                        || (expected.equals(Type.NUMBER) && (actual.equals(Type.INT) || actual.equals(Type.FLOAT)))
+                        // INT and FLOAT also match NUMBER
+                        || ((expected.equals(Type.INT) || expected.equals(Type.FLOAT)) && (actual.equals(Type.NUMBER)));
+            }
+        }
+        final String functionName = ctx.ID().getText();
+        if (!typesMatch) {
+            throw new TypeError("Expected %s %s but was %s %s on Bashpile Line %s"
+                    .formatted(functionName, expectedTypes, functionName, actualTypes, ctx.start.getLine()));
         }
     }
 }
