@@ -9,6 +9,7 @@ import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -269,11 +270,51 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // expressions
 
-    // TODO refactor this into smaller methods
     @Override
     public @Nonnull Translation calc(@Nonnull final ParserRuleContext ctx) {
+        final Pair<String, List<Translation>> pair = unwindChildren(ctx);
+        final String unwoundSubshells = pair.getLeft();
+        final List<Translation> childTranslations = pair.getRight();
+
+        Translation first = childTranslations.get(0);
+        Translation second = getLast(childTranslations);
+        // check for nested calc call
+        if (LevelCounter.in(CALC)) {
+            final String translationsLine = childTranslations.stream()
+                    .map(Translation::text).collect(Collectors.joining(""));
+            // TODO make tests to try to make this a string type
+            return new Translation(translationsLine, Type.NUMBER, NORMAL);
+        // types section
+        } else if (isStringExpression(childTranslations)) {
+            return toStringTranslation(first.text() + second.text());
+        } else if (isNumberExpression(childTranslations)) {
+            final String translationsString = childTranslations.stream()
+                    .map(Translation::text).collect(Collectors.joining(" "));
+            return new Translation(
+                    "%s$(bc <<< \"%s\")".formatted(unwoundSubshells, translationsString),
+                    Type.NUMBER, SUBSHELL_SUBSTITUTION);
+        // found no matching types -- error section
+        } else if (first.type().equals(Type.EMPTY) || second.type().equals(Type.EMPTY)) {
+            throw new UserError("`%s` or `%s` are undefined at Bashpile line %d".formatted(
+                    first.text(), second.text(), ctx.start.getLine()));
+        } else {
+            // throw type error for all others
+            throw new TypeError("Incompatible types in calc on Bashpile line %d: %s and %s".formatted(
+                    ctx.start.getLine(), first.type(), second.type()));
+        }
+    }
+
+    /**
+     * Bash doesn't support nested subshells so as a work-around we unwind (unnest) the nesting.
+     * More details in the comments of the unnestSubshells Function below.
+     * Simplified example: if a single child is a subshell `$(cmd)` we return <`var=$(cmd)`, `$var`>
+     *
+     * @param ctx the parent context.
+     * @return a preamble String of the unnested shells assigned to variables and the results of visiting the children
+     */
+    private Pair<String, List<Translation>> unwindChildren(@Nonnull final ParserRuleContext ctx) {
         List<Translation> childTranslations;
-        // subshellVarTextBlock accumulates all the inner shells results
+        // subshellVarTextBlock accumulates all the inner shells' results
         final AtomicReference<String> subshellVarTextBlock = new AtomicReference<>("");
         try (LevelCounter counter = new LevelCounter(CALC)) {
             counter.noop();
@@ -297,40 +338,15 @@ public class BashTranslationEngine implements TranslationEngine {
                     return new Translation("${%s}".formatted(varName), Type.NUMBER, NORMAL);
                 }
             };
+
             childTranslations = ctx.children.stream()
                     .map(translateIdsOrVisit)
                     .map(unnestSubshells)
                     .collect(Collectors.toList());
-        } // end try-with-resources(CALC counter)
-        assertTextBlock(subshellVarTextBlock.get());
+        } // end try-with-resources
 
-        // returns and throws
-        Translation first = childTranslations.get(0);
-        Translation second = getLast(childTranslations);
-        // check for nested calc call
-        if (LevelCounter.in(CALC)) {
-            final String translationsLine = childTranslations.stream()
-                    .map(Translation::text).collect(Collectors.joining(""));
-            // TODO make tests to try to make this a string type
-            return new Translation(translationsLine, Type.NUMBER, NORMAL);
-        // types section
-        } else if (isStringExpression(childTranslations)) {
-            return toStringTranslation(first.text() + second.text());
-        } else if (isNumberExpression(childTranslations)) {
-            final String translationsString = childTranslations.stream()
-                    .map(Translation::text).collect(Collectors.joining(" "));
-            return new Translation(
-                    "%s$(bc <<< \"%s\")".formatted(subshellVarTextBlock, translationsString),
-                    Type.NUMBER, SUBSHELL_SUBSTITUTION);
-        // found no matching types -- error section
-        } else if (first.type().equals(Type.EMPTY) || second.type().equals(Type.EMPTY)) {
-            throw new UserError("`%s` or `%s` are undefined at Bashpile line %d".formatted(
-                    first.text(), second.text(), ctx.start.getLine()));
-        } else {
-            // throw type error for all others
-            throw new TypeError("Incompatible types in calc on Bashpile line %d: %s and %s".formatted(
-                    ctx.start.getLine(), first.type(), second.type()));
-        }
+        assertTextBlock(subshellVarTextBlock.get());
+        return Pair.of(subshellVarTextBlock.get(), childTranslations);
     }
 
     private boolean isStringExpression(List<Translation> translations) {
