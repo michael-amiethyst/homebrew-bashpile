@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import com.bashpile.exceptions.UserError;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
@@ -56,10 +57,7 @@ class BashpileMainTest {
     @Test
     @Order(40)
     public void badAssign() {
-        ExecutionResults runResults = runFile("0040-badAssign.bashpile");
-        assertEquals(1, runResults.exitCode());
-        String errorLine = runResults.stdoutLines()[0];
-        assertTrue(errorLine.endsWith("unbound variable"), "Unexpected error line: " + errorLine);
+        assertThrows(UserError.class, () -> runFile("0040-badAssign.bashpile"));
     }
 
     @Test
@@ -94,6 +92,15 @@ class BashpileMainTest {
     }
 
     @Test
+    @Order(72)
+    public void stringConcatTest() {
+        var runResult = runFile("0072-stringConcat.bashpile");
+        assertEquals(0, runResult.exitCode(), "Bad exit code with sysout: " + runResult.stdout());
+        String[] outLines = runResult.stdoutLines();
+        assertEquals("hello world", outLines[outLines.length - 1]);
+    }
+
+    @Test
     @Order(80)
     public void blockTest() {
         String filename = "0080-block.bashpile";
@@ -106,12 +113,7 @@ class BashpileMainTest {
     @Test
     @Order(90)
     public void lexicalScopingTest() {
-        String filename = "0090-lexicalscoping.bashpile";
-        var ret = runFile(filename);
-        assertEquals(1, ret.exitCode(),
-                "Unexpected exit code.  Return text was:\n" + String.join("\n", ret.stdoutLines()));
-        String line = ret.stdoutLines()[ret.stdoutLines().length - 1];
-        assertTrue(line.endsWith("unbound variable"), "Unexpected error line: " + line);
+        assertThrows(UserError.class, () -> runFile("0090-lexicalscoping.bashpile"));
     }
 
     @Test

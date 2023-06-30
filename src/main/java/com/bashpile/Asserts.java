@@ -84,4 +84,10 @@ public class Asserts {
                     .formatted(functionName, expectedTypes, functionName, actualTypes, contextStartLine));
         }
     }
+
+    public static void assertEquals(final int expected, final int actual) {
+        if (expected != actual) {
+            throw new AssertionError("Expected %d but got %d".formatted(expected, actual));
+        }
+    }
 }

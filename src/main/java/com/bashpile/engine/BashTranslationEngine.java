@@ -28,6 +28,7 @@ import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.MetaType.NORMAL;
 import static com.bashpile.engine.strongtypes.MetaType.SUBSHELL_SUBSTITUTION;
+import static com.google.common.collect.Iterables.getLast;
 
 /**
  * Translates to Bash5 with four spaces as a tab.
@@ -69,10 +70,10 @@ public class BashTranslationEngine implements TranslationEngine {
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
-    /** prepend $ to variable name, e.g. "var" becomes "$var" */
+    /** put variable into ${}, e.g. "var" becomes "${var}" */
     private final Function<ParseTree, Translation> translateIdsOrVisit =
             parseTree -> parseTree instanceof BashpileParser.IdExprContext
-                    ? new Translation("$" + parseTree.getText(),
+                    ? new Translation("${%s}".formatted(parseTree.getText()),
                             typeStack.getVariable(((BashpileParser.IdExprContext) parseTree).ID().getText()), NORMAL)
                     : visitor.visit(parseTree);
 
@@ -268,36 +269,89 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // expressions
 
-    // TODO handle string concats
+    // TODO refactor this into smaller methods
     @Override
     public @Nonnull Translation calc(@Nonnull final ParserRuleContext ctx) {
-        // prepend $ to variable name, e.g. "var" becomes "$var"
-        String text;
-        final AtomicReference<String> subshellVarText = new AtomicReference<>("");
+        List<Translation> childTranslations;
+        // subshellVarTextBlock accumulates all the inner shells results
+        final AtomicReference<String> subshellVarTextBlock = new AtomicReference<>("");
         try (LevelCounter counter = new LevelCounter(CALC)) {
             counter.noop();
             final AtomicInteger varTextCount = new AtomicInteger(0);
-            text = ctx.children.stream()
+
+            // this is a work-around for nested sub-shells
+            // we run the inner sub-shell and put the results into a variable,
+            // and put the variable into the outer sub-shell
+            final Function<Translation, Translation> unnestSubshells = childTranslation -> {
+                if (childTranslation.isNotSubshell()) {
+                    return childTranslation;
+                } else {
+                    // create an assignment for later, store in subshellVarTextBlock
+                    final String varName = "__bp_%d".formatted(varTextCount.getAndIncrement());
+                    // last %s is a subshell
+                    final String assignString = "%s %s=%s\n"
+                            .formatted(getLocalText(), varName, childTranslation.text());
+                    append(subshellVarTextBlock, assignString);
+
+                    // create our translation as ${varName}
+                    return new Translation("${%s}".formatted(varName), Type.NUMBER, NORMAL);
+                }
+            };
+            childTranslations = ctx.children.stream()
                     .map(translateIdsOrVisit)
-                    .map(translation -> {
-                        if (translation.isNotSubshell()) {
-                            return translation.text();
-                        } else {
-                            // need to unpack the recursion
-                            final String varName = "__bp_%d".formatted(varTextCount.getAndIncrement());
-                            final String assignString = "%s %s=%s\n"
-                                    .formatted(getLocalText(), varName, translation.text());
-                            append(subshellVarText, assignString);
-                            return "$" + varName;
-                        }
-                    })
-                    .collect(Collectors.joining());
+                    .map(unnestSubshells)
+                    .collect(Collectors.toList());
+        } // end try-with-resources(CALC counter)
+        assertTextBlock(subshellVarTextBlock.get());
+
+        // returns and throws
+        Translation first = childTranslations.get(0);
+        Translation second = getLast(childTranslations);
+        // check for nested calc call
+        if (LevelCounter.in(CALC)) {
+            final String translationsLine = childTranslations.stream()
+                    .map(Translation::text).collect(Collectors.joining(""));
+            // TODO make tests to try to make this a string type
+            return new Translation(translationsLine, Type.NUMBER, NORMAL);
+        // types section
+        } else if (isStringExpression(childTranslations)) {
+            return toStringTranslation(first.text() + second.text());
+        } else if (isNumberExpression(childTranslations)) {
+            final String translationsString = childTranslations.stream()
+                    .map(Translation::text).collect(Collectors.joining(" "));
+            return new Translation(
+                    "%s$(bc <<< \"%s\")".formatted(subshellVarTextBlock, translationsString),
+                    Type.NUMBER, SUBSHELL_SUBSTITUTION);
+        // found no matching types -- error section
+        } else if (first.type().equals(Type.EMPTY) || second.type().equals(Type.EMPTY)) {
+            throw new UserError("`%s` or `%s` are undefined at Bashpile line %d".formatted(
+                    first.text(), second.text(), ctx.start.getLine()));
+        } else {
+            // throw type error for all others
+            throw new TypeError("Incompatible types in calc on Bashpile line %d: %s and %s".formatted(
+                    ctx.start.getLine(), first.type(), second.type()));
         }
-        assertTextBlock(subshellVarText.get());
-        return LevelCounter.in(CALC) ?
-                toStringTranslation(text)
-                : new Translation(
-                        "%s$(bc <<< \"%s\")".formatted(subshellVarText, text), Type.NUMBER, SUBSHELL_SUBSTITUTION);
+    }
+
+    private boolean isStringExpression(List<Translation> translations) {
+        Asserts.assertEquals(3, translations.size());
+        final Translation first = translations.get(0);
+        final Translation last = getLast(translations);
+        return first.type().isStr()
+                && last.type().isStr()
+                // TODO make isParenthesis method
+                // matching parenthesis is a number expression
+                && !(first.text().equals("(") && last.text().equals(")"));
+    }
+
+    private boolean isNumberExpression(List<Translation> translations) {
+        Asserts.assertEquals(3, translations.size());
+        final Translation first = translations.get(0);
+        final Translation last = getLast(translations);
+        return first.type().isNumeric()
+                && last.type().isNumeric()
+                // matching parenthesis is a number expression
+                || (first.text().equals("(") && last.text().equals(")"));
     }
 
     @Override

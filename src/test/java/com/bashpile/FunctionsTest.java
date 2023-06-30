@@ -137,10 +137,7 @@ class FunctionsTest {
     @Test
     @Order(180)
     public void functionDeclTypesBadCalcExprTest() {
-        var results = runFile("0180-functionDeclTypesEnforced-badCalcExpr.bashpile");
-        String[] lines = results.stdoutLines();
-        assertEquals(1, results.exitCode());
-        assertEquals(2, lines.length, "Wrong length, was: " + join(lines, "\n"));
+        assertThrows(UserError.class, () -> runFile("0180-functionDeclTypesEnforced-badCalcExpr.bashpile"));
     }
 
     @Test

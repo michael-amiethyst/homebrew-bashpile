@@ -21,6 +21,7 @@ public enum Type {
     STR,
     ARRAY,
     MAP,
+    /** A Bash reference */
     REF;
 
     public static @Nonnull Type valueOf(@Nonnull BashpileParser.TypedIdContext ctx) {
@@ -42,5 +43,13 @@ public enum Type {
             type = Type.INT;
         }
         return type;
+    }
+
+    public boolean isStr() {
+        return this.equals(STR);
+    }
+
+    public boolean isNumeric() {
+        return this.equals(NUMBER) || this.equals(INT) || this.equals(FLOAT);
     }
 }
