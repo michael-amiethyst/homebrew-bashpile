@@ -25,34 +25,34 @@ class TypeStackTest {
 
     @Test
     void getVariableTest() {
-        fixture.putVariable("var1", NIL);
-        assertEquals(NIL, fixture.getVariable("var1"));
+        fixture.putVariable("var1", EMPTY);
+        assertEquals(EMPTY, fixture.getVariable("var1"));
     }
 
     @Test
     void getBuriedVariableTest() {
-        fixture.putVariable("var1", NIL);
+        fixture.putVariable("var1", EMPTY);
         fixture.push();
-        fixture.putVariable("v2", NIL);
-        assertEquals(NIL, fixture.getVariable("var1"));
+        fixture.putVariable("v2", EMPTY);
+        assertEquals(EMPTY, fixture.getVariable("var1"));
     }
 
     @Test
     void getReusedVariableTest() {
-        fixture.putVariable("var1", NIL);
-        assertEquals(NIL, fixture.getVariable("var1"));
+        fixture.putVariable("var1", EMPTY);
+        assertEquals(EMPTY, fixture.getVariable("var1"));
         fixture.push();
         fixture.putVariable("var1", INT);
         assertEquals(INT, fixture.getVariable("var1"));
         fixture.pop();
-        assertEquals(NIL, fixture.getVariable("var1"));
+        assertEquals(EMPTY, fixture.getVariable("var1"));
     }
 
     @Test
     void containsVariable() {
-        fixture.putVariable("var1", NIL);
+        fixture.putVariable("var1", EMPTY);
         fixture.push();
-        fixture.putVariable("v2", NIL);
+        fixture.putVariable("v2", EMPTY);
         assertTrue(fixture.containsVariable("v2"));
     }
 

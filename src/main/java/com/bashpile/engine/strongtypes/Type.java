@@ -8,11 +8,11 @@ import javax.annotation.Nonnull;
 
 public enum Type {
     /** Not Found */
-    EMPTY,
+    NOT_FOUND,
     /** Not applicable -- as in for statements */
     NA,
-    /** NIL, aka null */
-    NIL,
+    /** Instead of NIL or null we have the empty String or an empty object */
+    EMPTY,
     BOOL,
     INT,
     FLOAT,

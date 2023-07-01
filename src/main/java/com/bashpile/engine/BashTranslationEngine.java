@@ -125,7 +125,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation reassign(@Nonnull final BashpileParser.ReAssignStmtContext ctx) {
         final String variableName = ctx.ID().getText();
         final Type expectedType = typeStack.getVariable(variableName);
-        if (expectedType.equals(Type.EMPTY)) {
+        if (expectedType.equals(Type.NOT_FOUND)) {
             throw new TypeError(variableName + " has not been declared");
         }
 
@@ -293,7 +293,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     "%s$(bc <<< \"%s\")".formatted(unwoundSubshells, translationsString),
                     Type.NUMBER, SUBSHELL_SUBSTITUTION);
         // found no matching types -- error section
-        } else if (first.type().equals(Type.EMPTY) || second.type().equals(Type.EMPTY)) {
+        } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined at Bashpile line %d".formatted(
                     first.text(), second.text(), ctx.start.getLine()));
         } else {

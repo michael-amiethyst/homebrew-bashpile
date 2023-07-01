@@ -27,17 +27,17 @@ public class TypeStack {
         Optional<Map<String, Type>> topmostOptional = frames.stream()
                 .map(TypeStackframe::variables)
                 .filter(x -> x.containsKey(variableName))
-                // .stream() starts at the bottom of the stack so we need to get the last match
+                // .stream() starts at the bottom of the stack so, we need to get the last match
                 .reduce((first, second) -> second);
         if (topmostOptional.isPresent()) {
             return topmostOptional.get().get(variableName);
         } // else
-        return Type.EMPTY;
+        return Type.NOT_FOUND;
     }
 
     public boolean containsVariable(@Nonnull final String variableName) {
         final Type foundType = getVariable(variableName);
-        return foundType != Type.EMPTY;
+        return foundType != Type.NOT_FOUND;
     }
 
     public void putFunction(@Nonnull final String functionName, @Nonnull final FunctionTypeInfo functionTypeInfo) {
@@ -49,7 +49,7 @@ public class TypeStack {
         Optional<Map<String, FunctionTypeInfo>> topmostOptional = frames.stream()
                 .map(TypeStackframe::functions)
                 .filter(x -> x.containsKey(functionName))
-                // .stream() starts at the bottom of the stack so we need to get the last match
+                // .stream() starts at the bottom of the stack, so we need to get the last match
                 .reduce((first, second) -> second);
         if (topmostOptional.isPresent()) {
             return topmostOptional.get().get(functionName);
