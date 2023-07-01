@@ -1,5 +1,6 @@
 package com.bashpile.engine;
 
+import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.HashMap;
 
@@ -33,7 +34,7 @@ public class LevelCounter implements Closeable {
 
     private final String label;
 
-    public LevelCounter(final String label) {
+    public LevelCounter(@Nonnull final String label) {
         this.label = label;
         if (counters.containsKey(label)) {
             // increment

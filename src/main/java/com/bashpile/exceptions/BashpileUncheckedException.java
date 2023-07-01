@@ -1,14 +1,16 @@
 package com.bashpile.exceptions;
 
+import javax.annotation.Nonnull;
+
 public class BashpileUncheckedException extends RuntimeException {
-    public BashpileUncheckedException(final String message) {
+    public BashpileUncheckedException(@Nonnull final String message) {
         super(message);
     }
-    public BashpileUncheckedException(final Throwable e) {
+    public BashpileUncheckedException(@Nonnull final Throwable e) {
         super(e);
     }
 
-    public BashpileUncheckedException(final String message, final Throwable e) {
+    public BashpileUncheckedException(@Nonnull final String message, @Nonnull final Throwable e) {
         super(message, e);
     }
 }

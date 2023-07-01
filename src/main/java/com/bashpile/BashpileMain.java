@@ -18,7 +18,6 @@ import java.util.concurrent.Callable;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO use @Nullable, @NonNull vigorously
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

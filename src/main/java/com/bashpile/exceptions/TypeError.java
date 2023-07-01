@@ -1,15 +1,17 @@
 package com.bashpile.exceptions;
 
+import javax.annotation.Nonnull;
+
 public class TypeError extends UserError {
-    public TypeError(String message) {
+    public TypeError(@Nonnull final String message) {
         super(message);
     }
 
-    public TypeError(Throwable e) {
+    public TypeError(@Nonnull final Throwable e) {
         super(e);
     }
 
-    public TypeError(String message, Throwable e) {
+    public TypeError(@Nonnull final String message, Throwable e) {
         super(message, e);
     }
 }
