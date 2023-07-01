@@ -10,6 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
 
@@ -79,8 +80,15 @@ class BashpileMainTest {
     @Test
     @Order(60)
     public void idTest() {
-        String[] bashLines = runFile("0060-id.bashpile").stdinLines();
-        assertEquals("var", bashLines[bashLines.length - 1]);
+        String[] outLines = runFile("0060-id.bashpile").stdoutLines();
+        assertEquals("6", outLines[0]);
+    }
+
+    @Test
+    @Order(61)
+    public void boolTest() {
+        String[] outLines = runFile("0061-bool.bashpile").stdoutLines();
+        assertEquals("false", outLines[0]);
     }
 
     @Test

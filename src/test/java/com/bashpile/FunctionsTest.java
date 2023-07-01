@@ -15,6 +15,7 @@ import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FunctionsTest {
 

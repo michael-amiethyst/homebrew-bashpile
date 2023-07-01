@@ -144,6 +144,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
+    public Translation visitBoolExpr(BashpileParser.BoolExprContext ctx) {
+        return new Translation(ctx.BOOL().getText(), Type.BOOL, MetaType.NORMAL);
+    }
+
+    @Override
     public @Nonnull Translation visitNumberExpr(@Nonnull final BashpileParser.NumberExprContext ctx) {
         return new Translation(ctx.getText(), Type.parseNumberString(ctx.NUMBER().getText()), MetaType.NORMAL);
     }

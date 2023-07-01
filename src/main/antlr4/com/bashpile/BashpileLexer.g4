@@ -24,6 +24,7 @@ FUNCTION: 'function';
 BLOCK: 'block';
 RETURN: 'return';
 PRINT: 'print';
+BOOL: 'true' | 'false';
 
 ID: ID_START ID_CONTINUE*;
 

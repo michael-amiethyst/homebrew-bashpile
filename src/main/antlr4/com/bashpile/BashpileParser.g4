@@ -30,6 +30,7 @@ returnRule: RETURN expr NL;
 
 expr: ID OPAREN arglist? CPAREN     # functionCallExpr
     | expr (MUL|DIV|ADD|MINUS) expr # calcExpr
+    | BOOL                          # boolExpr
     | MINUS? NUMBER                 # numberExpr
     | ID                            # idExpr
     | STRING                        # stringExpr
