@@ -69,6 +69,14 @@ class BashpileMainTest {
     }
 
     @Test
+    @Order(51)
+    public void parenStringTest() {
+        String[] ret = runFile("0051-parenString.bashpile").stdoutLines();
+        assertEquals(1, ret.length, "Unexpected number of lines");
+        assertEquals("hello world, you good?", ret[0]);
+    }
+
+    @Test
     @Order(60)
     public void idTest() {
         String[] bashLines = runFile("0060-id.bashpile").stdinLines();

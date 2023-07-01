@@ -3,6 +3,8 @@ package com.bashpile.engine;
 import com.bashpile.BashpileParser;
 import org.antlr.v4.runtime.ParserRuleContext;
 
+import javax.annotation.Nonnull;
+
 /**
  * Methods translate small parser rules (e.g. statements and expressions) to the target language.
  */
@@ -37,4 +39,6 @@ public interface TranslationEngine {
     Translation calc(final ParserRuleContext ctx);
 
     Translation functionCall(final BashpileParser.FunctionCallExprContext ctx);
+
+    Translation parens(final BashpileParser.ParensExprContext ctx);
 }

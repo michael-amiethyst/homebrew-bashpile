@@ -279,10 +279,9 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation first = childTranslations.get(0);
         Translation second = getLast(childTranslations);
         // check for nested calc call
-        if (LevelCounter.in(CALC)) {
+        if (LevelCounter.in(CALC) && isNumberExpression(childTranslations)) {
             final String translationsLine = childTranslations.stream()
                     .map(Translation::text).collect(Collectors.joining(""));
-            // TODO make tests to try to make this a string type
             return new Translation(translationsLine, Type.NUMBER, NORMAL);
         // types section
         } else if (isStringExpression(childTranslations)) {
@@ -349,25 +348,18 @@ public class BashTranslationEngine implements TranslationEngine {
         return Pair.of(subshellVarTextBlock.get(), childTranslations);
     }
 
-    private boolean isStringExpression(List<Translation> translations) {
+    private boolean isStringExpression(@Nonnull final List<Translation> translations) {
         Asserts.assertEquals(3, translations.size());
         final Translation first = translations.get(0);
         final Translation last = getLast(translations);
-        return first.type().isStr()
-                && last.type().isStr()
-                // TODO make isParenthesis method
-                // matching parenthesis is a number expression
-                && !(first.text().equals("(") && last.text().equals(")"));
+        return first.type().isStr() && last.type().isStr();
     }
 
-    private boolean isNumberExpression(List<Translation> translations) {
+    private boolean isNumberExpression(@Nonnull final List<Translation> translations) {
         Asserts.assertEquals(3, translations.size());
         final Translation first = translations.get(0);
         final Translation last = getLast(translations);
-        return first.type().isNumeric()
-                && last.type().isNumeric()
-                // matching parenthesis is a number expression
-                || (first.text().equals("(") && last.text().equals(")"));
+        return first.type().isNumeric() && last.type().isNumeric();
     }
 
     @Override
@@ -391,7 +383,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get arguments
 
         final boolean hasArgs = ctx.arglist() != null;
-        // empty list or ' arg1Text arg2Text etc'
+        // empty list or ' arg1Text arg2Text etc.'
         final String args = hasArgs
                 ? " " + argListTranslationStream.get().map(Translation::text).collect(Collectors.joining(" "))
                 : "";
@@ -400,5 +392,13 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = typeStack.getFunction(id).returnType();
 
         return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
+    }
+
+    @Override
+    public Translation parens(@Nonnull final BashpileParser.ParensExprContext ctx) {
+        final Translation expr = visitor.visit(ctx.expr());
+        // pass on parens for numeric expressions but not Strings
+        final String format = expr.type().isNumeric() ? "(%s)" : "%s";
+        return new Translation(format.formatted(expr.text()), expr.type(), expr.metaType());
     }
 }

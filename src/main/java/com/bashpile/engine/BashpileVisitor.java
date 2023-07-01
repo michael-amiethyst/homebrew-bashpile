@@ -135,7 +135,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitParensExpr(@Nonnull final BashpileParser.ParensExprContext ctx) {
-        return translator.calc(ctx);
+        return translator.parens(ctx);
     }
 
     @Override
