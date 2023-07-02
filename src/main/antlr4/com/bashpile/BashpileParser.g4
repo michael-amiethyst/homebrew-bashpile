@@ -1,8 +1,5 @@
 parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
-@parser::header {
-import com.bashpile.engine.strongtypes.Type;
-}
 
 prog: stmt+;
 
@@ -29,10 +26,12 @@ block: INDENT stmt* returnRule DEDENT;
 returnRule: RETURN expr NL;
 
 expr: ID OPAREN arglist? CPAREN     # functionCallExpr
-    | expr (MUL|DIV|ADD|MINUS) expr # calcExpr
+    // operator expressions
+    | OPAREN expr CPAREN            # parensExpr
+    | <assoc=right> MINUS? NUMBER   # numberExpr
+    | expr (MUL|DIV|ADD|MINUS) expr # calcExpr   // since we delegate
+    // type expressions
     | BOOL                          # boolExpr
-    | MINUS? NUMBER                 # numberExpr
     | ID                            # idExpr
     | STRING                        # stringExpr
-    | OPAREN expr CPAREN            # parensExpr
     ;

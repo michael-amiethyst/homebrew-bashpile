@@ -83,6 +83,8 @@ public class BashTranslationEngine implements TranslationEngine {
         this.visitor = visitor;
     }
 
+    // header translations
+
     /**
      * We need '-o posix' so that all subshells inherit the -eu options.
      * @see <a href=https://unix.stackexchange.com/a/23099">Q & A </a>
@@ -102,6 +104,8 @@ public class BashTranslationEngine implements TranslationEngine {
         String text = "# no imports yet (this is a stub)\n";
         return toStringTranslation(text);
     }
+
+    // statement translations
 
     @Override
     public @Nonnull Translation assign(@Nonnull final BashpileParser.AssignStmtContext ctx) {
@@ -285,6 +289,7 @@ public class BashTranslationEngine implements TranslationEngine {
             return new Translation(translationsLine, Type.NUMBER, NORMAL);
         // types section
         } else if (isStringExpression(childTranslations)) {
+            // TODO verify we're adding strings
             return toStringTranslation(first.text() + second.text());
         } else if (isNumberExpression(childTranslations)) {
             final String translationsString = childTranslations.stream()

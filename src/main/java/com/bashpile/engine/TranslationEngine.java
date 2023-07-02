@@ -17,10 +17,14 @@ public interface TranslationEngine {
      */
     void setVisitor(final BashpileVisitor visitor);
 
+    // headers
+
     Translation strictModeHeader();
 
     /** To source our bundled libraries */
     Translation imports();
+
+    // statement translations
 
     Translation assign(final BashpileParser.AssignStmtContext ctx);
 
@@ -36,9 +40,11 @@ public interface TranslationEngine {
 
     Translation returnRule(final BashpileParser.ReturnRuleContext ctx);
 
-    Translation calc(final ParserRuleContext ctx);
+    // expression translations
 
     Translation functionCall(final BashpileParser.FunctionCallExprContext ctx);
 
     Translation parens(final BashpileParser.ParensExprContext ctx);
+
+    Translation calc(final ParserRuleContext ctx);
 }
