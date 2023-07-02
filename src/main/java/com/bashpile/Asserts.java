@@ -45,7 +45,7 @@ public class Asserts {
         if (!matchResults.matches()) {
             final String winNewlines = str.contains("\r") ? "" : "not ";
             throw new BashpileUncheckedAssertionException(
-                    "Str [[[%s]]] didn't match regex %s, windows newlines %sfound"
+                    "Str [%s] didn't match regex %s, windows newlines %sfound"
                             .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
         }
     }
@@ -58,6 +58,14 @@ public class Asserts {
         assertTypesMatch(List.of(expectedType), List.of(actualType), functionName, contextStartLine);
     }
 
+    /**
+     * Match does not mean equal: an expected FLOAT matches INT or FLOAT; NUMBER matches FLOAT or INT; and (INT or FLOAT) matches NUMBER.
+     *
+     * @param expectedTypes The types expected.
+     * @param actualTypes  The types found.
+     * @param functionName for the error message on a bad match.
+     * @param contextStartLine for the error message on a bad match.
+     */
     public static void assertTypesMatch(
             @Nonnull final List<Type> expectedTypes,
             @Nonnull final List<Type> actualTypes,
@@ -66,18 +74,20 @@ public class Asserts {
 
         // check if the argument lengths match
         boolean typesMatch = actualTypes.size() == expectedTypes.size();
-        // if they match iterate over both lists
+        // if the lengths match iterate over both lists
         if (typesMatch) {
-            for (int i = 0; i < actualTypes.size(); i++) {
-                Type expected = expectedTypes.get(i);
-                Type actual = actualTypes.get(i);
+            // lazily iterate over both lists looking for a non-match
+            int i = 0;
+            while (typesMatch && i < actualTypes.size()) {
+                final Type expected = expectedTypes.get(i);
+                final Type actual = actualTypes.get(i++);
                 // the types match if they are equal
-                typesMatch &= expected.equals(actual)
-                        // FLOAT also matches INT
+                typesMatch = expected.equals(actual)
+                        // a FLOAT also matches an INT
                         || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))
-                        // and NUMBER matches INT or FLOAT
+                        // a NUMBER also matches an INT or a FLOAT
                         || (expected.equals(Type.NUMBER) && (actual.equals(Type.INT) || actual.equals(Type.FLOAT)))
-                        // INT and FLOAT also match NUMBER
+                        // an INT or a FLOAT also match NUMBER
                         || ((expected.equals(Type.INT) || expected.equals(Type.FLOAT)) && (actual.equals(Type.NUMBER)));
             }
         }
