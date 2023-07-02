@@ -1,8 +1,4 @@
-# First -- High Risk features
-
-1. check generated Bash with ShellCheck (https://www.shellcheck.net/)
-
-# Next MVP features / drink my own champaign
+# MVP features / drink my own champaign
 Implement testrig.bp
 1. Comments in Bashpile
 2. command objects $()
@@ -15,23 +11,28 @@ Implement testrig.bp
 5. Bash Blocks (see XML Island Detection in book)
 
 # Later
-remaining types (array, map, ref)
-imports
-default values for functions
-exponents, other operators
-Script super-blocks / sections
-Scriptinos and caching, easy testing
-`until`
-Logical operators, comparison operators
-conditionals
-loops
-reflections api?
-objects?
+(Not ordered)
+* remaining types (array, map, ref)
+* imports
+* default values for functions
+* exponents, other operators
+* Script super-blocks / sections
+* Caching generated Bash
+  * check generated Bash with ShellCheck (https://www.shellcheck.net/)
+* Scriptinos and easy testing
+* `until`
+* Logical operators, comparison operators
+  * `&&` like Java
+  * `expr AND expr` like Bash's `(expr;expr)` without the subshell
+* conditionals
+* loops
 
 # much later
-tooling (IDE integrations, code highlighting)
-native run instead of just on bash
+* tooling (IDE integrations, code highlighting)
+* native run instead of just on bash
 
 # maybe
-1. function overloading 
-   1. (behind the scenes name the function name_returnType_arg1Type_arg2Type_...)
+* function overloading 
+   * behind the scenes name the function name_returnType_arg1Type_arg2Type_...)
+* reflections api
+* objects
