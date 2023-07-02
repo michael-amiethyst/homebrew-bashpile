@@ -25,13 +25,13 @@ arglist: expr (COMMA expr)*;
 block: INDENT stmt* returnRule DEDENT;
 returnRule: RETURN expr NL;
 
-expr: ID OPAREN arglist? CPAREN     # functionCallExpr
+expr: ID OPAREN arglist? CPAREN         # functionCallExpr
     // operator expressions
-    | OPAREN expr CPAREN            # parensExpr
-    | <assoc=right> MINUS? NUMBER   # numberExpr
-    | expr (MUL|DIV|ADD|MINUS) expr # calcExpr   // since we delegate
+    | OPAREN expr CPAREN                # parensExpr
+    | <assoc=right> MINUS? NUMBER       # numberExpr
+    | expr op=(MUL|DIV|ADD|MINUS) expr  # calcExpr   // since we delegate
     // type expressions
-    | BOOL                          # boolExpr
-    | ID                            # idExpr
-    | STRING                        # stringExpr
+    | BOOL                              # boolExpr
+    | ID                                # idExpr
+    | STRING                            # stringExpr
     ;

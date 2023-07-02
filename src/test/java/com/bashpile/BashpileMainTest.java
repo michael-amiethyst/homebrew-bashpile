@@ -117,6 +117,12 @@ class BashpileMainTest {
     }
 
     @Test
+    @Order(73)
+    public void stringBadOperatorTest() {
+        assertThrows(AssertionError.class, () -> runFile("0073-stringBadOperator.bashpile"));
+    }
+
+    @Test
     @Order(80)
     public void blockTest() {
         String filename = "0080-block.bashpile";
@@ -145,7 +151,7 @@ class BashpileMainTest {
 
     private ExecutionResults runFile(String file) {
         log.debug("Start of {}", file);
-        String filename = "src/test/resources/%s".formatted(file);
+        String filename = "src/test/resources/10-base/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);
         return bashpile.execute();
     }

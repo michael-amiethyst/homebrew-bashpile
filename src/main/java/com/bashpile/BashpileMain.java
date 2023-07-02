@@ -66,7 +66,7 @@ public class BashpileMain implements Callable<Integer> {
         try {
             bashScript = transpile();
             return BashExecutor.failableRun(bashScript);
-        } catch (UserError e) {
+        } catch (UserError | AssertionError e) {
             throw e;
         } catch (Throwable e) {
             String msg = "\nCouldn't run `%s`".formatted(bashScript);

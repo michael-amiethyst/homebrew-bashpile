@@ -5,10 +5,12 @@ import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.TypeError;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.Objects.requireNonNullElse;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 
 /** Assert stuff, in production as well */
@@ -88,6 +90,13 @@ public class Asserts {
     public static void assertEquals(final int expected, final int actual) {
         if (expected != actual) {
             throw new AssertionError("Expected %d but got %d".formatted(expected, actual));
+        }
+    }
+
+    public static void assertEquals(
+            @Nonnull final String expected, @Nullable final String actual, @Nullable final String message) {
+        if (!expected.equals(actual)) {
+            throw new AssertionError(requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
         }
     }
 }

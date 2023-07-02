@@ -151,7 +151,7 @@ class FunctionsTest {
 
     private ExecutionResults runFile(String file) {
         log.debug("Start of {}", file);
-        String filename = "src/test/resources/functions/%s".formatted(file);
+        String filename = "src/test/resources/20-functions/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);
         return bashpile.execute();
     }

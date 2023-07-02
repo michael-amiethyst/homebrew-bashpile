@@ -275,7 +275,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // expressions
 
     @Override
-    public @Nonnull Translation calc(@Nonnull final ParserRuleContext ctx) {
+    public @Nonnull Translation calc(@Nonnull final BashpileParser.CalcExprContext ctx) {
         final Pair<String, List<Translation>> pair = unwindChildren(ctx);
         final String unwoundSubshells = pair.getLeft();
         final List<Translation> childTranslations = pair.getRight();
@@ -289,7 +289,8 @@ public class BashTranslationEngine implements TranslationEngine {
             return new Translation(translationsLine, Type.NUMBER, NORMAL);
         // types section
         } else if (isStringExpression(childTranslations)) {
-            // TODO verify we're adding strings
+            final String op = ctx.op.getText();
+            Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
             return toStringTranslation(first.text() + second.text());
         } else if (isNumberExpression(childTranslations)) {
             final String translationsString = childTranslations.stream()
