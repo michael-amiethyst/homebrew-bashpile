@@ -1,18 +1,21 @@
 package com.bashpile.commandline;
 
+import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
 
 import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.concurrent.*;
 
+import static org.apache.commons.lang3.StringUtils.appendIfMissing;
+
 /**
- * Handles I/O and closing resources on a running child {@link Process}.
- * Spawns an additional thread to consume (read) the child process's STDOUT.
+ * Handles I/O and closing resources on a running child {@link Process}.<br>
+ * Spawns an additional thread to consume (read) the child process's STDOUT.<br>
  * <br>
- * Call order should be: {@link #create(Process)}, one or many calls to {@link #write(String)}, {@link #join()}, {@link #getStdOut()}.
+ * Call order should be: {@link #spawnConsumer(Process)}, one or many calls to {@link #writeLn(String)}, {@link #join()}, {@link #getStdOut()}.
  */
-public class CommandLineExecutor implements Closeable {
+public class IoManager implements Closeable {
 
     /** The wrapped child process */
     final private Process childProcess;
@@ -23,7 +26,7 @@ public class CommandLineExecutor implements Closeable {
     /**
      * This pipes output from the parent process to the input of the child process.
      *
-     * @see #write(String)
+     * @see #writeLn(String)
      */
     final private BufferedWriter childStdInWriter;
 
@@ -36,18 +39,18 @@ public class CommandLineExecutor implements Closeable {
     /** We just need this to close down the STDOUT stream reader */
     final private Future<?> childStdOutReaderFuture;
 
-    public static @Nonnull CommandLineExecutor create(@Nonnull final Process childProcess) {
+    public static @Nonnull IoManager spawnConsumer(@Nonnull final Process childProcess) {
         final ByteArrayOutputStream childStdOutBuffer = new ByteArrayOutputStream();
         // childProcess.outputWriter() is confusing -- it returns a writer for the child process's STDIN
-        return new CommandLineExecutor(childProcess, Executors.newSingleThreadExecutor(), childProcess.outputWriter(),
+        return new IoManager(childProcess, Executors.newSingleThreadExecutor(), childProcess.outputWriter(),
                 childStdOutBuffer, new PrintStream(childStdOutBuffer));
     }
 
-    private CommandLineExecutor(@Nonnull final Process childProcess,
-                                @Nonnull final ExecutorService executorService,
-                                @Nonnull final BufferedWriter childStdInWriter,
-                                @Nonnull final ByteArrayOutputStream childStdOutBuffer,
-                                @Nonnull final PrintStream childStdOutWriter) {
+    private IoManager(@Nonnull final Process childProcess,
+                      @Nonnull final ExecutorService executorService,
+                      @Nonnull final BufferedWriter childStdInWriter,
+                      @Nonnull final ByteArrayOutputStream childStdOutBuffer,
+                      @Nonnull final PrintStream childStdOutWriter) {
         this.childProcess = childProcess;
         this.executorService = executorService;
         this.childStdInWriter = childStdInWriter;
@@ -59,8 +62,9 @@ public class CommandLineExecutor implements Closeable {
         this.childStdOutReaderFuture = executorService.submit(failableStreamConsumer);
     }
 
-    public void write(@Nonnull final String text) throws IOException {
-        childStdInWriter.write(text);
+    public void writeLn(@Nonnull final String text) throws IOException {
+        final String textBlock = appendIfMissing(text, "\n");
+        childStdInWriter.write(textBlock);
     }
 
     /** Joins to both background threads (process and STDOUT stream reader) */
@@ -78,6 +82,13 @@ public class CommandLineExecutor implements Closeable {
     }
 
     public @Nonnull String getStdOut() {
+        if (childProcess.isAlive()) {
+            try {
+                join();
+            } catch (InterruptedException | ExecutionException | TimeoutException | IOException e) {
+                throw new BashpileUncheckedException(e);
+            }
+        }
         return childStdOutBuffer.toString();
     }
 

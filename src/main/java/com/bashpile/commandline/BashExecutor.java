@@ -11,8 +11,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
-import static org.apache.commons.lang3.StringUtils.appendIfMissing;
-
 /**
  * Runs commands in Bash.  Runs `wsl bash` in Windows.
  */
@@ -32,34 +30,23 @@ public class BashExecutor {
      *  ExecutionException, InterruptedException or TimeoutException.
      */
     public static @Nonnull ExecutionResults run(@Nonnull final String bashString) throws IOException {
-        // guard
         log.info("Executing bash text:\n" + bashString);
-
-        // create and configure our ProcessBuilder
-        final ProcessBuilder builder = new ProcessBuilder();
-        if (isWindows()) {
-            log.trace("Detected windows");
-            builder.command("wsl");
-        } else {
-            log.trace("Detected 'nix");
-            builder.command("bash");
-        }
-        builder.redirectErrorStream(true);
 
         // run our CommandLine process in background threads
         int exitCode;
-        try (final CommandLineExecutor commandLine = CommandLineExecutor.create(builder.start())) {
+        try (final IoManager commandLine = IoManager.spawnConsumer(spawnLinuxProcess())) {
 
             // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
-            commandLine.write("bash\n");
+            // also the Linux process starts in the user's shell, which may not be Bash (e.g. zsh)
+            commandLine.writeLn("bash");
 
             // this is the core of the method
-            final String bashTextBlock = appendIfMissing(bashString, "\n");
-            commandLine.write(bashTextBlock);
+            commandLine.writeLn(bashString);
 
-            // exit from subshell and shell
-            commandLine.write("exit $?\n");
-            commandLine.write("exit $?\n");
+            // exit from subshell
+            commandLine.writeLn("exit $?");
+            // exit from shell
+            commandLine.writeLn("exit $?");
 
             // wait for background threads to complete
             exitCode = commandLine.join();
@@ -76,7 +63,23 @@ public class BashExecutor {
         }
     }
 
-    public static boolean isWindows() {
+    private static Process spawnLinuxProcess() throws IOException {
+        ProcessBuilder linuxProcess = createProcessBuilder();
+        linuxProcess.redirectErrorStream(true);
+        return linuxProcess.start();
+    }
+
+    private static ProcessBuilder createProcessBuilder() {
+        final ProcessBuilder builder = new ProcessBuilder();
+        if (isWindows()) {
+            log.trace("Detected windows");
+            return builder.command("wsl");
+        } // else
+        log.trace("Detected *nix");
+        return builder.command("bash");
+    }
+
+    private static boolean isWindows() {
         return System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
     }
