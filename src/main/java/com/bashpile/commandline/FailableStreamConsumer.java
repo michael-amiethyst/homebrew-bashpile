@@ -9,7 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
- * Applies consumer to each inputStream line.  Exceptions are hanled both in the stream and the consumer.
+ * Applies consumer to each inputStream line.  Exceptions are handled both in the stream and the consumer.
  * <br>
  * Adapted from <a href="https://www.baeldung.com/run-shell-command-in-java">a tutorial</a>.
  */

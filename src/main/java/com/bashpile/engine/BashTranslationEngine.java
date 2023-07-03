@@ -36,7 +36,11 @@ import static com.google.common.collect.Iterables.getLast;
  */
 public class BashTranslationEngine implements TranslationEngine {
 
+    // static variables
+
     public static final String TAB = "    ";
+
+    // static methods
 
     private static @Nonnull String getLocalText() {
         return getLocalText(false);
@@ -61,6 +65,8 @@ public class BashTranslationEngine implements TranslationEngine {
         strRef.set(appended);
     }
 
+    // instance variables
+
     private final TypeStack typeStack = new TypeStack();
 
     private BashpileVisitor visitor;
@@ -72,11 +78,17 @@ public class BashTranslationEngine implements TranslationEngine {
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
     /** put variable into ${}, e.g. "var" becomes "${var}" */
-    private final Function<ParseTree, Translation> translateIdsOrVisit =
-            parseTree -> parseTree instanceof BashpileParser.IdExprContext
-                    ? new Translation("${%s}".formatted(parseTree.getText()),
-                            typeStack.getVariable(((BashpileParser.IdExprContext) parseTree).ID().getText()), NORMAL)
-                    : visitor.visit(parseTree);
+    private final Function<ParseTree, Translation> translateIdsOrVisit = parseTree -> {
+        if (parseTree instanceof BashpileParser.IdExprContext ctx) {
+            // return `${varName}` syntax with the previously declared type of the variable
+            final String variableName = ctx.ID().getText();
+            final Type type = typeStack.getVariableType(variableName);
+            return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
+        } // else
+        return visitor.visit(parseTree);
+    };
+
+    // instance methods
 
     @Override
     public void setVisitor(@Nonnull final BashpileVisitor visitor) {
@@ -108,7 +120,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation imports() {
-        String text = "# no imports yet (this is a stub)\n";
+        // stub
+        String text = "";
         return toStringTranslation(text);
     }
 
@@ -119,8 +132,9 @@ public class BashTranslationEngine implements TranslationEngine {
         // add this variable to the type map
         final String variableName = ctx.typedId().ID().getText();
         final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
-        typeStack.putVariable(variableName, type);
+        typeStack.putVariableType(variableName, type);
 
+        // visit the right hand expression
         Translation exprTranslation = visitor.visit(ctx.expr());
         Asserts.assertTypesMatch(type, exprTranslation.type(), ctx.typedId().ID().getText(), ctx.start.getLine());
 
@@ -134,16 +148,19 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation reassign(@Nonnull final BashpileParser.ReAssignStmtContext ctx) {
+        // get name and type
         final String variableName = ctx.ID().getText();
-        final Type expectedType = typeStack.getVariable(variableName);
-        if (expectedType.equals(Type.NOT_FOUND)) {
+        final Type expectedType = typeStack.getVariableType(variableName);
+        if (expectedType.isNotFound()) {
             throw new TypeError(variableName + " has not been declared");
         }
 
+        // get expression and it's type
         final Translation exprTranslation = visitor.visit(ctx.expr());
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesMatch(expectedType, actualType, variableName, ctx.start.getLine());
 
+        // create translation
         final String lineComment = "# reassign statement, Bashpile line %d".formatted(ctx.start.getLine());
         final String value = exprTranslation.text();
         return new Translation(
@@ -174,8 +191,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionForwardDecl(@Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
-        try (LevelCounter forwardDeclCounter = new LevelCounter(FORWARD_DECL)) {
-            forwardDeclCounter.noop();
+        try (LevelCounter ignored = new LevelCounter(FORWARD_DECL)) {
             final String lineComment = "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
             final String hoistedFunctionText = visitor.visit(functionDeclCtx).text();
             assertTextBlock(hoistedFunctionText);
@@ -205,17 +221,16 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Type> typeList = ctx.paramaters().typedId()
                 .stream().map(Type::valueOf).collect(Collectors.toList());
         final Type retType = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
-        typeStack.putFunction(functionName, new FunctionTypeInfo(typeList, retType));
+        typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
         // create block
         String block;
-        try (LevelCounter counter = new LevelCounter(BLOCK)) {
-            counter.noop();
+        try (LevelCounter ignored = new LevelCounter(BLOCK)) {
             typeStack.push();
 
             // register local variable types
             ctx.paramaters().typedId().forEach(
-                    x -> typeStack.putVariable(x.ID().getText(), Type.valueOf(x.TYPE().getText().toUpperCase())));
+                    x -> typeStack.putVariableType(x.ID().getText(), Type.valueOf(x.TYPE().getText().toUpperCase())));
 
             // handles nested blocks
             final AtomicInteger i = new AtomicInteger(1);
@@ -246,8 +261,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation anonBlock(@Nonnull final BashpileParser.AnonBlockStmtContext ctx) {
         String block;
-        try (LevelCounter counter = new LevelCounter(BLOCK)) {
-            counter.noop();
+        try (LevelCounter ignored = new LevelCounter(BLOCK)) {
             typeStack.push();
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
@@ -328,8 +342,7 @@ public class BashTranslationEngine implements TranslationEngine {
         List<Translation> childTranslations;
         // subshellVarTextBlock accumulates all the inner shells' results
         final AtomicReference<String> subshellVarTextBlock = new AtomicReference<>("");
-        try (LevelCounter counter = new LevelCounter(CALC)) {
-            counter.noop();
+        try (LevelCounter ignored = new LevelCounter(CALC)) {
             final AtomicInteger varTextCount = new AtomicInteger(0);
 
             // this is a work-around for nested sub-shells
@@ -386,7 +399,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Supplier<Stream<Translation>> argListTranslationStream =
                 () -> ctx.arglist().expr().stream().map(translateIdsOrVisit);
         // get the expected and actual types
-        final FunctionTypeInfo expectedTypes = typeStack.getFunction(functionName);
+        final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
         final List<Type> actualTypes = ctx.arglist() != null
                 ? argListTranslationStream.get().map(Translation::type).collect(Collectors.toList())
                 : List.of();
@@ -402,7 +415,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 : "";
 
         // lookup return type of this function
-        final Type retType = typeStack.getFunction(id).returnType();
+        final Type retType = typeStack.getFunctionTypes(id).returnType();
 
         return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
     }

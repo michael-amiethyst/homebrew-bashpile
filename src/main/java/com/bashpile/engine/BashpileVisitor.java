@@ -105,18 +105,13 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public @Nonnull Translation visitBlock(@Nonnull final BashpileParser.BlockContext ctx) {
-        return Translation.empty;
-    }
-
-    @Override
     public @Nonnull Translation visitReturnRule(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
         return translator.returnRule(ctx);
     }
 
     @Override
     public @Nonnull Translation visitBlankStmt(@Nonnull BashpileParser.BlankStmtContext ctx) {
-        // was returning "\r\n" without an override
+        // was returning "\r\n" on Windows without an override
         return toStringTranslation("\n");
     }
 

@@ -18,11 +18,11 @@ public class TypeStack {
         frames.push(TypeStackframe.of());
     }
 
-    public void putVariable(@Nonnull final String variableName, @Nonnull final Type type) {
+    public void putVariableType(@Nonnull final String variableName, @Nonnull final Type type) {
         frames.peek().variables().put(variableName, type);
     }
 
-    public @Nonnull Type getVariable(@Nonnull final String variableName) {
+    public @Nonnull Type getVariableType(@Nonnull final String variableName) {
         // foreach stack frame search for variableName in the variableMap
         Optional<Map<String, Type>> topmostOptional = frames.stream()
                 .map(TypeStackframe::variables)
@@ -36,15 +36,15 @@ public class TypeStack {
     }
 
     public boolean containsVariable(@Nonnull final String variableName) {
-        final Type foundType = getVariable(variableName);
+        final Type foundType = getVariableType(variableName);
         return foundType != Type.NOT_FOUND;
     }
 
-    public void putFunction(@Nonnull final String functionName, @Nonnull final FunctionTypeInfo functionTypeInfo) {
+    public void putFunctionTypes(@Nonnull final String functionName, @Nonnull final FunctionTypeInfo functionTypeInfo) {
         frames.peek().functions().put(functionName, functionTypeInfo);
     }
 
-    public @Nonnull FunctionTypeInfo getFunction(@Nonnull final String functionName) {
+    public @Nonnull FunctionTypeInfo getFunctionTypes(@Nonnull final String functionName) {
         // foreach stack frame search for variableName in the variableMap
         Optional<Map<String, FunctionTypeInfo>> topmostOptional = frames.stream()
                 .map(TypeStackframe::functions)
@@ -58,7 +58,7 @@ public class TypeStack {
     }
 
     public boolean containsFunction(@Nonnull final String functionName) {
-        final FunctionTypeInfo foundFunction = getFunction(functionName);
+        final FunctionTypeInfo foundFunction = getFunctionTypes(functionName);
         return foundFunction != FunctionTypeInfo.EMPTY;
     }
 

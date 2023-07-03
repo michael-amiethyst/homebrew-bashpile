@@ -45,11 +45,6 @@ public class LevelCounter implements Closeable {
 
     }
 
-    /**
-     * To prevent IDE warnings about an unused LevelCounter in a try-with-resources block.
-     */
-    public void noop() {}
-
     @Override
     public void close() {
         int count = counters.get(label);

@@ -45,6 +45,10 @@ public enum Type {
         return type;
     }
 
+    public boolean isNotFound() {
+        return this.equals(NOT_FOUND);
+    }
+
     public boolean isStr() {
         return this.equals(STR);
     }
