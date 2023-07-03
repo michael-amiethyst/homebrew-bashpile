@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import static com.bashpile.Asserts.assertExecutionSuccess;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Order(10)
@@ -102,7 +103,7 @@ class BashpileMainTest {
     @Order(71)
     public void stringTest() {
         var runResult = runFile("0071-string.bashpile");
-        assertEquals(0, runResult.exitCode());
+        assertExecutionSuccess(runResult);
         String[] outLines = runResult.stdoutLines();
         assertEquals("world", outLines[outLines.length - 1]);
     }
@@ -111,7 +112,7 @@ class BashpileMainTest {
     @Order(72)
     public void stringConcatTest() {
         var runResult = runFile("0072-stringConcat.bashpile");
-        assertEquals(0, runResult.exitCode(), "Bad exit code with sysout: " + runResult.stdout());
+        assertExecutionSuccess(runResult);
         String[] outLines = runResult.stdoutLines();
         assertEquals("hello world", outLines[outLines.length - 1]);
     }

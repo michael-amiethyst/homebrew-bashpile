@@ -98,9 +98,19 @@ public class Asserts {
     }
 
     public static void assertEquals(final int expected, final int actual) {
+        assertEquals(expected, actual, null);
+    }
+
+    public static void assertEquals(final int expected, final int actual, @Nullable final String message) {
         if (expected != actual) {
-            throw new AssertionError("Expected %d but got %d".formatted(expected, actual));
+            throw new AssertionError(requireNonNullElse(message, "Expected %d but got %d".formatted(expected, actual)));
         }
+    }
+
+    public static void assertExecutionSuccess(@Nonnull final ExecutionResults executionResults) {
+        assertEquals(0, executionResults.exitCode(),
+                "Found failing (non-0) 'nix exit code: %s.  Full text results:\n%s".formatted(
+                        executionResults.exitCode(), executionResults.stdout()));
     }
 
     public static void assertEquals(

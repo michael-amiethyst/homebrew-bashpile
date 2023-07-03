@@ -23,15 +23,6 @@ public class BashExecutor {
     private static final Logger log = LogManager.getLogger(BashExecutor.class);
 
     public static @Nonnull ExecutionResults run(@Nonnull final String bashText) throws IOException {
-        return runHelper(bashText, true);
-    }
-
-    public static @Nonnull ExecutionResults failableRun(@Nonnull final String bashText) throws IOException {
-        return runHelper(bashText, false);
-    }
-
-    private static @Nonnull ExecutionResults runHelper(
-            @Nonnull final String bashText, final boolean throwOnBadExitCode) throws IOException {
         log.info("Executing bash text:\n" + bashText);
         final ProcessBuilder builder = new ProcessBuilder();
         if (isWindows()) {
@@ -50,17 +41,13 @@ public class BashExecutor {
             commandLine.write("bash\n");
             commandLine.write(StringUtils.appendIfMissing(bashText, "\n"));
 
-            // exit from sub shell and shell
+            // exit from subshell and shell
             commandLine.write("exit $?\n");
             commandLine.write("exit $?\n");
 
             exitCode = commandLine.join();
 
             final String stdoutString = commandLine.getStdOut();
-            if (exitCode != 0 && throwOnBadExitCode) {
-                throw new BashpileUncheckedException(
-                        "Found failing (non-0) 'nix exit code: " + exitCode + ".  Full text results:\n" + stdoutString);
-            }
             // return buffer stripped of random error lines
             log.trace("Shell output before processing: [{}]", stdoutString);
             final String processedCommandResultText =

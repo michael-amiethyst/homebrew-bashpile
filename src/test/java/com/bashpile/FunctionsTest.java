@@ -11,6 +11,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.Arrays;
 
+import static com.bashpile.Asserts.assertExecutionSuccess;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,7 +62,7 @@ class FunctionsTest {
     @Order(121)
     public void functionCallMultipleParamsTest() {
         var executionResults = runFile("0121-functionCall-multipleParams.bashpile");
-        assertEquals(0, executionResults.exitCode());
+        assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().length);
         assertEquals("12", executionResults.stdoutLines()[0]);
     }
@@ -70,7 +71,7 @@ class FunctionsTest {
     @Order(122)
     public void functionCallReturnStringTest() {
         var executionResults = runFile("0122-functionCall-returnString.bashpile");
-        assertEquals(0, executionResults.exitCode());
+        assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().length);
         assertEquals("hello world", executionResults.stdoutLines()[0]);
     }
@@ -79,7 +80,7 @@ class FunctionsTest {
     @Order(123)
     public void functionCallTagsTest() {
         var executionResults = runFile("0123-functionCall-tags.bashpile");
-        assertEquals(0, executionResults.exitCode());
+        assertExecutionSuccess(executionResults);
         assertEquals(2, executionResults.stdoutLines().length);
         assertEquals("3.14", executionResults.stdoutLines()[0]);
     }
@@ -89,7 +90,7 @@ class FunctionsTest {
     public void functionForwardDeclarationTest() {
         String filename = "0130-functionForwardDecl.bashpile";
         var executionResults = runFile(filename);
-        assertEquals(0, executionResults.exitCode(), "Bad exit code");
+        assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().length
                 , "Wrong length, was: " + join(executionResults.stdoutLines()));
         assertEquals(1,
@@ -103,7 +104,7 @@ class FunctionsTest {
     public void stringTypeTest() {
         String filename = "0140-stringType.bashpile";
         var executionResults = runFile(filename);
-        assertEquals(0, executionResults.exitCode(), "Bad exit code");
+        assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().length
                 , "Wrong length, was: " + join(executionResults.stdoutLines()));
         assertEquals("to be wild", executionResults.stdoutLines()[0],
@@ -128,9 +129,9 @@ class FunctionsTest {
     @Test
     @Order(170)
     public void functionDeclTypesCalcExprTest() {
-        var results = runFile("0170-functionDeclTypesEnforced-calcExpr.bashpile");
-        String[] lines = results.stdoutLines();
-        assertEquals(0, results.exitCode());
+        var executionResults = runFile("0170-functionDeclTypesEnforced-calcExpr.bashpile");
+        String[] lines = executionResults.stdoutLines();
+        assertExecutionSuccess(executionResults);
         assertEquals(1, lines.length, "Wrong length, was: " + join(lines));
         assertEquals("3.14", lines[0]);
     }

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static com.bashpile.Asserts.assertExecutionSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,7 +19,7 @@ public class BashpileMainIntegrationTest {
     public void noSubCommandTest() throws IOException {
         log.debug("In noSubCommandTest");
         String command = "bin/bashpile";
-        var executionResults = BashExecutor.failableRun(command);
+        var executionResults = BashExecutor.run(command);
         log.debug("Output text:\n{}", executionResults.stdout());
         assertEquals(1, executionResults.exitCode());
         assertTrue(executionResults.stdoutLines().length > 0,
@@ -31,11 +32,11 @@ public class BashpileMainIntegrationTest {
     public void executeTest() throws IOException {
         log.debug("In executeTest");
         String command = "bin/bashpile -i=src/test/resources/10-base/0010-simple.bashpile execute";
-        var executionResults = BashExecutor.failableRun(command);
+        var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
         String[] lines = executionResults.stdoutLines();
-        assertEquals(0, executionResults.exitCode());
+        assertExecutionSuccess(executionResults);
         assertTrue(lines.length > 0, "No output");
         int lastLineIndex = lines.length - 1;
         assertEquals("2", lines[lastLineIndex], "Unexpected output: %s".formatted(outputText));
@@ -45,11 +46,11 @@ public class BashpileMainIntegrationTest {
     public void transpileTest() throws IOException {
         log.debug("In transpileTest");
         String command = "bin/bashpile -i src/test/resources/10-base/0010-simple.bashpile transpile";
-        var executionResults = BashExecutor.failableRun(command);
+        var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
         String[] lines = executionResults.stdoutLines();
-        assertEquals(0, executionResults.exitCode());
+        assertExecutionSuccess(executionResults);
         assertTrue(lines.length > 0, "No output");
         int lastLineIndex = lines.length - 1;
         assertEquals("echo \"$__bp_textReturn\";", lines[lastLineIndex],

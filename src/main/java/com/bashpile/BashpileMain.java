@@ -65,7 +65,7 @@ public class BashpileMain implements Callable<Integer> {
         String bashScript = Objects.requireNonNullElse(inputFile, "System.in");
         try {
             bashScript = transpile();
-            return BashExecutor.failableRun(bashScript);
+            return BashExecutor.run(bashScript);
         } catch (UserError | AssertionError e) {
             throw e;
         } catch (Throwable e) {
