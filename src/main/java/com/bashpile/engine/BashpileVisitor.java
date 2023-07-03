@@ -2,11 +2,15 @@ package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
+import com.bashpile.engine.strongtypes.MetaType;
+import com.bashpile.engine.strongtypes.Type;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.util.stream.Collectors;
 
@@ -26,17 +30,17 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     private ParserRuleContext contextRoot;
 
-    public BashpileVisitor(final TranslationEngine translator) {
+    public BashpileVisitor(@Nonnull final TranslationEngine translator) {
         this.translator = translator;
         translator.setVisitor(this);
     }
 
     /**
-     * Do not modify.
+     * Do not modify.  Will be null before the first visit.
      *
      * @return The prog context.
      */
-    public ParserRuleContext getContextRoot() {
+    public @Nullable ParserRuleContext getContextRoot() {
         // pass-by-reference because a deep copy for a non-serializable object is a nightmare
         return contextRoot;
     }
@@ -44,93 +48,113 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visitors
 
     @Override
-    public Translation visitProg(final BashpileParser.ProgContext ctx) {
+    public @Nonnull Translation visitProg(@Nonnull final BashpileParser.ProgContext ctx) {
         // save root for later usage
         contextRoot = ctx;
 
         // prepend strictMode text to the statement results
-        final String header = translator.strictMode().text();
+        final String header = translator.strictModeHeader().text();
         assertTextBlock(header);
         String translatedTextBlock = ctx.stmt().stream()
                 .map(this::visit)
                 .map(Translation::text)
                 .collect(Collectors.joining());
         assertTextBlock(translatedTextBlock);
-        return toStringTranslation(header + translatedTextBlock);
+
+        final String importLibs = translator.imports().text();
+
+        return toStringTranslation(header, importLibs, translatedTextBlock);
     }
 
     // visit statements
 
     @Override
-    public Translation visitExprStmt(final BashpileParser.ExprStmtContext ctx) {
+    public @Nonnull Translation visitExprStmt(@Nonnull final BashpileParser.ExprStmtContext ctx) {
         return visit(ctx.expr()).add("\n");
     }
 
     @Override
-    public Translation visitAssignStmt(final BashpileParser.AssignStmtContext ctx) {
+    public @Nonnull Translation visitAssignStmt(@Nonnull final BashpileParser.AssignStmtContext ctx) {
         return translator.assign(ctx);
     }
 
     @Override
-    public Translation visitPrintStmt(final BashpileParser.PrintStmtContext ctx) {
+    public @Nonnull Translation visitReAssignStmt(@Nonnull BashpileParser.ReAssignStmtContext ctx) {
+        return translator.reassign(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitPrintStmt(@Nonnull final BashpileParser.PrintStmtContext ctx) {
         return translator.print(ctx);
     }
 
     @Override
-    public Translation visitFunctionForwardDeclStmt(final BashpileParser.FunctionForwardDeclStmtContext ctx) {
+    public @Nonnull Translation visitFunctionForwardDeclStmt(
+            @Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
         return translator.functionForwardDecl(ctx);
     }
 
     @Override
-    public Translation visitFunctionDeclStmt(final BashpileParser.FunctionDeclStmtContext ctx) {
+    public @Nonnull Translation visitFunctionDeclStmt(@Nonnull final BashpileParser.FunctionDeclStmtContext ctx) {
         return translator.functionDecl(ctx);
     }
 
     @Override
-    public Translation visitAnonBlockStmt(final BashpileParser.AnonBlockStmtContext ctx) {
+    public @Nonnull Translation visitAnonBlockStmt(@Nonnull final BashpileParser.AnonBlockStmtContext ctx) {
         return translator.anonBlock(ctx);
     }
 
     @Override
-    public Translation visitBlock(final BashpileParser.BlockContext ctx) {
-        return Translation.empty;  // pure comments for now
+    public @Nonnull Translation visitReturnRule(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
+        return translator.returnRule(ctx);
     }
 
     @Override
-    public Translation visitReturnRule(final BashpileParser.ReturnRuleContext ctx) {
-        return translator.returnRule(ctx);
+    public @Nonnull Translation visitBlankStmt(@Nonnull BashpileParser.BlankStmtContext ctx) {
+        // was returning "\r\n" on Windows without an override
+        return toStringTranslation("\n");
     }
 
     // visit expressions
 
     @Override
-    public Translation visitCalcExpr(final BashpileParser.CalcExprContext ctx) {
+    public @Nonnull Translation visitFunctionCallExpr(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
+        return translator.functionCall(ctx);
+    }
+
+    // visit operator expressions
+
+    @Override
+    public @Nonnull Translation visitParensExpr(@Nonnull final BashpileParser.ParensExprContext ctx) {
+        return translator.parens(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitNumberExpr(@Nonnull final BashpileParser.NumberExprContext ctx) {
+        return new Translation(ctx.getText(), Type.parseNumberString(ctx.NUMBER().getText()), MetaType.NORMAL);
+    }
+
+    @Override
+    public @Nonnull Translation visitCalcExpr(@Nonnull final BashpileParser.CalcExprContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
         return translator.calc(ctx);
     }
 
+    // visit type expressions
+
     @Override
-    public Translation visitFunctionCallExpr(final BashpileParser.FunctionCallExprContext ctx) {
-        return translator.functionCall(ctx);
+    public Translation visitBoolExpr(BashpileParser.BoolExprContext ctx) {
+        return new Translation(ctx.BOOL().getText(), Type.BOOL, MetaType.NORMAL);
     }
 
     @Override
-    public Translation visitParensExpr(final BashpileParser.ParensExprContext ctx) {
-        return translator.calc(ctx);
-    }
-
-    @Override
-    public Translation visitIdExpr(final BashpileParser.IdExprContext ctx) {
+    public @Nonnull Translation visitIdExpr(@Nonnull final BashpileParser.IdExprContext ctx) {
         return toStringTranslation(ctx.ID().getText());
     }
 
+    /** Default type is STR */
     @Override
-    public Translation visitNumberExpr(final BashpileParser.NumberExprContext ctx) {
-        return toStringTranslation(ctx.getText());
-    }
-
-    @Override
-    public Translation visitTerminal(final TerminalNode node) {
+    public @Nonnull Translation visitTerminal(@Nonnull final TerminalNode node) {
         return toStringTranslation(node.getText());
     }
 }

@@ -1,14 +1,16 @@
 package com.bashpile.exceptions;
 
+import javax.annotation.Nonnull;
+
 public class BashpileUncheckedAssertionException extends BashpileUncheckedException {
-    public BashpileUncheckedAssertionException(final String message) {
+    public BashpileUncheckedAssertionException(@Nonnull final String message) {
         super(message);
     }
-    public BashpileUncheckedAssertionException(final Throwable e) {
+    public BashpileUncheckedAssertionException(@Nonnull final Throwable e) {
         super(e);
     }
 
-    public BashpileUncheckedAssertionException(final String message, final Throwable e) {
+    public BashpileUncheckedAssertionException(@Nonnull final String message, @Nonnull final Throwable e) {
         super(message, e);
     }
 }

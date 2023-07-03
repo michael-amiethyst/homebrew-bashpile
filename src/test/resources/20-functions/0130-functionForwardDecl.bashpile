@@ -1,0 +1,9 @@
+function circleArea: float (r: float)
+
+function twoCircleArea: float (r1: float, r2: float):
+    return circleArea(r1) + circleArea(r2)
+
+function circleArea: float (r:float) ["helper"]:
+    return 3.14 * r * r
+
+print(twoCircleArea(1, -1))

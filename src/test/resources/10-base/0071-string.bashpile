@@ -1,0 +1,2 @@
+world:str="world"
+print(world)

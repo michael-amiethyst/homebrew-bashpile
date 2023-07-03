@@ -1,0 +1,3 @@
+someVar: int = 1 + 1
+someVar = 3
+print(someVar + 2)

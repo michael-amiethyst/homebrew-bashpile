@@ -1,0 +1,2 @@
+someVar: int = 1 + 1
+someOtherVar + 2

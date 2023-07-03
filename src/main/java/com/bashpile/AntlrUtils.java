@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -29,7 +30,7 @@ public class AntlrUtils {
     private static final Logger log = LogManager.getLogger(AntlrUtils.class);
 
     /** antlr calls */
-    public static String parse(final InputStream is) throws IOException {
+    public static @Nonnull String parse(@Nonnull final InputStream is) throws IOException {
         log.trace("Starting parse");
         // lexer
         final CharStream input = CharStreams.fromStream(is);
@@ -44,16 +45,17 @@ public class AntlrUtils {
     }
 
     /** Returns bash text block */
-    private static String transpile(final ParseTree tree) {
+    private static @Nonnull String transpile(@Nonnull final ParseTree tree) {
         // visitor and engine linked in visitor constructor
         final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
         return bashpileLogic.visit(tree).text();
     }
 
     /** Helper to {@link BashTranslationEngine#functionDecl(BashpileParser.FunctionDeclStmtContext)} */
-    public static ParserRuleContext getFunctionDeclCtx(
-            final BashpileVisitor visitor, final BashpileParser.FunctionForwardDeclStmtContext ctx) {
-        final String functionName = ctx.ID().getText();
+    public static @Nonnull ParserRuleContext getFunctionDeclCtx(
+            @Nonnull final BashpileVisitor visitor, @Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
+        final String functionName = ctx.typedId().ID().getText();
+        assert visitor.getContextRoot() != null;
         final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
         final Predicate<ParserRuleContext> namesMatch =
                 x -> {
@@ -63,7 +65,7 @@ public class AntlrUtils {
                         return false;
                     }
                     final BashpileParser.FunctionDeclStmtContext decl = (BashpileParser.FunctionDeclStmtContext) x;
-                    final boolean nameMatches = decl.ID().getText().equals(functionName);
+                    final boolean nameMatches = decl.typedId().ID().getText().equals(functionName);
                     return nameMatches && paramCompare(decl.paramaters(), ctx.paramaters());
                 };
         return allContexts
@@ -74,9 +76,12 @@ public class AntlrUtils {
     }
 
     private static boolean paramCompare(
-            final BashpileParser.ParamatersContext left, final BashpileParser.ParamatersContext right) {
-        final Stream<String> leftStream = left.ID().stream().map(ParseTree::getText);
-        final List<String> rightList = right.ID().stream().map(ParseTree::getText).toList();
+            @Nonnull final BashpileParser.ParamatersContext left,
+            @Nonnull final BashpileParser.ParamatersContext right) {
+        final Stream<String> leftStream = left.typedId().stream()
+                .map(BashpileParser.TypedIdContext::ID).map(ParseTree::getText);
+        final List<String> rightList = right.typedId().stream()
+                .map(BashpileParser.TypedIdContext::ID).map(ParseTree::getText).toList();
         return leftStream.allMatch(rightList::contains);
     }
 
@@ -87,7 +92,7 @@ public class AntlrUtils {
      * @param parentNode the root.
      * @return Flattened stream of parent nodes' rule context children.
      */
-    private static Stream<ParserRuleContext> stream(final ParserRuleContext parentNode) {
+    private static @Nonnull Stream<ParserRuleContext> stream(@Nonnull final ParserRuleContext parentNode) {
         if (parentNode.getChildCount() == 0) {
             return Stream.of(parentNode);
         } else {
@@ -96,7 +101,8 @@ public class AntlrUtils {
         }
     }
 
-    public static Translation visitBlock(final BashpileVisitor visitor, final Stream<ParserRuleContext> stmtStream) {
+    public static @Nonnull Translation visitBlock(
+            @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> stmtStream) {
         final String translationText = stmtStream.map(visitor::visit)
                 .map(Translation::text)
                 // visit results may be multiline strings, convert to array of single lines
@@ -108,8 +114,9 @@ public class AntlrUtils {
     }
 
     /** Concatenates inputs into stream */
-    public static Stream<ParserRuleContext> addContexts(
-            final List<BashpileParser.StmtContext> stmts, final BashpileParser.ReturnRuleContext ctx) {
+    public static @Nonnull Stream<ParserRuleContext> addContexts(
+            @Nonnull final List<BashpileParser.StmtContext> stmts,
+            @Nonnull final BashpileParser.ReturnRuleContext ctx) {
         // map of x to x needed for upcasting to parent type
         final Stream<ParserRuleContext> stmt = stmts.stream().map(x -> x);
         return Stream.concat(stmt, Stream.of(ctx));

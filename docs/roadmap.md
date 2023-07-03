@@ -1,20 +1,38 @@
-# Soon
-   
-1. type system (bash infinity?)
-   1. function x: str (y: str) [tag tag]
-2. default values for functions
-3. Comments in Bashpile
+# MVP features / drink my own champaign
+Implement testrig.bp
+1. Comments in Bashpile
+2. command objects $()
+   1. run as subshell or substitution
+   2. support nesting
+   3. optional xargs style {}'s
+3. try-with-resources
+   1. syntax: try ($(command) creates "filename")
+4. Automatic script line detection (e.g. can write 'echo ...' or any other bash command)
+5. Bash Blocks (see XML Island Detection in book)
 
 # Later
-exponents
-Automatic script line detection (e.g. can write 'echo ...' or any other bash command)
-Script blocks
-Scriptinos and caching, easy testing
-`until`
-conditionals
-loops
-reflections api?
+(Not ordered)
+* remaining types (array, map, ref)
+* imports
+* default values for functions
+* exponents, other operators
+* Script super-blocks / sections
+* Caching generated Bash
+  * check generated Bash with ShellCheck (https://www.shellcheck.net/)
+* Scriptinos and easy testing
+* `until`
+* Logical operators, comparison operators
+  * `&&` like Java
+  * `expr AND expr` like Bash's `(expr;expr)` without the subshell
+* conditionals
+* loops
 
 # much later
-tooling (IDE integrations, code highlighting)
-native run instead of just on bash
+* tooling (IDE integrations, code highlighting)
+* native run instead of just on bash
+
+# maybe
+* function overloading 
+   * behind the scenes name the function name_returnType_arg1Type_arg2Type_...)
+* reflections api
+* objects

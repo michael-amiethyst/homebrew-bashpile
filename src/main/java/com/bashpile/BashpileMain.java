@@ -1,11 +1,14 @@
 package com.bashpile;
 
+import com.bashpile.commandline.BashExecutor;
 import com.bashpile.exceptions.BashpileUncheckedException;
-import org.apache.commons.lang3.tuple.Pair;
+import com.bashpile.exceptions.UserError;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -38,48 +41,58 @@ public class BashpileMain implements Callable<Integer> {
 
     public BashpileMain() {}
 
-    public BashpileMain(final String inputFile) {
+    public BashpileMain(@Nullable final String inputFile) {
         this.inputFile = inputFile;
     }
 
     @Override
-    public Integer call() {
+    public @Nonnull Integer call() {
         // prints help text and returns 'general error'
         commandLine.usage(System.out);
         return 1;
     }
 
     /** Called by the picocli framework */
+    @SuppressWarnings("unused")
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
     public int executeCommand() {
-        System.out.println(execute().getLeft());
+        System.out.println(execute().stdout());
         return 0;
     }
 
-    public Pair<String, Integer> execute() {
+    public @Nonnull ExecutionResults execute() {
         log.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = "<unparsed stream: %s>".formatted(
-                Objects.requireNonNullElse(inputFile, "System.in"));
+        String bashScript = Objects.requireNonNullElse(inputFile, "System.in");
         try {
             bashScript = transpile();
-            return CommandLineExecutor.failableRun(bashScript);
+            return BashExecutor.run(bashScript);
+        } catch (UserError | AssertionError e) {
+            throw e;
         } catch (Throwable e) {
-            throw new BashpileUncheckedException("Couldn't run `%s`.".formatted(bashScript), e);
+            String msg = "\nCouldn't run `%s`".formatted(bashScript);
+            if (e.getMessage() != null) {
+                msg += " because of\n`%s`".formatted(e.getMessage());
+            }
+            if (e.getCause() != null) {
+                msg += "\n caused by `%s`".formatted(e.getCause().getMessage());
+            }
+            throw new BashpileUncheckedException(msg, e);
         }
     }
 
     /** Called by Picocli framework */
+    @SuppressWarnings("unused")
     @CommandLine.Command(name = "transpile", description = "Converts Bashpile lines to bash")
     public int transpileCommand() throws IOException {
         System.out.println(transpile());
         return 0;
     }
 
-    public String transpile() throws IOException {
+    public @Nonnull String transpile() throws IOException {
         return parse(getInputStream());
     }
 
-    private InputStream getInputStream() throws FileNotFoundException {
+    private @Nonnull InputStream getInputStream() throws FileNotFoundException {
         if (inputFile != null) {
             return new FileInputStream(inputFile);
         } else {
@@ -88,7 +101,7 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
-    public void setCommandLine(final CommandLine commandLine) {
+    public void setCommandLine(@Nonnull final CommandLine commandLine) {
         this.commandLine = commandLine;
     }
 }

@@ -1,0 +1,6 @@
+(38. + 5) * .3
+function functionName: int ():
+    x: float = 5.5
+    return x * x
+x: float = 7.7
+x * x

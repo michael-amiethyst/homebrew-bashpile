@@ -1,6 +1,6 @@
 package com.bashpile;
 
-import org.apache.commons.lang3.tuple.Pair;
+import com.bashpile.exceptions.UserError;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
@@ -8,23 +8,19 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.regex.Pattern;
-
+import static com.bashpile.Asserts.assertExecutionSuccess;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BashpileMainTest {
-
-    public static final Pattern lines = Pattern.compile("\r?\n");
 
     private static final Logger log = LogManager.getLogger(BashpileMainTest.class);
 
     @Test
     @Order(10)
     public void simpleTest() {
-        String[] ret = runFile("0010-simple.bashpile").getLeft();
+        String[] ret = runFile("0010-simple.bashpile").stdoutLines();
         assertNotNull(ret);
         final int expectedLines = 1;
         assertEquals(expectedLines, ret.length, "Unexpected output length, expected %d lines but found: %s"
@@ -35,7 +31,7 @@ class BashpileMainTest {
     @Test
     @Order(20)
     public void multilineTest() {
-        String[] ret = runFile("0020-multiline.bashpile").getLeft();
+        String[] ret = runFile("0020-multiline.bashpile").stdoutLines();
         assertNotNull(ret);
         int expected = 2;
         assertEquals(expected, ret.length, "Expected %d lines but got %d".formatted(expected, ret.length));
@@ -46,8 +42,15 @@ class BashpileMainTest {
     @Test
     @Order(30)
     public void assignTest() {
-        String[] ret = runFile("0030-assign.bashpile").getLeft();
+        String[] ret = runFile("0030-assign.bashpile").stdoutLines();
         assertEquals("4", ret[0]);
+    }
+
+    @Test
+    @Order(31)
+    public void reassignTest() {
+        String[] ret = runFile("0031-reassign.bashpile").stdoutLines();
+        assertEquals("5", ret[0]);
     }
 
     /**
@@ -56,31 +59,43 @@ class BashpileMainTest {
     @Test
     @Order(40)
     public void badAssign() {
-        Pair<String[], Integer> runResults = runFile("0040-badAssign.bashpile");
-        assertEquals(1, runResults.getRight());
-        String errorLine = runResults.getLeft()[0];
-        assertTrue(errorLine.endsWith("unbound variable"), "Unexpected error line: " + errorLine);
+        assertThrows(UserError.class, () -> runFile("0040-badAssign.bashpile"));
     }
 
     @Test
     @Order(50)
     public void parenTest() {
-        String[] ret = runFile("0050-paren.bashpile").getLeft();
+        String[] ret = runFile("0050-paren.bashpile").stdoutLines();
         assertEquals(1, ret.length, "Unexpected number of lines");
         assertEquals("21", ret[0]);
     }
 
     @Test
+    @Order(51)
+    public void parenStringTest() {
+        String[] ret = runFile("0051-parenString.bashpile").stdoutLines();
+        assertEquals(1, ret.length, "Unexpected number of lines");
+        assertEquals("hello world, you good?", ret[0]);
+    }
+
+    @Test
     @Order(60)
-    public void idTest() throws IOException {
-        String[] bashLines = transpileFile("0060-id.bashpile");
-        assertEquals("var", bashLines[bashLines.length - 1]);
+    public void idTest() {
+        String[] outLines = runFile("0060-id.bashpile").stdoutLines();
+        assertEquals("6", outLines[0]);
+    }
+
+    @Test
+    @Order(61)
+    public void boolTest() {
+        String[] outLines = runFile("0061-bool.bashpile").stdoutLines();
+        assertEquals("false", outLines[0]);
     }
 
     @Test
     @Order(70)
-    public void intTest() throws IOException {
-        String[] bashLines = transpileFile("0070-int.bashpile");
+    public void intTest() {
+        String[] bashLines = runFile("0070-int.bashpile").stdinLines();
         assertEquals("42", bashLines[bashLines.length - 1]);
     }
 
@@ -88,16 +103,31 @@ class BashpileMainTest {
     @Order(71)
     public void stringTest() {
         var runResult = runFile("0071-string.bashpile");
-        assertEquals(0, runResult.getRight());
-        String[] outLines = runResult.getLeft();
+        assertExecutionSuccess(runResult);
+        String[] outLines = runResult.stdoutLines();
         assertEquals("world", outLines[outLines.length - 1]);
+    }
+
+    @Test
+    @Order(72)
+    public void stringConcatTest() {
+        var runResult = runFile("0072-stringConcat.bashpile");
+        assertExecutionSuccess(runResult);
+        String[] outLines = runResult.stdoutLines();
+        assertEquals("hello world", outLines[outLines.length - 1]);
+    }
+
+    @Test
+    @Order(73)
+    public void stringBadOperatorTest() {
+        assertThrows(AssertionError.class, () -> runFile("0073-stringBadOperator.bashpile"));
     }
 
     @Test
     @Order(80)
     public void blockTest() {
         String filename = "0080-block.bashpile";
-        String[] executionResults = runFile(filename).getLeft();
+        String[] executionResults = runFile(filename).stdoutLines();
         String[] expected = {"24", "64000", "128"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
@@ -106,101 +136,24 @@ class BashpileMainTest {
     @Test
     @Order(90)
     public void lexicalScopingTest() {
-        String filename = "0090-lexicalscoping.bashpile";
-        var ret = runFile(filename);
-        assertEquals(1, ret.getRight(),
-                "Unexpected exit code.  Return text was:\n" + String.join("\n", ret.getLeft()));
-        String line = ret.getLeft()[ret.getLeft().length - 1];
-        assertTrue(line.endsWith("unbound variable"), "Unexpected error line: " + line);
+        assertThrows(UserError.class, () -> runFile("0090-lexicalscoping.bashpile"));
     }
 
     @Test
     @Order(100)
     public void floatsTest() {
-        String[] executionResults = runFile("0100-floats.bashpile").getLeft();
+        String[] executionResults = runFile("0100-floats.bashpile").stdoutLines();
         String[] expected = {"21.0", "11.0", "7.0"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
     }
 
-    @Test
-    @Order(110)
-    public void functionDeclarationTest() {
-        String[] executionResults = runFile("0110-functionDeclaration.bashpile").getLeft();
-        assertEquals(2, executionResults.length);
-    }
-
-    @Test
-    @Order(111)
-    public void functionDeclarationParamsTest() {
-        String[] executionResults = runFile("0111-functionDeclaration-params.bashpile").getLeft();
-        assertEquals(2, executionResults.length);
-    }
-
-    @Test
-    @Order(120)
-    public void functionCallTest() {
-        String[] executionResults = runFile("0120-functionCall.bashpile").getLeft();
-        assertEquals(2, executionResults.length);
-        assertEquals("3.14", executionResults[0]);
-        assertEquals("3.14", executionResults[1]);
-    }
-
-    @Test
-    @Order(121)
-    public void functionCallMultipleParamsTest() {
-        Pair<String[], Integer> executionResults = runFile("0121-functionCall-multipleParams.bashpile");
-        assertEquals(0, executionResults.getRight());
-        assertEquals(1, executionResults.getLeft().length);
-        assertEquals("12", executionResults.getLeft()[0]);
-    }
-
-    @Test
-    @Order(122)
-    public void functionCallReturnStringTest() {
-        Pair<String[], Integer> executionResults = runFile("0122-functionCall-returnString.bashpile");
-        assertEquals(0, executionResults.getRight());
-        assertEquals(1, executionResults.getLeft().length);
-        assertEquals("hello world", executionResults.getLeft()[0]);
-    }
-
-    @Test
-    @Order(123)
-    public void functionCallTagsTest() {
-        Pair<String[], Integer> executionResults = runFile("0123-functionCall-tags.bashpile");
-        assertEquals(0, executionResults.getRight());
-        assertEquals(2, executionResults.getLeft().length);
-        assertEquals("3.14", executionResults.getLeft()[0]);
-    }
-
-    @Test
-    @Order(130)
-    public void functionForwardDeclarationTest() throws IOException {
-        String filename = "0130-functionForwardDecl.bashpile";
-        String[] bashLines = transpileFile(filename);
-        Pair<String[], Integer> executionResults = runFile(filename);
-        assertEquals(0, executionResults.getRight(), "Bad exit code");
-        assertEquals(1, executionResults.getLeft().length, "Wrong length");
-        assertEquals(1, Arrays.stream(
-                bashLines).filter(x -> x.startsWith("circleArea")).count(),
-                "Wrong circleArea count");
-        assertEquals("6.28", executionResults.getLeft()[0], "Wrong return");
-    }
-
     // helpers
 
-    private String[] transpileFile(String file) throws IOException {
+    private ExecutionResults runFile(String file) {
         log.debug("Start of {}", file);
-        String filename = "src/test/resources/%s".formatted(file);
+        String filename = "src/test/resources/10-base/%s".formatted(file);
         BashpileMain bashpile = new BashpileMain(filename);
-        return lines.split(bashpile.transpile());
-    }
-
-    private Pair<String[], Integer> runFile(String file) {
-        log.debug("Start of {}", file);
-        String filename = "src/test/resources/%s".formatted(file);
-        BashpileMain bashpile = new BashpileMain(filename);
-        Pair<String, Integer> runResults = bashpile.execute();
-        return Pair.of(lines.split(runResults.getLeft()), runResults.getRight());
+        return bashpile.execute();
     }
 }

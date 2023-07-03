@@ -1,3 +1,0 @@
-function rectArea(w, l):
-    return w * l
-print(rectArea(3, 4))

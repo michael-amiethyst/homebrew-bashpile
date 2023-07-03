@@ -1,6 +1,0 @@
-(38. + 5) * .3
-function functionName():
-    x = 5.5
-    return x * x
-x = 7.7
-x * x

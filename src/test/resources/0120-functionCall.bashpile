@@ -1,4 +1,0 @@
-function circleArea(r):
-    return 3.14 * r * r
-print(circleArea(1))
-print(circleArea(-1))

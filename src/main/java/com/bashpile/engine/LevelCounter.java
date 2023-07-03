@@ -1,5 +1,6 @@
 package com.bashpile.engine;
 
+import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.HashMap;
 
@@ -26,15 +27,6 @@ public class LevelCounter implements Closeable {
         return counters.getOrDefault(BLOCK, 0);
     }
 
-    /**
-     * Returns our current indention level minus one.  Does not change the indention level.
-     *
-     * @return whole numbers (e.g. never -1 at indention 0)
-     */
-    public static int getIndentMinusOne() {
-        return Math.max(getIndent() - 1, 0);
-    }
-
     /** are we in any level of indention for this label */
     public static boolean in(final String name) {
         return counters.containsKey(name);
@@ -42,7 +34,7 @@ public class LevelCounter implements Closeable {
 
     private final String label;
 
-    public LevelCounter(final String label) {
+    public LevelCounter(@Nonnull final String label) {
         this.label = label;
         if (counters.containsKey(label)) {
             // increment
@@ -52,11 +44,6 @@ public class LevelCounter implements Closeable {
         }
 
     }
-
-    /**
-     * To prevent IDE warnings about an unused LevelCounter in a try-with-resources block.
-     */
-    public void noop() {}
 
     @Override
     public void close() {

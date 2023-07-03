@@ -1,7 +1,6 @@
 package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
-import org.antlr.v4.runtime.ParserRuleContext;
 
 /**
  * Methods translate small parser rules (e.g. statements and expressions) to the target language.
@@ -15,9 +14,18 @@ public interface TranslationEngine {
      */
     void setVisitor(final BashpileVisitor visitor);
 
-    Translation strictMode();
+    // headers
+
+    Translation strictModeHeader();
+
+    /** To source our bundled libraries */
+    Translation imports();
+
+    // statement translations
 
     Translation assign(final BashpileParser.AssignStmtContext ctx);
+
+    Translation reassign(final BashpileParser.ReAssignStmtContext ctx);
 
     Translation print(final BashpileParser.PrintStmtContext ctx);
 
@@ -29,7 +37,11 @@ public interface TranslationEngine {
 
     Translation returnRule(final BashpileParser.ReturnRuleContext ctx);
 
-    Translation calc(final ParserRuleContext ctx);
+    // expression translations
 
     Translation functionCall(final BashpileParser.FunctionCallExprContext ctx);
+
+    Translation parens(final BashpileParser.ParensExprContext ctx);
+
+    Translation calc(final BashpileParser.CalcExprContext ctx);
 }
