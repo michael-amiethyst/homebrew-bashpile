@@ -1,6 +1,7 @@
 package com.bashpile;
 
 import com.bashpile.exceptions.UserError;
+import com.bashpile.testhelper.BashpileMainTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
@@ -13,9 +14,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class BashpileMainTest {
+class LexerBashpileMainTest extends BashpileMainTest {
 
-    private static final Logger log = LogManager.getLogger(BashpileMainTest.class);
+    protected String getDirectoryName() {
+        return "10-lexer";
+    }
 
     @Test
     @Order(10)
@@ -181,14 +184,5 @@ class BashpileMainTest {
         assertEquals(3, stdoutLines.length,
                 "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
         assertArrayEquals(expected, stdoutLines);
-    }
-
-    // helpers
-
-    private ExecutionResults runFile(String file) {
-        log.debug("Start of {}", file);
-        String filename = "src/test/resources/10-base/%s".formatted(file);
-        BashpileMain bashpile = new BashpileMain(filename);
-        return bashpile.execute();
     }
 }

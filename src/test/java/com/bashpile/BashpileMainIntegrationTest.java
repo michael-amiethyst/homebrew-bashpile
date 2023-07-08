@@ -15,6 +15,8 @@ public class BashpileMainIntegrationTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
+    private static final String DIR_NAME = "10-lexer";
+
     @Test
     public void noSubCommandTest() throws IOException {
         log.debug("In noSubCommandTest");
@@ -31,7 +33,7 @@ public class BashpileMainIntegrationTest {
     @Test
     public void executeTest() throws IOException {
         log.debug("In executeTest");
-        String command = "bin/bashpile -i=src/test/resources/10-base/0010-printCalc.bashpile execute";
+        String command = "bin/bashpile -i=src/test/resources/%s/0010-printCalc.bashpile execute".formatted(DIR_NAME);
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
@@ -45,7 +47,7 @@ public class BashpileMainIntegrationTest {
     @Test
     public void transpileTest() throws IOException {
         log.debug("In transpileTest");
-        String command = "bin/bashpile -i src/test/resources/10-base/0010-printCalc.bashpile transpile";
+        String command = "bin/bashpile -i src/test/resources/%s/0010-printCalc.bashpile transpile".formatted(DIR_NAME);
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);

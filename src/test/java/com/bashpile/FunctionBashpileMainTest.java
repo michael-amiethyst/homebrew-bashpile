@@ -2,6 +2,7 @@ package com.bashpile;
 
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
+import com.bashpile.testhelper.BashpileMainTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import javax.annotation.Nonnull;
 import java.util.Arrays;
 
 import static com.bashpile.Asserts.assertExecutionSuccess;
@@ -18,9 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class FunctionsTest {
+class FunctionBashpileMainTest extends BashpileMainTest {
 
-    private static final Logger log = LogManager.getLogger(FunctionsTest.class);
+    @Nonnull
+    @Override
+    protected String getDirectoryName() {
+        return "20-functions";
+    }
 
     @Test
     @Order(110)
@@ -146,14 +152,5 @@ class FunctionsTest {
     @Order(190)
     public void functionDeclTypesBadCalcExprNestedTest() {
         assertThrows(TypeError.class, () -> runFile("0190-functionDeclTypesEnforced-badCalcExprNested.bashpile"));
-    }
-
-    // helpers
-
-    private ExecutionResults runFile(String file) {
-        log.debug("Start of {}", file);
-        String filename = "src/test/resources/20-functions/%s".formatted(file);
-        BashpileMain bashpile = new BashpileMain(filename);
-        return bashpile.execute();
     }
 }
