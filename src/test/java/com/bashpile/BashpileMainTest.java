@@ -117,6 +117,8 @@ class BashpileMainTest {
         assertEquals("hello world", outLines[outLines.length - 1]);
     }
 
+    // TODO test double declaration for variables
+
     @Test
     @Order(73)
     public void stringBadOperatorTest() {
@@ -143,6 +145,15 @@ class BashpileMainTest {
     @Order(100)
     public void floatsTest() {
         String[] executionResults = runFile("0100-floats.bashpile").stdoutLines();
+        String[] expected = {"21.0", "11.0", "7.0"};
+        assertEquals(3, executionResults.length);
+        assertArrayEquals(expected, executionResults);
+    }
+
+    @Test
+    @Order(110)
+    public void commentsTest() {
+        String[] executionResults = runFile("0110-comments.bashpile").stdoutLines();
         String[] expected = {"21.0", "11.0", "7.0"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);

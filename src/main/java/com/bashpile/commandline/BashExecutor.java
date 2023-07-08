@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class BashExecutor {
 
     private static final Pattern bogusScreenLine = Pattern.compile(
-            "your \\d+x\\d+ screen size is bogus. expect trouble\r\n");
+            "your \\d+x\\d+ screen size is bogus. expect trouble\r?\n");
 
     private static final Logger log = LogManager.getLogger(BashExecutor.class);
 

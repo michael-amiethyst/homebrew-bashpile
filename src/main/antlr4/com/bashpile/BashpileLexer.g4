@@ -44,6 +44,7 @@ FLOAT_NUMBER
 
 NL: '\r'? '\n' ' '*;
 WS: [ \t] -> skip;
+COMMENT: '//' ~[\r\n\f]* -> skip;
 
 OPAREN: '(';
 CPAREN: ')';

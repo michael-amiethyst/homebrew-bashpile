@@ -119,4 +119,10 @@ public class Asserts {
             throw new AssertionError(requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
         }
     }
+
+    public static void assertLinuxLineEndings(@Nonnull final String text) {
+        if (text.contains("\r")) {
+            throw new AssertionError("Found Windows line endings in " + text);
+        }
+    }
 }
