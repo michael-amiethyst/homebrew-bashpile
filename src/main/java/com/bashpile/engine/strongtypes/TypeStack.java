@@ -1,5 +1,8 @@
 package com.bashpile.engine.strongtypes;
 
+import com.bashpile.Asserts;
+import com.bashpile.exceptions.UserError;
+
 import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +22,10 @@ public class TypeStack {
     }
 
     public void putVariableType(@Nonnull final String variableName, @Nonnull final Type type) {
-        frames.peek().variables().put(variableName, type);
+        final Map<String, Type> typeMap = frames.peek().variables();
+        Asserts.assertNotIn(variableName, typeMap, new UserError(
+                "%s is already declared as a %s".formatted(variableName, type.name())));
+        typeMap.put(variableName, type);
     }
 
     public @Nonnull Type getVariableType(@Nonnull final String variableName) {

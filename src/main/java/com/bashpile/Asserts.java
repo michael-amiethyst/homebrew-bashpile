@@ -7,6 +7,7 @@ import com.bashpile.exceptions.TypeError;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,9 +44,9 @@ public class Asserts {
     public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
-            final String winNewlines = str.contains("\r") ? "" : "not ";
+            final String winNewlines = str.contains("\r") ? "found" : "not found";
             throw new BashpileUncheckedAssertionException(
-                    "Str [%s] didn't match regex %s, windows newlines %sfound"
+                    "Str [%s] didn't match regex %s, windows newlines %s"
                             .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
         }
     }
@@ -123,6 +124,18 @@ public class Asserts {
     public static void assertLinuxLineEndings(@Nonnull final String text) {
         if (text.contains("\r")) {
             throw new AssertionError("Found Windows line endings in " + text);
+        }
+    }
+
+    public static <K, V> void assertNotIn(
+            @Nonnull final K variableName,
+            @Nonnull final Map<K, V> typeMap,
+            @Nullable final RuntimeException unchecked) {
+        if (typeMap.containsKey(variableName)) {
+            if (unchecked != null) {
+                throw unchecked;
+            }
+            throw new AssertionError("Found key %s in map %s".formatted(variableName, typeMap));
         }
     }
 }

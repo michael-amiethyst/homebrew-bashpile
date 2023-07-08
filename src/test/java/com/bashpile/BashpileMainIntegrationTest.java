@@ -31,7 +31,7 @@ public class BashpileMainIntegrationTest {
     @Test
     public void executeTest() throws IOException {
         log.debug("In executeTest");
-        String command = "bin/bashpile -i=src/test/resources/10-base/0010-simple.bashpile execute";
+        String command = "bin/bashpile -i=src/test/resources/10-base/0010-printCalc.bashpile execute";
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
@@ -45,7 +45,7 @@ public class BashpileMainIntegrationTest {
     @Test
     public void transpileTest() throws IOException {
         log.debug("In transpileTest");
-        String command = "bin/bashpile -i src/test/resources/10-base/0010-simple.bashpile transpile";
+        String command = "bin/bashpile -i src/test/resources/10-base/0010-printCalc.bashpile transpile";
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);

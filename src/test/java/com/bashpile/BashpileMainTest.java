@@ -19,8 +19,8 @@ class BashpileMainTest {
 
     @Test
     @Order(10)
-    public void simpleTest() {
-        String[] ret = runFile("0010-simple.bashpile").stdoutLines();
+    public void printCalcWorks() {
+        String[] ret = runFile("0010-printCalc.bashpile").stdoutLines();
         assertNotNull(ret);
         final int expectedLines = 1;
         assertEquals(expectedLines, ret.length, "Unexpected output length, expected %d lines but found: %s"
@@ -58,8 +58,14 @@ class BashpileMainTest {
      */
     @Test
     @Order(40)
-    public void badAssign() {
-        assertThrows(UserError.class, () -> runFile("0040-badAssign.bashpile"));
+    public void unassignedVariableReferenceCausesError() {
+        assertThrows(UserError.class, () -> runFile("0040-unassigned.bashpile"));
+    }
+
+    @Test
+    @Order(41)
+    public void declaredTwiceCausesError() {
+        assertThrows(UserError.class, () -> runFile("0041-declaredTwice.bashpile"));
     }
 
     @Test
@@ -117,8 +123,6 @@ class BashpileMainTest {
         assertEquals("hello world", outLines[outLines.length - 1]);
     }
 
-    // TODO test double declaration for variables
-
     @Test
     @Order(73)
     public void stringBadOperatorTest() {
@@ -137,8 +141,8 @@ class BashpileMainTest {
 
     @Test
     @Order(90)
-    public void lexicalScopingTest() {
-        assertThrows(UserError.class, () -> runFile("0090-lexicalscoping.bashpile"));
+    public void lexicalScopingWorks() {
+        assertThrows(UserError.class, () -> runFile("0090-lexicalScoping.bashpile"));
     }
 
     @Test
