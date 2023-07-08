@@ -156,11 +156,31 @@ class BashpileMainTest {
 
     @Test
     @Order(110)
-    public void commentsTest() {
+    public void commentsWork() {
         String[] executionResults = runFile("0110-comments.bashpile").stdoutLines();
         String[] expected = {"21.0", "11.0", "7.0"};
         assertEquals(3, executionResults.length);
         assertArrayEquals(expected, executionResults);
+    }
+
+    @Test @Order(120)
+    public void blockCommentsWork() {
+        ExecutionResults executionResults = runFile("0120-blockComments.bashpile");
+        String[] stdoutLines = executionResults.stdoutLines();
+        String[] expected = {"21.0", "11.0", "7.0"};
+        assertEquals(3, stdoutLines.length,
+                "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
+        assertArrayEquals(expected, stdoutLines);
+    }
+
+    @Test @Order(130)
+    public void bashpileDocsWork() {
+        ExecutionResults executionResults = runFile("0130-bashpileDocs.bashpile");
+        String[] stdoutLines = executionResults.stdoutLines();
+        String[] expected = {"21.0", "11.0", "7.0"};
+        assertEquals(3, stdoutLines.length,
+                "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
+        assertArrayEquals(expected, stdoutLines);
     }
 
     // helpers

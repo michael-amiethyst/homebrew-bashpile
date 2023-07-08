@@ -44,7 +44,9 @@ FLOAT_NUMBER
 
 NL: '\r'? '\n' ' '*;
 WS: [ \t] -> skip;
+BASHPILE_DOC: '/**' .*? '*/' -> skip;
 COMMENT: '//' ~[\r\n\f]* -> skip;
+BLOCK_COMMENT: '/*' ( BLOCK_COMMENT | . )*? '*/' -> skip;
 
 OPAREN: '(';
 CPAREN: ')';
