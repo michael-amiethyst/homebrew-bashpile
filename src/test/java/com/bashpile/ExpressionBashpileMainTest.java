@@ -12,27 +12,27 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 import static com.bashpile.Asserts.assertExecutionSuccess;
-import static com.bashpile.ListUtils.*;
+import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Order(10)
+@Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class LexerBashpileMainTest extends BashpileMainTest {
+class ExpressionBashpileMainTest extends BashpileMainTest {
 
     @Nonnull
     protected String getDirectoryName() {
-        return "10-lexer";
+        return "20-expr";
     }
 
     @Test
     @Order(10)
-    public void printWorks() {
-        List<String> ret = runFile("0010-print.bashpile").stdoutLines();
+    public void printCalcWorks() {
+        List<String> ret = runFile("0010-printCalc.bashpile").stdoutLines();
         assertNotNull(ret);
         final int expectedLines = 1;
         assertEquals(expectedLines, ret.size(), "Unexpected output length, expected %d lines but found: %s"
                 .formatted(expectedLines, String.join("\n", ret)));
-        assertEquals("", ret.get(0), "Unexpected output: %s".formatted(String.join("\n", ret)));
+        assertEquals("2", ret.get(0), "Unexpected output: %s".formatted(String.join("\n", ret)));
     }
 
     @Test

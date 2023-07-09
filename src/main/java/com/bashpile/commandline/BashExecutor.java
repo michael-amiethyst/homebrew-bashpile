@@ -19,6 +19,8 @@ public class BashExecutor {
     private static final Pattern bogusScreenLine = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r?\n");
 
+    private static final Pattern endingBlankLine = Pattern.compile("\r?\n$");
+
     private static final Logger log = LogManager.getLogger(BashExecutor.class);
 
     /**
@@ -52,12 +54,14 @@ public class BashExecutor {
             exitCode = commandLine.join();
 
             // munge stdout
-            final String stdoutString = commandLine.getStdOut();
+            String stdoutString = commandLine.getStdOut();
             log.trace("Shell output before processing: [{}]", stdoutString);
             // return buffer stripped of random error lines
-            final String processedCommandResultText =
-                    bogusScreenLine.matcher(stdoutString).replaceAll("").trim();
-            return new ExecutionResults(bashString, exitCode, processedCommandResultText);
+            stdoutString = bogusScreenLine.matcher(stdoutString).replaceAll("");
+            // trim ending blank line from subshell exit
+            // Can't just .trim() -- output may be blank lines
+            stdoutString = endingBlankLine.matcher(stdoutString).replaceFirst("");
+            return new ExecutionResults(bashString, exitCode, stdoutString);
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new BashpileUncheckedException(e);
         }

@@ -171,7 +171,11 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation print(@Nonnull final BashpileParser.PrintStmtContext ctx) {
         final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String printText = ("%s\n%s\n").formatted(lineComment, ctx.arglist().expr().stream()
+        final BashpileParser.ArglistContext arglist = ctx.arglist();
+        if (arglist == null || arglist.isEmpty()) {
+            return toStringTranslation("echo\n");
+        }
+        final String printText = ("%s\n%s\n").formatted(lineComment, arglist.expr().stream()
                 .map(translateIdsOrVisit)
                 .map(tr -> {
                     if (tr.isNotSubshell()) {
