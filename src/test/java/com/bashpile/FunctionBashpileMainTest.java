@@ -16,7 +16,6 @@ import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-// TODO rename tests to end with "Work" or "ThrowsError"
 @Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FunctionBashpileMainTest extends BashpileMainTest {
@@ -29,7 +28,7 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(110)
-    public void functionDeclarationTest() {
+    public void functionDeclarationWorks() {
         List<String> executionResults = runFile("0110-functionDeclaration.bashpile").stdoutLines();
         assertEquals(2, executionResults.size(),
                 "Unexpected line length, was:\n" + join(executionResults));
@@ -37,26 +36,26 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(111)
-    public void functionDeclarationParamsTest() {
+    public void functionDeclarationParamsWork() {
         List<String> executionResults = runFile("0111-functionDeclaration-params.bashpile").stdoutLines();
         assertEquals(2, executionResults.size());
     }
 
     @Test
     @Order(112)
-    public void functionDeclarationBadParamsTest() {
+    public void functionDeclarationBadParamsThrows() {
         assertThrows(TypeError.class, () -> runFile("0112-functionDeclaration-badParams.bashpile"));
     }
 
     @Test
     @Order(113)
-    public void functionDeclarationDoubleDeclTest() {
+    public void functionDeclarationDoubleDeclThrows() {
         assertThrows(UserError.class, () -> runFile("0113-functionDeclaration-doubleDecl.bashpile"));
     }
 
     @Test
     @Order(120)
-    public void functionCallTest() {
+    public void functionCallWorks() {
         List<String> executionResults = runFile("0120-functionCall.bashpile").stdoutLines();
         assertEquals(2, executionResults.size());
         assertEquals("3.14", executionResults.get(0));
@@ -65,7 +64,7 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(121)
-    public void functionCallMultipleParamsTest() {
+    public void functionCallMultipleParamsWorks() {
         var executionResults = runFile("0121-functionCall-multipleParams.bashpile");
         assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
@@ -74,7 +73,7 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(122)
-    public void functionCallReturnStringTest() {
+    public void functionCallReturnStringWorks() {
         var executionResults = runFile("0122-functionCall-returnString.bashpile");
         assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
@@ -83,7 +82,7 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(123)
-    public void functionCallTagsTest() {
+    public void functionCallTagsWork() {
         var executionResults = runFile("0123-functionCall-tags.bashpile");
         assertExecutionSuccess(executionResults);
         assertEquals(2, executionResults.stdoutLines().size());
@@ -92,7 +91,7 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(130)
-    public void functionForwardDeclarationTest() {
+    public void functionForwardDeclarationWorks() {
         String filename = "0130-functionForwardDecl.bashpile";
         var executionResults = runFile(filename);
         assertExecutionSuccess(executionResults);
@@ -106,7 +105,7 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(140)
-    public void stringTypeTest() {
+    public void stringTypeWorks() {
         String filename = "0140-stringType.bashpile";
         var executionResults = runFile(filename);
         assertExecutionSuccess(executionResults);
@@ -118,7 +117,7 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(150)
-    public void functionDeclTypesTest() {
+    public void functionDeclTypesWork() {
         List<String> executionResults = runFile("0150-functionDeclTypes.bashpile").stdoutLines();
         assertEquals(2, executionResults.size());
         assertEquals("3.14", executionResults.get(0));
@@ -127,13 +126,13 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(160)
-    public void functionDeclTypesEnforcedTest() {
+    public void badFunctionDeclTypesThrow() {
         assertThrows(TypeError.class, () -> runFile("0160-functionDeclTypesEnforced.bashpile"));
     }
 
     @Test
     @Order(170)
-    public void functionDeclTypesCalcExprTest() {
+    public void functionDeclTypesCalcExpressionsWork() {
         var executionResults = runFile("0170-functionDeclTypesEnforced-calcExpr.bashpile");
         List<String> lines = executionResults.stdoutLines();
         assertExecutionSuccess(executionResults);
@@ -143,13 +142,13 @@ class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(180)
-    public void functionDeclTypesBadCalcExprTest() {
+    public void functionDeclTypesBadCalcExpressionThrows() {
         assertThrows(UserError.class, () -> runFile("0180-functionDeclTypesEnforced-badCalcExpr.bashpile"));
     }
 
     @Test
     @Order(190)
-    public void functionDeclTypesBadCalcExprNestedTest() {
+    public void functionDeclTypesBadCalcExpressionNestedThrows() {
         assertThrows(TypeError.class, () -> runFile("0190-functionDeclTypesEnforced-badCalcExprNested.bashpile"));
     }
 }

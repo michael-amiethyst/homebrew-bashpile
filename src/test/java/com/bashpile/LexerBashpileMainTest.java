@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 // TODO add 6f syntax
 // TODO optional commas in numbers (e.g. 1,001)
-// TODO rename tests to end with "Work" or "ThrowsError"
 
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
@@ -43,7 +42,7 @@ class LexerBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(20)
-    public void multilineTest() {
+    public void multilinePrintWorks() {
         List<String> translatedLines = runFile("0020-multiline.bashpile").stdinLines();
         assertNotNull(translatedLines);
         final int endIndex = translatedLines.size() - 1;
@@ -53,14 +52,14 @@ class LexerBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(61)
-    public void boolTest() {
+    public void boolWorks() {
         List<String> outLines = runFile("0060-bool.bashpile").stdoutLines();
         assertEquals("false", outLines.get(0));
     }
 
     @Test
     @Order(70)
-    public void intTest() {
+    public void intWorks() {
         List<String> bashLines = runFile("0070-int.bashpile").stdinLines();
         assertEquals("echo 42", getLast(bashLines));
     }
@@ -75,7 +74,7 @@ class LexerBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(80)
-    public void stringTest() {
+    public void stringWorks() {
         var runResult = runFile("0080-string.bashpile");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
@@ -84,7 +83,7 @@ class LexerBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(81)
-    public void parenStringTest() {
+    public void parenStringWorks() {
         List<String> ret = runFile("0081-parenString.bashpile").stdoutLines();
         assertEquals(1, ret.size(), "Unexpected number of lines");
         assertEquals("hello", ret.get(0));
@@ -92,7 +91,7 @@ class LexerBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(100)
-    public void floatsTest() {
+    public void floatsWork() {
         List<String> executionResults = runFile("0100-floats.bashpile").stdoutLines();
         List<String> expected = List.of(".5", "0.7");
         assertEquals(2, executionResults.size());

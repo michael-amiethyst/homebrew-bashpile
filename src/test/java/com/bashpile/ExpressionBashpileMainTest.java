@@ -13,7 +13,8 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO test very large numbers (e.g. MAX - 1), and overly large numbers
+// TODO test very large numbers (e.g. MAX - 1)
+// TODO test overly large numbers (e.g. MAX + 1)
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileMainTest extends BashpileMainTest {

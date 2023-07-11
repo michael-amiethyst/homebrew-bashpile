@@ -14,7 +14,7 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO rename tests to end with "Work" or "ThrowsError"
+// TODO reorder tests
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileMainTest extends BashpileMainTest {
@@ -26,14 +26,14 @@ class StatementBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(30)
-    public void assignTest() {
+    public void assignWorks() {
         List<String> ret = runFile("0030-assign.bashpile").stdoutLines();
         assertEquals("4", ret.get(0));
     }
 
     @Test
     @Order(31)
-    public void reassignTest() {
+    public void reassignWorks() {
         List<String> ret = runFile("0031-reassign.bashpile").stdoutLines();
         assertEquals("5", ret.get(0));
     }
@@ -43,40 +43,40 @@ class StatementBashpileMainTest extends BashpileMainTest {
      */
     @Test
     @Order(40)
-    public void unassignedVariableReferenceCausesError() {
+    public void unassignedVariableReferenceThrows() {
         assertThrows(UserError.class, () -> runFile("0040-unassigned.bashpile"));
     }
 
     @Test
     @Order(41)
-    public void declaredTwiceCausesError() {
+    public void declaredTwiceThrows() {
         assertThrows(UserError.class, () -> runFile("0041-declaredTwice.bashpile"));
     }
 
     @Test
     @Order(61)
-    public void boolTest() {
+    public void boolWorks() {
         List<String> outLines = runFile("0061-bool.bashpile").stdoutLines();
         assertEquals("false", outLines.get(0));
     }
 
     @Test
     @Order(70)
-    public void intTest() {
+    public void intWorks() {
         List<String> outLines = runFile("0070-int.bashpile").stdoutLines();
         assertEquals("42", getLast(outLines));
     }
 
     @Test
     @Order(71)
-    public void floatTest() {
+    public void floatWorks() {
         List<String> outLines = runFile("0071-float.bashpile").stdoutLines();
         assertEquals("4000000.999", getLast(outLines));
     }
 
     @Test
     @Order(80)
-    public void stringTest() {
+    public void stringWorks() {
         var runResult = runFile("0080-string.bashpile");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
@@ -85,7 +85,7 @@ class StatementBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(81)
-    public void stringConcatTest() {
+    public void stringConcatWorks() {
         var runResult = runFile("0081-stringConcat.bashpile");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
@@ -94,13 +94,13 @@ class StatementBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(82)
-    public void stringBadOperatorTest() {
+    public void stringBadOperatorWorks() {
         assertThrows(AssertionError.class, () -> runFile("0082-stringBadOperator.bashpile"));
     }
 
     @Test
     @Order(90)
-    public void blockTest() {
+    public void blockWorks() {
         String filename = "0090-block.bashpile";
         List<String> executionResults = runFile(filename).stdoutLines();
         List<String> expected = List.of("24", "64000", "128");
