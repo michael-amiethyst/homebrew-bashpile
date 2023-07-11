@@ -16,14 +16,14 @@ import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Order(30)
+@Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FunctionBashpileMainTest extends BashpileMainTest {
 
     @Nonnull
     @Override
     protected String getDirectoryName() {
-        return "30-functions";
+        return "40-functions";
     }
 
     @Test

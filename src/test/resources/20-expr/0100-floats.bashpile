@@ -1,6 +1,2 @@
 print((38. + 4) * .5)
-block:
-    x: float = 5.5
-    return x + x
-x: float = 7.7
-print(x - 0.7)
+print(7.7 - 0.7)

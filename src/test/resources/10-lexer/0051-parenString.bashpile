@@ -1,1 +1,1 @@
-print((("hello" + " world") + (", you" + " good?")))
+print((("hello")))

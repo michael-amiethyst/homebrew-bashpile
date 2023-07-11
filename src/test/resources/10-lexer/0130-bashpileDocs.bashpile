@@ -1,15 +1,19 @@
-/*
+/**
     This language is
     really starting to shape up.
     It will replace Bash.
-
-    /* Nested comment test */
 */
 
-print((38. + 4) * .5)
-// anonymous block
-block:
-    x: float = 5.5 // lexical scoping
-    return x + x
-x: float = 7.7
-print(x - 0.7)
+// commented-out bl
+/*
+/**
+From the ancient days
+Bash came to us, complex and
+tricky.  A new day dawns.
+*/*/
+
+// no leading 0
+print(.5)
+
+// leading whole number
+print(1.7)

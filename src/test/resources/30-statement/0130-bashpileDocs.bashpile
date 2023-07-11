@@ -1,15 +1,10 @@
-/**
+/*
     This language is
     really starting to shape up.
     It will replace Bash.
-*/
 
-/*
-/**
-From the ancient days
-Bash came to us, complex and
-tricky.  A new day dawns.
-*/*/
+    /* Nested comment test */
+*/
 
 print((38. + 4) * .5)
 // anonymous block

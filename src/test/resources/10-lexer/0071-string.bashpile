@@ -1,2 +1,1 @@
-world:str="world"
-print(world)
+print("world")
