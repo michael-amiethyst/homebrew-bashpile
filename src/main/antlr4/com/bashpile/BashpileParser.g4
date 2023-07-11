@@ -2,7 +2,7 @@ parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
 prog: stmt+;
-
+// TODO convert names to a long form (e.g. exprStmt to expressionStatement)
 stmt: expr NL                               # exprStmt
     | typedId (EQ expr)? NL                 # assignStmt
     | ID EQ expr NL                         # reAssignStmt
@@ -28,11 +28,11 @@ returnPsudoStmt: RETURN expr? NL;
 
 expr: ID OPAREN arglist? CPAREN         # functionCallExpr
     // operator expressions
-    | OPAREN expr CPAREN                # parensExpr
-    | <assoc=right> MINUS? NUMBER       # numberExpr
-    | expr op=(MUL|DIV|ADD|MINUS) expr  # calcExpr   // since we delegate
+    | OPAREN expr CPAREN                # parenthesisExpr
+    | <assoc=right> MINUS? NUMBER       # numberExpr      // has to be above calculationExpression
+    | expr op=(MUL|DIV|ADD|MINUS) expr  # calculationExpr
     // type expressions
     | BOOL                              # boolExpr
-    | ID                                # idExpr
     | STRING                            # stringExpr
+    | ID                                # idExpr
     ;

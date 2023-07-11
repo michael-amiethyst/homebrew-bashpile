@@ -326,7 +326,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // expressions
 
     @Override
-    public @Nonnull Translation calcExpression(@Nonnull final BashpileParser.CalcExprContext ctx) {
+    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExprContext ctx) {
         final Pair<String, List<Translation>> pair = unwindChildren(ctx);
         final String unwoundSubshells = pair.getLeft();
         final List<Translation> childTranslations = pair.getRight();
@@ -419,7 +419,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation parensExpression(@Nonnull final BashpileParser.ParensExprContext ctx) {
+    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExprContext ctx) {
         final Translation expr = visitor.visit(ctx.expr());
         // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
         final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";

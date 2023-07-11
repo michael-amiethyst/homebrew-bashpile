@@ -125,8 +125,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit operator expressions
 
     @Override
-    public @Nonnull Translation visitParensExpr(@Nonnull final BashpileParser.ParensExprContext ctx) {
-        return translator.parensExpression(ctx);
+    public @Nonnull Translation visitParenthesisExpr(@Nonnull final BashpileParser.ParenthesisExprContext ctx) {
+        return translator.parenthesisExpression(ctx);
     }
 
     @Override
@@ -135,9 +135,9 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public @Nonnull Translation visitCalcExpr(@Nonnull final BashpileParser.CalcExprContext ctx) {
+    public @Nonnull Translation visitCalculationExpr(@Nonnull final BashpileParser.CalculationExprContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
-        return translator.calcExpression(ctx);
+        return translator.calculationExpression(ctx);
     }
 
     // visit type expressions
