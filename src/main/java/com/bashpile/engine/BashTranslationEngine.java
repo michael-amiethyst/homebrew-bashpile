@@ -135,14 +135,22 @@ public class BashTranslationEngine implements TranslationEngine {
         typeStack.putVariableType(variableName, type);
 
         // visit the right hand expression
-        Translation exprTranslation = visitor.visit(ctx.expr());
+        final boolean exprExists = ctx.expr() != null;
+        final Translation exprTranslation = exprExists ? visitor.visit(ctx.expr()) : Translation.EMPTY;
         Asserts.assertTypesMatch(type, exprTranslation.type(), ctx.typedId().ID().getText(), ctx.start.getLine());
 
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String value = exprTranslation.text();
+        final String value = exprExists ? "=" + exprTranslation.text() : "";
+        /*
+         * Translation will be something like:
+         * `# assign statement, Bashpile line 1
+         * local variableName=value`
+         * or just the comment line and
+         * `local variableName`
+         */
         return new Translation(
-                "%s\n%s%s=%s\n".formatted(lineComment, getLocalText(), variableName, value),
+                "%s\n%s%s%s\n".formatted(lineComment, getLocalText(), variableName, value),
                 Type.NA, NORMAL);
     }
 
@@ -213,7 +221,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // avoid translating twice if was part of a forward declaration
         final String functionName = ctx.typedId().ID().getText();
         if (foundForwardDeclarations.contains(functionName)) {
-            return Translation.empty;
+            return Translation.EMPTY;
         }
 
         // check for double declaration
@@ -288,6 +296,13 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation returnRuleStatement(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
+        // guard
+        if (ctx.expr() == null) {
+            return Translation.EMPTY;
+        }
+
+        // body
+
         final Translation ret = visitor.visit(ctx.expr());
         // insert echo right at start of last line
         // not a text block, ret.text() does not end in newline

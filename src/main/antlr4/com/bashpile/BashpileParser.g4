@@ -4,7 +4,7 @@ options { tokenVocab = BashpileLexer; }
 prog: stmt+;
 
 stmt: expr NL                               # exprStmt
-    | typedId EQ expr NL                    # assignStmt
+    | typedId (EQ expr)? NL                 # assignStmt
     | ID EQ expr NL                         # reAssignStmt
     | PRINT OPAREN arglist? CPAREN NL       # printStmt
     | FUNCTION typedId paramaters           # functionForwardDeclStmt
@@ -23,7 +23,8 @@ arglist: expr (COMMA expr)*;
 // force the final statement to be a return to work around Bash not allawing the return keyword with a string
 // but will interpret the last line of a function (which may be a string) as the return if no keyword
 block: INDENT stmt* returnRule DEDENT;
-returnRule: RETURN expr NL;
+// needed to refer to this expression context in the BashTranslationEngine
+returnRule: RETURN expr? NL;
 
 expr: ID OPAREN arglist? CPAREN         # functionCallExpr
     // operator expressions

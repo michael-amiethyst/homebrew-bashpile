@@ -1,15 +1,23 @@
-/*
+/**
     This language is
     really starting to shape up.
     It will replace Bash.
-
-    /* Nested comment test */
 */
 
 print((38. + 4) * .5)
+myString : str
 // anonymous block
 block:
+    /**
+     * More docs on this inner block
+     */
+    block:
+        x: str = "To boldly"
+        y: str = " go"
+        myString = x + y
+        return
     x: float = 5.5 // lexical scoping
-    return x + x
+    return
 x: float = 7.7
 print(x - 0.7)
+print(myString)

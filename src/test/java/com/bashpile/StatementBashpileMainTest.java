@@ -14,7 +14,7 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO reorder tests
+// TODO anonymous blocks having a return makes no sense
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileMainTest extends BashpileMainTest {
@@ -25,17 +25,24 @@ class StatementBashpileMainTest extends BashpileMainTest {
     }
 
     @Test
-    @Order(30)
-    public void assignWorks() {
-        List<String> ret = runFile("0030-assign.bashpile").stdoutLines();
-        assertEquals("4", ret.get(0));
+    @Order(10)
+    public void assignBoolWorks() {
+        List<String> outLines = runFile("0010-assignBool.bashpile").stdoutLines();
+        assertEquals("false", outLines.get(0));
     }
 
     @Test
-    @Order(31)
-    public void reassignWorks() {
-        List<String> ret = runFile("0031-reassign.bashpile").stdoutLines();
-        assertEquals("5", ret.get(0));
+    @Order(20)
+    public void assignIntWorks() {
+        List<String> outLines = runFile("0020-assignInt.bashpile").stdoutLines();
+        assertEquals("42", getLast(outLines));
+    }
+
+    @Test
+    @Order(30)
+    public void assignIntExpressionWorks() {
+        List<String> ret = runFile("0030-assignIntExpression.bashpile").stdoutLines();
+        assertEquals("4", ret.get(0));
     }
 
     /**
@@ -43,34 +50,27 @@ class StatementBashpileMainTest extends BashpileMainTest {
      */
     @Test
     @Order(40)
-    public void unassignedVariableReferenceThrows() {
-        assertThrows(UserError.class, () -> runFile("0040-unassigned.bashpile"));
+    public void duplicateIntAssignmentThrows() {
+        assertThrows(UserError.class, () -> runFile("0040-duplicateIntAssignment.bashpile"));
     }
 
     @Test
-    @Order(41)
-    public void declaredTwiceThrows() {
-        assertThrows(UserError.class, () -> runFile("0041-declaredTwice.bashpile"));
+    @Order(50)
+    public void unassignedIntExpressionThrows() {
+        assertThrows(UserError.class, () -> runFile("0050-unassignedIntExpression.bashpile"));
     }
 
     @Test
-    @Order(61)
-    public void boolWorks() {
-        List<String> outLines = runFile("0061-bool.bashpile").stdoutLines();
-        assertEquals("false", outLines.get(0));
+    @Order(60)
+    public void reassignIntExpressionWorks() {
+        List<String> ret = runFile("0060-reassignIntExpression.bashpile").stdoutLines();
+        assertEquals("5", ret.get(0));
     }
 
     @Test
     @Order(70)
-    public void intWorks() {
-        List<String> outLines = runFile("0070-int.bashpile").stdoutLines();
-        assertEquals("42", getLast(outLines));
-    }
-
-    @Test
-    @Order(71)
     public void floatWorks() {
-        List<String> outLines = runFile("0071-float.bashpile").stdoutLines();
+        List<String> outLines = runFile("0070-float.bashpile").stdoutLines();
         assertEquals("4000000.999", getLast(outLines));
     }
 
@@ -137,7 +137,7 @@ class StatementBashpileMainTest extends BashpileMainTest {
     public void bashpileDocsWork() {
         ExecutionResults executionResults = runFile("0130-bashpileDocs.bashpile");
         List<String> stdoutLines = executionResults.stdoutLines();
-        List<String> expected = List.of("21.0", "11.0", "7.0");
+        List<String> expected = List.of("21.0", "7.0", "To boldly go");
         assertEquals(3, stdoutLines.size(),
                 "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
         assertEquals(expected, stdoutLines);
