@@ -1,26 +1,35 @@
 package com.bashpile;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-/** Holds STDIN, the *nix exit code and STDOUT */
-public record ExecutionResults(String stdin, int exitCode, String stdout) {
+/** Holds STDIN, the Linux exit code and STDOUT */
+public record ExecutionResults(@Nonnull String stdin, int exitCode, @Nonnull String stdout) {
 
-    public static final Pattern linesPattern = Pattern.compile("\r?\n");
+    public static final Pattern windowsLineEndings = Pattern.compile("\r\n");
 
-    public @Nonnull List<String> stdinLines() {
-        return linesPattern.splitAsStream(stdin).collect(Collectors.toList());
+    public ExecutionResults(@Nonnull final String stdin, final int exitCode, @Nonnull final String stdout) {
+        // convert windows line ending to Linux line endings
+        this.stdin = windowsLineEndings.matcher(stdin).replaceAll("\n");
+        this.exitCode = exitCode;
+        this.stdout = windowsLineEndings.matcher(stdout).replaceAll("\n");
     }
 
+    public @Nonnull List<String> stdinLines() {
+        return Arrays.asList(stdin.split("\n"));
+    }
+
+    /**
+     * Gets the stdout split by newlines.
+     * <br>
+     * Ending blank lines may not be preserved correctly due to a Java bug (on OpenJDK v20).
+     * As a workaround check stdinLines instead (e.g. verify that the script executed ends with two echo commands).
+     *
+     * @return A list of lines.  The end elements of the list may not be the empty String.
+     */
     public @Nonnull List<String> stdoutLines() {
-        if (stdout.matches(".*?\r?\n\r?\n")) {
-            // split has bug where trailing blank lines are ignored
-            // add a final ';' then trim the line off to end up with a list with trailing blanks
-            List<String> lines = linesPattern.splitAsStream(stdout + ";").collect(Collectors.toList());
-            return lines.subList(0, lines.size() - 1);
-        } // else
-        return linesPattern.splitAsStream(stdout).collect(Collectors.toList());
+        return Arrays.asList(stdout.split("\n"));
     }
 }

@@ -11,8 +11,7 @@ import java.util.List;
 
 import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
@@ -29,22 +28,17 @@ class LexerBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(10)
     public void printWorks() {
-        List<String> ret = runFile("0010-print.bashpile").stdoutLines();
+        String ret = runFile("0010-print.bashpile").stdout();
         assertNotNull(ret);
-        final int expectedLines = 1;
-        assertEquals(expectedLines, ret.size(), "Unexpected output length, expected %d lines but found: %s"
-                .formatted(expectedLines, String.join("\n", ret)));
-        assertEquals("", ret.get(0), "Unexpected output: %s".formatted(String.join("\n", ret)));
+        assertEquals("\n", ret);
     }
 
     @Test
     @Order(20)
     public void multilinePrintWorks() {
-        List<String> translatedLines = runFile("0020-multiline.bashpile").stdinLines();
+        String translatedLines = runFile("0020-multiline.bashpile").stdout();
         assertNotNull(translatedLines);
-        final int endIndex = translatedLines.size() - 1;
-        assertEquals("echo", translatedLines.get(endIndex - 1));
-        assertEquals("echo", translatedLines.get(endIndex));
+        assertEquals("\n\n", translatedLines);
     }
 
     @Test

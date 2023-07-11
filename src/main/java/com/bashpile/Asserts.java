@@ -127,15 +127,18 @@ public class Asserts {
         }
     }
 
-    public static <K, V> void assertNotIn(
-            @Nonnull final K variableName,
-            @Nonnull final Map<K, V> typeMap,
-            @Nullable final RuntimeException unchecked) {
-        if (typeMap.containsKey(variableName)) {
-            if (unchecked != null) {
-                throw unchecked;
+    /**
+     * Throws {@code uncheckedException} or an {@link AssertionError} on failure.
+     */
+    public static <K, V> void assertMapDoesNotContainKey(
+            @Nonnull final K key,
+            @Nonnull final Map<K, V> map,
+            @Nullable final RuntimeException uncheckedException) {
+        if (map.containsKey(key)) {
+            if (uncheckedException != null) {
+                throw uncheckedException;
             }
-            throw new AssertionError("Found key %s in map %s".formatted(variableName, typeMap));
+            throw new AssertionError("Found key %s in map %s".formatted(key, map));
         }
     }
 }

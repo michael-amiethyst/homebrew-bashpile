@@ -23,7 +23,7 @@ public class TypeStack {
 
     public void putVariableType(@Nonnull final String variableName, @Nonnull final Type type) {
         final Map<String, Type> typeMap = frames.peek().variables();
-        Asserts.assertNotIn(variableName, typeMap, new UserError(
+        Asserts.assertMapDoesNotContainKey(variableName, typeMap, new UserError(
                 "%s is already declared as a %s".formatted(variableName, type.name())));
         typeMap.put(variableName, type);
     }
