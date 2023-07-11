@@ -1,6 +1,7 @@
 package com.bashpile;
 
 import com.bashpile.commandline.BashExecutor;
+import com.bashpile.commandline.ExecutionResults;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
 import org.apache.logging.log4j.LogManager;

@@ -1,4 +1,4 @@
-package com.bashpile;
+package com.bashpile.commandline;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;

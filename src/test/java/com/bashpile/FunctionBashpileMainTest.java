@@ -95,6 +95,8 @@ class FunctionBashpileMainTest extends BashpileMainTest {
         assertThrows(TypeError.class, () -> runFile("0124-functionCall-returnStringBadType.bashpile"));
     }
 
+    // TODO test string function returning empty
+
     @Test
     @Order(130)
     public void functionForwardDeclarationWorks() {
@@ -157,4 +159,6 @@ class FunctionBashpileMainTest extends BashpileMainTest {
     public void functionDeclTypesBadCalcExpressionNestedThrows() {
         assertThrows(TypeError.class, () -> runFile("0190-functionDeclTypesEnforced-badCalcExprNested.bashpile"));
     }
+
+    // TODO renumber functions
 }

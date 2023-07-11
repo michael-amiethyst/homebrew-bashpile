@@ -1,6 +1,5 @@
 package com.bashpile.commandline;
 
-import com.bashpile.ExecutionResults;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,10 +50,9 @@ public class BashExecutor {
             // wait for background threads to complete
             exitCode = commandLine.join();
 
-            // munge stdout
+            // munge stdout -- strip out inappropriate error lines
             String stdoutString = commandLine.getStdOut();
             log.trace("Shell output before processing: [{}]", stdoutString);
-            // return buffer stripped of random error lines
             stdoutString = bogusScreenLine.matcher(stdoutString).replaceAll("");
             return new ExecutionResults(bashString, exitCode, stdoutString);
         } catch (ExecutionException | InterruptedException | TimeoutException e) {

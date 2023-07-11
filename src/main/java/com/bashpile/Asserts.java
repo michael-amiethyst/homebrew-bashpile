@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import com.bashpile.commandline.ExecutionResults;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.TypeError;
@@ -118,12 +119,6 @@ public class Asserts {
             @Nonnull final String expected, @Nullable final String actual, @Nullable final String message) {
         if (!expected.equals(actual)) {
             throw new AssertionError(requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
-        }
-    }
-
-    public static void assertLinuxLineEndings(@Nonnull final String text) {
-        if (text.contains("\r")) {
-            throw new AssertionError("Found Windows line endings in " + text);
         }
     }
 

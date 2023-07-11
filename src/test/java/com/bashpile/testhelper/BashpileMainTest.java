@@ -1,7 +1,7 @@
 package com.bashpile.testhelper;
 
 import com.bashpile.BashpileMain;
-import com.bashpile.ExecutionResults;
+import com.bashpile.commandline.ExecutionResults;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

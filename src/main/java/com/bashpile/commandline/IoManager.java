@@ -1,6 +1,5 @@
 package com.bashpile.commandline;
 
-import com.bashpile.Asserts;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
 
@@ -64,7 +63,6 @@ public class IoManager implements Closeable {
     }
 
     public void writeLn(@Nonnull final String text) throws IOException {
-        Asserts.assertLinuxLineEndings(text);
         final String textBlock = appendIfMissing(text, "\n");
         childStdInWriter.write(textBlock);
     }
