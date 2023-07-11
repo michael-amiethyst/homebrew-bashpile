@@ -14,6 +14,7 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO rename tests to end with "Work" or "ThrowsError"
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileMainTest extends BashpileMainTest {

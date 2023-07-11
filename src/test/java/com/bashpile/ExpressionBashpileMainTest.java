@@ -13,9 +13,7 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO move paren tests down
 // TODO test very large numbers (e.g. MAX - 1), and overly large numbers
-// TODO rename tests to end with "Work" or "ThrowsError"
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileMainTest extends BashpileMainTest {
@@ -38,7 +36,7 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(20)
-    public void multilineTest() {
+    public void multilineCalcWorks() {
         List<String> ret = runFile("0020-multilinePrintCalc.bashpile").stdoutLines();
         assertNotNull(ret);
         int expected = 2;
@@ -48,34 +46,26 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
     }
 
     @Test
-    @Order(50)
-    public void parenTest() {
-        List<String> ret = runFile("0050-paren.bashpile").stdoutLines();
-        assertEquals(1, ret.size(), "Unexpected number of lines");
-        assertEquals("21", ret.get(0));
-    }
-
-    @Test
-    @Order(51)
-    public void parenStringTest() {
-        List<String> ret = runFile("0051-parenString.bashpile").stdoutLines();
-        assertEquals(1, ret.size(), "Unexpected number of lines");
-        assertEquals("hello world, you good?", ret.get(0));
-    }
-
-    @Test
-    @Order(72)
-    public void stringConcatTest() {
-        var runResult = runFile("0072-stringConcat.bashpile");
+    @Order(30)
+    public void stringConcatWorks() {
+        var runResult = runFile("0030-stringConcat.bashpile");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("hello world", getLast(outLines));
     }
 
     @Test
-    @Order(73)
-    public void stringBadOperatorTest() {
-        assertThrows(AssertionError.class, () -> runFile("0073-stringBadOperator.bashpile"));
+    @Order(40)
+    public void stringBadOperatorThrows() {
+        assertThrows(AssertionError.class, () -> runFile("0040-stringBadOperator.bashpile"));
+    }
+
+    @Test
+    @Order(50)
+    public void parenStringWorks() {
+        List<String> ret = runFile("0050-parenString.bashpile").stdoutLines();
+        assertEquals(1, ret.size(), "Unexpected number of lines");
+        assertEquals("hello world, you good?", ret.get(0));
     }
 
     @Test
@@ -86,6 +76,14 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
         List<String> expected = List.of("24", "64000", "128");
         assertEquals(3, executionResults.size());
         assertEquals(expected, executionResults);
+    }
+
+    @Test
+    @Order(90)
+    public void parenIntExpressionsWork() {
+        List<String> ret = runFile("0090-parenIntExpressions.bashpile").stdoutLines();
+        assertEquals(1, ret.size(), "Unexpected number of lines");
+        assertEquals("21", ret.get(0));
     }
 
     @Test

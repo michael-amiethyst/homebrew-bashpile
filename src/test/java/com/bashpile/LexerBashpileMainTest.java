@@ -14,8 +14,9 @@ import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-// TODO move paren tests down, add 6f syntax
+// TODO add 6f syntax
 // TODO optional commas in numbers (e.g. 1,001)
+// TODO rename tests to end with "Work" or "ThrowsError"
 
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
@@ -51,25 +52,9 @@ class LexerBashpileMainTest extends BashpileMainTest {
     }
 
     @Test
-    @Order(50)
-    public void parenTest() {
-        List<String> ret = runFile("0050-paren.bashpile").stdoutLines();
-        assertEquals(1, ret.size(), "Unexpected number of lines");
-        assertEquals("21", ret.get(0));
-    }
-
-    @Test
-    @Order(51)
-    public void parenStringTest() {
-        List<String> ret = runFile("0051-parenString.bashpile").stdoutLines();
-        assertEquals(1, ret.size(), "Unexpected number of lines");
-        assertEquals("hello", ret.get(0));
-    }
-
-    @Test
     @Order(61)
     public void boolTest() {
-        List<String> outLines = runFile("0061-bool.bashpile").stdoutLines();
+        List<String> outLines = runFile("0060-bool.bashpile").stdoutLines();
         assertEquals("false", outLines.get(0));
     }
 
@@ -82,11 +67,27 @@ class LexerBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(71)
+    public void parenIntWorks() {
+        List<String> ret = runFile("0071-parenInt.bashpile").stdoutLines();
+        assertEquals(1, ret.size(), "Unexpected number of lines");
+        assertEquals("21", ret.get(0));
+    }
+
+    @Test
+    @Order(80)
     public void stringTest() {
-        var runResult = runFile("0071-string.bashpile");
+        var runResult = runFile("0080-string.bashpile");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("world", getLast(outLines));
+    }
+
+    @Test
+    @Order(81)
+    public void parenStringTest() {
+        List<String> ret = runFile("0081-parenString.bashpile").stdoutLines();
+        assertEquals(1, ret.size(), "Unexpected number of lines");
+        assertEquals("hello", ret.get(0));
     }
 
     @Test
