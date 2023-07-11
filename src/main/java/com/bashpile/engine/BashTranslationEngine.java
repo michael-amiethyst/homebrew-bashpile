@@ -171,11 +171,11 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStmtContext ctx) {
         final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final BashpileParser.ArglistContext arglist = ctx.arglist();
-        if (arglist == null || arglist.isEmpty()) {
+        final BashpileParser.ArglistContext argList = ctx.arglist();
+        if (argList == null || argList.isEmpty()) {
             return toStringTranslation("echo\n");
         }
-        final String printText = ("%s\n%s\n").formatted(lineComment, arglist.expr().stream()
+        final String printText = ("%s\n%s\n").formatted(lineComment, argList.expr().stream()
                 .map(translateIdsOrVisit)
                 .map(tr -> {
                     if (tr.isNotSubshell()) {
@@ -395,6 +395,14 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
+    public Translation parensExpression(@Nonnull final BashpileParser.ParensExprContext ctx) {
+        final Translation expr = visitor.visit(ctx.expr());
+        // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
+        final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
+        return new Translation(format.formatted(expr.text()), expr.type(), expr.metaType());
+    }
+
+    @Override
     public @Nonnull Translation functionCallExpression(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
         final String id = ctx.ID().getText();
 
@@ -424,14 +432,5 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = typeStack.getFunctionTypes(id).returnType();
 
         return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
-    }
-
-    // TODO move to above calcExpression
-    @Override
-    public Translation parensExpression(@Nonnull final BashpileParser.ParensExprContext ctx) {
-        final Translation expr = visitor.visit(ctx.expr());
-        // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
-        final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
-        return new Translation(format.formatted(expr.text()), expr.type(), expr.metaType());
     }
 }

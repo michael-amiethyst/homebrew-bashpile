@@ -13,14 +13,16 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO rename block and floats tests, move paren tests down, test very large numbers and too large numbers
+// TODO move paren tests down
+// TODO test very large numbers (e.g. MAX - 1), and overly large numbers
+// TODO rename tests to end with "Work" or "ThrowsError"
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileMainTest extends BashpileMainTest {
 
     @Nonnull
     protected String getDirectoryName() {
-        return "20-expr";
+        return "20-expressions";
     }
 
     @Test
@@ -78,8 +80,8 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(80)
-    public void blockTest() {
-        String filename = "0080-block.bashpile";
+    public void intExpressionsWork() {
+        String filename = "0080-intExpressions.bashpile";
         List<String> executionResults = runFile(filename).stdoutLines();
         List<String> expected = List.of("24", "64000", "128");
         assertEquals(3, executionResults.size());
@@ -88,8 +90,8 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
 
     @Test
     @Order(100)
-    public void floatsTest() {
-        List<String> executionResults = runFile("0100-floats.bashpile").stdoutLines();
+    public void floatExpressionsWork() {
+        List<String> executionResults = runFile("0100-floatExpressions.bashpile").stdoutLines();
         List<String> expected = List.of("21.0", "7.0");
         assertEquals(2, executionResults.size());
         assertEquals(expected, executionResults);

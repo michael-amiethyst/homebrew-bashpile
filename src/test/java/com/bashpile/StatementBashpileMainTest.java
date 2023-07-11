@@ -20,7 +20,7 @@ class StatementBashpileMainTest extends BashpileMainTest {
 
     @Nonnull
     protected String getDirectoryName() {
-        return "30-statement";
+        return "30-statements";
     }
 
     @Test
