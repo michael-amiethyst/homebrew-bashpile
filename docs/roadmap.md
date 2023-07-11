@@ -15,6 +15,7 @@ Implement testrig.bp
 * imports
 * default values for functions
 * exponents, other operators
+* commas in large values (e.g. 1,001)
 * Script super-blocks / sections
 * Caching generated Bash
   * check generated Bash with ShellCheck (https://www.shellcheck.net/)
