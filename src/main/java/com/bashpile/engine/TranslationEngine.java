@@ -19,29 +19,29 @@ public interface TranslationEngine {
     Translation strictModeHeader();
 
     /** To source our bundled libraries */
-    Translation imports();
+    Translation importsHeaders();
 
     // statement translations
 
-    Translation assign(final BashpileParser.AssignStmtContext ctx);
+    Translation assignmentStatement(final BashpileParser.AssignStmtContext ctx);
 
-    Translation reassign(final BashpileParser.ReAssignStmtContext ctx);
+    Translation reassignmentStatement(final BashpileParser.ReAssignStmtContext ctx);
 
-    Translation print(final BashpileParser.PrintStmtContext ctx);
+    Translation printStatement(final BashpileParser.PrintStmtContext ctx);
 
-    Translation functionForwardDecl(final BashpileParser.FunctionForwardDeclStmtContext ctx);
+    Translation functionForwardDeclStatement(final BashpileParser.FunctionForwardDeclStmtContext ctx);
 
-    Translation functionDecl(final BashpileParser.FunctionDeclStmtContext ctx);
+    Translation functionDeclStatement(final BashpileParser.FunctionDeclStmtContext ctx);
 
-    Translation anonBlock(final BashpileParser.AnonBlockStmtContext ctx);
+    Translation anononymousBlockStatement(final BashpileParser.AnonBlockStmtContext ctx);
 
-    Translation returnRule(final BashpileParser.ReturnRuleContext ctx);
+    Translation returnRuleStatement(final BashpileParser.ReturnRuleContext ctx);
 
     // expression translations
 
-    Translation functionCall(final BashpileParser.FunctionCallExprContext ctx);
+    Translation functionCallExpression(final BashpileParser.FunctionCallExprContext ctx);
 
-    Translation parens(final BashpileParser.ParensExprContext ctx);
+    Translation parensExpression(final BashpileParser.ParensExprContext ctx);
 
-    Translation calc(final BashpileParser.CalcExprContext ctx);
+    Translation calcExpression(final BashpileParser.CalcExprContext ctx);
 }

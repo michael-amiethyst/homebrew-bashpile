@@ -119,7 +119,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation imports() {
+    public @Nonnull Translation importsHeaders() {
         // stub
         String text = "";
         return toStringTranslation(text);
@@ -128,7 +128,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // statement translations
 
     @Override
-    public @Nonnull Translation assign(@Nonnull final BashpileParser.AssignStmtContext ctx) {
+    public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignStmtContext ctx) {
         // add this variable to the type map
         final String variableName = ctx.typedId().ID().getText();
         final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
@@ -147,7 +147,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation reassign(@Nonnull final BashpileParser.ReAssignStmtContext ctx) {
+    public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReAssignStmtContext ctx) {
         // get name and type
         final String variableName = ctx.ID().getText();
         final Type expectedType = typeStack.getVariableType(variableName);
@@ -169,7 +169,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation print(@Nonnull final BashpileParser.PrintStmtContext ctx) {
+    public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStmtContext ctx) {
         final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
         final BashpileParser.ArglistContext arglist = ctx.arglist();
         if (arglist == null || arglist.isEmpty()) {
@@ -193,10 +193,12 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionForwardDecl(@Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
+    public @Nonnull Translation functionForwardDeclStatement(
+            @Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (LevelCounter ignored = new LevelCounter(FORWARD_DECL)) {
-            final String lineComment = "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
+            final String lineComment =
+                    "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
             final String hoistedFunctionText = visitor.visit(functionDeclCtx).text();
             assertTextBlock(hoistedFunctionText);
             final String ret = "%s\n%s".formatted(lineComment, hoistedFunctionText);
@@ -207,7 +209,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionDecl(@Nonnull final BashpileParser.FunctionDeclStmtContext ctx) {
+    public @Nonnull Translation functionDeclStatement(@Nonnull final BashpileParser.FunctionDeclStmtContext ctx) {
         // avoid translating twice if was part of a forward declaration
         final String functionName = ctx.typedId().ID().getText();
         if (foundForwardDeclarations.contains(functionName)) {
@@ -263,7 +265,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation anonBlock(@Nonnull final BashpileParser.AnonBlockStmtContext ctx) {
+    public @Nonnull Translation anononymousBlockStatement(@Nonnull final BashpileParser.AnonBlockStmtContext ctx) {
         String block;
         try (LevelCounter ignored = new LevelCounter(BLOCK)) {
             typeStack.push();
@@ -285,7 +287,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation returnRule(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
+    public @Nonnull Translation returnRuleStatement(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
         final Translation ret = visitor.visit(ctx.expr());
         // insert echo right at start of last line
         // not a text block, ret.text() does not end in newline
@@ -300,7 +302,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // expressions
 
     @Override
-    public @Nonnull Translation calc(@Nonnull final BashpileParser.CalcExprContext ctx) {
+    public @Nonnull Translation calcExpression(@Nonnull final BashpileParser.CalcExprContext ctx) {
         final Pair<String, List<Translation>> pair = unwindChildren(ctx);
         final String unwoundSubshells = pair.getLeft();
         final List<Translation> childTranslations = pair.getRight();
@@ -393,7 +395,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionCall(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
+    public @Nonnull Translation functionCallExpression(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
         final String id = ctx.ID().getText();
 
         // check arg types
@@ -424,11 +426,12 @@ public class BashTranslationEngine implements TranslationEngine {
         return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
     }
 
+    // TODO move to above calcExpression
     @Override
-    public Translation parens(@Nonnull final BashpileParser.ParensExprContext ctx) {
+    public Translation parensExpression(@Nonnull final BashpileParser.ParensExprContext ctx) {
         final Translation expr = visitor.visit(ctx.expr());
-        // pass on parens for numeric expressions but not Strings
-        final String format = expr.type().isNumeric() ? "(%s)" : "%s";
+        // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
+        final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
         return new Translation(format.formatted(expr.text()), expr.type(), expr.metaType());
     }
 }

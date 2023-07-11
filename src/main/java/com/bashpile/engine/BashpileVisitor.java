@@ -61,7 +61,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
                 .collect(Collectors.joining());
         assertTextBlock(translatedTextBlock);
 
-        final String importLibs = translator.imports().text();
+        final String importLibs = translator.importsHeaders().text();
 
         return toStringTranslation(header, importLibs, translatedTextBlock);
     }
@@ -75,38 +75,38 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitAssignStmt(@Nonnull final BashpileParser.AssignStmtContext ctx) {
-        return translator.assign(ctx);
+        return translator.assignmentStatement(ctx);
     }
 
     @Override
     public @Nonnull Translation visitReAssignStmt(@Nonnull BashpileParser.ReAssignStmtContext ctx) {
-        return translator.reassign(ctx);
+        return translator.reassignmentStatement(ctx);
     }
 
     @Override
     public @Nonnull Translation visitPrintStmt(@Nonnull final BashpileParser.PrintStmtContext ctx) {
-        return translator.print(ctx);
+        return translator.printStatement(ctx);
     }
 
     @Override
     public @Nonnull Translation visitFunctionForwardDeclStmt(
             @Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
-        return translator.functionForwardDecl(ctx);
+        return translator.functionForwardDeclStatement(ctx);
     }
 
     @Override
     public @Nonnull Translation visitFunctionDeclStmt(@Nonnull final BashpileParser.FunctionDeclStmtContext ctx) {
-        return translator.functionDecl(ctx);
+        return translator.functionDeclStatement(ctx);
     }
 
     @Override
     public @Nonnull Translation visitAnonBlockStmt(@Nonnull final BashpileParser.AnonBlockStmtContext ctx) {
-        return translator.anonBlock(ctx);
+        return translator.anononymousBlockStatement(ctx);
     }
 
     @Override
     public @Nonnull Translation visitReturnRule(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
-        return translator.returnRule(ctx);
+        return translator.returnRuleStatement(ctx);
     }
 
     @Override
@@ -119,14 +119,14 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitFunctionCallExpr(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
-        return translator.functionCall(ctx);
+        return translator.functionCallExpression(ctx);
     }
 
     // visit operator expressions
 
     @Override
     public @Nonnull Translation visitParensExpr(@Nonnull final BashpileParser.ParensExprContext ctx) {
-        return translator.parens(ctx);
+        return translator.parensExpression(ctx);
     }
 
     @Override
@@ -137,7 +137,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public @Nonnull Translation visitCalcExpr(@Nonnull final BashpileParser.CalcExprContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
-        return translator.calc(ctx);
+        return translator.calcExpression(ctx);
     }
 
     // visit type expressions

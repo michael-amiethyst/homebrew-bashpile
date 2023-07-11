@@ -13,7 +13,6 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // TODO move paren tests down, add 6f syntax
 
@@ -53,7 +52,6 @@ class LexerBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(50)
     public void parenTest() {
-        // TODO fix this
         List<String> ret = runFile("0050-paren.bashpile").stdoutLines();
         assertEquals(1, ret.size(), "Unexpected number of lines");
         assertEquals("21", ret.get(0));

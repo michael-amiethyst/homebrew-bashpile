@@ -51,7 +51,7 @@ public class AntlrUtils {
         return bashpileLogic.visit(tree).text();
     }
 
-    /** Helper to {@link BashTranslationEngine#functionDecl(BashpileParser.FunctionDeclStmtContext)} */
+    /** Helper to {@link BashTranslationEngine#functionDeclStatement(BashpileParser.FunctionDeclStmtContext)} */
     public static @Nonnull ParserRuleContext getFunctionDeclCtx(
             @Nonnull final BashpileVisitor visitor, @Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
         final String functionName = ctx.typedId().ID().getText();
