@@ -1,0 +1,5 @@
+// no leading 0
+print(.5)
+
+// leading whole number
+print(1.7)

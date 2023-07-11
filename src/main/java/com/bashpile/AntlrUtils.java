@@ -39,7 +39,7 @@ public class AntlrUtils {
 
         // parser
         final BashpileParser parser = new BashpileParser(tokens);
-        final ParseTree tree = parser.prog();
+        final ParseTree tree = parser.program();
 
         return transpile(tree);
     }
@@ -51,20 +51,23 @@ public class AntlrUtils {
         return bashpileLogic.visit(tree).text();
     }
 
-    /** Helper to {@link BashTranslationEngine#functionDecl(BashpileParser.FunctionDeclStmtContext)} */
+    /**
+     * Helper to {@link BashTranslationEngine#functionForwardDeclarationStatement(BashpileParser.FunctionForwardDeclarationStatementContext)}
+     */
     public static @Nonnull ParserRuleContext getFunctionDeclCtx(
-            @Nonnull final BashpileVisitor visitor, @Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
+            @Nonnull final BashpileVisitor visitor, @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final String functionName = ctx.typedId().ID().getText();
         assert visitor.getContextRoot() != null;
         final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
         final Predicate<ParserRuleContext> namesMatch =
                 x -> {
-                    boolean isDeclaration = x instanceof BashpileParser.FunctionDeclStmtContext;
+                    boolean isDeclaration = x instanceof BashpileParser.FunctionDeclarationStatementContext;
                     // is a function declaration and the names match
                     if (!isDeclaration) {
                         return false;
                     }
-                    final BashpileParser.FunctionDeclStmtContext decl = (BashpileParser.FunctionDeclStmtContext) x;
+                    final BashpileParser.FunctionDeclarationStatementContext decl =
+                            (BashpileParser.FunctionDeclarationStatementContext) x;
                     final boolean nameMatches = decl.typedId().ID().getText().equals(functionName);
                     return nameMatches && paramCompare(decl.paramaters(), ctx.paramaters());
                 };
@@ -86,9 +89,10 @@ public class AntlrUtils {
     }
 
     /**
-     * Lazy DFS.  Helper to {@link #getFunctionDeclCtx(BashpileVisitor, BashpileParser.FunctionForwardDeclStmtContext)}
+     * Lazy DFS.
+     * Helper to {@link #getFunctionDeclCtx(BashpileVisitor, BashpileParser.FunctionForwardDeclarationStatementContext)}
      *
-     * @see <a href="https://stackoverflow.com/questions/26158082/how-to-convert-a-tree-structure-to-a-stream-of-nodes-in-java>Stack Overflow</a>
+     * @see <a href="https://stackoverflow.com/questions/26158082/how-to-convert-a-tree-structure-to-a-stream-of-nodes-in-java">Stack Overflow</a>
      * @param parentNode the root.
      * @return Flattened stream of parent nodes' rule context children.
      */
@@ -115,8 +119,8 @@ public class AntlrUtils {
 
     /** Concatenates inputs into stream */
     public static @Nonnull Stream<ParserRuleContext> addContexts(
-            @Nonnull final List<BashpileParser.StmtContext> stmts,
-            @Nonnull final BashpileParser.ReturnRuleContext ctx) {
+            @Nonnull final List<BashpileParser.StatementContext> stmts,
+            @Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
         // map of x to x needed for upcasting to parent type
         final Stream<ParserRuleContext> stmt = stmts.stream().map(x -> x);
         return Stream.concat(stmt, Stream.of(ctx));

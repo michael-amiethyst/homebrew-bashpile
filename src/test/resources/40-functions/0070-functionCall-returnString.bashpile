@@ -1,0 +1,3 @@
+function world: str ():
+    return "hello world"
+print(world())

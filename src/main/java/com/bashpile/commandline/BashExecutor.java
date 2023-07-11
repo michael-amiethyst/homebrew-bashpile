@@ -1,6 +1,5 @@
 package com.bashpile.commandline;
 
-import com.bashpile.ExecutionResults;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,7 +16,7 @@ import java.util.regex.Pattern;
 public class BashExecutor {
 
     private static final Pattern bogusScreenLine = Pattern.compile(
-            "your \\d+x\\d+ screen size is bogus. expect trouble\r\n");
+            "your \\d+x\\d+ screen size is bogus. expect trouble\r?\n");
 
     private static final Logger log = LogManager.getLogger(BashExecutor.class);
 
@@ -51,13 +50,11 @@ public class BashExecutor {
             // wait for background threads to complete
             exitCode = commandLine.join();
 
-            // munge stdout
-            final String stdoutString = commandLine.getStdOut();
+            // munge stdout -- strip out inappropriate error lines
+            String stdoutString = commandLine.getStdOut();
             log.trace("Shell output before processing: [{}]", stdoutString);
-            // return buffer stripped of random error lines
-            final String processedCommandResultText =
-                    bogusScreenLine.matcher(stdoutString).replaceAll("").trim();
-            return new ExecutionResults(bashString, exitCode, processedCommandResultText);
+            stdoutString = bogusScreenLine.matcher(stdoutString).replaceAll("");
+            return new ExecutionResults(bashString, exitCode, stdoutString);
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new BashpileUncheckedException(e);
         }

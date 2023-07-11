@@ -1,0 +1,22 @@
+/**
+    This language is
+    really starting to shape up.
+    It will replace Bash.
+*/
+
+print((38. + 4) * .5)
+myString : str
+// anonymous block
+block:
+    /**
+     * More docs on this inner block
+     */
+    block:
+        x: str = "To boldly"
+        y: str = " go"
+        myString = x + y
+    x: float = 5.5 // lexical scoping
+    print(x - x)
+x: float = 7.7
+print(x - 0.7)
+print(myString)

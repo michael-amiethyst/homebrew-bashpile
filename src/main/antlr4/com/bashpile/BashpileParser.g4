@@ -1,37 +1,41 @@
 parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
-prog: stmt+;
-
-stmt: expr NL                               # exprStmt
-    | typedId EQ expr NL                    # assignStmt
-    | ID EQ expr NL                         # reAssignStmt
-    | PRINT OPAREN arglist? CPAREN NL       # printStmt
-    | FUNCTION typedId paramaters           # functionForwardDeclStmt
-    | FUNCTION typedId paramaters tags?
-                                COL block   # functionDeclStmt
-    | BLOCK tags? COL INDENT stmt+ DEDENT   # anonBlockStmt
-    | returnRule                            # returnStmt
-    | NL                                    # blankStmt
+program: statement+;
+statement: expression NL            # expressionStatement
+    | typedId (EQ expression)? NL   # assignmentStatement
+    | ID EQ expression NL           # reassignmentStatement
+    | PRINT OPAREN argumentList?
+                          CPAREN NL # printStatement
+    | FUNCTION typedId paramaters   # functionForwardDeclarationStatement
+    | FUNCTION typedId paramaters
+            tags? COL functionBlock # functionDeclarationStatement
+    | BLOCK tags? COL INDENT
+                statement+ DEDENT   # anonymousBlockStatement
+    | NL                            # blankStmt
     ;
 
 tags: OBRACKET (STRING*) CBRACKET;
 // like (x: str, y: str)
 paramaters: OPAREN ( typedId (COMMA typedId)* )? CPAREN;
 typedId: ID COL TYPE;
-arglist: expr (COMMA expr)*;
+argumentList: expression (COMMA expression)*;
+
 // force the final statement to be a return to work around Bash not allawing the return keyword with a string
 // but will interpret the last line of a function (which may be a string) as the return if no keyword
-block: INDENT stmt* returnRule DEDENT;
-returnRule: RETURN expr NL;
+// see https://linuxhint.com/return-string-bash-functions/ example 3
+functionBlock: INDENT statement* returnPsudoStatement DEDENT;
+returnPsudoStatement: RETURN expression? NL;
 
-expr: ID OPAREN arglist? CPAREN         # functionCallExpr
+expression:
+    ID OPAREN argumentList? CPAREN      # functionCallExpr
     // operator expressions
-    | OPAREN expr CPAREN                # parensExpr
-    | <assoc=right> MINUS? NUMBER       # numberExpr
-    | expr op=(MUL|DIV|ADD|MINUS) expr  # calcExpr   // since we delegate
+    | OPAREN expression CPAREN          # parenthesisExpr
+    | <assoc=right> MINUS? NUMBER       # numberExpr      // has to be above calculationExpression
+    | expression op=(MUL|DIV|ADD|MINUS)
+                            expression  # calculationExpr
     // type expressions
     | BOOL                              # boolExpr
-    | ID                                # idExpr
     | STRING                            # stringExpr
+    | ID                                # idExpr
     ;

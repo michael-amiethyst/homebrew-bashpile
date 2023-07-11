@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import com.bashpile.commandline.ExecutionResults;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.TypeError;
@@ -7,6 +8,7 @@ import com.bashpile.exceptions.TypeError;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,9 +45,9 @@ public class Asserts {
     public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
-            final String winNewlines = str.contains("\r") ? "" : "not ";
+            final String winNewlines = str.contains("\r") ? "found" : "not found";
             throw new BashpileUncheckedAssertionException(
-                    "Str [%s] didn't match regex %s, windows newlines %sfound"
+                    "Str [%s] didn't match regex %s, windows newlines %s"
                             .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
         }
     }
@@ -117,6 +119,21 @@ public class Asserts {
             @Nonnull final String expected, @Nullable final String actual, @Nullable final String message) {
         if (!expected.equals(actual)) {
             throw new AssertionError(requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
+        }
+    }
+
+    /**
+     * Throws {@code uncheckedException} or an {@link AssertionError} on failure.
+     */
+    public static <K, V> void assertMapDoesNotContainKey(
+            @Nonnull final K key,
+            @Nonnull final Map<K, V> map,
+            @Nullable final RuntimeException uncheckedException) {
+        if (map.containsKey(key)) {
+            if (uncheckedException != null) {
+                throw uncheckedException;
+            }
+            throw new AssertionError("Found key %s in map %s".formatted(key, map));
         }
     }
 }

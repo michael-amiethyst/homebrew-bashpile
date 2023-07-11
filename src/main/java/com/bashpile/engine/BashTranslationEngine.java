@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
-import static com.bashpile.Asserts.assertTextBlock;
-import static com.bashpile.Asserts.assertTextLine;
+import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.MetaType.NORMAL;
@@ -119,7 +118,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation imports() {
+    public @Nonnull Translation importsHeaders() {
         // stub
         String text = "";
         return toStringTranslation(text);
@@ -128,26 +127,34 @@ public class BashTranslationEngine implements TranslationEngine {
     // statement translations
 
     @Override
-    public @Nonnull Translation assign(@Nonnull final BashpileParser.AssignStmtContext ctx) {
+    public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         // add this variable to the type map
         final String variableName = ctx.typedId().ID().getText();
         final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
         typeStack.putVariableType(variableName, type);
 
         // visit the right hand expression
-        Translation exprTranslation = visitor.visit(ctx.expr());
+        final boolean exprExists = ctx.expression() != null;
+        final Translation exprTranslation = exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_STRING;
         Asserts.assertTypesMatch(type, exprTranslation.type(), ctx.typedId().ID().getText(), ctx.start.getLine());
 
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String value = exprTranslation.text();
+        final String value = exprExists ? "=" + exprTranslation.text() : "";
+        /*
+         * Translation will be something like:
+         * `# assign statement, Bashpile line 1
+         * local variableName=value`
+         * or just the comment line and
+         * `local variableName`
+         */
         return new Translation(
-                "%s\n%s%s=%s\n".formatted(lineComment, getLocalText(), variableName, value),
+                "%s\n%s%s%s\n".formatted(lineComment, getLocalText(), variableName, value),
                 Type.NA, NORMAL);
     }
 
     @Override
-    public @Nonnull Translation reassign(@Nonnull final BashpileParser.ReAssignStmtContext ctx) {
+    public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReassignmentStatementContext ctx) {
         // get name and type
         final String variableName = ctx.ID().getText();
         final Type expectedType = typeStack.getVariableType(variableName);
@@ -156,7 +163,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // get expression and it's type
-        final Translation exprTranslation = visitor.visit(ctx.expr());
+        final Translation exprTranslation = visitor.visit(ctx.expression());
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesMatch(expectedType, actualType, variableName, ctx.start.getLine());
 
@@ -169,9 +176,18 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation print(@Nonnull final BashpileParser.PrintStmtContext ctx) {
+    public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
+        // guard
+
+        final BashpileParser.ArgumentListContext argList = ctx.argumentList();
+        if (argList == null) {
+            return toStringTranslation("echo\n");
+        }
+
+        // body
+
         final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String printText = ("%s\n%s\n").formatted(lineComment, ctx.arglist().expr().stream()
+        final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
                 .map(translateIdsOrVisit)
                 .map(tr -> {
                     if (tr.isNotSubshell()) {
@@ -189,10 +205,12 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionForwardDecl(@Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
+    public @Nonnull Translation functionForwardDeclarationStatement(
+            @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (LevelCounter ignored = new LevelCounter(FORWARD_DECL)) {
-            final String lineComment = "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
+            final String lineComment =
+                    "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
             final String hoistedFunctionText = visitor.visit(functionDeclCtx).text();
             assertTextBlock(hoistedFunctionText);
             final String ret = "%s\n%s".formatted(lineComment, hoistedFunctionText);
@@ -203,11 +221,12 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionDecl(@Nonnull final BashpileParser.FunctionDeclStmtContext ctx) {
+    public @Nonnull Translation functionDeclarationStatement(
+            @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
         // avoid translating twice if was part of a forward declaration
         final String functionName = ctx.typedId().ID().getText();
         if (foundForwardDeclarations.contains(functionName)) {
-            return Translation.empty;
+            return Translation.EMPTY_STRING;
         }
 
         // check for double declaration
@@ -244,7 +263,8 @@ public class BashTranslationEngine implements TranslationEngine {
                                     .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
                                     .collect(Collectors.joining(" ")));
             assertTextLine(namedParams);
-            final Stream<ParserRuleContext> contextStream = addContexts(ctx.block().stmt(), ctx.block().returnRule());
+            final Stream<ParserRuleContext> contextStream =
+                    addContexts(ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement());
             final String blockText = visitBlock(visitor, contextStream).text();
             assertTextBlock(blockText);
             final String functionComment = "# function declaration, Bashpile line %d%s"
@@ -259,14 +279,15 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation anonBlock(@Nonnull final BashpileParser.AnonBlockStmtContext ctx) {
+    public @Nonnull Translation anonymousBlockStatement(
+            @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
         String block;
         try (LevelCounter ignored = new LevelCounter(BLOCK)) {
             typeStack.push();
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
             // map of x to x needed for upcasting to parent type
-            final Stream<ParserRuleContext> stmtStream = ctx.stmt().stream().map(x -> x);
+            final Stream<ParserRuleContext> stmtStream = ctx.statement().stream().map(x -> x);
             final String blockBodyTextBlock = visitBlock(visitor, stmtStream).text();
             assertTextBlock(blockBodyTextBlock);
             final String lineComment = "# anonymous block, Bashpile line %d%s"
@@ -281,22 +302,37 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation returnRule(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
-        final Translation ret = visitor.visit(ctx.expr());
-        // insert echo right at start of last line
-        // not a text block, ret.text() does not end in newline
-        final String exprText = "# return statement, Bashpile line %d%s\n%s"
-                .formatted(ctx.start.getLine(), getHoisted(), ret.text());
-        final String[] retLines = exprText.split("\n");
-        retLines[retLines.length - 1] = "echo " + retLines[retLines.length - 1];
-        final String retText = String.join("\n", retLines) + "\n";
-        return toStringTranslation(retText);
+    public @Nonnull Translation returnPsudoStatement(@Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
+        final boolean exprExists = ctx.expression() != null;
+
+        // check return matches with function declaration
+        final BashpileParser.FunctionDeclarationStatementContext enclosingFunction =
+                (BashpileParser.FunctionDeclarationStatementContext) ctx.parent.parent;
+        final String functionName = enclosingFunction.typedId().ID().getText();
+        final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
+        final Translation exprTranslation =
+                exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_TYPE;
+        assertTypesMatch(functionTypes.returnType(), exprTranslation.type(), functionName, ctx.start.getLine());
+
+        if (exprExists) {
+            // insert echo right at start of last line
+
+            // exprTranslation.text() does not end in newline and may be multiple lines
+            final String exprText = "# return statement, Bashpile line %d%s\n%s"
+                    .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.text());
+            final String[] retLines = exprText.split("\n");
+            final int lastLineIndex = retLines.length - 1;
+            retLines[lastLineIndex] = "echo " + retLines[lastLineIndex];
+            final String retText = String.join("\n", retLines) + "\n";
+            return toStringTranslation(retText);
+        } // else
+        return Translation.EMPTY_STRING;
     }
 
     // expressions
 
     @Override
-    public @Nonnull Translation calc(@Nonnull final BashpileParser.CalcExprContext ctx) {
+    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExprContext ctx) {
         final Pair<String, List<Translation>> pair = unwindChildren(ctx);
         final String unwoundSubshells = pair.getLeft();
         final List<Translation> childTranslations = pair.getRight();
@@ -389,7 +425,15 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionCall(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
+    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExprContext ctx) {
+        final Translation expr = visitor.visit(ctx.expression());
+        // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
+        final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
+        return new Translation(format.formatted(expr.text()), expr.type(), expr.metaType());
+    }
+
+    @Override
+    public @Nonnull Translation functionCallExpression(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
         final String id = ctx.ID().getText();
 
         // check arg types
@@ -397,10 +441,10 @@ public class BashTranslationEngine implements TranslationEngine {
         // get functionName and a stream creator
         final String functionName = ctx.ID().getText();
         final Supplier<Stream<Translation>> argListTranslationStream =
-                () -> ctx.arglist().expr().stream().map(translateIdsOrVisit);
+                () -> ctx.argumentList().expression().stream().map(translateIdsOrVisit);
         // get the expected and actual types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
-        final List<Type> actualTypes = ctx.arglist() != null
+        final List<Type> actualTypes = ctx.argumentList() != null
                 ? argListTranslationStream.get().map(Translation::type).collect(Collectors.toList())
                 : List.of();
         // assert equals
@@ -408,7 +452,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get arguments
 
-        final boolean hasArgs = ctx.arglist() != null;
+        final boolean hasArgs = ctx.argumentList() != null;
         // empty list or ' arg1Text arg2Text etc.'
         final String args = hasArgs
                 ? " " + argListTranslationStream.get().map(Translation::text).collect(Collectors.joining(" "))
@@ -418,13 +462,5 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = typeStack.getFunctionTypes(id).returnType();
 
         return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
-    }
-
-    @Override
-    public Translation parens(@Nonnull final BashpileParser.ParensExprContext ctx) {
-        final Translation expr = visitor.visit(ctx.expr());
-        // pass on parens for numeric expressions but not Strings
-        final String format = expr.type().isNumeric() ? "(%s)" : "%s";
-        return new Translation(format.formatted(expr.text()), expr.type(), expr.metaType());
     }
 }

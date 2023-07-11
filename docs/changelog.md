@@ -3,3 +3,4 @@
 * 0.3.0 - Anonymous blocks, lexical scoping, floats
 * 0.4.0 - Functions, tags
 * 0.5.0 - Function forward declarations, line number comments in translated Bash
+* 0.6.0 - Single line comments, Multiline Comments, BashpileDocs (like JavaDocs)

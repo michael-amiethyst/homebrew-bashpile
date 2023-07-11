@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 import static com.bashpile.Asserts.assertExecutionSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,6 +16,8 @@ public class BashpileMainIntegrationTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
+    private static final String DIR_NAME = "10-lexer";
+
     @Test
     public void noSubCommandTest() throws IOException {
         log.debug("In noSubCommandTest");
@@ -22,38 +25,34 @@ public class BashpileMainIntegrationTest {
         var executionResults = BashExecutor.run(command);
         log.debug("Output text:\n{}", executionResults.stdout());
         assertEquals(1, executionResults.exitCode());
-        assertTrue(executionResults.stdoutLines().length > 0,
+        assertTrue(executionResults.stdoutLines().size() > 0,
                 "No output for `bashpile` command");
-        assertTrue(executionResults.stdoutLines()[0].startsWith("Usage"),
+        assertTrue(executionResults.stdoutLines().get(0).startsWith("Usage"),
                 "Unexpected output for `bashpile` command");
     }
 
     @Test
     public void executeTest() throws IOException {
         log.debug("In executeTest");
-        String command = "bin/bashpile -i=src/test/resources/10-base/0010-simple.bashpile execute";
+        String command = "bin/bashpile -i=src/test/resources/%s/0010-print.bashpile execute".formatted(DIR_NAME);
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
-        String[] lines = executionResults.stdoutLines();
-        assertExecutionSuccess(executionResults);
-        assertTrue(lines.length > 0, "No output");
-        int lastLineIndex = lines.length - 1;
-        assertEquals("2", lines[lastLineIndex], "Unexpected output: %s".formatted(outputText));
+        assertTrue(outputText.endsWith("\r\n\r\n") || outputText.endsWith("\n\n"));
     }
 
     @Test
     public void transpileTest() throws IOException {
         log.debug("In transpileTest");
-        String command = "bin/bashpile -i src/test/resources/10-base/0010-simple.bashpile transpile";
+        String command = "bin/bashpile -i src/test/resources/%s/0010-print.bashpile transpile".formatted(DIR_NAME);
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
-        String[] lines = executionResults.stdoutLines();
+        List<String> lines = executionResults.stdoutLines();
         assertExecutionSuccess(executionResults);
-        assertTrue(lines.length > 0, "No output");
-        int lastLineIndex = lines.length - 1;
-        assertEquals("echo \"$__bp_textReturn\";", lines[lastLineIndex],
+        assertTrue(lines.size() > 0, "No output");
+        int lastLineIndex = lines.size() - 1;
+        assertEquals("echo", lines.get(lastLineIndex),
                 "Unexpected output: %s".formatted(outputText));
     }
 }
