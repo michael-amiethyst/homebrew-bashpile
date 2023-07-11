@@ -2,16 +2,16 @@ parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
 program: statement+;
-statement: expression NL            # exprStmt
-    | typedId (EQ expression)? NL   # assignStmt
-    | ID EQ expression NL           # reAssignStmt
+statement: expression NL            # expressionStatement
+    | typedId (EQ expression)? NL   # assignmentStatement
+    | ID EQ expression NL           # reassignmentStatement
     | PRINT OPAREN argumentList?
-                          CPAREN NL # printStmt
-    | FUNCTION typedId paramaters   # functionForwardDeclStmt
+                          CPAREN NL # printStatement
+    | FUNCTION typedId paramaters   # functionForwardDeclarationStatement
     | FUNCTION typedId paramaters
-            tags? COL functionBlock # functionDeclStmt
+            tags? COL functionBlock # functionDeclarationStatement
     | BLOCK tags? COL INDENT
-                statement+ DEDENT   # anonBlockStmt
+                statement+ DEDENT   # anonymousBlockStatement
     | NL                            # blankStmt
     ;
 

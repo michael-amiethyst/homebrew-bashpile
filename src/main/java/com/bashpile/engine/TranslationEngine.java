@@ -23,17 +23,17 @@ public interface TranslationEngine {
 
     // statement translations
 
-    Translation assignmentStatement(final BashpileParser.AssignStmtContext ctx);
+    Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
 
-    Translation reassignmentStatement(final BashpileParser.ReAssignStmtContext ctx);
+    Translation reassignmentStatement(final BashpileParser.ReassignmentStatementContext ctx);
 
-    Translation printStatement(final BashpileParser.PrintStmtContext ctx);
+    Translation printStatement(final BashpileParser.PrintStatementContext ctx);
 
-    Translation functionForwardDeclStatement(final BashpileParser.FunctionForwardDeclStmtContext ctx);
+    Translation functionForwardDeclarationStatement(final BashpileParser.FunctionForwardDeclarationStatementContext ctx);
 
-    Translation functionDeclStatement(final BashpileParser.FunctionDeclStmtContext ctx);
+    Translation functionDeclarationStatement(final BashpileParser.FunctionDeclarationStatementContext ctx);
 
-    Translation anononymousBlockStatement(final BashpileParser.AnonBlockStmtContext ctx);
+    Translation anonymousBlockStatement(final BashpileParser.AnonymousBlockStatementContext ctx);
 
     Translation returnPsudoStatement(final BashpileParser.ReturnPsudoStatementContext ctx);
 

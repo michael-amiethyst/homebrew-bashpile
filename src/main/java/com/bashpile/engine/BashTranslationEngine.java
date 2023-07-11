@@ -128,7 +128,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // statement translations
 
     @Override
-    public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignStmtContext ctx) {
+    public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         // add this variable to the type map
         final String variableName = ctx.typedId().ID().getText();
         final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
@@ -155,7 +155,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReAssignStmtContext ctx) {
+    public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReassignmentStatementContext ctx) {
         // get name and type
         final String variableName = ctx.ID().getText();
         final Type expectedType = typeStack.getVariableType(variableName);
@@ -177,7 +177,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStmtContext ctx) {
+    public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
         final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
         final BashpileParser.ArgumentListContext argList = ctx.argumentList();
         if (argList == null || argList.isEmpty()) {
@@ -201,8 +201,8 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionForwardDeclStatement(
-            @Nonnull final BashpileParser.FunctionForwardDeclStmtContext ctx) {
+    public @Nonnull Translation functionForwardDeclarationStatement(
+            @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (LevelCounter ignored = new LevelCounter(FORWARD_DECL)) {
             final String lineComment =
@@ -217,7 +217,8 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionDeclStatement(@Nonnull final BashpileParser.FunctionDeclStmtContext ctx) {
+    public @Nonnull Translation functionDeclarationStatement(
+            @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
         // avoid translating twice if was part of a forward declaration
         final String functionName = ctx.typedId().ID().getText();
         if (foundForwardDeclarations.contains(functionName)) {
@@ -274,7 +275,8 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation anononymousBlockStatement(@Nonnull final BashpileParser.AnonBlockStmtContext ctx) {
+    public @Nonnull Translation anonymousBlockStatement(
+            @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
         String block;
         try (LevelCounter ignored = new LevelCounter(BLOCK)) {
             typeStack.push();
@@ -300,8 +302,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean exprExists = ctx.expression() != null;
 
         // check return matches with function declaration
-        final BashpileParser.FunctionDeclStmtContext enclosingFunction =
-                (BashpileParser.FunctionDeclStmtContext) ctx.parent.parent;
+        final BashpileParser.FunctionDeclarationStatementContext enclosingFunction =
+                (BashpileParser.FunctionDeclarationStatementContext) ctx.parent.parent;
         final String functionName = enclosingFunction.typedId().ID().getText();
         final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
         final Translation exprTranslation =
