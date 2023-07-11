@@ -74,7 +74,6 @@ class FunctionBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(122)
     public void functionCallReturnStringWorks() {
-        // TODO this should fail -- bad type
         var executionResults = runFile("0122-functionCall-returnString.bashpile");
         assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
@@ -88,6 +87,12 @@ class FunctionBashpileMainTest extends BashpileMainTest {
         assertExecutionSuccess(executionResults);
         assertEquals(2, executionResults.stdoutLines().size());
         assertEquals("3.14", executionResults.stdoutLines().get(0));
+    }
+
+    @Test
+    @Order(124)
+    public void functionCallReturnStringBadTypeThrows() {
+        assertThrows(TypeError.class, () -> runFile("0124-functionCall-returnStringBadType.bashpile"));
     }
 
     @Test

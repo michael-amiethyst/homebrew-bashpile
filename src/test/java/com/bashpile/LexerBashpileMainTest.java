@@ -109,20 +109,20 @@ class LexerBashpileMainTest extends BashpileMainTest {
 
     @Test @Order(120)
     public void blockCommentsWork() {
-        ExecutionResults executionResults = runFile("0130-bashpileDocs.bashpile");
+        ExecutionResults executionResults = runFile("0120-commentBlocks.bashpile");
         List<String> stdoutLines = executionResults.stdoutLines();
-        List<String> expected = List.of(".5", "1.7");
-        assertEquals(2, stdoutLines.size(),
+        List<String> expected = List.of("21.0", "11.0", "7.0");
+        assertEquals(3, stdoutLines.size(),
                 "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
         assertEquals(expected, stdoutLines);
     }
 
     @Test @Order(130)
     public void bashpileDocsWork() {
-        ExecutionResults executionResults = runFile("0120-commentBlocks.bashpile");
+        ExecutionResults executionResults = runFile("0130-bashpileDocs.bashpile");
         List<String> stdoutLines = executionResults.stdoutLines();
-        List<String> expected = List.of("21.0", "11.0", "7.0");
-        assertEquals(3, stdoutLines.size(),
+        List<String> expected = List.of(".5", "1.7");
+        assertEquals(2, stdoutLines.size(),
                 "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
         assertEquals(expected, stdoutLines);
     }

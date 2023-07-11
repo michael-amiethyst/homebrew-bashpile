@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
-import static com.bashpile.Asserts.assertTextBlock;
-import static com.bashpile.Asserts.assertTextLine;
+import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.MetaType.NORMAL;
@@ -258,7 +257,8 @@ public class BashTranslationEngine implements TranslationEngine {
                                     .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
                                     .collect(Collectors.joining(" ")));
             assertTextLine(namedParams);
-            final Stream<ParserRuleContext> contextStream = addContexts(ctx.block().stmt(), ctx.block().returnRule());
+            final Stream<ParserRuleContext> contextStream =
+                    addContexts(ctx.funcBlock().stmt(), ctx.funcBlock().returnPsudoStmt());
             final String blockText = visitBlock(visitor, contextStream).text();
             assertTextBlock(blockText);
             final String functionComment = "# function declaration, Bashpile line %d%s"
@@ -295,7 +295,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation returnRuleStatement(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
+    public @Nonnull Translation returnRuleStatement(@Nonnull final BashpileParser.ReturnPsudoStmtContext ctx) {
         // guard
         if (ctx.expr() == null) {
             return Translation.EMPTY;
@@ -303,13 +303,23 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // body
 
+        // check return matches with function declaration
+
+        final BashpileParser.FunctionDeclStmtContext enclosingFunction =
+                (BashpileParser.FunctionDeclStmtContext) ctx.parent.parent;
+        final String functionName = enclosingFunction.typedId().ID().getText();
+        final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
         final Translation ret = visitor.visit(ctx.expr());
+        assertTypesMatch(functionTypes.returnType(), ret.type(), functionName, ctx.start.getLine());
+
         // insert echo right at start of last line
-        // not a text block, ret.text() does not end in newline
+
+        // ret.text() does not end in newline and may be multiple lines
         final String exprText = "# return statement, Bashpile line %d%s\n%s"
                 .formatted(ctx.start.getLine(), getHoisted(), ret.text());
         final String[] retLines = exprText.split("\n");
-        retLines[retLines.length - 1] = "echo " + retLines[retLines.length - 1];
+        final int lastLineIndex = retLines.length - 1;
+        retLines[lastLineIndex] = "echo " + retLines[lastLineIndex];
         final String retText = String.join("\n", retLines) + "\n";
         return toStringTranslation(retText);
     }

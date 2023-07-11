@@ -38,7 +38,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     /**
      * Do not modify.  Will be null before the first visit.
      *
-     * @return The prog context.
+     * @return The root of the Bashpile context tree.
      */
     public @Nullable ParserRuleContext getContextRoot() {
         // pass-by-reference because a deep copy for a non-serializable object is a nightmare
@@ -105,7 +105,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public @Nonnull Translation visitReturnRule(@Nonnull final BashpileParser.ReturnRuleContext ctx) {
+    public @Nonnull Translation visitReturnPsudoStmt(@Nonnull final BashpileParser.ReturnPsudoStmtContext ctx) {
         return translator.returnRuleStatement(ctx);
     }
 

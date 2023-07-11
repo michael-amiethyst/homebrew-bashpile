@@ -8,10 +8,9 @@ stmt: expr NL                               # exprStmt
     | ID EQ expr NL                         # reAssignStmt
     | PRINT OPAREN arglist? CPAREN NL       # printStmt
     | FUNCTION typedId paramaters           # functionForwardDeclStmt
-    | FUNCTION typedId paramaters tags?
-                                COL block   # functionDeclStmt
+    | FUNCTION typedId paramaters tags? COL
+                                  funcBlock # functionDeclStmt
     | BLOCK tags? COL INDENT stmt+ DEDENT   # anonBlockStmt
-    | returnRule                            # returnStmt
     | NL                                    # blankStmt
     ;
 
@@ -20,11 +19,12 @@ tags: OBRACKET (STRING*) CBRACKET;
 paramaters: OPAREN ( typedId (COMMA typedId)* )? CPAREN;
 typedId: ID COL TYPE;
 arglist: expr (COMMA expr)*;
+
 // force the final statement to be a return to work around Bash not allawing the return keyword with a string
 // but will interpret the last line of a function (which may be a string) as the return if no keyword
-block: INDENT stmt* returnRule DEDENT;
-// needed to refer to this expression context in the BashTranslationEngine
-returnRule: RETURN expr? NL;
+// see https://linuxhint.com/return-string-bash-functions/ example 3
+funcBlock: INDENT stmt* returnPsudoStmt DEDENT;
+returnPsudoStmt: RETURN expr? NL;
 
 expr: ID OPAREN arglist? CPAREN         # functionCallExpr
     // operator expressions

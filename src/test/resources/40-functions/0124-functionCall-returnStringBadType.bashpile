@@ -1,3 +1,3 @@
-function world: str ():
+function world: empty ():
     return "hello world"
 print(world())

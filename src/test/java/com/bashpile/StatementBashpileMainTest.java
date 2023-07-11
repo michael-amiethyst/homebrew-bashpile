@@ -126,7 +126,6 @@ class StatementBashpileMainTest extends BashpileMainTest {
 
     @Test @Order(120)
     public void blockCommentsWork() {
-        // TODO anonymous blocks shouldn't be able to have return statements
         ExecutionResults executionResults = runFile("0120-blockComments.bashpile");
         List<String> stdoutLines = executionResults.stdoutLines();
         List<String> expected = List.of("21.0", "11.0", "7.0");
