@@ -35,7 +35,7 @@ public interface TranslationEngine {
 
     Translation anononymousBlockStatement(final BashpileParser.AnonBlockStmtContext ctx);
 
-    Translation returnPsudoStatement(final BashpileParser.ReturnPsudoStmtContext ctx);
+    Translation returnPsudoStatement(final BashpileParser.ReturnPsudoStatementContext ctx);
 
     // expression translations
 

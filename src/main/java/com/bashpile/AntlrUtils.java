@@ -39,7 +39,7 @@ public class AntlrUtils {
 
         // parser
         final BashpileParser parser = new BashpileParser(tokens);
-        final ParseTree tree = parser.prog();
+        final ParseTree tree = parser.program();
 
         return transpile(tree);
     }
@@ -115,8 +115,8 @@ public class AntlrUtils {
 
     /** Concatenates inputs into stream */
     public static @Nonnull Stream<ParserRuleContext> addContexts(
-            @Nonnull final List<BashpileParser.StmtContext> stmts,
-            @Nonnull final BashpileParser.ReturnPsudoStmtContext ctx) {
+            @Nonnull final List<BashpileParser.StatementContext> stmts,
+            @Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
         // map of x to x needed for upcasting to parent type
         final Stream<ParserRuleContext> stmt = stmts.stream().map(x -> x);
         return Stream.concat(stmt, Stream.of(ctx));

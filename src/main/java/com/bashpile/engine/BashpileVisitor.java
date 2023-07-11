@@ -48,14 +48,14 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visitors
 
     @Override
-    public @Nonnull Translation visitProg(@Nonnull final BashpileParser.ProgContext ctx) {
+    public @Nonnull Translation visitProgram(@Nonnull final BashpileParser.ProgramContext ctx) {
         // save root for later usage
         contextRoot = ctx;
 
         // prepend strictMode text to the statement results
         final String header = translator.strictModeHeader().text();
         assertTextBlock(header);
-        String translatedTextBlock = ctx.stmt().stream()
+        String translatedTextBlock = ctx.statement().stream()
                 .map(this::visit)
                 .map(Translation::text)
                 .collect(Collectors.joining());
@@ -70,7 +70,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitExprStmt(@Nonnull final BashpileParser.ExprStmtContext ctx) {
-        return visit(ctx.expr()).add("\n");
+        return visit(ctx.expression()).add("\n");
     }
 
     @Override
@@ -105,7 +105,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public @Nonnull Translation visitReturnPsudoStmt(@Nonnull final BashpileParser.ReturnPsudoStmtContext ctx) {
+    public @Nonnull Translation visitReturnPsudoStatement(@Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
         return translator.returnPsudoStatement(ctx);
     }
 
