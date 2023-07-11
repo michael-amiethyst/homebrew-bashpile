@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
-import static com.bashpile.engine.Translation.EMPTY_STRING;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.MetaType.NORMAL;
 import static com.bashpile.engine.strongtypes.MetaType.SUBSHELL_SUBSTITUTION;
@@ -178,11 +177,16 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
-        final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
+        // guard
+
         final BashpileParser.ArgumentListContext argList = ctx.argumentList();
-        if (argList == null || argList.isEmpty()) {
+        if (argList == null) {
             return toStringTranslation("echo\n");
         }
+
+        // body
+
+        final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
         final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
                 .map(translateIdsOrVisit)
                 .map(tr -> {
@@ -322,7 +326,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final String retText = String.join("\n", retLines) + "\n";
             return toStringTranslation(retText);
         } // else
-        return EMPTY_STRING;
+        return Translation.EMPTY_STRING;
     }
 
     // expressions
