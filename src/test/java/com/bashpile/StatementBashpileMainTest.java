@@ -14,7 +14,6 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO anonymous blocks having a return makes no sense
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileMainTest extends BashpileMainTest {
@@ -117,14 +116,17 @@ class StatementBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(110)
     public void commentsWork() {
-        List<String> executionResults = runFile("0110-comments.bashpile").stdoutLines();
-        List<String> expected = List.of("21.0", "11.0", "7.0");
-        assertEquals(3, executionResults.size());
-        assertEquals(expected, executionResults);
+        ExecutionResults executionResults = runFile("0110-comments.bashpile");
+        List<String> stdoutLines = executionResults.stdoutLines();
+        List<String> expected = List.of("21.0", "16.5", "7.0");
+        assertEquals(3, stdoutLines.size(),
+                "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
+        assertEquals(expected, stdoutLines);
     }
 
     @Test @Order(120)
     public void blockCommentsWork() {
+        // TODO anonymous blocks shouldn't be able to have return statements
         ExecutionResults executionResults = runFile("0120-blockComments.bashpile");
         List<String> stdoutLines = executionResults.stdoutLines();
         List<String> expected = List.of("21.0", "11.0", "7.0");
@@ -137,8 +139,8 @@ class StatementBashpileMainTest extends BashpileMainTest {
     public void bashpileDocsWork() {
         ExecutionResults executionResults = runFile("0130-bashpileDocs.bashpile");
         List<String> stdoutLines = executionResults.stdoutLines();
-        List<String> expected = List.of("21.0", "7.0", "To boldly go");
-        assertEquals(3, stdoutLines.size(),
+        List<String> expected = List.of("21.0", "0", "7.0", "To boldly go");
+        assertEquals(4, stdoutLines.size(),
                 "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
         assertEquals(expected, stdoutLines);
     }

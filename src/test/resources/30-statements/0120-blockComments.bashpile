@@ -5,6 +5,6 @@ block:
     /*
      * extended comment on how leet this line is
      */
-    return x + x
+    print(x + x)
 x: float = 7.7
 print(x - 0.7)

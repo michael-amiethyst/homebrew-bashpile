@@ -74,6 +74,7 @@ class FunctionBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(122)
     public void functionCallReturnStringWorks() {
+        // TODO this should fail -- bad type
         var executionResults = runFile("0122-functionCall-returnString.bashpile");
         assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
