@@ -4,6 +4,21 @@
 
 The Bash command `export var = "value"` fails but a Bashpile assign can be `var = value`.
 
+## Comments and Documentation Blocks
+
+```
+// Comments are supported
+/*
+    Multiline comments
+    are supported.
+*/
+
+/**
+ * BashpileDocs are like JavaDocs.
+ * They are treated like comments for now.
+*/
+```
+
 ## Easy Calculations
 
 You can use floating point math easily as well as parenthesis.  

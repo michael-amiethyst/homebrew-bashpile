@@ -14,7 +14,6 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO make floats test (like int test)
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileMainTest extends BashpileMainTest {
@@ -63,38 +62,45 @@ class StatementBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(70)
     public void intTest() {
-        List<String> bashLines = runFile("0070-int.bashpile").stdoutLines();
-        assertEquals("42", getLast(bashLines));
+        List<String> outLines = runFile("0070-int.bashpile").stdoutLines();
+        assertEquals("42", getLast(outLines));
     }
 
     @Test
     @Order(71)
+    public void floatTest() {
+        List<String> outLines = runFile("0071-float.bashpile").stdoutLines();
+        assertEquals("4000000.999", getLast(outLines));
+    }
+
+    @Test
+    @Order(80)
     public void stringTest() {
-        var runResult = runFile("0071-string.bashpile");
+        var runResult = runFile("0080-string.bashpile");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("world", getLast(outLines));
     }
 
     @Test
-    @Order(72)
+    @Order(81)
     public void stringConcatTest() {
-        var runResult = runFile("0072-stringConcat.bashpile");
+        var runResult = runFile("0081-stringConcat.bashpile");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("hello world", getLast(outLines));
     }
 
     @Test
-    @Order(73)
+    @Order(82)
     public void stringBadOperatorTest() {
-        assertThrows(AssertionError.class, () -> runFile("0073-stringBadOperator.bashpile"));
+        assertThrows(AssertionError.class, () -> runFile("0082-stringBadOperator.bashpile"));
     }
 
     @Test
-    @Order(80)
+    @Order(90)
     public void blockTest() {
-        String filename = "0080-block.bashpile";
+        String filename = "0090-block.bashpile";
         List<String> executionResults = runFile(filename).stdoutLines();
         List<String> expected = List.of("24", "64000", "128");
         assertEquals(3, executionResults.size());
@@ -102,9 +108,9 @@ class StatementBashpileMainTest extends BashpileMainTest {
     }
 
     @Test
-    @Order(90)
+    @Order(100)
     public void lexicalScopingWorks() {
-        assertThrows(UserError.class, () -> runFile("0090-lexicalScoping.bashpile"));
+        assertThrows(UserError.class, () -> runFile("0100-lexicalScoping.bashpile"));
     }
 
     @Test

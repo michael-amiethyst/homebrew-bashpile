@@ -15,9 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 // TODO move paren tests down, add 6f syntax
+// TODO optional commas in numbers (e.g. 1,001)
 
 /**
- * Technically "print()" is a statement but we need it to get any output at all.
+ * Technically "print()" is a statement, but we need it to get any output at all.
  */
 @Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

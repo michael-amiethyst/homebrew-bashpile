@@ -1,0 +1,2 @@
+var: float = 4000000.999
+print(var)

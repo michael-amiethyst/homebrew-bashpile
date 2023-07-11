@@ -1,14 +1,13 @@
 # MVP features / drink my own champaign
 Implement testrig.bp
-1. Comments in Bashpile
-2. command objects $()
+1. command objects $()
    1. run as subshell or substitution
    2. support nesting
    3. optional xargs style {}'s
-3. try-with-resources
+2. try-with-resources
    1. syntax: try ($(command) creates "filename")
-4. Automatic script line detection (e.g. can write 'echo ...' or any other bash command)
-5. Bash Blocks (see XML Island Detection in book)
+3. Automatic script line detection (e.g. can write 'echo ...' or any other bash command)
+4. Bash Blocks (see XML Island Detection in book)
 
 # Later
 (Not ordered)
