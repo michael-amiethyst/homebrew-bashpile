@@ -27,75 +27,79 @@ class FunctionBashpileMainTest extends BashpileMainTest {
     }
 
     @Test
-    @Order(110)
+    @Order(10)
     public void functionDeclarationWorks() {
-        List<String> executionResults = runFile("0110-functionDeclaration.bashpile").stdoutLines();
+        List<String> executionResults = runFile("0010-functionDeclaration.bashpile").stdoutLines();
         assertEquals(2, executionResults.size(),
                 "Unexpected line length, was:\n" + join(executionResults));
     }
 
     @Test
-    @Order(111)
+    @Order(20)
     public void functionDeclarationParamsWork() {
-        List<String> executionResults = runFile("0111-functionDeclaration-params.bashpile").stdoutLines();
+        List<String> executionResults = runFile("0020-functionDeclaration-params.bashpile").stdoutLines();
         assertEquals(2, executionResults.size());
     }
 
     @Test
-    @Order(112)
+    @Order(30)
     public void functionDeclarationBadParamsThrows() {
-        assertThrows(TypeError.class, () -> runFile("0112-functionDeclaration-badParams.bashpile"));
+        assertThrows(TypeError.class, () -> runFile("0030-functionDeclaration-badParams.bashpile"));
     }
 
     @Test
-    @Order(113)
+    @Order(40)
     public void functionDeclarationDoubleDeclThrows() {
-        assertThrows(UserError.class, () -> runFile("0113-functionDeclaration-doubleDecl.bashpile"));
+        assertThrows(UserError.class, () -> runFile("0040-functionDeclaration-doubleDecl.bashpile"));
     }
 
     @Test
-    @Order(120)
+    @Order(50)
     public void functionCallWorks() {
-        List<String> executionResults = runFile("0120-functionCall.bashpile").stdoutLines();
+        List<String> executionResults = runFile("0050-functionCall.bashpile").stdoutLines();
         assertEquals(2, executionResults.size());
         assertEquals("3.14", executionResults.get(0));
         assertEquals("3.14", executionResults.get(1));
     }
 
     @Test
-    @Order(121)
+    @Order(60)
     public void functionCallMultipleParamsWorks() {
-        var executionResults = runFile("0121-functionCall-multipleParams.bashpile");
+        var executionResults = runFile("0060-functionCall-multipleParams.bashpile");
         assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
         assertEquals("12", executionResults.stdoutLines().get(0));
     }
 
     @Test
-    @Order(122)
+    @Order(70)
     public void functionCallReturnStringWorks() {
-        var executionResults = runFile("0122-functionCall-returnString.bashpile");
+        var executionResults = runFile("0070-functionCall-returnString.bashpile");
         assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
         assertEquals("hello world", executionResults.stdoutLines().get(0));
     }
 
     @Test
-    @Order(123)
+    @Order(80)
     public void functionCallTagsWork() {
-        var executionResults = runFile("0123-functionCall-tags.bashpile");
+        var executionResults = runFile("0080-functionCall-tags.bashpile");
         assertExecutionSuccess(executionResults);
         assertEquals(2, executionResults.stdoutLines().size());
         assertEquals("3.14", executionResults.stdoutLines().get(0));
     }
 
     @Test
-    @Order(124)
+    @Order(90)
     public void functionCallReturnStringBadTypeThrows() {
-        assertThrows(TypeError.class, () -> runFile("0124-functionCall-returnStringBadType.bashpile"));
+        assertThrows(TypeError.class, () -> runFile("0090-functionCall-returnStringBadType.bashpile"));
     }
 
-    // TODO test string function returning empty
+    @Test
+    @Order(100)
+    public void functionCallReturnEmptyBadTypeThrows() {
+        assertThrows(TypeError.class, () -> runFile("0100-functionCall-returnEmptyBadType.bashpile"));
+    }
 
     @Test
     @Order(130)
@@ -159,6 +163,4 @@ class FunctionBashpileMainTest extends BashpileMainTest {
     public void functionDeclTypesBadCalcExpressionNestedThrows() {
         assertThrows(TypeError.class, () -> runFile("0190-functionDeclTypesEnforced-badCalcExprNested.bashpile"));
     }
-
-    // TODO renumber functions
 }

@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
+import static com.bashpile.engine.Translation.EMPTY_STRING;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.MetaType.NORMAL;
 import static com.bashpile.engine.strongtypes.MetaType.SUBSHELL_SUBSTITUTION;
@@ -135,7 +136,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // visit the right hand expression
         final boolean exprExists = ctx.expr() != null;
-        final Translation exprTranslation = exprExists ? visitor.visit(ctx.expr()) : Translation.EMPTY;
+        final Translation exprTranslation = exprExists ? visitor.visit(ctx.expr()) : Translation.EMPTY_STRING;
         Asserts.assertTypesMatch(type, exprTranslation.type(), ctx.typedId().ID().getText(), ctx.start.getLine());
 
         // create translation
@@ -220,7 +221,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // avoid translating twice if was part of a forward declaration
         final String functionName = ctx.typedId().ID().getText();
         if (foundForwardDeclarations.contains(functionName)) {
-            return Translation.EMPTY;
+            return Translation.EMPTY_STRING;
         }
 
         // check for double declaration
@@ -295,33 +296,31 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation returnRuleStatement(@Nonnull final BashpileParser.ReturnPsudoStmtContext ctx) {
-        // guard
-        if (ctx.expr() == null) {
-            return Translation.EMPTY;
-        }
-
-        // body
+    public @Nonnull Translation returnPsudoStatement(@Nonnull final BashpileParser.ReturnPsudoStmtContext ctx) {
+        final boolean exprExists = ctx.expr() != null;
 
         // check return matches with function declaration
-
         final BashpileParser.FunctionDeclStmtContext enclosingFunction =
                 (BashpileParser.FunctionDeclStmtContext) ctx.parent.parent;
         final String functionName = enclosingFunction.typedId().ID().getText();
         final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
-        final Translation ret = visitor.visit(ctx.expr());
-        assertTypesMatch(functionTypes.returnType(), ret.type(), functionName, ctx.start.getLine());
+        final Translation exprTranslation =
+                exprExists ? visitor.visit(ctx.expr()) : Translation.EMPTY_TYPE;
+        assertTypesMatch(functionTypes.returnType(), exprTranslation.type(), functionName, ctx.start.getLine());
 
-        // insert echo right at start of last line
+        if (exprExists) {
+            // insert echo right at start of last line
 
-        // ret.text() does not end in newline and may be multiple lines
-        final String exprText = "# return statement, Bashpile line %d%s\n%s"
-                .formatted(ctx.start.getLine(), getHoisted(), ret.text());
-        final String[] retLines = exprText.split("\n");
-        final int lastLineIndex = retLines.length - 1;
-        retLines[lastLineIndex] = "echo " + retLines[lastLineIndex];
-        final String retText = String.join("\n", retLines) + "\n";
-        return toStringTranslation(retText);
+            // exprTranslation.text() does not end in newline and may be multiple lines
+            final String exprText = "# return statement, Bashpile line %d%s\n%s"
+                    .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.text());
+            final String[] retLines = exprText.split("\n");
+            final int lastLineIndex = retLines.length - 1;
+            retLines[lastLineIndex] = "echo " + retLines[lastLineIndex];
+            final String retText = String.join("\n", retLines) + "\n";
+            return toStringTranslation(retText);
+        } // else
+        return EMPTY_STRING;
     }
 
     // expressions

@@ -106,7 +106,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitReturnPsudoStmt(@Nonnull final BashpileParser.ReturnPsudoStmtContext ctx) {
-        return translator.returnRuleStatement(ctx);
+        return translator.returnPsudoStatement(ctx);
     }
 
     @Override
