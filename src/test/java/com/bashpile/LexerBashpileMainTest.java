@@ -1,6 +1,7 @@
 package com.bashpile;
 
 import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.exceptions.UserError;
 import com.bashpile.testhelper.BashpileMainTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -121,7 +122,6 @@ class LexerBashpileMainTest extends BashpileMainTest {
 
     @Test @Order(140)
     public void commandObjectParses() {
-        ExecutionResults results = runFile("0140-commandObject.bashpile");
-        assertEquals("", results.stdout());
+        assertThrows(UserError.class, () -> runFile("0140-commandObject.bashpile"));
     }
 }

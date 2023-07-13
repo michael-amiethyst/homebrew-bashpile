@@ -29,7 +29,7 @@ public enum Type {
         if (hasTypeInfo) {
             return valueOf(ctx.TYPE().getText().toUpperCase());
         }
-        throw new TypeError("No type info for " + ctx.ID());
+        throw new TypeError("No type info for " + ctx.ID(), ctx.start.getLine());
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")

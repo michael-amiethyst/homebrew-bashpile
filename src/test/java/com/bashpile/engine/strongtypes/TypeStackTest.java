@@ -7,7 +7,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.bashpile.engine.strongtypes.Type.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypeStackTest {
 
@@ -25,24 +26,24 @@ class TypeStackTest {
 
     @Test
     void getVariableTest() {
-        fixture.putVariableType("var1", EMPTY);
+        fixture.putVariableType("var1", EMPTY, 0);
         assertEquals(EMPTY, fixture.getVariableType("var1"));
     }
 
     @Test
     void getBuriedVariableTest() {
-        fixture.putVariableType("var1", EMPTY);
+        fixture.putVariableType("var1", EMPTY, 0);
         fixture.push();
-        fixture.putVariableType("v2", EMPTY);
+        fixture.putVariableType("v2", EMPTY, 0);
         assertEquals(EMPTY, fixture.getVariableType("var1"));
     }
 
     @Test
     void getReusedVariableTest() {
-        fixture.putVariableType("var1", EMPTY);
+        fixture.putVariableType("var1", EMPTY, 0);
         assertEquals(EMPTY, fixture.getVariableType("var1"));
         fixture.push();
-        fixture.putVariableType("var1", INT);
+        fixture.putVariableType("var1", INT, 0);
         assertEquals(INT, fixture.getVariableType("var1"));
         fixture.pop();
         assertEquals(EMPTY, fixture.getVariableType("var1"));
@@ -50,9 +51,9 @@ class TypeStackTest {
 
     @Test
     void containsVariable() {
-        fixture.putVariableType("var1", EMPTY);
+        fixture.putVariableType("var1", EMPTY, 0);
         fixture.push();
-        fixture.putVariableType("v2", EMPTY);
+        fixture.putVariableType("v2", EMPTY, 0);
         assertTrue(fixture.containsVariable("v2"));
     }
 

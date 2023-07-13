@@ -60,6 +60,7 @@ COMMA: ',';
 OBRACKET: '[';
 CBRACKET: ']';
 DOLLAR: '$';
+DOT: '.';
 
 STRING
  : '\'' ( ~[\\\r\n\f'] )* '\''

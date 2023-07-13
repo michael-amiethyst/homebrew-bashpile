@@ -3,6 +3,7 @@ package com.bashpile.engine;
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
+import com.bashpile.engine.strongtypes.MetaType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
@@ -131,7 +132,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // add this variable to the type map
         final String variableName = ctx.typedId().ID().getText();
         final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
-        typeStack.putVariableType(variableName, type);
+        typeStack.putVariableType(variableName, type, ctx.start.getLine());
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
@@ -159,7 +160,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String variableName = ctx.ID().getText();
         final Type expectedType = typeStack.getVariableType(variableName);
         if (expectedType.isNotFound()) {
-            throw new TypeError(variableName + " has not been declared");
+            throw new TypeError(variableName + " has not been declared", ctx.start.getLine());
         }
 
         // get expression and it's type
@@ -231,7 +232,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // check for double declaration
         if (typeStack.containsFunction(functionName)) {
-            throw new UserError(functionName + " was declared twice (function overloading is not supported)");
+            throw new UserError(
+                    functionName + " was declared twice (function overloading is not supported)", ctx.start.getLine());
         }
 
         // regular processing -- no forward declaration
@@ -249,7 +251,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
             // register local variable types
             ctx.paramaters().typedId().forEach(
-                    x -> typeStack.putVariableType(x.ID().getText(), Type.valueOf(x.TYPE().getText().toUpperCase())));
+                    x -> typeStack.putVariableType(
+                            x.ID().getText(), Type.valueOf(x.TYPE().getText().toUpperCase()), ctx.start.getLine()));
 
             // handles nested blocks
             final AtomicInteger i = new AtomicInteger(1);
@@ -357,12 +360,12 @@ public class BashTranslationEngine implements TranslationEngine {
                     Type.NUMBER, SUBSHELL_SUBSTITUTION);
         // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
-            throw new UserError("`%s` or `%s` are undefined at Bashpile line %d".formatted(
-                    first.text(), second.text(), ctx.start.getLine()));
+            throw new UserError("`%s` or `%s` are undefined".formatted(
+                    first.text(), second.text()), ctx.start.getLine());
         } else {
             // throw type error for all others
-            throw new TypeError("Incompatible types in calc on Bashpile line %d: %s and %s".formatted(
-                    ctx.start.getLine(), first.type(), second.type()));
+            throw new TypeError("Incompatible types in calc: %s and %s".formatted(
+                    first.type(), second.type()), ctx.start.getLine());
         }
     }
 
@@ -433,18 +436,36 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
+    public Translation commandObjectExpression(BashpileParser.CommandObjectExpressionContext ctx) {
+        final Translation bashLiteral = visitor.visit(ctx.expression());
+        final int lineNumber = ctx.start.getLine();
+        assertTypesMatch(Type.STR, bashLiteral.type(), "command object", lineNumber);
+
+        final List<BashpileParser.FunctionCallContext> calls = ctx.functionCall();
+        boolean hasValidRunCommand =
+                calls != null && calls.size() == 1
+                        && ctx.functionCall(0).ID().getText().equals("run")
+                        && ctx.functionCall(0).argumentList() == null;
+        if (hasValidRunCommand) {
+            return new Translation(bashLiteral.text(), Type.STR, MetaType.COMMAND);
+        }
+        throw new UserError(
+                "Command Object must have a valid terminating call (e.g. $(\"ls\").run())", lineNumber);
+    }
+
+    @Override
     public @Nonnull Translation functionCallExpression(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
-        final String id = ctx.ID().getText();
+        final String id = ctx.functionCall().ID().getText();
 
         // check arg types
 
         // get functionName and a stream creator
-        final String functionName = ctx.ID().getText();
+        final String functionName = ctx.functionCall().ID().getText();
         final Supplier<Stream<Translation>> argListTranslationStream =
-                () -> ctx.argumentList().expression().stream().map(translateIdsOrVisit);
+                () -> ctx.functionCall().argumentList().expression().stream().map(translateIdsOrVisit);
         // get the expected and actual types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
-        final List<Type> actualTypes = ctx.argumentList() != null
+        final List<Type> actualTypes = ctx.functionCall().argumentList() != null
                 ? argListTranslationStream.get().map(Translation::type).collect(Collectors.toList())
                 : List.of();
         // assert equals
@@ -452,7 +473,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get arguments
 
-        final boolean hasArgs = ctx.argumentList() != null;
+        final boolean hasArgs = ctx.functionCall().argumentList() != null;
         // empty list or ' arg1Text arg2Text etc.'
         final String args = hasArgs
                 ? " " + argListTranslationStream.get().map(Translation::text).collect(Collectors.joining(" "))

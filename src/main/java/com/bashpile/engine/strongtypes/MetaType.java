@@ -4,6 +4,8 @@ package com.bashpile.engine.strongtypes;
 public enum MetaType {
     /** Just a string with no special handing usually needed */
     NORMAL,
+    /** A shell command, e.g. `echo filename | cat` */
+    COMMAND,
     /** Bash example: (commands) */
     SUBSHELL_COMPOUND,
     /** Bash example: $(commands) */

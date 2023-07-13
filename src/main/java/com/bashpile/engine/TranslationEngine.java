@@ -39,6 +39,8 @@ public interface TranslationEngine {
 
     // expression translations
 
+    Translation commandObjectExpression(final BashpileParser.CommandObjectExpressionContext ctx);
+
     Translation functionCallExpression(final BashpileParser.FunctionCallExprContext ctx);
 
     Translation parenthesisExpression(final BashpileParser.ParenthesisExprContext ctx);
