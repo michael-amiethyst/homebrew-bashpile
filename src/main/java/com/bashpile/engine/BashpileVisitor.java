@@ -121,6 +121,12 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit expressions
 
     @Override
+    public Translation visitCommandObjectExpression(BashpileParser.CommandObjectExpressionContext ctx) {
+        // TODO implement
+        return Translation.EMPTY_STRING;
+    }
+
+    @Override
     public @Nonnull Translation visitFunctionCallExpr(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
         return translator.functionCallExpression(ctx);
     }

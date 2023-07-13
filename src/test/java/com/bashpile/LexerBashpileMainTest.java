@@ -43,40 +43,40 @@ class LexerBashpileMainTest extends BashpileMainTest {
     }
 
     @Test
-    @Order(61)
+    @Order(30)
     public void boolWorks() {
-        List<String> outLines = runFile("0060-bool.bashpile").stdoutLines();
+        List<String> outLines = runFile("0030-bool.bashpile").stdoutLines();
         assertEquals("false", outLines.get(0));
     }
 
     @Test
-    @Order(70)
+    @Order(40)
     public void intWorks() {
-        List<String> bashLines = runFile("0070-int.bashpile").stdinLines();
+        List<String> bashLines = runFile("0040-int.bashpile").stdinLines();
         assertEquals("echo 42", getLast(bashLines));
     }
 
     @Test
-    @Order(71)
+    @Order(50)
     public void parenIntWorks() {
-        List<String> ret = runFile("0071-parenInt.bashpile").stdoutLines();
+        List<String> ret = runFile("0050-parenInt.bashpile").stdoutLines();
         assertEquals(1, ret.size(), "Unexpected number of lines");
         assertEquals("21", ret.get(0));
     }
 
     @Test
-    @Order(80)
+    @Order(60)
     public void stringWorks() {
-        var runResult = runFile("0080-string.bashpile");
+        var runResult = runFile("0060-string.bashpile");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("world", getLast(outLines));
     }
 
     @Test
-    @Order(81)
+    @Order(70)
     public void parenStringWorks() {
-        List<String> ret = runFile("0081-parenString.bashpile").stdoutLines();
+        List<String> ret = runFile("0070-parenString.bashpile").stdoutLines();
         assertEquals(1, ret.size(), "Unexpected number of lines");
         assertEquals("hello", ret.get(0));
     }
@@ -117,5 +117,11 @@ class LexerBashpileMainTest extends BashpileMainTest {
         assertEquals(2, stdoutLines.size(),
                 "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
         assertEquals(expected, stdoutLines);
+    }
+
+    @Test @Order(140)
+    public void commandObjectParses() {
+        ExecutionResults results = runFile("0140-commandObject.bashpile");
+        assertEquals("", results.stdout());
     }
 }

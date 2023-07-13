@@ -59,6 +59,7 @@ COL: ':';
 COMMA: ',';
 OBRACKET: '[';
 CBRACKET: ']';
+DOLLAR: '$';
 
 STRING
  : '\'' ( ~[\\\r\n\f'] )* '\''

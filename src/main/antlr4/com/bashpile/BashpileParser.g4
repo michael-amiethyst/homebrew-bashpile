@@ -28,7 +28,8 @@ functionBlock: INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: RETURN expression? NL;
 
 expression:
-    ID OPAREN argumentList? CPAREN      # functionCallExpr
+    DOLLAR OPAREN expression CPAREN     # commandObjectExpression
+    | ID OPAREN argumentList? CPAREN    # functionCallExpr
     // operator expressions
     | OPAREN expression CPAREN          # parenthesisExpr
     | <assoc=right> MINUS? NUMBER       # numberExpr      // has to be above calculationExpression
