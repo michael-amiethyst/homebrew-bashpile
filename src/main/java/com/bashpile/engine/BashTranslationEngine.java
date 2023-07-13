@@ -447,7 +447,8 @@ public class BashTranslationEngine implements TranslationEngine {
                         && ctx.functionCall(0).ID().getText().equals("run")
                         && ctx.functionCall(0).argumentList() == null;
         if (hasValidRunCommand) {
-            return new Translation(bashLiteral.text(), Type.STR, MetaType.COMMAND);
+            final String unquotedLiteral = bashLiteral.text().replaceAll("^\"|\"$", "");
+            return new Translation(unquotedLiteral, Type.STR, MetaType.COMMAND);
         }
         throw new UserError(
                 "Command Object must have a valid terminating call (e.g. $(\"ls\").run())", lineNumber);
