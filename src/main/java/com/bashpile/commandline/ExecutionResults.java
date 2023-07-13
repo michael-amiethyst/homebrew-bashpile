@@ -8,7 +8,9 @@ import java.util.regex.Pattern;
 /** Holds STDIN, the Linux exit code and STDOUT */
 public record ExecutionResults(@Nonnull String stdin, int exitCode, @Nonnull String stdout) {
 
-    public static final Pattern windowsLineEndings = Pattern.compile("\r\n");
+    public static final int SUCCESS = 0;
+
+    private static final Pattern windowsLineEndings = Pattern.compile("\r\n");
 
     public ExecutionResults(@Nonnull final String stdin, final int exitCode, @Nonnull final String stdout) {
         // convert windows line ending to Linux line endings
