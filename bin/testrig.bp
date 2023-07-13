@@ -1,8 +1,8 @@
 #!/usr/bin/env bashpile
 
-# Usage: testrig com.bashpile.Bashpile prog -gui src/test/resources/0120-functionCall.bashpile
+# Usage: testrig com.bashpile.Bashpile program -gui src/test/resources/0120-functionCall.bashpile
 
 classPath: str
-try ($("mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt").run() creates "cpath.txt"):
+$(mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt).run() creates "cpath.txt":
     classPath = $(cat cpath.txt).output()
-$("java -cp target/classes:${classPath} org.antlr.v4.gui.TestRig ${__OPTIONS["all"]}").run()
+$("java -cp target/classes:$[classPath] org.antlr.v4.gui.TestRig $[__OPTIONS["all"]]").run()

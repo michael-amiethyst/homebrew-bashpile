@@ -2,6 +2,8 @@ parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
 program: statement+;
+// TODO remove quotes from shellStrings: $() instead of $("")
+// TODO implement createsStatement
 statement: expression NL            # expressionStatement
     | typedId (EQ expression)? NL   # assignmentStatement
     | ID EQ expression NL           # reassignmentStatement
@@ -12,6 +14,8 @@ statement: expression NL            # expressionStatement
             tags? COL functionBlock # functionDeclarationStatement
     | BLOCK tags? COL INDENT
                 statement+ DEDENT   # anonymousBlockStatement
+    | shellString CREATES STRING
+                                COL # createsStatement
     | NL                            # blankStmt
     ;
 
@@ -27,9 +31,8 @@ argumentList: expression (COMMA expression)*;
 functionBlock: INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: RETURN expression? NL;
 
-expression:
-    DOLLAR OPAREN expression CPAREN
-                    (DOT functionCall)* # commandObjectExpression
+// TODO convert labels to long names
+expression: shellString                 # shellStringExpression
     | functionCall                      # functionCallExpr
     // operator expressions
     | OPAREN expression CPAREN          # parenthesisExpr
@@ -42,4 +45,5 @@ expression:
     | ID                                # idExpr
     ;
 
+shellString: DOLLAR OPAREN expression CPAREN (DOT functionCall)*;
 functionCall: ID OPAREN argumentList? CPAREN;

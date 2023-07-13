@@ -39,7 +39,7 @@ public interface TranslationEngine {
 
     // expression translations
 
-    Translation commandObjectExpression(final BashpileParser.CommandObjectExpressionContext ctx);
+    Translation shellStringExpression(final BashpileParser.ShellStringExpressionContext ctx);
 
     Translation functionCallExpression(final BashpileParser.FunctionCallExprContext ctx);
 

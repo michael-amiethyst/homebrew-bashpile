@@ -19,12 +19,15 @@ tokens { INDENT, DEDENT }
   }
 }
 
+// keywords
 TYPE: 'empty' | 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
 FUNCTION: 'function';
 BLOCK: 'block';
 RETURN: 'return';
 PRINT: 'print';
 BOOL: 'true' | 'false';
+TRY: 'try';
+CREATES: 'creates';
 
 ID: ID_START ID_CONTINUE*;
 

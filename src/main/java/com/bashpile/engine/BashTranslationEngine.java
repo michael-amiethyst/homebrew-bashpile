@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,6 +40,8 @@ public class BashTranslationEngine implements TranslationEngine {
     // static variables
 
     public static final String TAB = "    ";
+
+    public static final Pattern unquote = Pattern.compile("^\"|\"$");
 
     // static methods
 
@@ -436,18 +439,18 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation commandObjectExpression(BashpileParser.CommandObjectExpressionContext ctx) {
-        final Translation bashLiteral = visitor.visit(ctx.expression());
+    public Translation shellStringExpression(BashpileParser.ShellStringExpressionContext ctx) {
+        final Translation bashLiteral = visitor.visit(ctx.shellString().expression());
         final int lineNumber = ctx.start.getLine();
         assertTypesMatch(Type.STR, bashLiteral.type(), "command object", lineNumber);
 
-        final List<BashpileParser.FunctionCallContext> calls = ctx.functionCall();
+        final List<BashpileParser.FunctionCallContext> calls = ctx.shellString().functionCall();
         boolean hasValidRunCommand =
                 calls != null && calls.size() == 1
-                        && ctx.functionCall(0).ID().getText().equals("run")
-                        && ctx.functionCall(0).argumentList() == null;
+                        && ctx.shellString().functionCall(0).ID().getText().equals("run")
+                        && ctx.shellString().functionCall(0).argumentList() == null;
         if (hasValidRunCommand) {
-            final String unquotedLiteral = bashLiteral.text().replaceAll("^\"|\"$", "");
+            final String unquotedLiteral = unquote.matcher(bashLiteral.text()).replaceAll("");
             return new Translation(unquotedLiteral, Type.STR, MetaType.COMMAND);
         }
         throw new UserError(
