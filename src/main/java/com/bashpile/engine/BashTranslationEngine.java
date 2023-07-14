@@ -41,7 +41,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";
 
-    public static final Pattern unquote = Pattern.compile("^\"|\"$");
+    /** Match starting '$(' and ending ')' */
+    public static final Pattern unquote = Pattern.compile("^\\$\\(|\\)$");
 
     // static methods
 
@@ -440,19 +441,17 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation shellStringExpression(BashpileParser.ShellStringExpressionContext ctx) {
-        final Translation bashLiteral = visitor.visit(ctx.shellString().expression());
-        final int lineNumber = ctx.start.getLine();
-        assertTypesMatch(Type.STR, bashLiteral.type(), "command object", lineNumber);
-
         final List<BashpileParser.FunctionCallContext> calls = ctx.shellString().functionCall();
         boolean hasValidRunCommand =
                 calls != null && calls.size() == 1
                         && ctx.shellString().functionCall(0).ID().getText().equals("run")
                         && ctx.shellString().functionCall(0).argumentList() == null;
         if (hasValidRunCommand) {
-            final String unquotedLiteral = unquote.matcher(bashLiteral.text()).replaceAll("");
+            final String bashLiteral = ctx.shellString().SHELL_STRING().getText();
+            final String unquotedLiteral = unquote.matcher(bashLiteral).replaceAll("");
             return new Translation(unquotedLiteral, Type.STR, MetaType.COMMAND);
         }
+        final int lineNumber = ctx.start.getLine();;
         throw new UserError(
                 "Command Object must have a valid terminating call (e.g. $(\"ls\").run())", lineNumber);
     }

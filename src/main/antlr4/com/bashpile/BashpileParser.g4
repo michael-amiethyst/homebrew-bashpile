@@ -2,7 +2,6 @@ parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
 program: statement+;
-// TODO remove quotes from shellStrings: $() instead of $("")
 // TODO implement createsStatement
 statement: expression NL            # expressionStatement
     | typedId (EQ expression)? NL   # assignmentStatement
@@ -45,5 +44,5 @@ expression: shellString                 # shellStringExpression
     | ID                                # idExpr
     ;
 
-shellString: DOLLAR OPAREN expression CPAREN (DOT functionCall)*;
+shellString: SHELL_STRING (DOT functionCall)*;
 functionCall: ID OPAREN argumentList? CPAREN;

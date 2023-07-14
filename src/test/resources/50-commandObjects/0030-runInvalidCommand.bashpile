@@ -1,1 +1,1 @@
-$("invalid_command_example_for_testing").run()
+$(invalid_command_example_for_testing).run()
