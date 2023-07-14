@@ -11,6 +11,7 @@ import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -42,7 +43,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public static final String TAB = "    ";
 
     /** Match starting '$(' and ending ')' */
-    public static final Pattern unquote = Pattern.compile("^\\$\\(|\\)$");
+    private static final Pattern shellStringQuotes = Pattern.compile("^\\$\\(|\\)$");
 
     // static methods
 
@@ -441,19 +442,21 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation shellStringExpression(BashpileParser.ShellStringExpressionContext ctx) {
-        final List<BashpileParser.FunctionCallContext> calls = ctx.shellString().functionCall();
+        final List<BashpileParser.FunctionCallContext> calls = ctx.shellStringChain().functionCall();
         boolean hasValidRunCommand =
                 calls != null && calls.size() == 1
-                        && ctx.shellString().functionCall(0).ID().getText().equals("run")
-                        && ctx.shellString().functionCall(0).argumentList() == null;
+                        && ctx.shellStringChain().functionCall(0).ID().getText().equals("run")
+                        && ctx.shellStringChain().functionCall(0).argumentList() == null;
         if (hasValidRunCommand) {
-            final String bashLiteral = ctx.shellString().SHELL_STRING().getText();
-            final String unquotedLiteral = unquote.matcher(bashLiteral).replaceAll("");
-            return new Translation(unquotedLiteral, Type.STR, MetaType.COMMAND);
+            String shellString = ctx.shellStringChain().SHELL_STRING().getText();
+            // remove starting $( and ending )
+            shellString = shellStringQuotes.matcher(shellString).replaceAll("");
+            // unescape \) and \\
+            shellString = StringEscapeUtils.unescapeJava(shellString);
+            return new Translation(shellString, Type.STR, MetaType.COMMAND);
         }
-        final int lineNumber = ctx.start.getLine();;
         throw new UserError(
-                "Command Object must have a valid terminating call (e.g. $(\"ls\").run())", lineNumber);
+                "Command Object must have a valid terminating call (e.g. $(\"ls\").run())", ctx.start.getLine());
     }
 
     @Override

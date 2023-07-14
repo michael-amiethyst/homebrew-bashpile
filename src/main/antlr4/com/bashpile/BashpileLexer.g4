@@ -65,12 +65,13 @@ CBRACKET: ']';
 DOLLAR: '$';
 DOT: '.';
 
+// TODO test escaped quotes and double quotes
 STRING
  : '\'' ( ~[\\\r\n\f'] )* '\''
  | '"' ( ~[\\\r\n\f"] )* '"'
  ;
 
-SHELL_STRING: '$(' ( ~[\\\r\n\f)] )* ')';
+SHELL_STRING: '$(' ( ~[\r\n\f)] | '\\)')* ')';
 
 fragment ID_START: [a-zA-Z_];
 fragment ID_CONTINUE: [a-zA-Z0-9_];

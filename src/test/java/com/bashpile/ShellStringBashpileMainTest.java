@@ -2,7 +2,10 @@ package com.bashpile;
 
 import com.bashpile.commandline.ExecutionResults;
 import com.bashpile.testhelper.BashpileMainTest;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import javax.annotation.Nonnull;
 
@@ -40,5 +43,12 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
     public void runInvalidCommandHadBadExitCode() {
         final ExecutionResults results = runFile("0030-runInvalidCommand.bashpile");
         assertTrue(results.exitCode() != ExecutionResults.SUCCESS);
+    }
+
+    @Test @Order(40)
+    public void runEchoParenthesisWorks() {
+        final ExecutionResults results = runFile("0040-runEchoParenthesis.bashpile");
+        assertEquals(ExecutionResults.SUCCESS, results.exitCode());
+        assertEquals("()\n", results.stdout());
     }
 }

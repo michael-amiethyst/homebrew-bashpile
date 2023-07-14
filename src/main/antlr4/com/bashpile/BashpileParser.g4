@@ -12,9 +12,9 @@ statement: expression NL            # expressionStatement
     | FUNCTION typedId paramaters
             tags? COL functionBlock # functionDeclarationStatement
     | BLOCK tags? COL INDENT
-                statement+ DEDENT   # anonymousBlockStatement
-    | shellString CREATES STRING
-                                COL # createsStatement
+                  statement+ DEDENT # anonymousBlockStatement
+    | shellStringChain CREATES
+                         STRING COL # createsStatement
     | NL                            # blankStmt
     ;
 
@@ -31,7 +31,7 @@ functionBlock: INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: RETURN expression? NL;
 
 // TODO convert labels to long names
-expression: shellString                 # shellStringExpression
+expression: shellStringChain            # shellStringExpression
     | functionCall                      # functionCallExpr
     // operator expressions
     | OPAREN expression CPAREN          # parenthesisExpr
@@ -44,5 +44,5 @@ expression: shellString                 # shellStringExpression
     | ID                                # idExpr
     ;
 
-shellString: SHELL_STRING (DOT functionCall)*;
+shellStringChain: SHELL_STRING (DOT functionCall)*;
 functionCall: ID OPAREN argumentList? CPAREN;
