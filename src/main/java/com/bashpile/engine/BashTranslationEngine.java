@@ -30,7 +30,7 @@ import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.MetaType.NORMAL;
-import static com.bashpile.engine.strongtypes.MetaType.SUBSHELL_SUBSTITUTION;
+import static com.bashpile.engine.strongtypes.MetaType.COMMAND_SUBSTITUTION;
 import static com.google.common.collect.Iterables.getLast;
 
 /**
@@ -362,7 +362,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(Translation::text).collect(Collectors.joining(" "));
             return new Translation(
                     "%s$(bc <<< \"%s\")".formatted(unwoundSubshells, translationsString),
-                    Type.NUMBER, SUBSHELL_SUBSTITUTION);
+                    Type.NUMBER, COMMAND_SUBSTITUTION);
         // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(
@@ -489,6 +489,6 @@ public class BashTranslationEngine implements TranslationEngine {
         // lookup return type of this function
         final Type retType = typeStack.getFunctionTypes(id).returnType();
 
-        return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
+        return new Translation("$(%s%s)".formatted(id, args), retType, COMMAND_SUBSTITUTION);
     }
 }

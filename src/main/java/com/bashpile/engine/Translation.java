@@ -20,6 +20,6 @@ public record Translation(String text, Type type, MetaType metaType) {
     }
 
     public boolean isNotSubshell() {
-        return !metaType.equals(MetaType.SUBSHELL_COMPOUND) && !metaType.equals(MetaType.SUBSHELL_SUBSTITUTION);
+        return !metaType.equals(MetaType.SUBSHELL) && !metaType.equals(MetaType.COMMAND_SUBSTITUTION);
     }
 }

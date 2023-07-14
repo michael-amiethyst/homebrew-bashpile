@@ -7,9 +7,9 @@ public enum MetaType {
     /** A shell command, e.g. `echo filename | cat` */
     COMMAND,
     /** Bash example: (commands) */
-    SUBSHELL_COMPOUND,
+    SUBSHELL,
     /** Bash example: $(commands) */
-    SUBSHELL_SUBSTITUTION
+    COMMAND_SUBSTITUTION
 
     // Maybe int, float, list, hash?
 }
