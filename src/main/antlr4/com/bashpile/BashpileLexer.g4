@@ -62,13 +62,11 @@ COL: ':';
 COMMA: ',';
 OBRACKET: '[';
 CBRACKET: ']';
-DOLLAR: '$';
 DOT: '.';
 
-// TODO test escaped quotes and double quotes
 STRING
- : '\'' ( ~[\\\r\n\f'] )* '\''
- | '"' ( ~[\\\r\n\f"] )* '"'
+ : '\'' ( ~[\r\n\f'] | '\\\'')* '\''
+ | '"'  ( ~[\r\n\f"] | '\\"' )* '"'
  ;
 
 SHELL_STRING: '$(' ( ~[\r\n\f)] | '\\)')* ')';

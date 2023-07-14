@@ -83,6 +83,14 @@ class LexerBashpileMainTest extends BashpileMainTest {
     }
 
     @Test
+    @Order(80)
+    public void escapedStringWorks() {
+        List<String> ret = runFile("0080-escapedString.bashpile").stdoutLines();
+        assertEquals(1, ret.size(), "Unexpected number of lines");
+        assertEquals("\"hello\"", ret.get(0));
+    }
+
+    @Test
     @Order(100)
     public void floatsWork() {
         List<String> executionResults = runFile("0100-floats.bashpile").stdoutLines();
