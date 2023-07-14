@@ -84,7 +84,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** put variable into ${}, e.g. "var" becomes "${var}" */
     private final Function<ParseTree, Translation> translateIdsOrVisit = parseTree -> {
-        if (parseTree instanceof BashpileParser.IdExprContext ctx) {
+        if (parseTree instanceof BashpileParser.IdExpressionContext ctx) {
             // return `${varName}` syntax with the previously declared type of the variable
             final String variableName = ctx.ID().getText();
             final Type type = typeStack.getVariableType(variableName);
@@ -340,7 +340,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // expressions
 
     @Override
-    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExprContext ctx) {
+    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
         final Pair<String, List<Translation>> pair = unwindChildren(ctx);
         final String unwoundSubshells = pair.getLeft();
         final List<Translation> childTranslations = pair.getRight();
@@ -433,7 +433,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExprContext ctx) {
+    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
         final Translation expr = visitor.visit(ctx.expression());
         // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
         final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
@@ -460,7 +460,8 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation functionCallExpression(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
+    public @Nonnull Translation functionCallExpression(
+            @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
         final String id = ctx.functionCall().ID().getText();
 
         // check arg types

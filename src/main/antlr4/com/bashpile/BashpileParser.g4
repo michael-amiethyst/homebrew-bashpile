@@ -30,18 +30,17 @@ argumentList: expression (COMMA expression)*;
 functionBlock: INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: RETURN expression? NL;
 
-// TODO convert labels to long names
 expression: shellStringChain            # shellStringExpression
-    | functionCall                      # functionCallExpr
+    | functionCall                      # functionCallExpression
     // operator expressions
-    | OPAREN expression CPAREN          # parenthesisExpr
-    | <assoc=right> MINUS? NUMBER       # numberExpr      // has to be above calculationExpression
+    | OPAREN expression CPAREN          # parenthesisExpression
+    | <assoc=right> MINUS? NUMBER       # numberExpression      // has to be above calculationExpression
     | expression op=(MUL|DIV|ADD|MINUS)
-                             expression # calculationExpr
+                             expression # calculationExpression
     // type expressions
-    | BOOL                              # boolExpr
-    | STRING                            # stringExpr
-    | ID                                # idExpr
+    | BOOL                              # boolExpression
+    | STRING                            # stringExpression
+    | ID                                # idExpression
     ;
 
 shellStringChain: SHELL_STRING (DOT functionCall)*;

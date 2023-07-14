@@ -12,9 +12,7 @@ import javax.annotation.Nonnull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO test parenthesis -- $(echo ())
 // TODO test nested -- see https://github.com/sepp2k/antlr4-string-interpolation-examples
-// TODO implement '.runOrThrow()'
 // TODO implement redirects
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
