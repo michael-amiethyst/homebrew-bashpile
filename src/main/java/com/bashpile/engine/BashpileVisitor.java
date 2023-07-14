@@ -2,7 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
-import com.bashpile.engine.strongtypes.MetaType;
+import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -141,7 +141,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
-        return new Translation(ctx.getText(), Type.parseNumberString(ctx.NUMBER().getText()), MetaType.NORMAL);
+        return new Translation(ctx.getText(), Type.parseNumberString(ctx.NUMBER().getText()), TypeMetadata.NORMAL);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
-        return new Translation(ctx.BOOL().getText(), Type.BOOL, MetaType.NORMAL);
+        return new Translation(ctx.BOOL().getText(), Type.BOOL, TypeMetadata.NORMAL);
     }
 
     @Override

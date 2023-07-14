@@ -3,7 +3,7 @@ package com.bashpile.engine;
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
-import com.bashpile.engine.strongtypes.MetaType;
+import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
@@ -29,8 +29,8 @@ import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
-import static com.bashpile.engine.strongtypes.MetaType.NORMAL;
-import static com.bashpile.engine.strongtypes.MetaType.COMMAND_SUBSTITUTION;
+import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
+import static com.bashpile.engine.strongtypes.TypeMetadata.COMMAND_SUBSTITUTION;
 import static com.google.common.collect.Iterables.getLast;
 
 /**
@@ -437,7 +437,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation expr = visitor.visit(ctx.expression());
         // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
         final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
-        return new Translation(format.formatted(expr.text()), expr.type(), expr.metaType());
+        return new Translation(format.formatted(expr.text()), expr.type(), expr.typeMetadata());
     }
 
     @Override
@@ -447,7 +447,7 @@ public class BashTranslationEngine implements TranslationEngine {
         shellString = shellStringQuotes.matcher(shellString).replaceAll("");
         // unescape our bash text -- especially \) and \\
         shellString = StringEscapeUtils.unescapeJava(shellString);
-        return new Translation(shellString, Type.STR, MetaType.COMMAND);
+        return new Translation(shellString, Type.STR, TypeMetadata.COMMAND);
     }
 
     @Override
