@@ -12,8 +12,8 @@ import javax.annotation.Nonnull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO test nested -- see https://github.com/sepp2k/antlr4-string-interpolation-examples
-// TODO implement redirects
+// TODO implement command substitutions
+// TODO test nested command_substitutions -- see https://github.com/sepp2k/antlr4-string-interpolation-examples
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ShellStringBashpileMainTest extends BashpileMainTest {

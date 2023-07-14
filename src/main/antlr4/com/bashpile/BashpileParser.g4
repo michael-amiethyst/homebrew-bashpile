@@ -13,7 +13,7 @@ statement: expression NEWLINE             # expressionStatement
                   COL functionBlock       # functionDeclarationStatement
     | BLOCK tags? COL INDENT statement+
                                   DEDENT  # anonymousBlockStatement
-    | shellStringChain CREATES STRING COL # createsStatement
+    | SHELL_STRING CREATES STRING COL     # createsStatement
     | NEWLINE                             # blankStmt
     ;
 
@@ -29,7 +29,7 @@ argumentList: expression (COMMA expression)*;
 functionBlock: INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: RETURN expression? NEWLINE;
 
-expression: shellStringChain            # shellStringExpression
+expression: SHELL_STRING                # shellStringExpression
     | functionCall                      # functionCallExpression
     // operator expressions
     | OPAREN expression CPAREN          # parenthesisExpression
@@ -42,5 +42,4 @@ expression: shellStringChain            # shellStringExpression
     | ID                                # idExpression
     ;
 
-shellStringChain: SHELL_STRING (DOT functionCall)*;
 functionCall: ID OPAREN argumentList? CPAREN;

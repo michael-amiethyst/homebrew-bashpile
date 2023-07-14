@@ -65,11 +65,11 @@ CBRACKET: ']';
 DOT: '.';
 
 STRING
- : '\'' ( STRING_ESCAPE_SEQ | ~[\\\r\n\f'])* '\''
- | '"'  ( STRING_ESCAPE_SEQ | ~[\\\r\n\f"])* '"'
+ : '\'' ( STRING_ESCAPE_SEQ | ~[\\\r\n\f'] )* '\''
+ | '"'  ( STRING_ESCAPE_SEQ | ~[\\\r\n\f"] )* '"'
  ;
 
-SHELL_STRING: '$(' ( ~[\r\n\f)] | '\\)')* ')';
+SHELL_STRING: '#(' ( STRING_ESCAPE_SEQ | ~[\\\r\n\f)] )* ')';
 
 fragment ID_START: [a-zA-Z_];
 fragment ID_CONTINUE: [a-zA-Z0-9_];

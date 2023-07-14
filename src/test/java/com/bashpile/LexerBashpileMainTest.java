@@ -1,7 +1,6 @@
 package com.bashpile;
 
 import com.bashpile.commandline.ExecutionResults;
-import com.bashpile.exceptions.UserError;
 import com.bashpile.testhelper.BashpileMainTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -13,7 +12,8 @@ import java.util.List;
 
 import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
@@ -126,10 +126,5 @@ class LexerBashpileMainTest extends BashpileMainTest {
         assertEquals(2, stdoutLines.size(),
                 "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
         assertEquals(expected, stdoutLines);
-    }
-
-    @Test @Order(140)
-    public void commandObjectParses() {
-        assertThrows(UserError.class, () -> runFile("0140-commandObject.bashpile"));
     }
 }
