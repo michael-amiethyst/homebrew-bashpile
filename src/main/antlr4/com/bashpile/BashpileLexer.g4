@@ -8,7 +8,7 @@ tokens { INDENT, DEDENT }
 
 @lexer::members {
   private final DenterHelper denter = DenterHelper.builder()
-    .nl(NL)
+    .nl(NEWLINE)
     .indent(BashpileLexer.INDENT)
     .dedent(BashpileLexer.DEDENT)
     .pullToken(BashpileLexer.super::nextToken);
@@ -45,7 +45,7 @@ FLOAT_NUMBER
  | INT_PART '.'
  ;
 
-NL: '\r'? '\n' ' '*;
+NEWLINE: '\r'? '\n' ' '*;
 WS: [ \t] -> skip;
 BASHPILE_DOC: '/**' .*? '*/' -> skip;
 COMMENT: '//' ~[\r\n\f]* -> skip;
@@ -65,14 +65,19 @@ CBRACKET: ']';
 DOT: '.';
 
 STRING
- : '\'' ( ~[\r\n\f'] | '\\\'')* '\''
- | '"'  ( ~[\r\n\f"] | '\\"' )* '"'
+ : '\'' ( STRING_ESCAPE_SEQ | ~[\\\r\n\f'])* '\''
+ | '"'  ( STRING_ESCAPE_SEQ | ~[\\\r\n\f"])* '"'
  ;
 
 SHELL_STRING: '$(' ( ~[\r\n\f)] | '\\)')* ')';
 
 fragment ID_START: [a-zA-Z_];
 fragment ID_CONTINUE: [a-zA-Z0-9_];
+
+fragment STRING_ESCAPE_SEQ
+ : '\\' .
+ | '\\' NEWLINE
+ ;
 
 /// nonzerodigit   ::=  "1"..."9"
 fragment NON_ZERO_DIGIT

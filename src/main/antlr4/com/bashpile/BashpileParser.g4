@@ -3,19 +3,18 @@ options { tokenVocab = BashpileLexer; }
 
 program: statement+;
 // TODO implement createsStatement
-statement: expression NL            # expressionStatement
-    | typedId (EQ expression)? NL   # assignmentStatement
-    | ID EQ expression NL           # reassignmentStatement
-    | PRINT OPAREN argumentList?
-                          CPAREN NL # printStatement
-    | FUNCTION typedId paramaters   # functionForwardDeclarationStatement
-    | FUNCTION typedId paramaters
-            tags? COL functionBlock # functionDeclarationStatement
-    | BLOCK tags? COL INDENT
-                  statement+ DEDENT # anonymousBlockStatement
-    | shellStringChain CREATES
-                         STRING COL # createsStatement
-    | NL                            # blankStmt
+statement: expression NEWLINE             # expressionStatement
+    | typedId (EQ expression)? NEWLINE    # assignmentStatement
+    | ID EQ expression NEWLINE            # reassignmentStatement
+    | PRINT OPAREN argumentList? CPAREN
+                                 NEWLINE  # printStatement
+    | FUNCTION typedId paramaters         # functionForwardDeclarationStatement
+    | FUNCTION typedId paramaters tags?
+                  COL functionBlock       # functionDeclarationStatement
+    | BLOCK tags? COL INDENT statement+
+                                  DEDENT  # anonymousBlockStatement
+    | shellStringChain CREATES STRING COL # createsStatement
+    | NEWLINE                             # blankStmt
     ;
 
 tags: OBRACKET (STRING*) CBRACKET;
@@ -28,7 +27,7 @@ argumentList: expression (COMMA expression)*;
 // but will interpret the last line of a function (which may be a string) as the return if no keyword
 // see https://linuxhint.com/return-string-bash-functions/ example 3
 functionBlock: INDENT statement* returnPsudoStatement DEDENT;
-returnPsudoStatement: RETURN expression? NL;
+returnPsudoStatement: RETURN expression? NEWLINE;
 
 expression: shellStringChain            # shellStringExpression
     | functionCall                      # functionCallExpression
