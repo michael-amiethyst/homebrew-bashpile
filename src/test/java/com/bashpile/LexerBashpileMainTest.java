@@ -15,6 +15,7 @@ import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+// TODO inline file contents
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
  */

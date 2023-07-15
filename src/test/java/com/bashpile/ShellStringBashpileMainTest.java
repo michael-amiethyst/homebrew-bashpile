@@ -9,10 +9,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import javax.annotation.Nonnull;
 
+import java.nio.file.Path;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO inline file contents
 // TODO implement command substitutions
 // TODO test nested command_substitutions -- see https://github.com/sepp2k/antlr4-string-interpolation-examples
 @Order(50)
@@ -27,40 +28,40 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
     /** Simple one word command */
     @Test @Order(10)
     public void runLsWorks() {
-        final ExecutionResults results = runFile("0010-runLs.bashpile");
+        final ExecutionResults results = runText("#(ls)");
         assertTrue(results.stdout().contains("pom.xml\n"));
     }
 
     /** Command with arguments */
     @Test @Order(20)
     public void runEchoWorks() {
-        final ExecutionResults results = runFile("0020-runEcho.bashpile");
+        final ExecutionResults results = runText("#(echo hello command object)");
         assertEquals("hello command object\n", results.stdout());
     }
 
     @Test @Order(30)
     public void runInvalidCommandHadBadExitCode() {
-        final ExecutionResults results = runFile("0030-runInvalidCommand.bashpile");
+        final ExecutionResults results = runText("#(invalid_command_example_for_testing)");
         assertTrue(results.exitCode() != ExecutionResults.SUCCESS);
     }
 
     @Test @Order(40)
     public void runEchoParenthesisWorks() {
-        final ExecutionResults results = runFile("0040-runEchoParenthesis.bashpile");
+        final ExecutionResults results = runFile(Path.of("0040-runEchoParenthesis.bashpile"));
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("()\n", results.stdout());
     }
 
     @Test @Order(50)
     public void nestedShellStringsWork() {
-        final ExecutionResults results = runFile("0050-nestedShellStrings.bashpile");
+        final ExecutionResults results = runText("#(cat #(src/test/resources/testdata.txt))");
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("test\n", results.stdout());
     }
 
     @Test @Order(60)
     public void shellStringsWithHashWork() {
-        final ExecutionResults results = runFile("0060-shellStringsWithHash.bashpile");
+        final ExecutionResults results = runText("#(echo '#')");
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("#\n", results.stdout());
     }

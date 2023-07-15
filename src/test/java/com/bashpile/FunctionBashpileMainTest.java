@@ -16,6 +16,7 @@ import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+// TODO inline file contents
 @Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FunctionBashpileMainTest extends BashpileMainTest {
