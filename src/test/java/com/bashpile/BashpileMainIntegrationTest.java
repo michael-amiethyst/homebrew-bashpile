@@ -3,7 +3,10 @@ package com.bashpile;
 import com.bashpile.commandline.BashExecutor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
 import java.util.List;
@@ -12,13 +15,15 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BashpileMainIntegrationTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
     private static final String DIR_NAME = "10-lexer";
 
-    @Test
+    @Test @Order(10)
     public void noSubCommandTest() throws IOException {
         log.debug("In noSubCommandTest");
         String command = "bin/bashpile";
@@ -31,7 +36,7 @@ public class BashpileMainIntegrationTest {
                 "Unexpected output for `bashpile` command");
     }
 
-    @Test
+    @Test @Order(20)
     public void executeTest() throws IOException {
         log.debug("In executeTest");
         String command = "bin/bashpile -i=src/test/resources/%s/0010-print.bashpile execute".formatted(DIR_NAME);
@@ -41,10 +46,10 @@ public class BashpileMainIntegrationTest {
         assertTrue(outputText.endsWith("\r\n\r\n") || outputText.endsWith("\n\n"));
     }
 
-    @Test
-    public void transpileTest() throws IOException {
+    @Test @Order(30)
+    public void transpileCommandTest() throws IOException {
         log.debug("In transpileTest");
-        String command = "bin/bashpile -i src/test/resources/%s/0010-print.bashpile transpile".formatted(DIR_NAME);
+        String command = "bin/bashpile -c \"print()\" transpile";
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
