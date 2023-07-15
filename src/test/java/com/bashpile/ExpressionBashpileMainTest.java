@@ -13,7 +13,6 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO inline file contents
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileMainTest extends BashpileMainTest {
@@ -26,18 +25,17 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(10)
     public void printCalcWorks() {
-        List<String> ret = runFile("0010-printCalc.bashpile").stdoutLines();
+        var ret = runText("print(1 + 1)");
         assertNotNull(ret);
-        final int expectedLines = 1;
-        assertEquals(expectedLines, ret.size(), "Unexpected output length, expected %d lines but found: %s"
-                .formatted(expectedLines, String.join("\n", ret)));
-        assertEquals("2", ret.get(0), "Unexpected output: %s".formatted(String.join("\n", ret)));
+        assertEquals("2\n", ret.stdout());
     }
 
     @Test
     @Order(20)
     public void multilineCalcWorks() {
-        List<String> ret = runFile("0020-multilinePrintCalc.bashpile").stdoutLines();
+        List<String> ret = runText("""
+                print(1 + 1)
+                print(1-1)""").stdoutLines();
         assertNotNull(ret);
         int expected = 2;
         assertEquals(expected, ret.size(), "Expected %d lines but got %d".formatted(expected, ret.size()));
@@ -48,7 +46,8 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(30)
     public void stringConcatWorks() {
-        var runResult = runFile("0030-stringConcat.bashpile");
+        var runResult = runText("""
+                print("hello" + " " + "world")""");
         assertExecutionSuccess(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("hello world", getLast(outLines));
@@ -57,13 +56,15 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(40)
     public void stringBadOperatorThrows() {
-        assertThrows(AssertionError.class, () -> runFile("0040-stringBadOperator.bashpile"));
+        assertThrows(AssertionError.class, () -> runText("""
+                print("hello " * "world")"""));
     }
 
     @Test
     @Order(50)
     public void parenStringWorks() {
-        List<String> ret = runFile("0050-parenString.bashpile").stdoutLines();
+        List<String> ret = runText("""
+                print((("hello" + " world") + (", you" + " good?")))""").stdoutLines();
         assertEquals(1, ret.size(), "Unexpected number of lines");
         assertEquals("hello world, you good?", ret.get(0));
     }
@@ -71,8 +72,11 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(80)
     public void intExpressionsWork() {
-        String filename = "0080-intExpressions.bashpile";
-        List<String> executionResults = runFile(filename).stdoutLines();
+        String bashpile = """
+                print((3 + 5) * 3)
+                print(32000 + 32000)
+                print(64 + 64)""";
+        List<String> executionResults = runText(bashpile).stdoutLines();
         List<String> expected = List.of("24", "64000", "128");
         assertEquals(3, executionResults.size());
         assertEquals(expected, executionResults);
@@ -81,7 +85,7 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(90)
     public void parenIntExpressionsWork() {
-        List<String> ret = runFile("0090-parenIntExpressions.bashpile").stdoutLines();
+        List<String> ret = runText("print(((1 + 2) * (3 + 4)))").stdoutLines();
         assertEquals(1, ret.size(), "Unexpected number of lines");
         assertEquals("21", ret.get(0));
     }
@@ -89,7 +93,9 @@ class ExpressionBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(100)
     public void floatExpressionsWork() {
-        List<String> executionResults = runFile("0100-floatExpressions.bashpile").stdoutLines();
+        List<String> executionResults = runText("""
+                print((38. + 4) * .5)
+                print(7.7 - 0.7)""").stdoutLines();
         List<String> expected = List.of("21.0", "7.0");
         assertEquals(2, executionResults.size());
         assertEquals(expected, executionResults);
