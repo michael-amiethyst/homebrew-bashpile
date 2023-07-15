@@ -29,6 +29,8 @@ BOOL: 'true' | 'false';
 TRY: 'try';
 CREATES: 'creates';
 
+// ID and Numbers
+
 ID: ID_START ID_CONTINUE*;
 
 NUMBER
@@ -45,12 +47,14 @@ FLOAT_NUMBER
  | INT_PART '.'
  ;
 
+// newlines, whitespace and comments
 NEWLINE: '\r'? '\n' ' '*;
 WS: [ \t] -> skip;
 BASHPILE_DOC: '/**' .*? '*/' -> skip;
 COMMENT: '//' ~[\r\n\f]* -> skip;
 BLOCK_COMMENT: '/*' ( BLOCK_COMMENT | . )*? '*/' -> skip;
 
+// single char tokens
 OPAREN: '(';
 CPAREN: ')';
 EQ: '=';
@@ -64,20 +68,35 @@ OBRACKET: '[';
 CBRACKET: ']';
 DOT: '.';
 
+// strings
+
 STRING
  : '\'' ( STRING_ESCAPE_SEQ | ~[\\\r\n\f'] )* '\''
  | '"'  ( STRING_ESCAPE_SEQ | ~[\\\r\n\f"] )* '"'
  ;
 
-SHELL_STRING: '#(' ( STRING_ESCAPE_SEQ | ~[\\\r\n\f)] )* ')';
+STRING_ESCAPE_SEQ: '\\' . | '\\' NEWLINE;
+
+// TODO factor out modes into separate files
+
+// tokens for modes
+HASH_OPAREN: '#(' -> pushMode(SHELL_STRING);
+
+// modes
+
+/** See https://github.com/sepp2k/antlr4-string-interpolation-examples/blob/master/with-duplication/StringLexer.g4 */
+mode SHELL_STRING;
+
+SHELL_STRING_HASH_OPAREN: '#(' -> type(HASH_OPAREN), pushMode(SHELL_STRING);
+// TODO use semantic predicate for lookahead for #(
+SHELL_STRING_TEXT: ~[\\\r\n\f)#]+;
+SHELL_STRING_ESCAPE_SEQUENCE: '\\' . | '\\' NEWLINE;
+SHELL_STRING_CPAREN: ')' -> type(CPAREN), popMode;
+
+// fragments
 
 fragment ID_START: [a-zA-Z_];
 fragment ID_CONTINUE: [a-zA-Z0-9_];
-
-fragment STRING_ESCAPE_SEQ
- : '\\' .
- | '\\' NEWLINE
- ;
 
 /// nonzerodigit   ::=  "1"..."9"
 fragment NON_ZERO_DIGIT

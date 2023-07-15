@@ -49,4 +49,11 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("()\n", results.stdout());
     }
+
+    @Test @Order(50)
+    public void nestedShellStringsWork() {
+        final ExecutionResults results = runFile("0050-nestedShellStrings.bashpile");
+        assertEquals(ExecutionResults.SUCCESS, results.exitCode());
+        assertEquals("test\n", results.stdout());
+    }
 }

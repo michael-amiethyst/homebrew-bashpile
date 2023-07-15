@@ -121,8 +121,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit expressions
 
     @Override
-    public Translation visitShellStringExpression(BashpileParser.ShellStringExpressionContext ctx) {
-        return translator.shellStringExpression(ctx);
+    public Translation visitShellString(BashpileParser.ShellStringContext ctx) {
+        return translator.shellString(ctx);
     }
 
     @Override

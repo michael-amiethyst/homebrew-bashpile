@@ -13,7 +13,7 @@ statement: expression NEWLINE             # expressionStatement
                   COL functionBlock       # functionDeclarationStatement
     | BLOCK tags? COL INDENT statement+
                                   DEDENT  # anonymousBlockStatement
-    | SHELL_STRING CREATES STRING COL     # createsStatement
+//    | shellString CREATES STRING COL      # createsStatement
     | NEWLINE                             # blankStmt
     ;
 
@@ -23,14 +23,15 @@ paramaters: OPAREN ( typedId (COMMA typedId)* )? CPAREN;
 typedId: ID COL TYPE;
 argumentList: expression (COMMA expression)*;
 
-// force the final statement to be a return to work around Bash not allawing the return keyword with a string
-// but will interpret the last line of a function (which may be a string) as the return if no keyword
+// Force the final statement to be a return.
+// This is a work around for Bash not allawing the return keyword with a string.
+// Bash will interpret the last line of a function (which may be a string) as the return if no return keyword.
 // see https://linuxhint.com/return-string-bash-functions/ example 3
 functionBlock: INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: RETURN expression? NEWLINE;
 
-expression: SHELL_STRING                # shellStringExpression
-    | functionCall                      # functionCallExpression
+expression: shellString                 # shellStringExpression
+    | ID OPAREN argumentList? CPAREN    # functionCallExpression
     // operator expressions
     | OPAREN expression CPAREN          # parenthesisExpression
     | <assoc=right> MINUS? NUMBER       # numberExpression      // has to be above calculationExpression
@@ -42,4 +43,5 @@ expression: SHELL_STRING                # shellStringExpression
     | ID                                # idExpression
     ;
 
-functionCall: ID OPAREN argumentList? CPAREN;
+shellString: HASH_OPAREN shellStringContents* CPAREN;
+shellStringContents: SHELL_STRING_TEXT | SHELL_STRING_ESCAPE_SEQUENCE | shellString;

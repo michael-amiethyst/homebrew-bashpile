@@ -441,8 +441,10 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation shellStringExpression(BashpileParser.ShellStringExpressionContext ctx) {
-        String shellString = ctx.getText();
+    public Translation shellString(BashpileParser.ShellStringContext ctx) {
+        // visit contents
+        String shellString = ctx.shellStringContents().stream()
+                .map(visitor::visit).map(Translation::text).collect(Collectors.joining());
         // remove starting #( and ending )
         shellString = shellStringQuotes.matcher(shellString).replaceAll("");
         // unescape our bash text -- especially \) and \\
@@ -453,17 +455,17 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
-        final String id = ctx.functionCall().ID().getText();
+        final String id = ctx.ID().getText();
 
         // check arg types
 
         // get functionName and a stream creator
-        final String functionName = ctx.functionCall().ID().getText();
+        final String functionName = ctx.ID().getText();
         final Supplier<Stream<Translation>> argListTranslationStream =
-                () -> ctx.functionCall().argumentList().expression().stream().map(translateIdsOrVisit);
+                () -> ctx.argumentList().expression().stream().map(translateIdsOrVisit);
         // get the expected and actual types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
-        final List<Type> actualTypes = ctx.functionCall().argumentList() != null
+        final List<Type> actualTypes = ctx.argumentList() != null
                 ? argListTranslationStream.get().map(Translation::type).collect(Collectors.toList())
                 : List.of();
         // assert equals
@@ -471,7 +473,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get arguments
 
-        final boolean hasArgs = ctx.functionCall().argumentList() != null;
+        final boolean hasArgs = ctx.argumentList() != null;
         // empty list or ' arg1Text arg2Text etc.'
         final String args = hasArgs
                 ? " " + argListTranslationStream.get().map(Translation::text).collect(Collectors.joining(" "))
