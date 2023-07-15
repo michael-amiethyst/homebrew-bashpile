@@ -20,14 +20,10 @@ abstract public class BashpileMainTest {
         return bashpile.execute();
     }
 
-    protected @Nonnull ExecutionResults runFile(@Nonnull final Path file) {
+    protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
         final Path filename = file.isAbsolute()
                 ? file
                 : Path.of("src/test/resources/%s/%s".formatted(getDirectoryName(), file));
-        return runLiteralFile(filename);
-    }
-
-    protected @Nonnull ExecutionResults runLiteralFile(@Nonnull final Path filename) {
         log.debug("Start of {}", filename);
         final BashpileMain bashpile = new BashpileMain(filename);
         return bashpile.execute();

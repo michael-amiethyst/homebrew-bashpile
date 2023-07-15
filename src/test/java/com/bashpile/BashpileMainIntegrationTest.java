@@ -39,7 +39,7 @@ public class BashpileMainIntegrationTest {
     @Test @Order(20)
     public void executeTest() throws IOException {
         log.debug("In executeTest");
-        String command = "bin/bashpile -i=src/test/resources/%s/0010-print.bashpile execute".formatted(DIR_NAME);
+        String command = "bin/bashpile -c=\"print()\" execute";
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
@@ -47,6 +47,18 @@ public class BashpileMainIntegrationTest {
     }
 
     @Test @Order(30)
+    public void executePathTest() throws IOException {
+        log.debug("In executeTest");
+        String command =
+                "bin/bashpile -i=src/test/resources/%s/0080-escapedString.bashpile execute".formatted(DIR_NAME);
+        var executionResults = BashExecutor.run(command);
+        String outputText = executionResults.stdout();
+        log.debug("Output text:\n{}", outputText);
+        List<String> stdoutLines = executionResults.stdoutLines();
+        assertEquals("\"hello\"", ListUtils.getLast(stdoutLines));
+    }
+
+    @Test @Order(40)
     public void transpileCommandTest() throws IOException {
         log.debug("In transpileTest");
         String command = "bin/bashpile -c \"print()\" transpile";

@@ -47,7 +47,7 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
 
     @Test @Order(40)
     public void runEchoParenthesisWorks() {
-        final ExecutionResults results = runFile(Path.of("0040-runEchoParenthesis.bashpile"));
+        final ExecutionResults results = runPath(Path.of("0040-runEchoParenthesis.bashpile"));
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("()\n", results.stdout());
     }
