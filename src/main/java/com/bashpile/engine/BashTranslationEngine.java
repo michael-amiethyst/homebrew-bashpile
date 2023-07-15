@@ -191,23 +191,24 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // body
-
-        final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
-                .map(translateIdsOrVisit)
-                .map(tr -> {
-                    if (tr.isNotSubshell()) {
-                        return "echo " + tr.text();
-                    }
-                    // we have a subshell -- we need to handle the exit codes and pass them on in case of error
-                    return """
-                            __bp_textReturn=%s
-                            __bp_exitCode=$?
-                            if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                            echo "$__bp_textReturn";""".formatted(tr.text());
-                })
-                .collect(Collectors.joining(" ")));
-        return toStringTranslation(printText);
+        try (final LevelCounter ignored = new LevelCounter(PRINT)) {
+            final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
+            final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
+                    .map(translateIdsOrVisit)
+                    .map(tr -> {
+                        if (tr.isNotSubshell()) {
+                            return "echo " + tr.text();
+                        }
+                        // we have a subshell -- we need to handle the exit codes and pass them on in case of error
+                        return """
+                                __bp_textReturn=%s
+                                __bp_exitCode=$?
+                                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                                echo "$__bp_textReturn";""".formatted(tr.text());
+                    })
+                    .collect(Collectors.joining(" ")));
+            return toStringTranslation(printText);
+        }
     }
 
     @Override
@@ -482,6 +483,11 @@ public class BashTranslationEngine implements TranslationEngine {
         // lookup return type of this function
         final Type retType = typeStack.getFunctionTypes(id).returnType();
 
-        return new Translation("$(%s%s)".formatted(id, args), retType, COMMAND_SUBSTITUTION);
+        // suppress output if we are a top-level statement
+        // this covers the case of calling a str function without using the string
+        // see 0071-functionCall-ignoreReturnString.bashpile
+        final String suppressOutput = !LevelCounter.in(CALC) && !LevelCounter.in(PRINT) ? " >/dev/null" : "";
+        final String text = "$(%s%s%s)".formatted(id, args, suppressOutput);
+        return new Translation(text, retType, COMMAND_SUBSTITUTION);
     }
 }

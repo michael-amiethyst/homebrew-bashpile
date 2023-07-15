@@ -16,6 +16,9 @@ public class LevelCounter implements Closeable {
     /** LevelCounter label */
     public static final String FORWARD_DECL = "forwardDecl";
 
+    /** LevelCounter label */
+    public static final String PRINT = "print";
+
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
 
     /**

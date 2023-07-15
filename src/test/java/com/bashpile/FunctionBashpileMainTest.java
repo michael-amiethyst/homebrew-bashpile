@@ -16,7 +16,6 @@ import static org.apache.commons.lang3.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-// TODO make test to ensure you can call a string function and ignore the return
 @Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FunctionBashpileMainTest extends BashpileMainTest {
@@ -79,6 +78,14 @@ class FunctionBashpileMainTest extends BashpileMainTest {
         assertExecutionSuccess(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
         assertEquals("hello world", executionResults.stdoutLines().get(0));
+    }
+
+    @Test
+    @Order(71)
+    public void functionCallIgnoreReturnStringWorks() {
+        var executionResults = runFile("0071-functionCall-ignoreReturnString.bashpile");
+        assertExecutionSuccess(executionResults);
+        assertEquals("", executionResults.stdout());
     }
 
     @Test
