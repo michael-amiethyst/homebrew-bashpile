@@ -77,9 +77,8 @@ STRING
 
 STRING_ESCAPE_SEQ: '\\' . | '\\' NEWLINE;
 
-// TODO factor out modes into separate files
-
 // tokens for modes
+
 HASH_OPAREN: '#(' -> pushMode(SHELL_STRING);
 
 // modes
@@ -88,8 +87,10 @@ HASH_OPAREN: '#(' -> pushMode(SHELL_STRING);
 mode SHELL_STRING;
 
 SHELL_STRING_HASH_OPAREN: '#(' -> type(HASH_OPAREN), pushMode(SHELL_STRING);
-// TODO use semantic predicate for lookahead for #(
-SHELL_STRING_TEXT: ~[\\\r\n\f)#]+;
+SHELL_STRING_TEXT: (~[\\\r\n\f)#]
+                   // LookAhead 1 - don't match '#(' but match other '#' characters
+                   | '#' {_input.LA(1) != '('}?
+                   )+;
 SHELL_STRING_ESCAPE_SEQUENCE: '\\' . | '\\' NEWLINE;
 SHELL_STRING_CPAREN: ')' -> type(CPAREN), popMode;
 

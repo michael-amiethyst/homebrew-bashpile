@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// TODO inline file contents
 // TODO implement command substitutions
 // TODO test nested command_substitutions -- see https://github.com/sepp2k/antlr4-string-interpolation-examples
 @Order(50)
@@ -55,5 +56,12 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
         final ExecutionResults results = runFile("0050-nestedShellStrings.bashpile");
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("test\n", results.stdout());
+    }
+
+    @Test @Order(60)
+    public void shellStringsWithHashWork() {
+        final ExecutionResults results = runFile("0060-shellStringsWithHash.bashpile");
+        assertEquals(ExecutionResults.SUCCESS, results.exitCode());
+        assertEquals("#\n", results.stdout());
     }
 }
