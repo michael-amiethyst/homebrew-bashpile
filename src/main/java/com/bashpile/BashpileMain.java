@@ -13,6 +13,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
 import static com.bashpile.AntlrUtils.parse;
@@ -33,11 +35,10 @@ public class BashpileMain implements Callable<Integer> {
         System.exit(argProcessor.execute(args));
     }
 
-    // TODO use Path
     @CommandLine.Option(names = {"-i", "--inputFile"},
             description = "Use the specified bashpile file.  Has precedence over the -c option.")
     @Nullable
-    private File inputFile;
+    private Path inputFile;
 
     @CommandLine.Option(names = {"-c", "--command"},
             description = "Use the specified text.  -i option has precedence if both are specified.")
@@ -48,7 +49,7 @@ public class BashpileMain implements Callable<Integer> {
 
     public BashpileMain() {}
 
-    public BashpileMain(@Nullable final File inputFile) {
+    public BashpileMain(@Nullable final Path inputFile) {
         this.inputFile = inputFile;
     }
 
@@ -105,9 +106,9 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
-    private @Nonnull InputStream getInputStream() throws FileNotFoundException {
+    private @Nonnull InputStream getInputStream() throws IOException {
         if (inputFile != null) {
-            return new FileInputStream(inputFile);
+            return Files.newInputStream(inputFile);
         } else if (command != null) {
             return IOUtils.toInputStream(command, StandardCharsets.UTF_8);
         } else {

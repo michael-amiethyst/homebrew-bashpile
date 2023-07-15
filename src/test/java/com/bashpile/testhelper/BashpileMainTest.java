@@ -6,7 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 import java.nio.file.Path;
 
 abstract public class BashpileMainTest {
@@ -30,7 +29,7 @@ abstract public class BashpileMainTest {
 
     protected @Nonnull ExecutionResults runLiteralFile(@Nonnull final Path filename) {
         log.debug("Start of {}", filename);
-        final BashpileMain bashpile = new BashpileMain(filename.toFile());
+        final BashpileMain bashpile = new BashpileMain(filename);
         return bashpile.execute();
     }
 
@@ -38,7 +37,7 @@ abstract public class BashpileMainTest {
     protected @Nonnull ExecutionResults runFile(String file) {
         log.debug("Start of {}", file);
         String filename = "src/test/resources/%s/%s".formatted(getDirectoryName(), file);
-        BashpileMain bashpile = new BashpileMain(new File(filename));
+        BashpileMain bashpile = new BashpileMain(Path.of(filename));
         return bashpile.execute();
     }
 }
