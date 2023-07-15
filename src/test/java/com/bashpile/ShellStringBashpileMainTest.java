@@ -65,4 +65,17 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("#\n", results.stdout());
     }
+
+    // TODO test VAR: str = $(cat src/test/resources/testdata.txt)
+    //print($VAR)
+
+    // TODO test #(echo $(cat src/test/resources/testdata.txt))
+
+    // TODO test
+    // #(export filename=src/test/resources/testdata.txt)
+    // var: str = $(cat $(filename))
+
+    // TODO test
+    // #(export filename=src/test/resources/testdata.txt)
+    // var: str = #($(cat $(filename)))
 }
