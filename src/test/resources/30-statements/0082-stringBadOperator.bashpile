@@ -1,2 +1,0 @@
-worldStr:str="world"
-print("hello " * worldStr)
