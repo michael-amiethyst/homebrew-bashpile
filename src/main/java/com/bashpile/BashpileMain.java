@@ -4,17 +4,17 @@ import com.bashpile.commandline.BashExecutor;
 import com.bashpile.commandline.ExecutionResults;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
 import static com.bashpile.AntlrUtils.parse;
@@ -35,15 +35,26 @@ public class BashpileMain implements Callable<Integer> {
         System.exit(argProcessor.execute(args));
     }
 
-    @CommandLine.Option(names = {"-i", "--inputFile"})
-    private String inputFile;
+    @CommandLine.Option(names = {"-i", "--inputFile"},
+            description = "Use the specified bashpile file.  Has precedence over the -c option.")
+    @Nullable
+    private Path inputFile;
+
+    @CommandLine.Option(names = {"-c", "--command"},
+            description = "Use the specified text.  -i option has precedence if both are specified.")
+    @Nullable
+    private String command;
 
     private CommandLine commandLine;
 
     public BashpileMain() {}
 
-    public BashpileMain(@Nullable final String inputFile) {
+    public BashpileMain(@Nullable final Path inputFile) {
         this.inputFile = inputFile;
+    }
+
+    public BashpileMain(@Nullable final String command) {
+        this.command = command;
     }
 
     @Override
@@ -63,14 +74,14 @@ public class BashpileMain implements Callable<Integer> {
 
     public @Nonnull ExecutionResults execute() {
         log.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = Objects.requireNonNullElse(inputFile, "System.in");
+        String bashScript = null;
         try {
             bashScript = transpile();
             return BashExecutor.run(bashScript);
         } catch (UserError | AssertionError e) {
             throw e;
         } catch (Throwable e) {
-            String msg = "\nCouldn't run `%s`".formatted(bashScript);
+            String msg = bashScript != null ? "\nCouldn't run `%s`".formatted(bashScript) : "\nCouldn't parse input";
             if (e.getMessage() != null) {
                 msg += " because of\n`%s`".formatted(e.getMessage());
             }
@@ -90,12 +101,16 @@ public class BashpileMain implements Callable<Integer> {
     }
 
     public @Nonnull String transpile() throws IOException {
-        return parse(getInputStream());
+        try (InputStream inputStream = getInputStream()) {
+            return parse(inputStream);
+        }
     }
 
-    private @Nonnull InputStream getInputStream() throws FileNotFoundException {
+    private @Nonnull InputStream getInputStream() throws IOException {
         if (inputFile != null) {
-            return new FileInputStream(inputFile);
+            return Files.newInputStream(inputFile);
+        } else if (command != null) {
+            return IOUtils.toInputStream(command, StandardCharsets.UTF_8);
         } else {
             System.out.println("Enter your bashpile program, ending with a newline and EOF (ctrl-D).");
             return System.in;

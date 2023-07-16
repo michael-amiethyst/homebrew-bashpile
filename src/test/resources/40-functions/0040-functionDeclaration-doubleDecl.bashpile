@@ -1,8 +1,0 @@
-(38. + 5) * .3
-function functionName:int(x1:int, y2:int):
-    return x * y
-x:int = 7
-functionName(x,x)
-function functionName: float (z: float) ["double declaration not allowed"]:
-    return z * 3
-x * x

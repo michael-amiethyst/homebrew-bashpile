@@ -21,10 +21,11 @@ public class TypeStack {
         frames.push(TypeStackframe.of());
     }
 
-    public void putVariableType(@Nonnull final String variableName, @Nonnull final Type type) {
+    public void putVariableType(
+            @Nonnull final String variableName, @Nonnull final Type type, final int lineNumber) {
         final Map<String, Type> typeMap = frames.peek().variables();
         Asserts.assertMapDoesNotContainKey(variableName, typeMap, new UserError(
-                "%s is already declared as a %s".formatted(variableName, type.name())));
+                "%s is already declared as a %s".formatted(variableName, type.name()), lineNumber));
         typeMap.put(variableName, type);
     }
 

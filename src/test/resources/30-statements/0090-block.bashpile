@@ -1,5 +1,0 @@
-print((3 + 5) * 3)
-block:
-    print(32000 + 32000)
-    block:
-        print(64 + 64)

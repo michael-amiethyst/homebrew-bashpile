@@ -1,2 +1,0 @@
-someVar: int = 1 + 1
-someVar: str = "2"

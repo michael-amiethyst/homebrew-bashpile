@@ -94,8 +94,8 @@ public class Asserts {
             }
         }
         if (!typesMatch) {
-            throw new TypeError("Expected %s %s but was %s %s on Bashpile Line %s"
-                    .formatted(functionName, expectedTypes, functionName, actualTypes, contextStartLine));
+            throw new TypeError("Expected %s %s but was %s %s"
+                    .formatted(functionName, expectedTypes, functionName, actualTypes), contextStartLine);
         }
     }
 

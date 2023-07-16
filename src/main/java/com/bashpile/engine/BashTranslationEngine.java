@@ -3,6 +3,7 @@ package com.bashpile.engine;
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
+import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
@@ -10,6 +11,7 @@ import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -19,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,8 +29,8 @@ import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
-import static com.bashpile.engine.strongtypes.MetaType.NORMAL;
-import static com.bashpile.engine.strongtypes.MetaType.SUBSHELL_SUBSTITUTION;
+import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
+import static com.bashpile.engine.strongtypes.TypeMetadata.COMMAND_SUBSTITUTION;
 import static com.google.common.collect.Iterables.getLast;
 
 /**
@@ -38,6 +41,9 @@ public class BashTranslationEngine implements TranslationEngine {
     // static variables
 
     public static final String TAB = "    ";
+
+    /** Match starting '#(' and ending ')' */
+    private static final Pattern shellStringQuotes = Pattern.compile("^#[(]|[)]$");
 
     // static methods
 
@@ -78,7 +84,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** put variable into ${}, e.g. "var" becomes "${var}" */
     private final Function<ParseTree, Translation> translateIdsOrVisit = parseTree -> {
-        if (parseTree instanceof BashpileParser.IdExprContext ctx) {
+        if (parseTree instanceof BashpileParser.IdExpressionContext ctx) {
             // return `${varName}` syntax with the previously declared type of the variable
             final String variableName = ctx.ID().getText();
             final Type type = typeStack.getVariableType(variableName);
@@ -131,7 +137,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // add this variable to the type map
         final String variableName = ctx.typedId().ID().getText();
         final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
-        typeStack.putVariableType(variableName, type);
+        typeStack.putVariableType(variableName, type, ctx.start.getLine());
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
@@ -159,7 +165,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String variableName = ctx.ID().getText();
         final Type expectedType = typeStack.getVariableType(variableName);
         if (expectedType.isNotFound()) {
-            throw new TypeError(variableName + " has not been declared");
+            throw new TypeError(variableName + " has not been declared", ctx.start.getLine());
         }
 
         // get expression and it's type
@@ -185,23 +191,24 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // body
-
-        final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
-                .map(translateIdsOrVisit)
-                .map(tr -> {
-                    if (tr.isNotSubshell()) {
-                        return "echo " + tr.text();
-                    }
-                    // we have a subshell -- we need to handle the exit codes and pass them on in case of error
-                    return """
-                            __bp_textReturn=%s
-                            __bp_exitCode=$?
-                            if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                            echo "$__bp_textReturn";""".formatted(tr.text());
-                })
-                .collect(Collectors.joining(" ")));
-        return toStringTranslation(printText);
+        try (final LevelCounter ignored = new LevelCounter(PRINT)) {
+            final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
+            final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
+                    .map(translateIdsOrVisit)
+                    .map(tr -> {
+                        if (tr.isNotSubshell()) {
+                            return "echo " + tr.text();
+                        }
+                        // we have a subshell -- we need to handle the exit codes and pass them on in case of error
+                        return """
+                                __bp_textReturn=%s
+                                __bp_exitCode=$?
+                                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                                echo "$__bp_textReturn";""".formatted(tr.text());
+                    })
+                    .collect(Collectors.joining(" ")));
+            return toStringTranslation(printText);
+        }
     }
 
     @Override
@@ -231,7 +238,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // check for double declaration
         if (typeStack.containsFunction(functionName)) {
-            throw new UserError(functionName + " was declared twice (function overloading is not supported)");
+            throw new UserError(
+                    functionName + " was declared twice (function overloading is not supported)", ctx.start.getLine());
         }
 
         // regular processing -- no forward declaration
@@ -249,7 +257,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
             // register local variable types
             ctx.paramaters().typedId().forEach(
-                    x -> typeStack.putVariableType(x.ID().getText(), Type.valueOf(x.TYPE().getText().toUpperCase())));
+                    x -> typeStack.putVariableType(
+                            x.ID().getText(), Type.valueOf(x.TYPE().getText().toUpperCase()), ctx.start.getLine()));
 
             // handles nested blocks
             final AtomicInteger i = new AtomicInteger(1);
@@ -332,7 +341,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // expressions
 
     @Override
-    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExprContext ctx) {
+    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
         final Pair<String, List<Translation>> pair = unwindChildren(ctx);
         final String unwoundSubshells = pair.getLeft();
         final List<Translation> childTranslations = pair.getRight();
@@ -354,15 +363,15 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(Translation::text).collect(Collectors.joining(" "));
             return new Translation(
                     "%s$(bc <<< \"%s\")".formatted(unwoundSubshells, translationsString),
-                    Type.NUMBER, SUBSHELL_SUBSTITUTION);
+                    Type.NUMBER, COMMAND_SUBSTITUTION);
         // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
-            throw new UserError("`%s` or `%s` are undefined at Bashpile line %d".formatted(
-                    first.text(), second.text(), ctx.start.getLine()));
+            throw new UserError("`%s` or `%s` are undefined".formatted(
+                    first.text(), second.text()), ctx.start.getLine());
         } else {
             // throw type error for all others
-            throw new TypeError("Incompatible types in calc on Bashpile line %d: %s and %s".formatted(
-                    ctx.start.getLine(), first.type(), second.type()));
+            throw new TypeError("Incompatible types in calc: %s and %s".formatted(
+                    first.type(), second.type()), ctx.start.getLine());
         }
     }
 
@@ -425,15 +434,28 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExprContext ctx) {
+    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
         final Translation expr = visitor.visit(ctx.expression());
         // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
         final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
-        return new Translation(format.formatted(expr.text()), expr.type(), expr.metaType());
+        return new Translation(format.formatted(expr.text()), expr.type(), expr.typeMetadata());
     }
 
     @Override
-    public @Nonnull Translation functionCallExpression(@Nonnull final BashpileParser.FunctionCallExprContext ctx) {
+    public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
+        // visit contents
+        String shellString = ctx.shellStringContents().stream()
+                .map(visitor::visit).map(Translation::text).collect(Collectors.joining());
+        // remove starting #( and ending )
+        shellString = shellStringQuotes.matcher(shellString).replaceAll("");
+        // unescape our bash text -- especially \) and \\
+        shellString = StringEscapeUtils.unescapeJava(shellString);
+        return new Translation(shellString, Type.STR, TypeMetadata.COMMAND);
+    }
+
+    @Override
+    public @Nonnull Translation functionCallExpression(
+            @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
         final String id = ctx.ID().getText();
 
         // check arg types
@@ -461,6 +483,13 @@ public class BashTranslationEngine implements TranslationEngine {
         // lookup return type of this function
         final Type retType = typeStack.getFunctionTypes(id).returnType();
 
-        return new Translation("$(%s%s)".formatted(id, args), retType, SUBSHELL_SUBSTITUTION);
+        // suppress output if we are a top-level statement
+        // this covers the case of calling a str function without using the string
+        final boolean topLevelStatement = !in(CALC) && !in(PRINT);
+        if (topLevelStatement) {
+            return toStringTranslation(id + args + " >/dev/null");
+        } // else return a command substitution
+        final String text = "$(%s%s)".formatted(id, args);
+        return new Translation(text, retType, COMMAND_SUBSTITUTION);
     }
 }

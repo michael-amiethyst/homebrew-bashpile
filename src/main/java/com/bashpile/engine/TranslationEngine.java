@@ -39,9 +39,11 @@ public interface TranslationEngine {
 
     // expression translations
 
-    Translation functionCallExpression(final BashpileParser.FunctionCallExprContext ctx);
+    Translation shellString(final BashpileParser.ShellStringContext ctx);
 
-    Translation parenthesisExpression(final BashpileParser.ParenthesisExprContext ctx);
+    Translation functionCallExpression(final BashpileParser.FunctionCallExpressionContext ctx);
 
-    Translation calculationExpression(final BashpileParser.CalculationExprContext ctx);
+    Translation parenthesisExpression(final BashpileParser.ParenthesisExpressionContext ctx);
+
+    Translation calculationExpression(final BashpileParser.CalculationExpressionContext ctx);
 }

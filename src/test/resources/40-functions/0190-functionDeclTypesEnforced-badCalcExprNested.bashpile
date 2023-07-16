@@ -1,6 +1,0 @@
-function circleArea: float(r: int) ["need to remove the quotes"]:
-    function circleAreaHelper: float(r: float):
-        return 3.14 * r * r
-    r = circleAreaHelper(r)
-    return r
-print(circleArea(.5 + 0.5))

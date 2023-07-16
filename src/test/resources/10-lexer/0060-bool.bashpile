@@ -1,2 +1,0 @@
-var: bool = false
-print(var)

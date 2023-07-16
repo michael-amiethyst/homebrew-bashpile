@@ -8,7 +8,7 @@ tokens { INDENT, DEDENT }
 
 @lexer::members {
   private final DenterHelper denter = DenterHelper.builder()
-    .nl(NL)
+    .nl(NEWLINE)
     .indent(BashpileLexer.INDENT)
     .dedent(BashpileLexer.DEDENT)
     .pullToken(BashpileLexer.super::nextToken);
@@ -19,12 +19,16 @@ tokens { INDENT, DEDENT }
   }
 }
 
+// keywords
 TYPE: 'empty' | 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
 FUNCTION: 'function';
 BLOCK: 'block';
 RETURN: 'return';
 PRINT: 'print';
 BOOL: 'true' | 'false';
+CREATES: 'creates';
+
+// ID and Numbers
 
 ID: ID_START ID_CONTINUE*;
 
@@ -42,12 +46,14 @@ FLOAT_NUMBER
  | INT_PART '.'
  ;
 
-NL: '\r'? '\n' ' '*;
+// newlines, whitespace and comments
+NEWLINE: '\r'? '\n' ' '*;
 WS: [ \t] -> skip;
 BASHPILE_DOC: '/**' .*? '*/' -> skip;
 COMMENT: '//' ~[\r\n\f]* -> skip;
 BLOCK_COMMENT: '/*' ( BLOCK_COMMENT | . )*? '*/' -> skip;
 
+// single char tokens
 OPAREN: '(';
 CPAREN: ')';
 EQ: '=';
@@ -60,10 +66,33 @@ COMMA: ',';
 OBRACKET: '[';
 CBRACKET: ']';
 
+// strings
+
 STRING
- : '\'' ( ~[\\\r\n\f'] )* '\''
- | '"' ( ~[\\\r\n\f"] )* '"'
+ : '\'' ( STRING_ESCAPE_SEQ | ~[\\\r\n\f'] )* '\''
+ | '"'  ( STRING_ESCAPE_SEQ | ~[\\\r\n\f"] )* '"'
  ;
+
+STRING_ESCAPE_SEQ: '\\' . | '\\' NEWLINE;
+
+// tokens for modes
+
+HASH_OPAREN: '#(' -> pushMode(SHELL_STRING);
+
+// modes
+
+/** See https://github.com/sepp2k/antlr4-string-interpolation-examples/blob/master/with-duplication/StringLexer.g4 */
+mode SHELL_STRING;
+
+SHELL_STRING_HASH_OPAREN: '#(' -> type(HASH_OPAREN), pushMode(SHELL_STRING);
+SHELL_STRING_TEXT: (~[\\\r\n\f)#]
+                   // LookAhead 1 - don't match '#(' but match other '#' characters
+                   | '#' {_input.LA(1) != '('}?
+                   )+;
+SHELL_STRING_ESCAPE_SEQUENCE: '\\' . | '\\' NEWLINE;
+SHELL_STRING_CPAREN: ')' -> type(CPAREN), popMode;
+
+// fragments
 
 fragment ID_START: [a-zA-Z_];
 fragment ID_CONTINUE: [a-zA-Z0-9_];
