@@ -41,6 +41,8 @@ public interface TranslationEngine {
 
     Translation shellString(final BashpileParser.ShellStringContext ctx);
 
+    Translation commandSubstitution(final BashpileParser.CommandSubstitutionContext ctx);
+
     Translation functionCallExpression(final BashpileParser.FunctionCallExpressionContext ctx);
 
     Translation parenthesisExpression(final BashpileParser.ParenthesisExpressionContext ctx);

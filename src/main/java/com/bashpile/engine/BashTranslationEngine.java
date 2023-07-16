@@ -3,9 +3,10 @@ package com.bashpile.engine;
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
-import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.Type;
+import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.TypeStack;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -21,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,8 +29,8 @@ import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
-import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.bashpile.engine.strongtypes.TypeMetadata.COMMAND_SUBSTITUTION;
+import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.google.common.collect.Iterables.getLast;
 
 /**
@@ -42,16 +42,13 @@ public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";
 
-    /** Match starting '#(' and ending ')' */
-    private static final Pattern shellStringQuotes = Pattern.compile("^#[(]|[)]$");
-
     // static methods
 
     private static @Nonnull String getLocalText() {
         return getLocalText(false);
     }
     private static @Nonnull String getLocalText(final boolean reassignment) {
-        final boolean indented = getIndent() > 0;
+        final boolean indented = LevelCounter.in(BLOCK);
         if (indented && !reassignment) {
             return "local ";
         } else if (indented) { // and a reassignment
@@ -199,6 +196,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         if (tr.isNotSubshell()) {
                             return "echo " + tr.text();
                         }
+                        // TODO handle this with a visit?
                         // we have a subshell -- we need to handle the exit codes and pass them on in case of error
                         return """
                                 __bp_textReturn=%s
@@ -446,11 +444,23 @@ public class BashTranslationEngine implements TranslationEngine {
         // visit contents
         String shellString = ctx.shellStringContents().stream()
                 .map(visitor::visit).map(Translation::text).collect(Collectors.joining());
-        // remove starting #( and ending )
-        shellString = shellStringQuotes.matcher(shellString).replaceAll("");
-        // unescape our bash text -- especially \) and \\
+        // unescape -- especially \) and \\
         shellString = StringEscapeUtils.unescapeJava(shellString);
         return new Translation(shellString, Type.STR, TypeMetadata.COMMAND);
+    }
+
+    @Override
+    public Translation commandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
+        final boolean nested = LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.COMMAND_SUBSTITUTION);
+        try (LevelCounter ignored = new LevelCounter(LevelCounter.COMMAND_SUBSTITUTION)) {
+            String commandSubstitution = ctx.children.stream()
+                    .map(visitor::visit).map(Translation::text).collect(Collectors.joining());
+            if (!nested) {
+                commandSubstitution = StringEscapeUtils.unescapeJava(commandSubstitution);
+                return new Translation(commandSubstitution, Type.STR, COMMAND_SUBSTITUTION);
+            } // else
+            throw new BashpileUncheckedException("Nested command substitutions not supported yet");
+        }
     }
 
     @Override

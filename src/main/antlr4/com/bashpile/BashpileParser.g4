@@ -31,6 +31,7 @@ functionBlock: INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: RETURN expression? NEWLINE;
 
 expression: shellString                 # shellStringExpression
+    | commandSubstitution               # commandSubstitutionExpression
     | ID OPAREN argumentList? CPAREN    # functionCallExpression
     // operator expressions
     | OPAREN expression CPAREN          # parenthesisExpression
@@ -43,5 +44,8 @@ expression: shellString                 # shellStringExpression
     | ID                                # idExpression
     ;
 
-shellString: HASH_OPAREN shellStringContents* CPAREN;
+shellString        : HASH_OPAREN shellStringContents* CPAREN;
 shellStringContents: SHELL_STRING_TEXT | SHELL_STRING_ESCAPE_SEQUENCE | shellString;
+
+commandSubstitution        : DOLLAR_OPAREN commandSubstitutionContents* CPAREN;
+commandSubstitutionContents: COMMAND_SUBSTITUTION_TEXT | COMMAND_SUBSTITUTION_ESCAPE_SEQUENCE | commandSubstitution;

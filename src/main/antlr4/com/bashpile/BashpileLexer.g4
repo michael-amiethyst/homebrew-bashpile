@@ -20,18 +20,19 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
-TYPE: 'empty' | 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
+TYPE    : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
 FUNCTION: 'function';
-BLOCK: 'block';
-RETURN: 'return';
-PRINT: 'print';
-BOOL: 'true' | 'false';
-CREATES: 'creates';
+BLOCK   : 'block';
+RETURN  : 'return';
+PRINT   : 'print';
+BOOL    : 'true' | 'false';
+CREATES : 'creates';
 
 // ID and Numbers
 
 ID: ID_START ID_CONTINUE*;
 
+// TODO change most rules to ClassName format, keep modes and fragments as-is
 NUMBER
  : INTEGER
  | FLOAT_NUMBER
@@ -47,22 +48,22 @@ FLOAT_NUMBER
  ;
 
 // newlines, whitespace and comments
-NEWLINE: '\r'? '\n' ' '*;
-WS: [ \t] -> skip;
-BASHPILE_DOC: '/**' .*? '*/' -> skip;
-COMMENT: '//' ~[\r\n\f]* -> skip;
+NEWLINE      : '\r'? '\n' ' '*;
+WS           : [ \t] -> skip;
+BASHPILE_DOC : '/**' .*? '*/' -> skip;
+COMMENT      : '//' ~[\r\n\f]* -> skip;
 BLOCK_COMMENT: '/*' ( BLOCK_COMMENT | . )*? '*/' -> skip;
 
 // single char tokens
-OPAREN: '(';
-CPAREN: ')';
-EQ: '=';
-MUL: '*';
-DIV: '/';
-ADD: '+';
-MINUS: '-';
-COL: ':';
-COMMA: ',';
+OPAREN  : '(';
+CPAREN  : ')';
+EQ      : '=';
+MUL     : '*';
+DIV     : '/';
+ADD     : '+';
+MINUS   : '-';
+COL     : ':';
+COMMA   : ',';
 OBRACKET: '[';
 CBRACKET: ']';
 
@@ -77,9 +78,11 @@ STRING_ESCAPE_SEQ: '\\' . | '\\' NEWLINE;
 
 // tokens for modes
 
-HASH_OPAREN: '#(' -> pushMode(SHELL_STRING);
+HASH_OPAREN  : '#(' -> pushMode(SHELL_STRING);
+DOLLAR_OPAREN: '$(' -> pushMode(COMMAND_SUBSTITUTION);
 
 // modes
+// TODO rename modes to end with '_MODE'
 
 /** See https://github.com/sepp2k/antlr4-string-interpolation-examples/blob/master/with-duplication/StringLexer.g4 */
 mode SHELL_STRING;
@@ -91,6 +94,16 @@ SHELL_STRING_TEXT: (~[\\\r\n\f)#]
                    )+;
 SHELL_STRING_ESCAPE_SEQUENCE: '\\' . | '\\' NEWLINE;
 SHELL_STRING_CPAREN: ')' -> type(CPAREN), popMode;
+
+mode COMMAND_SUBSTITUTION;
+
+COMMAND_SUBSTITUTION_DOLLAR_OPAREN: '$(' -> type(DOLLAR_OPAREN), pushMode(COMMAND_SUBSTITUTION);
+COMMAND_SUBSTITUTION_TEXT: (~[\\\r\n\f)$]
+                           // LookAhead 1 - don't match '$(' but match other '$' characters
+                           | '$' {_input.LA(1) != '('}?
+                           )+;
+COMMAND_SUBSTITUTION_ESCAPE_SEQUENCE: '\\' . | '\\' NEWLINE;
+COMMAND_SUBSTITUTION_CPAREN: ')' -> type(CPAREN), popMode;
 
 // fragments
 

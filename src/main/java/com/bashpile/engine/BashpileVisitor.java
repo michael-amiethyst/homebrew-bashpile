@@ -126,6 +126,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
+    public Translation visitCommandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
+        return translator.commandSubstitution(ctx);
+    }
+
+    @Override
     public @Nonnull Translation visitFunctionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
         return translator.functionCallExpression(ctx);

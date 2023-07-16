@@ -12,8 +12,6 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO implement command substitutions
-// TODO test nested command_substitutions -- see https://github.com/sepp2k/antlr4-string-interpolation-examples
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ShellStringBashpileMainTest extends BashpileMainTest {
@@ -58,17 +56,4 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("#\n", results.stdout());
     }
-
-    // TODO test VAR: str = $(cat src/test/resources/testdata.txt)
-    //print($VAR)
-
-    // TODO test #(echo $(cat src/test/resources/testdata.txt))
-
-    // TODO test
-    // #(export filename=src/test/resources/testdata.txt)
-    // var: str = $(cat $(filename))
-
-    // TODO test
-    // #(export filename=src/test/resources/testdata.txt)
-    // var: str = #($(cat $(filename)))
 }

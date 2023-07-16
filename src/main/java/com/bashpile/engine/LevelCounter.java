@@ -14,21 +14,15 @@ public class LevelCounter implements Closeable {
     public static final String CALC = "calc";
 
     /** LevelCounter label */
+    public static final String COMMAND_SUBSTITUTION = "commandSubstitution";
+
+    /** LevelCounter label */
     public static final String FORWARD_DECL = "forwardDecl";
 
     /** LevelCounter label */
     public static final String PRINT = "print";
 
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
-
-    /**
-     * Returns our current indention level.
-     *
-     * @return whole numbers (integers always positive or 0)
-     */
-    public static int getIndent() {
-        return counters.getOrDefault(BLOCK, 0);
-    }
 
     /** are we in any level of indention for this label */
     public static boolean in(final String name) {
