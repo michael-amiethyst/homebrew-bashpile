@@ -90,3 +90,20 @@ print("args are also lexically scoped and undefined here")
 ```
 
 This helps let the code flow more naturally from top to bottom.
+
+### Shell Strings
+
+Use `#(command)` syntax to pass the command directly to the shell.  E.g. `#(echo hello world)`.
+
+### Command substitutions
+
+A `$(command)` syntax works just as you would expect in Bash.
+
+```
+fileContents: str = $(cat filename)
+// you can nest this syntax too
+#(export filename=/tmp/tmp.txt)
+slurpString: str = $(cat $(echo filename))
+```
+
+Note that in Bash version 5 you can't nest command substitutions directly.  Bashpile takes care of any workaround.
