@@ -1,6 +1,0 @@
-(38. + 5) * .3
-function functionName:int(x:int, y:int):
-    return x * y
-x:float = 7.
-functionName(x,x)
-x * x

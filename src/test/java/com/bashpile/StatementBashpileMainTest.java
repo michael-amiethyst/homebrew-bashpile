@@ -9,12 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import javax.annotation.Nonnull;
-import java.nio.file.Path;
 import java.util.List;
 
 import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
