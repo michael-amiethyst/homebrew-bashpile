@@ -56,7 +56,7 @@ public class AntlrUtils {
      */
     public static @Nonnull ParserRuleContext getFunctionDeclCtx(
             @Nonnull final BashpileVisitor visitor, @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
-        final String functionName = ctx.typedId().ID().getText();
+        final String functionName = ctx.typedId().Id().getText();
         assert visitor.getContextRoot() != null;
         final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
         final Predicate<ParserRuleContext> namesMatch =
@@ -68,7 +68,7 @@ public class AntlrUtils {
                     }
                     final BashpileParser.FunctionDeclarationStatementContext decl =
                             (BashpileParser.FunctionDeclarationStatementContext) x;
-                    final boolean nameMatches = decl.typedId().ID().getText().equals(functionName);
+                    final boolean nameMatches = decl.typedId().Id().getText().equals(functionName);
                     return nameMatches && paramCompare(decl.paramaters(), ctx.paramaters());
                 };
         return allContexts
@@ -82,9 +82,9 @@ public class AntlrUtils {
             @Nonnull final BashpileParser.ParamatersContext left,
             @Nonnull final BashpileParser.ParamatersContext right) {
         final Stream<String> leftStream = left.typedId().stream()
-                .map(BashpileParser.TypedIdContext::ID).map(ParseTree::getText);
+                .map(BashpileParser.TypedIdContext::Id).map(ParseTree::getText);
         final List<String> rightList = right.typedId().stream()
-                .map(BashpileParser.TypedIdContext::ID).map(ParseTree::getText).toList();
+                .map(BashpileParser.TypedIdContext::Id).map(ParseTree::getText).toList();
         return leftStream.allMatch(rightList::contains);
     }
 

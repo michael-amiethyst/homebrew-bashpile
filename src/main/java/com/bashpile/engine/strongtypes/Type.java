@@ -25,11 +25,11 @@ public enum Type {
     REF;
 
     public static @Nonnull Type valueOf(@Nonnull BashpileParser.TypedIdContext ctx) {
-        final boolean hasTypeInfo = ctx.TYPE() != null && StringUtils.isNotBlank(ctx.TYPE().getText());
+        final boolean hasTypeInfo = ctx.Type() != null && StringUtils.isNotBlank(ctx.Type().getText());
         if (hasTypeInfo) {
-            return valueOf(ctx.TYPE().getText().toUpperCase());
+            return valueOf(ctx.Type().getText().toUpperCase());
         }
-        throw new TypeError("No type info for " + ctx.ID(), ctx.start.getLine());
+        throw new TypeError("No type info for " + ctx.Id(), ctx.start.getLine());
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")

@@ -83,7 +83,7 @@ public class BashTranslationEngine implements TranslationEngine {
     private final Function<ParseTree, Translation> translateIdsOrVisit = parseTree -> {
         if (parseTree instanceof BashpileParser.IdExpressionContext ctx) {
             // return `${varName}` syntax with the previously declared type of the variable
-            final String variableName = ctx.ID().getText();
+            final String variableName = ctx.Id().getText();
             final Type type = typeStack.getVariableType(variableName);
             return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
         } // else
@@ -132,14 +132,14 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         // add this variable to the type map
-        final String variableName = ctx.typedId().ID().getText();
-        final Type type = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
+        final String variableName = ctx.typedId().Id().getText();
+        final Type type = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
         typeStack.putVariableType(variableName, type, ctx.start.getLine());
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
         final Translation exprTranslation = exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_STRING;
-        Asserts.assertTypesMatch(type, exprTranslation.type(), ctx.typedId().ID().getText(), ctx.start.getLine());
+        Asserts.assertTypesMatch(type, exprTranslation.type(), ctx.typedId().Id().getText(), ctx.start.getLine());
 
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
@@ -159,7 +159,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReassignmentStatementContext ctx) {
         // get name and type
-        final String variableName = ctx.ID().getText();
+        final String variableName = ctx.Id().getText();
         final Type expectedType = typeStack.getVariableType(variableName);
         if (expectedType.isNotFound()) {
             throw new TypeError(variableName + " has not been declared", ctx.start.getLine());
@@ -221,7 +221,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final String ret = "%s\n%s".formatted(lineComment, hoistedFunctionText);
             return toStringTranslation(ret);
         } finally {
-            foundForwardDeclarations.add(ctx.typedId().ID().getText());
+            foundForwardDeclarations.add(ctx.typedId().Id().getText());
         }
     }
 
@@ -229,7 +229,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation functionDeclarationStatement(
             @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
         // avoid translating twice if was part of a forward declaration
-        final String functionName = ctx.typedId().ID().getText();
+        final String functionName = ctx.typedId().Id().getText();
         if (foundForwardDeclarations.contains(functionName)) {
             return Translation.EMPTY_STRING;
         }
@@ -245,7 +245,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // register function param types and return type
         final List<Type> typeList = ctx.paramaters().typedId()
                 .stream().map(Type::valueOf).collect(Collectors.toList());
-        final Type retType = Type.valueOf(ctx.typedId().TYPE().getText().toUpperCase());
+        final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
         // create block
@@ -256,7 +256,7 @@ public class BashTranslationEngine implements TranslationEngine {
             // register local variable types
             ctx.paramaters().typedId().forEach(
                     x -> typeStack.putVariableType(
-                            x.ID().getText(), Type.valueOf(x.TYPE().getText().toUpperCase()), ctx.start.getLine()));
+                            x.Id().getText(), Type.valueOf(x.Type().getText().toUpperCase()), ctx.start.getLine()));
 
             // handles nested blocks
             final AtomicInteger i = new AtomicInteger(1);
@@ -264,7 +264,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final String namedParams = ctx.paramaters().typedId().isEmpty() ? "" :
                     // local var1=$1; local var2=$2; etc
                     "%s%s\n".formatted(TAB, ctx.paramaters().typedId().stream()
-                                    .map(BashpileParser.TypedIdContext::ID)
+                                    .map(BashpileParser.TypedIdContext::Id)
                                     .map(visitor::visit)
                                     .map(Translation::text)
                                     .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
@@ -315,7 +315,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // check return matches with function declaration
         final BashpileParser.FunctionDeclarationStatementContext enclosingFunction =
                 (BashpileParser.FunctionDeclarationStatementContext) ctx.parent.parent;
-        final String functionName = enclosingFunction.typedId().ID().getText();
+        final String functionName = enclosingFunction.typedId().Id().getText();
         final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
         final Translation exprTranslation =
                 exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_TYPE;
@@ -466,12 +466,12 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
-        final String id = ctx.ID().getText();
+        final String id = ctx.Id().getText();
 
         // check arg types
 
         // get functionName and a stream creator
-        final String functionName = ctx.ID().getText();
+        final String functionName = ctx.Id().getText();
         final Supplier<Stream<Translation>> argListTranslationStream =
                 () -> ctx.argumentList().expression().stream().map(translateIdsOrVisit);
         // get the expected and actual types

@@ -146,7 +146,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
-        return new Translation(ctx.getText(), Type.parseNumberString(ctx.NUMBER().getText()), TypeMetadata.NORMAL);
+        return new Translation(ctx.getText(), Type.parseNumberString(ctx.Number().getText()), TypeMetadata.NORMAL);
     }
 
     @Override
@@ -160,12 +160,12 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
-        return new Translation(ctx.BOOL().getText(), Type.BOOL, TypeMetadata.NORMAL);
+        return new Translation(ctx.Bool().getText(), Type.BOOL, TypeMetadata.NORMAL);
     }
 
     @Override
     public @Nonnull Translation visitIdExpression(@Nonnull final BashpileParser.IdExpressionContext ctx) {
-        return toStringTranslation(ctx.ID().getText());
+        return toStringTranslation(ctx.Id().getText());
     }
 
     /** Default type is STR */
