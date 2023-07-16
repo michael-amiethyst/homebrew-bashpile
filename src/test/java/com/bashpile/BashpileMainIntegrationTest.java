@@ -21,8 +21,6 @@ public class BashpileMainIntegrationTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
-    private static final String DIR_NAME = "10-lexer";
-
     @Test @Order(10)
     public void noSubCommandTest() throws IOException {
         log.debug("In noSubCommandTest");
@@ -49,8 +47,7 @@ public class BashpileMainIntegrationTest {
     @Test @Order(30)
     public void executePathTest() throws IOException {
         log.debug("In executeTest");
-        String command =
-                "bin/bashpile -i=src/test/resources/%s/escapedString.bashpile execute".formatted(DIR_NAME);
+        String command = "bin/bashpile -i=src/test/resources/scripts/escapedString.bashpile execute";
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);

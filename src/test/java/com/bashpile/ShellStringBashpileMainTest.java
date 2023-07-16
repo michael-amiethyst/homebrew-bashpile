@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import javax.annotation.Nonnull;
-
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -19,11 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ShellStringBashpileMainTest extends BashpileMainTest {
-    @Nonnull
-    @Override
-    protected String getDirectoryName() {
-        return "50-shellString";
-    }
 
     /** Simple one word command */
     @Test @Order(10)
@@ -47,7 +40,7 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
 
     @Test @Order(40)
     public void runEchoParenthesisWorks() {
-        final ExecutionResults results = runPath(Path.of("0040-runEchoParenthesis.bashpile"));
+        final ExecutionResults results = runPath(Path.of("runEchoParenthesis.bashpile"));
         assertEquals(ExecutionResults.SUCCESS, results.exitCode());
         assertEquals("()\n", results.stdout());
     }

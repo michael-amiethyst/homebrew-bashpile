@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 
 import static com.bashpile.Asserts.assertExecutionSuccess;
@@ -19,12 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FunctionBashpileMainTest extends BashpileMainTest {
-
-    @Nonnull
-    @Override
-    protected String getDirectoryName() {
-        return "40-functions";
-    }
 
     @Test
     @Order(10)

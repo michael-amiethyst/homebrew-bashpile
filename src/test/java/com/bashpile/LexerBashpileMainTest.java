@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import javax.annotation.Nonnull;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -23,11 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LexerBashpileMainTest extends BashpileMainTest {
 
-    @Nonnull
-    protected String getDirectoryName() {
-        return "10-lexer";
-    }
-
     @Test
     @Order(10)
     public void printWorks() {
@@ -39,7 +33,9 @@ class LexerBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(20)
     public void multilinePrintWorks() {
-        String translatedLines = runText("print()\nprint\n").stdout();
+        String translatedLines = runText("""
+                print()
+                print()""").stdout();
         assertNotNull(translatedLines);
         assertEquals("\n\n", translatedLines);
     }
