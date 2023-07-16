@@ -1,4 +1,4 @@
-package com.bashpile.testhelper;
+package com.bashpile.maintests;
 
 import com.bashpile.BashpileMain;
 import com.bashpile.commandline.ExecutionResults;
@@ -8,9 +8,9 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import java.nio.file.Path;
 
-abstract public class BashpileMainTest {
+abstract public class BashpileTest {
 
-    private static final Logger log = LogManager.getLogger(BashpileMainTest.class);
+    private static final Logger log = LogManager.getLogger(BashpileTest.class);
 
     protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
         log.debug("Start of {}", bashText);

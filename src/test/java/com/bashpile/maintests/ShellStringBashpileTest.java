@@ -1,7 +1,6 @@
-package com.bashpile;
+package com.bashpile.maintests;
 
 import com.bashpile.commandline.ExecutionResults;
-import com.bashpile.testhelper.BashpileMainTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -14,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ShellStringBashpileMainTest extends BashpileMainTest {
+public class ShellStringBashpileTest extends BashpileTest {
 
     /** Simple one word command */
     @Test @Order(10)
