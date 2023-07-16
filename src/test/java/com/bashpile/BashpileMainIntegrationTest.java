@@ -50,7 +50,7 @@ public class BashpileMainIntegrationTest {
     public void executePathTest() throws IOException {
         log.debug("In executeTest");
         String command =
-                "bin/bashpile -i=src/test/resources/%s/0080-escapedString.bashpile execute".formatted(DIR_NAME);
+                "bin/bashpile -i=src/test/resources/%s/escapedString.bashpile execute".formatted(DIR_NAME);
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);

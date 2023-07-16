@@ -124,8 +124,12 @@ class StatementBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(90)
     public void blockWorks() {
-        String filename = "0090-block.bashpile";
-        List<String> executionResults = runPath(Path.of(filename)).stdoutLines();
+        List<String> executionResults = runText("""
+                print((3 + 5) * 3)
+                block:
+                    print(32000 + 32000)
+                    block:
+                        print(64 + 64)""").stdoutLines();
         List<String> expected = List.of("24", "64000", "128");
         assertEquals(3, executionResults.size());
         assertEquals(expected, executionResults);
@@ -134,13 +138,26 @@ class StatementBashpileMainTest extends BashpileMainTest {
     @Test
     @Order(100)
     public void lexicalScopingWorks() {
-        assertThrows(UserError.class, () -> runPath(Path.of("0100-lexicalScoping.bashpile")));
+        assertThrows(UserError.class, () -> runText("""
+                print((38 + 5) * 3)
+                block:
+                    x: int = 5
+                    block:
+                        y: int = 7
+                print(x * x)"""));
     }
 
     @Test
     @Order(110)
     public void commentsWork() {
-        ExecutionResults executionResults = runPath(Path.of("0110-comments.bashpile"));
+        ExecutionResults executionResults = runText("""
+                print((38. + 4) * .5)
+                // anonymous block
+                block:
+                    x: float = 5.5 // lexical scoping
+                    print(x * 3)
+                x: float = 7.7
+                print(x - 0.7)""");
         List<String> stdoutLines = executionResults.stdoutLines();
         List<String> expected = List.of("21.0", "16.5", "7.0");
         assertEquals(3, stdoutLines.size(),
@@ -150,7 +167,17 @@ class StatementBashpileMainTest extends BashpileMainTest {
 
     @Test @Order(120)
     public void blockCommentsWork() {
-        ExecutionResults executionResults = runPath(Path.of("0120-blockComments.bashpile"));
+        ExecutionResults executionResults = runText("""
+                print((38. + 4) * .5)
+                /* anonymous block */
+                block:
+                    x: float = /* inside of a statement comment */ 5.5
+                    /*
+                     * extended comment on how leet this line is
+                     */
+                    print(x + x)
+                x: float = 7.7
+                print(x - 0.7)""");
         List<String> stdoutLines = executionResults.stdoutLines();
         List<String> expected = List.of("21.0", "11.0", "7.0");
         assertEquals(3, stdoutLines.size(),
@@ -160,7 +187,30 @@ class StatementBashpileMainTest extends BashpileMainTest {
 
     @Test @Order(130)
     public void bashpileDocsWork() {
-        ExecutionResults executionResults = runPath(Path.of("0130-bashpileDocs.bashpile"));
+        ExecutionResults executionResults = runText("""
+                /**
+                    This language is
+                    really starting to shape up.
+                    It will replace Bash.
+                */
+                                
+                print((38. + 4) * .5)
+                myString : str
+                // anonymous block
+                block:
+                    /**
+                     * More docs on this inner block
+                     */
+                    block:
+                        x: str = "To boldly"
+                        y: str = " go"
+                        myString = x + y
+                    x: float = 5.5 // lexical scoping
+                    print(x - x)
+                x: float = 7.7
+                print(x - 0.7)
+                print(myString)
+                """);
         List<String> stdoutLines = executionResults.stdoutLines();
         List<String> expected = List.of("21.0", "0", "7.0", "To boldly go");
         assertEquals(4, stdoutLines.size(),

@@ -22,7 +22,7 @@ public class ShellStringBashpileMainTest extends BashpileMainTest {
     @Nonnull
     @Override
     protected String getDirectoryName() {
-        return "50-commandObjects";
+        return "50-shellString";
     }
 
     /** Simple one word command */

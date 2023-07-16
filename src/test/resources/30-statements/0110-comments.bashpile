@@ -1,7 +1,0 @@
-print((38. + 4) * .5)
-// anonymous block
-block:
-    x: float = 5.5 // lexical scoping
-    print(x * 3)
-x: float = 7.7
-print(x - 0.7)
