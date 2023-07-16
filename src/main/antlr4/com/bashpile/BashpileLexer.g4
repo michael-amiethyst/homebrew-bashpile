@@ -26,7 +26,6 @@ BLOCK: 'block';
 RETURN: 'return';
 PRINT: 'print';
 BOOL: 'true' | 'false';
-TRY: 'try';
 CREATES: 'creates';
 
 // ID and Numbers
@@ -66,7 +65,6 @@ COL: ':';
 COMMA: ',';
 OBRACKET: '[';
 CBRACKET: ']';
-DOT: '.';
 
 // strings
 

@@ -442,7 +442,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation shellString(BashpileParser.ShellStringContext ctx) {
+    public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         // visit contents
         String shellString = ctx.shellStringContents().stream()
                 .map(visitor::visit).map(Translation::text).collect(Collectors.joining());
@@ -485,7 +485,6 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
-        // see 0071-functionCall-ignoreReturnString.bashpile
         final String suppressOutput = !LevelCounter.in(CALC) && !LevelCounter.in(PRINT) ? " >/dev/null" : "";
         final String text = "$(%s%s%s)".formatted(id, args, suppressOutput);
         return new Translation(text, retType, COMMAND_SUBSTITUTION);

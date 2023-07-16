@@ -1,12 +1,12 @@
 # MVP features / drink my own champaign
 Implement testrig.bp
-1. shell strings #()
-2. command substitution with $()
-3. String interpolation with $[]
-4. try-with-resources
-   1. syntax: try ($(command) creates "filename")
-5. Automatic script line detection (e.g. can write 'echo ...' or any other bash command)
-6. Bash Blocks (see XML Island Detection in book)
+1. command substitution with $()
+2. String interpolation with $[]
+   1. include special __OPTIONS[] array for $@, $1, etc.
+3. try-with-resources
+   1. syntax: #(command) creates "filename":
+4. Automatic script line detection (e.g. can write 'echo ...' or any other bash command)
+5. Bash Blocks (see XML Island Detection in book)
 
 # Later
 (Not ordered)

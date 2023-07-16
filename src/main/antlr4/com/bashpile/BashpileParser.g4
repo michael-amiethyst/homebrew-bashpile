@@ -7,12 +7,12 @@ statement: expression NEWLINE             # expressionStatement
     | typedId (EQ expression)? NEWLINE    # assignmentStatement
     | ID EQ expression NEWLINE            # reassignmentStatement
     | PRINT OPAREN argumentList? CPAREN
-                                 NEWLINE  # printStatement
+                                  NEWLINE # printStatement
     | FUNCTION typedId paramaters         # functionForwardDeclarationStatement
     | FUNCTION typedId paramaters tags?
-                  COL functionBlock       # functionDeclarationStatement
+                        COL functionBlock # functionDeclarationStatement
     | BLOCK tags? COL INDENT statement+
-                                  DEDENT  # anonymousBlockStatement
+                                   DEDENT # anonymousBlockStatement
 //    | shellString CREATES STRING COL      # createsStatement
     | NEWLINE                             # blankStmt
     ;
