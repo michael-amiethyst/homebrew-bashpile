@@ -91,19 +91,23 @@ DollarOParen: '$(' -> pushMode(COMMAND_SUBSTITUTION);
 mode SHELL_STRING;
 
 ShellStringHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
-ShellStringText          : (~[\\\r\n\f)#]
+ShellStringDollarOParen  : '$(' -> type(DollarOParen), pushMode(COMMAND_SUBSTITUTION);
+ShellStringText          : (~[\\\r\n\f)#$]
                          // LookAhead 1 - don't match '#(' but match other '#' characters
                          | '#' {_input.LA(1) != '('}?
+                         | '$' {_input.LA(1) != '('}?
                          )+;
 ShellStringEscapeSequence: '\\' . | '\\' Newline;
 ShellStringCParen        : ')' -> type(CParen), popMode;
 
 mode COMMAND_SUBSTITUTION;
 
+CommandSubstitutionHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
 CommandSubstitutionDollarOParen  : '$(' -> type(DollarOParen), pushMode(COMMAND_SUBSTITUTION);
-CommandSubstitutionText          : (~[\\\r\n\f)$]
+CommandSubstitutionText          : (~[\\\r\n\f)$#]
                                  // LookAhead 1 - don't match '$(' but match other '$' characters
                                  | '$' {_input.LA(1) != '('}?
+                                 | '#' {_input.LA(1) != '('}?
                                  )+;
 CommandSubstitutionEscapeSequence: '\\' . | '\\' Newline;
 CommandSubstitutionCParen        : ')' -> type(CParen), popMode;

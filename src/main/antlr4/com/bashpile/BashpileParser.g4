@@ -45,7 +45,10 @@ expression: shellString                 # shellStringExpression
     ;
 
 shellString        : HashOParen shellStringContents* CParen;
-shellStringContents: ShellStringText | ShellStringEscapeSequence | shellString;
+shellStringContents: ShellStringText | ShellStringEscapeSequence | commandSubstitution | shellString;
 
 commandSubstitution        : DollarOParen commandSubstitutionContents* CParen;
-commandSubstitutionContents: CommandSubstitutionText | CommandSubstitutionEscapeSequence | commandSubstitution;
+commandSubstitutionContents: CommandSubstitutionText
+                           | CommandSubstitutionEscapeSequence
+                           | shellString
+                           | commandSubstitution;

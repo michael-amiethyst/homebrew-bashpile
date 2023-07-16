@@ -21,7 +21,12 @@ public class CommandSubstutionBashpileTest extends BashpileTest {
         assertEquals("test\n", results.stdout());
     }
 
-    // TODO test #(echo $(cat src/test/resources/testdata.txt))
+    @Test @Order(20)
+    public void shellStringCommandSubstitutionWorks() {
+        final ExecutionResults results = runText("""
+                #(echo $(cat src/test/resources/testdata.txt))""");
+        assertEquals("test\n", results.stdout());
+    }
 
     // TODO test
     // #(export filename=src/test/resources/testdata.txt)
