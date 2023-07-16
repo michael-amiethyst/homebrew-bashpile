@@ -485,8 +485,11 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
-        final String suppressOutput = !LevelCounter.in(CALC) && !LevelCounter.in(PRINT) ? " >/dev/null" : "";
-        final String text = "$(%s%s%s)".formatted(id, args, suppressOutput);
+        final boolean topLevelStatement = !in(CALC) && !in(PRINT);
+        if (topLevelStatement) {
+            return toStringTranslation(id + args + " >/dev/null");
+        } // else return a command substitution
+        final String text = "$(%s%s)".formatted(id, args);
         return new Translation(text, retType, COMMAND_SUBSTITUTION);
     }
 }
