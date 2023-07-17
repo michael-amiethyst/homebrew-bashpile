@@ -129,6 +129,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // statement translations
 
+    // TODO have all statements handle unnestedTextBlocks
+
     @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         // add this variable to the type map
@@ -143,6 +145,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
+        final String unnestedText = exprTranslation.unnestedTextBlock();
         final String value = exprExists ? "=" + exprTranslation.text() : "";
         /*
          * Translation will be something like:
@@ -152,7 +155,7 @@ public class BashTranslationEngine implements TranslationEngine {
          * `local variableName`
          */
         return new Translation(
-                "%s\n%s%s%s\n".formatted(lineComment, getLocalText(), variableName, value),
+                "%s\n%s%s%s%s\n".formatted(lineComment, unnestedText, getLocalText(), variableName, value),
                 Type.NA, NORMAL);
     }
 
@@ -449,17 +452,35 @@ public class BashTranslationEngine implements TranslationEngine {
         return new Translation(shellString, Type.STR, TypeMetadata.COMMAND);
     }
 
+    /**
+     * Unnests command substitutions as needed.
+     *
+     * @see Translation
+     * @see #printStatement(BashpileParser.PrintStatementContext)
+     * @param ctx the context.
+     * @return A translation, possibly with the {@link Translation#unnestedTextBlock()} set.
+     */
     @Override
     public Translation commandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
         final boolean nested = LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.COMMAND_SUBSTITUTION);
         try (LevelCounter ignored = new LevelCounter(LevelCounter.COMMAND_SUBSTITUTION)) {
             String commandSubstitution = ctx.children.stream()
                     .map(visitor::visit).map(Translation::text).collect(Collectors.joining());
+            final String ctxUnnested = ctx.children.stream()
+                    .map(visitor::visit).map(Translation::unnestedTextBlock).collect(Collectors.joining());
+            commandSubstitution = StringEscapeUtils.unescapeJava(commandSubstitution);
             if (!nested) {
-                commandSubstitution = StringEscapeUtils.unescapeJava(commandSubstitution);
-                return new Translation(commandSubstitution, Type.STR, COMMAND_SUBSTITUTION);
-            } // else
-            throw new BashpileUncheckedException("Nested command substitutions not supported yet");
+                return new Translation(commandSubstitution, Type.STR, COMMAND_SUBSTITUTION, ctxUnnested);
+            } // else nested
+            final int level = LevelCounter.get(LevelCounter.COMMAND_SUBSTITUTION);
+            final String textName = "__bp_commandSubstitutionText%d".formatted(level);
+            final String exitCodeName = "__bp_commandSubstitutionExitCode%d".formatted(level);
+            String unnested = "%s=%s\n".formatted(textName, commandSubstitution);
+            unnested += "%s=$?\n".formatted(exitCodeName);
+            unnested += """
+                    if [ "$%s" -ne 0 ]; then exit "$%s"; fi
+                    """.formatted(exitCodeName, exitCodeName);
+            return new Translation("$" + textName, Type.STR, COMMAND_SUBSTITUTION, unnested);
         }
     }
 

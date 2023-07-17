@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// TODO verify comment line is emitted
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ShellStringBashpileTest extends BashpileTest {

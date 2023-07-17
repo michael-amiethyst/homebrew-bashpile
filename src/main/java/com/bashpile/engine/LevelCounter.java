@@ -25,8 +25,12 @@ public class LevelCounter implements Closeable {
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
 
     /** are we in any level of indention for this label */
-    public static boolean in(final String name) {
+    public static boolean in(@Nonnull final String name) {
         return counters.containsKey(name);
+    }
+
+    public static int get(@Nonnull final String name) {
+        return counters.getOrDefault(name, 0);
     }
 
     private final String label;
