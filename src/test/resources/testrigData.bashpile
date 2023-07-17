@@ -1,1 +1,3 @@
-#(echo $(cat src/test/resources/testdata.txt))
+#(export filename=src/test/resources/testdata.txt)
+contents: str = $(cat $(echo $filename))
+print(contents)

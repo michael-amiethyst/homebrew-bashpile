@@ -40,11 +40,15 @@ public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";
 
+    /** Used to ensure variable names are unique */
+    private static int subshellWorkaroundCounter = 0;
+
     // static methods
 
     private static @Nonnull String getLocalText() {
         return getLocalText(false);
     }
+
     private static @Nonnull String getLocalText(final boolean reassignment) {
         final boolean indented = LevelCounter.in(BLOCK);
         if (indented && !reassignment) {
@@ -185,19 +189,34 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(tr -> {
                         if (tr.isNotSubshell()) {
                             return "echo " + tr.text();
-                        }
-                        // TODO handle this with a visit?
-                        // we have a subshell -- we need to handle the exit codes and pass them on in case of error
-
-                        return """
-                                __bp_textReturn=%s
-                                __bp_exitCode=$?
-                                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                                echo "$__bp_textReturn";""".formatted(tr.text());
+                        } // else tr is a subshell
+                        final Pair<String, String> subshell = subshellWorkaroundTextBlock(tr.text());
+                        final String echoText = subshell.getValue();
+                        return echoText + """
+                                echo "${%s}\"""".formatted(subshell.getKey());
                     })
                     .collect(Collectors.joining(" ")));
             return toStringTranslation(printText);
         }
+    }
+
+    /**
+     * Subshell errored exit codes are ignored in Bash despite all configurations.
+     * This workaround explicitly propagates errored exit codes.
+     * @param translatedText We run this subshell Bash text and check for errors.
+     * @return The variable name assigned to the value of running <code>translatedText</code> and
+     * the workaround in three lines, ending with newline.
+     */
+    private Pair<String, String> subshellWorkaroundTextBlock(@Nonnull final String translatedText) {
+        final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
+        final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
+        // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
+        final String workaroundText = """
+                %s=%s
+                %s=$?
+                if [ "$%s" -ne 0 ]; then exit "$%s"; fi
+                """.formatted(subshellReturn, translatedText, exitCodeName, exitCodeName, exitCodeName);
+        return Pair.of(subshellReturn, workaroundText);
     }
 
     @Override
@@ -452,23 +471,22 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation commandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
         final boolean nested = LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.COMMAND_SUBSTITUTION);
         try (LevelCounter ignored = new LevelCounter(LevelCounter.COMMAND_SUBSTITUTION)) {
-            String commandSubstitution = ctx.children.stream()
-                    .map(visitor::visit).map(Translation::text).collect(Collectors.joining());
-            final String ctxUnnested = ctx.children.stream()
-                    .map(visitor::visit).map(Translation::unnestedTextBlock).collect(Collectors.joining());
+            // visit all child nodes, get all unnestedTextBlocks and all translated texts
+            final List<Translation> translatedChildren = ctx.children.stream()
+                    .map(visitor::visit).toList();
+            final String ctxUnnested = translatedChildren.stream()
+                    .map(Translation::unnestedTextBlock).collect(Collectors.joining());
+            String commandSubstitution = translatedChildren.stream()
+                    .map(Translation::text).collect(Collectors.joining());
+
             commandSubstitution = StringEscapeUtils.unescapeJava(commandSubstitution);
             if (!nested) {
                 return new Translation(commandSubstitution, Type.STR, COMMAND_SUBSTITUTION, ctxUnnested);
             } // else nested
-            final int level = LevelCounter.get(LevelCounter.COMMAND_SUBSTITUTION);
-            final String textName = "__bp_commandSubstitutionText%d".formatted(level);
-            final String exitCodeName = "__bp_commandSubstitutionExitCode%d".formatted(level);
-            String unnested = "%s=%s\n".formatted(textName, commandSubstitution);
-            unnested += "%s=$?\n".formatted(exitCodeName);
-            unnested += """
-                    if [ "$%s" -ne 0 ]; then exit "$%s"; fi
-                    """.formatted(exitCodeName, exitCodeName);
-            return new Translation("$" + textName, Type.STR, COMMAND_SUBSTITUTION, unnested);
+            final Pair<String, String> subshell = subshellWorkaroundTextBlock(commandSubstitution);
+            final String variableName = subshell.getKey();
+            return new Translation(
+                    "${%s}".formatted(variableName), Type.STR, COMMAND_SUBSTITUTION, subshell.getValue());
         }
     }
 
