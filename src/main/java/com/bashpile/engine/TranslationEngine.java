@@ -48,4 +48,6 @@ public interface TranslationEngine {
     Translation parenthesisExpression(final BashpileParser.ParenthesisExpressionContext ctx);
 
     Translation calculationExpression(final BashpileParser.CalculationExpressionContext ctx);
+
+    Translation idExpression(final BashpileParser.IdExpressionContext ctx);
 }

@@ -6,11 +6,9 @@ import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.TypeStack;
-import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -78,17 +76,6 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
-
-    /** put variable into ${}, e.g. "var" becomes "${var}" */
-    private final Function<ParseTree, Translation> translateIdsOrVisit = parseTree -> {
-        if (parseTree instanceof BashpileParser.IdExpressionContext ctx) {
-            // return `${varName}` syntax with the previously declared type of the variable
-            final String variableName = ctx.Id().getText();
-            final Type type = typeStack.getVariableType(variableName);
-            return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
-        } // else
-        return visitor.visit(parseTree);
-    };
 
     // instance methods
 
@@ -194,13 +181,14 @@ public class BashTranslationEngine implements TranslationEngine {
         try (final LevelCounter ignored = new LevelCounter(PRINT)) {
             final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
             final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
-                    .map(translateIdsOrVisit)
+                    .map(visitor::visit)
                     .map(tr -> {
                         if (tr.isNotSubshell()) {
                             return "echo " + tr.text();
                         }
                         // TODO handle this with a visit?
                         // we have a subshell -- we need to handle the exit codes and pass them on in case of error
+
                         return """
                                 __bp_textReturn=%s
                                 __bp_exitCode=$?
@@ -411,7 +399,7 @@ public class BashTranslationEngine implements TranslationEngine {
             };
 
             childTranslations = ctx.children.stream()
-                    .map(translateIdsOrVisit)
+                    .map(visitor::visit)
                     .map(unnestSubshells)
                     .collect(Collectors.toList());
         } // end try-with-resources
@@ -494,7 +482,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get functionName and a stream creator
         final String functionName = ctx.Id().getText();
         final Supplier<Stream<Translation>> argListTranslationStream =
-                () -> ctx.argumentList().expression().stream().map(translateIdsOrVisit);
+                () -> ctx.argumentList().expression().stream().map(visitor::visit);
         // get the expected and actual types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
         final List<Type> actualTypes = ctx.argumentList() != null
@@ -522,5 +510,12 @@ public class BashTranslationEngine implements TranslationEngine {
         } // else return a command substitution
         final String text = "$(%s%s)".formatted(id, args);
         return new Translation(text, retType, COMMAND_SUBSTITUTION);
+    }
+
+    @Override
+    public Translation idExpression(BashpileParser.IdExpressionContext ctx) {
+        final String variableName = ctx.Id().getText();
+        final Type type = typeStack.getVariableType(variableName);
+        return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
     }
 }

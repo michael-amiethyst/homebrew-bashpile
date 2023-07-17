@@ -163,9 +163,12 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         return new Translation(ctx.Bool().getText(), Type.BOOL, TypeMetadata.NORMAL);
     }
 
+    /**
+     * Put variable into ${}, e.g. "var" becomes "${var}".
+     * */
     @Override
     public @Nonnull Translation visitIdExpression(@Nonnull final BashpileParser.IdExpressionContext ctx) {
-        return toStringTranslation(ctx.Id().getText());
+        return translator.idExpression(ctx);
     }
 
     /** Default type is STR */
