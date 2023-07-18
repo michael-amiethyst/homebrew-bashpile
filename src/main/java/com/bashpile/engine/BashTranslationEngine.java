@@ -25,7 +25,7 @@ import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.Translation.toTranslation;
-import static com.bashpile.engine.strongtypes.TypeMetadata.COMMAND_SUBSTITUTION;
+import static com.bashpile.engine.strongtypes.TypeMetadata.INLINE;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.google.common.collect.Iterables.getLast;
 
@@ -389,8 +389,8 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (areNumberExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
-            return toTranslation(childTranslations.stream(), Type.NUMBER, COMMAND_SUBSTITUTION)
-                    .text("$(bc <<< \"%s\")".formatted(translationsString));
+            return toTranslation(childTranslations.stream(), Type.NUMBER, INLINE)
+                    .body("$(bc <<< \"%s\")".formatted(translationsString));
         // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(
@@ -458,7 +458,7 @@ public class BashTranslationEngine implements TranslationEngine {
             return toStringTranslation(id + args + " >/dev/null");
         } // else return a command substitution
         final String text = "$(%s%s)".formatted(id, args);
-        return new Translation(text, retType, COMMAND_SUBSTITUTION);
+        return new Translation(text, retType, INLINE);
     }
 
     @Override
@@ -470,24 +470,21 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // expression helpers
 
-
-
     @Override
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         final Stream<Translation> translationStream = ctx.shellStringContents().stream().map(visitor::visit);
-        Translation contentsTranslation =
+        Translation shellStringTranslation =
                 toTranslation(translationStream, Type.STR, TypeMetadata.COMMAND).unescapeText();
-        // TODO differentiate between Bash command substitution and Bashpile command interpolation
-        if (LevelCounter.psudoInCommandSubstitution()) {
+        if (LevelCounter.inCommandSubstitution()) {
             final Pair<String, String> workaround =
-                    subshellWorkaroundTextBlock("$(%s)".formatted(contentsTranslation.body()));
-            contentsTranslation = new Translation(
+                    subshellWorkaroundTextBlock("$(%s)".formatted(shellStringTranslation.body()));
+            shellStringTranslation = new Translation(
                     "${%s}".formatted(workaround.getKey()),
-                    contentsTranslation.type(),
-                    contentsTranslation.typeMetadata(),
-                    workaround.getValue() + contentsTranslation.preamble());
+                    shellStringTranslation.type(),
+                    shellStringTranslation.typeMetadata(),
+                    workaround.getValue() + shellStringTranslation.preamble());
         }
-        return contentsTranslation;
+        return shellStringTranslation;
     }
 
     /**
@@ -499,20 +496,17 @@ public class BashTranslationEngine implements TranslationEngine {
      * @return A translation, possibly with the {@link Translation#preamble()} set.
      */
     @Override
-    public Translation commandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
-        final boolean nested = LevelCounter.psudoInCommandSubstitution();
-        try (LevelCounter ignored = new LevelCounter(LevelCounter.COMMAND_SUBSTITUTION)) {
+    public Translation inline(BashpileParser.InlineContext ctx) {
+        final boolean nested = LevelCounter.inCommandSubstitution();
+        try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
-            final Translation joined = toTranslation(children, Type.STR, COMMAND_SUBSTITUTION).unescapeText();
+            final Translation joined = toTranslation(children, Type.STR, INLINE).unescapeText();
             if (!nested) {
                 return joined;
             } // else nested
             final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.body());
-            return new Translation(
-                    "${%s}".formatted(subshell.getKey()),
-                    Type.STR,
-                    COMMAND_SUBSTITUTION,
-                    joined.preamble() + subshell.getValue());
+            final String body = "${%s}".formatted(subshell.getKey());
+            return new Translation(body, Type.STR, INLINE, joined.preamble() + subshell.getValue());
         }
     }
 }

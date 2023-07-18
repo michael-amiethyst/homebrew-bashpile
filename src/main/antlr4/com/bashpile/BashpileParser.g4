@@ -32,7 +32,7 @@ returnPsudoStatement: Return expression? Newline;
 
 expression: expression Colon Type       # typecastExpression
     | shellString                       # shellStringExpression
-    | commandSubstitution               # commandSubstitutionExpression
+    | inline                            # inlineExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
     | OParen expression CParen          # parenthesisExpression
@@ -47,10 +47,10 @@ expression: expression Colon Type       # typecastExpression
     ;
 
 shellString        : HashOParen shellStringContents* CParen;
-shellStringContents: ShellStringText | ShellStringEscapeSequence | commandSubstitution | shellString;
+shellStringContents: ShellStringText | ShellStringEscapeSequence | inline | shellString;
 
-commandSubstitution        : DollarOParen commandSubstitutionContents* CParen;
-commandSubstitutionContents: CommandSubstitutionText
-                           | CommandSubstitutionEscapeSequence
-                           | shellString
-                           | commandSubstitution;
+inline        : DollarOParen inlineContents* CParen;
+inlineContents: InlineText
+              | InlineEscapeSequence
+              | shellString
+              | inline;

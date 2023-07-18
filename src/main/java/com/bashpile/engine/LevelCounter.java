@@ -14,7 +14,7 @@ public class LevelCounter implements Closeable {
     public static final String CALC = "calc";
 
     /** LevelCounter label */
-    public static final String COMMAND_SUBSTITUTION = "commandSubstitution";
+    public static final String INLINE = "inline";
 
     /** LevelCounter label */
     public static final String FORWARD_DECL = "forwardDecl";
@@ -29,9 +29,9 @@ public class LevelCounter implements Closeable {
         return counters.containsKey(name);
     }
 
-    /** Are we in an explicit command substitution or anything implemented with a command substitution? */
-    public static boolean psudoInCommandSubstitution() {
-        return LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.COMMAND_SUBSTITUTION);
+    /** Are we in anything implemented with a Bash Command Substitution? */
+    public static boolean inCommandSubstitution() {
+        return LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.INLINE);
     }
 
     public static int get(@Nonnull final String name) {

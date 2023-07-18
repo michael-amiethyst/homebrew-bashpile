@@ -8,6 +8,6 @@ public enum TypeMetadata {
     COMMAND,
     /** Bash example: (commands) */
     SUBSHELL,
-    /** Bash example: $(commands) */
-    COMMAND_SUBSTITUTION
+    /** Our name for Bash command substitution, i.e. $(commands) */
+    INLINE
 }

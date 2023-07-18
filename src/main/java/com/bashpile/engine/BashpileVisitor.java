@@ -131,8 +131,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public Translation visitCommandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
-        return translator.commandSubstitution(ctx);
+    public Translation visitInline(BashpileParser.InlineContext ctx) {
+        return translator.inline(ctx);
     }
 
     @Override

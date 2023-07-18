@@ -83,7 +83,7 @@ StringEscapeSequence: '\\' . | '\\' Newline;
 // tokens for modes
 
 HashOParen  : '#(' -> pushMode(SHELL_STRING);
-DollarOParen: '$(' -> pushMode(COMMAND_SUBSTITUTION);
+DollarOParen: '$(' -> pushMode(INLINE);
 
 // modes
 
@@ -91,7 +91,7 @@ DollarOParen: '$(' -> pushMode(COMMAND_SUBSTITUTION);
 mode SHELL_STRING;
 
 ShellStringHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
-ShellStringDollarOParen  : '$(' -> type(DollarOParen), pushMode(COMMAND_SUBSTITUTION);
+ShellStringDollarOParen  : '$(' -> type(DollarOParen), pushMode(INLINE);
 ShellStringText          : (~[\\\r\n\f)#$]
                          // LookAhead 1 - don't match '#(' but match other '#' characters
                          | '#' {_input.LA(1) != '('}?
@@ -100,17 +100,17 @@ ShellStringText          : (~[\\\r\n\f)#$]
 ShellStringEscapeSequence: '\\' . | '\\' Newline;
 ShellStringCParen        : ')' -> type(CParen), popMode;
 
-mode COMMAND_SUBSTITUTION;
+mode INLINE;
 
-CommandSubstitutionHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
-CommandSubstitutionDollarOParen  : '$(' -> type(DollarOParen), pushMode(COMMAND_SUBSTITUTION);
-CommandSubstitutionText          : (~[\\\r\n\f)$#]
-                                 // LookAhead 1 - don't match '$(' but match other '$' characters
-                                 | '$' {_input.LA(1) != '('}?
-                                 | '#' {_input.LA(1) != '('}?
-                                 )+;
-CommandSubstitutionEscapeSequence: '\\' . | '\\' Newline;
-CommandSubstitutionCParen        : ')' -> type(CParen), popMode;
+InlineHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
+InlineDollarOParen  : '$(' -> type(DollarOParen), pushMode(INLINE);
+InlineText          : (~[\\\r\n\f)$#]
+                       // LookAhead 1 - don't match '$(' but match other '$' characters
+                       | '$' {_input.LA(1) != '('}?
+                       | '#' {_input.LA(1) != '('}?
+                      )+;
+InlineEscapeSequence: '\\' . | '\\' Newline;
+InlineCParen        : ')' -> type(CParen), popMode;
 
 // fragments
 

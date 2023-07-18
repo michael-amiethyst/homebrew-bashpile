@@ -55,5 +55,5 @@ public interface TranslationEngine {
 
     Translation shellString(final BashpileParser.ShellStringContext ctx);
 
-    Translation commandSubstitution(final BashpileParser.CommandSubstitutionContext ctx);
+    Translation inline(final BashpileParser.InlineContext ctx);
 }

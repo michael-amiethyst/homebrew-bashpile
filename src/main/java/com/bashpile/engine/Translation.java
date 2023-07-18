@@ -54,7 +54,7 @@ public record Translation(
     }
 
     public boolean isNotSubshell() {
-        return !typeMetadata.equals(TypeMetadata.SUBSHELL) && !typeMetadata.equals(TypeMetadata.COMMAND_SUBSTITUTION);
+        return !typeMetadata.equals(TypeMetadata.SUBSHELL) && !typeMetadata.equals(TypeMetadata.INLINE);
     }
 
     public Translation unescapeText() {
@@ -65,7 +65,7 @@ public record Translation(
         return new Translation(body, typecastType, typeMetadata, preamble);
     }
 
-    public Translation text(@Nonnull final String setText) {
-        return new Translation(setText, type, typeMetadata, preamble);
+    public Translation body(@Nonnull final String nextBody) {
+        return new Translation(nextBody, type, typeMetadata, preamble);
     }
 }
