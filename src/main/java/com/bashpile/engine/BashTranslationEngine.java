@@ -190,12 +190,12 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(visitor::visit)
                     .map(tr -> {
                         if (tr.isNotSubshell()) {
-                            return "echo " + tr.text();
+                            return "%secho %s".formatted(tr.preamble(), tr.text());
                         } // else tr is a subshell
                         final Pair<String, String> subshell = subshellWorkaroundTextBlock(tr.text());
                         final String echoText = subshell.getValue();
                         return echoText + """
-                                echo "${%s}\"""".formatted(subshell.getKey());
+                                %secho "${%s}\"""".formatted(tr.preamble(), subshell.getKey());
                     })
                     .collect(Collectors.joining(" ")));
             return toStringTranslation(printText);
