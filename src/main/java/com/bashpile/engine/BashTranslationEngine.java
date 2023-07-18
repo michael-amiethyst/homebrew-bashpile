@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -366,13 +365,27 @@ public class BashTranslationEngine implements TranslationEngine {
     // TODO bubble up preambles
     @Override
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
-        // TODO work in subshellWorkaroundTextBlock and other code from subshellString()
-        final List<Translation> childTranslations = unwindChildren(ctx);
+        List<Translation> childTranslations;
+        try (LevelCounter ignored = new LevelCounter(CALC)) {
+            childTranslations = ctx.children.stream()
+                    .map(visitor::visit)
+                    .map(childTranslation -> {
+                        if (childTranslation.isNotSubshell()) {
+                            return childTranslation;
+                        } // else unwind subshell by moving logic to translation's preamble
+                        final Pair<String, String> varAndLogic = subshellWorkaroundTextBlock(childTranslation.text());
+                        // create our translation as ${varName}
+                        return new Translation(
+                                "${%s}".formatted(varAndLogic.getKey()), Type.NUMBER, NORMAL, varAndLogic.getValue());
+                    })
+                    .collect(Collectors.toList());
+        }
+        // TODO use toTranslation(stream) instead of preambles
         final String preambles = childTranslations.stream().map(Translation::preamble).collect(Collectors.joining());
 
         // child translations in the format of 'expr operator expr', so we are only interested in the first and last
-        Translation first = childTranslations.get(0);
-        Translation second = getLast(childTranslations);
+        final Translation first = childTranslations.get(0);
+        final Translation second = getLast(childTranslations);
         // check for nested calc call
         if (LevelCounter.in(CALC) && isNumberExpression(childTranslations)) {
             final String translationsLine = childTranslations.stream()
@@ -398,42 +411,6 @@ public class BashTranslationEngine implements TranslationEngine {
             throw new TypeError("Incompatible types in calc: %s and %s".formatted(
                     first.type(), second.type()), ctx.start.getLine());
         }
-    }
-
-    /**
-     * Bash doesn't support nested subshells so as a work-around we unwind (unnest) the nesting.
-     * We move the logic of the inner shell to the Translation preamble and assign to a var.  The Translation text
-     * is just the ${var}.
-     *
-     * @param ctx the parent context.
-     * @return The results of visiting the children.
-     */
-    private List<Translation> unwindChildren(@Nonnull final ParserRuleContext ctx) {
-        List<Translation> childTranslations;
-        try (LevelCounter ignored = new LevelCounter(CALC)) {
-            final AtomicInteger varTextCount = new AtomicInteger(0);
-            final Function<Translation, Translation> unnestSubshells = childTranslation -> {
-                if (childTranslation.isNotSubshell()) {
-                    return childTranslation;
-                } else {
-                    // create an assignment for later, store in subshellVarTextBlock
-                    final String varName = "__bp_%d".formatted(varTextCount.getAndIncrement());
-                    // last %s is a subshell
-                    final String assignString = "%s %s=%s\n"
-                            .formatted(getLocalText(), varName, childTranslation.text());
-
-                    // create our translation as ${varName}
-                    return new Translation("${%s}".formatted(varName), Type.NUMBER, NORMAL, assignString);
-                }
-            };
-
-            childTranslations = ctx.children.stream()
-                    .map(visitor::visit)
-                    .map(unnestSubshells)
-                    .collect(Collectors.toList());
-        } // end try-with-resources
-
-        return childTranslations;
     }
 
     private boolean isStringExpression(@Nonnull final List<Translation> translations) {
