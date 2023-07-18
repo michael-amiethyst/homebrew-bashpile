@@ -10,7 +10,6 @@ import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -27,6 +26,7 @@ import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.Translation.toTranslation;
 import static com.bashpile.engine.strongtypes.TypeMetadata.COMMAND_SUBSTITUTION;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.google.common.collect.Iterables.getLast;
@@ -126,7 +126,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String textBlock = """
                 # expression statement, Bashpile line %d
                 %s%s
-                """.formatted(ctx.start.getLine(), expr.unnestedTextBlock(), expr.text());
+                """.formatted(ctx.start.getLine(), expr.preamble(), expr.text());
         return new Translation(
                 textBlock, expr.type(), expr.typeMetadata());
     }
@@ -145,7 +145,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String unnestedText = exprTranslation.unnestedTextBlock();
+        final String unnestedText = exprTranslation.preamble();
         final String value = exprExists ? "=" + exprTranslation.text() : "";
         /*
          * Translation will be something like:
@@ -460,16 +460,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
-        // visit contents
-        final List<Translation> translatedContents = ctx.shellStringContents().stream()
-                .map(visitor::visit).toList();
-        final String unnestedTextBlocks = translatedContents.stream()
-                .map(Translation::unnestedTextBlock).collect(Collectors.joining());
-        String shellString = translatedContents.stream().map(Translation::text).collect(Collectors.joining());
-        // unescape -- especially \) and \\
-        shellString = StringEscapeUtils.unescapeJava(shellString);
-        // TODO try changing 4th param to a list of the children ParserRuleContexts
-        return new Translation(shellString, Type.STR, TypeMetadata.COMMAND, unnestedTextBlocks);
+        Stream<Translation> translationStream = ctx.shellStringContents().stream().map(visitor::visit);
+        return toTranslation(translationStream, Type.STR, TypeMetadata.COMMAND).unescapeText();
     }
 
     /**
@@ -478,28 +470,23 @@ public class BashTranslationEngine implements TranslationEngine {
      * @see Translation
      * @see #printStatement(BashpileParser.PrintStatementContext)
      * @param ctx the context.
-     * @return A translation, possibly with the {@link Translation#unnestedTextBlock()} set.
+     * @return A translation, possibly with the {@link Translation#preamble()} set.
      */
     @Override
     public Translation commandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
         final boolean nested = LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.COMMAND_SUBSTITUTION);
         try (LevelCounter ignored = new LevelCounter(LevelCounter.COMMAND_SUBSTITUTION)) {
-            // visit all child nodes, get all unnestedTextBlocks and all translated texts
-            final List<Translation> translatedChildren = ctx.children.stream()
-                    .map(visitor::visit).toList();
-            final String ctxUnnested = translatedChildren.stream()
-                    .map(Translation::unnestedTextBlock).collect(Collectors.joining());
-            String commandSubstitution = translatedChildren.stream()
-                    .map(Translation::text).collect(Collectors.joining());
-
-            commandSubstitution = StringEscapeUtils.unescapeJava(commandSubstitution);
+            final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
+            final Translation joined = toTranslation(children, Type.STR, COMMAND_SUBSTITUTION).unescapeText();
             if (!nested) {
-                return new Translation(commandSubstitution, Type.STR, COMMAND_SUBSTITUTION, ctxUnnested);
+                return joined;
             } // else nested
-            final Pair<String, String> subshell = subshellWorkaroundTextBlock(commandSubstitution);
-            final String variableName = subshell.getKey();
+            final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.text());
             return new Translation(
-                    "${%s}".formatted(variableName), Type.STR, COMMAND_SUBSTITUTION, subshell.getValue());
+                    "${%s}".formatted(subshell.getKey()),
+                    Type.STR,
+                    COMMAND_SUBSTITUTION,
+                    joined.preamble() + subshell.getValue());
         }
     }
 
