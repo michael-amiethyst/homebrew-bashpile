@@ -64,4 +64,8 @@ public record Translation(
     public Translation toType(@Nonnull final Type typecastType) {
         return new Translation(text, typecastType, typeMetadata, preamble);
     }
+
+    public Translation text(@Nonnull final String setText) {
+        return new Translation(setText, type, typeMetadata, preamble);
+    }
 }

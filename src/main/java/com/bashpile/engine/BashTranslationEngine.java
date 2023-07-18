@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,11 +60,6 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private static @Nonnull String getHoisted() {
         return LevelCounter.in(FORWARD_DECL) ? " (hoisted)" : "";
-    }
-
-    private static void append(@Nonnull final AtomicReference<String> strRef, @Nonnull final String toAppend) {
-        final String appended = strRef.get() + toAppend;
-        strRef.set(appended);
     }
 
     // instance variables
@@ -365,6 +359,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // TODO bubble up preambles
     @Override
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
+        // get the child translations
         List<Translation> childTranslations;
         try (LevelCounter ignored = new LevelCounter(CALC)) {
             childTranslations = ctx.children.stream()
@@ -380,28 +375,23 @@ public class BashTranslationEngine implements TranslationEngine {
                     })
                     .collect(Collectors.toList());
         }
-        // TODO use toTranslation(stream) instead of preambles
-        final String preambles = childTranslations.stream().map(Translation::preamble).collect(Collectors.joining());
 
         // child translations in the format of 'expr operator expr', so we are only interested in the first and last
         final Translation first = childTranslations.get(0);
         final Translation second = getLast(childTranslations);
         // check for nested calc call
-        if (LevelCounter.in(CALC) && isNumberExpression(childTranslations)) {
-            final String translationsLine = childTranslations.stream()
-                    .map(Translation::text).collect(Collectors.joining(""));
-            return new Translation(translationsLine, Type.NUMBER, NORMAL);
+        if (LevelCounter.in(CALC) && areNumberExpressions(first, second)) {
+            return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
         // types section
-        } else if (isStringExpression(childTranslations)) {
+        } else if (areStringExpressions(first, second)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
-            return new Translation(first.text() + second.text(), Type.STR, NORMAL, preambles);
-        } else if (isNumberExpression(childTranslations)) {
+            return toTranslation(Stream.of(first, second), Type.STR, NORMAL);
+        } else if (areNumberExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::text).collect(Collectors.joining(" "));
-            return new Translation(
-                    "$(bc <<< \"%s\")".formatted(translationsString),
-                    Type.NUMBER, COMMAND_SUBSTITUTION, preambles);
+            return toTranslation(childTranslations.stream(), Type.NUMBER, COMMAND_SUBSTITUTION)
+                    .text("$(bc <<< \"%s\")".formatted(translationsString));
         // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(
@@ -413,18 +403,14 @@ public class BashTranslationEngine implements TranslationEngine {
         }
     }
 
-    private boolean isStringExpression(@Nonnull final List<Translation> translations) {
-        Asserts.assertEquals(3, translations.size());
-        final Translation first = translations.get(0);
-        final Translation last = getLast(translations);
-        return first.type().isStr() && last.type().isStr();
+    private boolean areStringExpressions(@Nonnull final Translation... translations) {
+        // if all strings the stream of not-strings will be empty
+        return Stream.of(translations).filter(x -> x.type() != Type.STR).findAny().isEmpty();
     }
 
-    private boolean isNumberExpression(@Nonnull final List<Translation> translations) {
-        Asserts.assertEquals(3, translations.size());
-        final Translation first = translations.get(0);
-        final Translation last = getLast(translations);
-        return first.type().isNumeric() && last.type().isNumeric();
+    private boolean areNumberExpressions(@Nonnull final Translation... translations) {
+        // if all numbers the stream of not-numbers will be empty
+        return Stream.of(translations).filter(x -> !x.type().isNumeric()).findAny().isEmpty();
     }
 
     @Override
