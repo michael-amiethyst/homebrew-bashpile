@@ -1,18 +1,13 @@
 package com.bashpile.engine;
 
-import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.Type;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.apache.commons.lang3.tuple.Pair;
+import com.bashpile.engine.strongtypes.TypeMetadata;
 import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
-
-import java.util.List;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.join;
-import static org.apache.commons.lang3.StringUtils.stripToEmpty;
 
 /**
  * Decorator pattern for a String.
@@ -64,5 +59,9 @@ public record Translation(
 
     public Translation unescapeText() {
         return new Translation(StringEscapeUtils.unescapeJava(text), type, typeMetadata, preamble);
+    }
+
+    public Translation toType(@Nonnull final Type typecastType) {
+        return new Translation(text, typecastType, typeMetadata, preamble);
     }
 }

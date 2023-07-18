@@ -358,7 +358,15 @@ public class BashTranslationEngine implements TranslationEngine {
     // expressions
 
     @Override
+    public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
+        final Translation expression = visitor.visit(ctx.expression());
+        return expression.toType(Type.valueOf(ctx.Type().getText().toUpperCase()));
+    }
+
+    // TODO bubble up preambles
+    @Override
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
+        // TODO replace unwindChildren with subshellWorkaroundTextBlock
         final Pair<String, List<Translation>> pair = unwindChildren(ctx);
         final String unwoundSubshells = pair.getLeft();
         final List<Translation> childTranslations = pair.getRight();
@@ -459,38 +467,6 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
-        Stream<Translation> translationStream = ctx.shellStringContents().stream().map(visitor::visit);
-        return toTranslation(translationStream, Type.STR, TypeMetadata.COMMAND).unescapeText();
-    }
-
-    /**
-     * Unnests command substitutions as needed.
-     *
-     * @see Translation
-     * @see #printStatement(BashpileParser.PrintStatementContext)
-     * @param ctx the context.
-     * @return A translation, possibly with the {@link Translation#preamble()} set.
-     */
-    @Override
-    public Translation commandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
-        final boolean nested = LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.COMMAND_SUBSTITUTION);
-        try (LevelCounter ignored = new LevelCounter(LevelCounter.COMMAND_SUBSTITUTION)) {
-            final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
-            final Translation joined = toTranslation(children, Type.STR, COMMAND_SUBSTITUTION).unescapeText();
-            if (!nested) {
-                return joined;
-            } // else nested
-            final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.text());
-            return new Translation(
-                    "${%s}".formatted(subshell.getKey()),
-                    Type.STR,
-                    COMMAND_SUBSTITUTION,
-                    joined.preamble() + subshell.getValue());
-        }
-    }
-
-    @Override
     public @Nonnull Translation functionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
         final String id = ctx.Id().getText();
@@ -536,5 +512,51 @@ public class BashTranslationEngine implements TranslationEngine {
         final String variableName = ctx.Id().getText();
         final Type type = typeStack.getVariableType(variableName);
         return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
+    }
+
+    // expression helpers
+
+
+
+    @Override
+    public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
+        final Stream<Translation> translationStream = ctx.shellStringContents().stream().map(visitor::visit);
+        Translation contentsTranslation =
+                toTranslation(translationStream, Type.STR, TypeMetadata.COMMAND).unescapeText();
+        if (LevelCounter.psudoInCommandSubstitution()) {
+            final Pair<String, String> workaround = subshellWorkaroundTextBlock(contentsTranslation.text());
+            contentsTranslation = new Translation(
+                    "${%s}".formatted(workaround.getKey()),
+                    contentsTranslation.type(),
+                    contentsTranslation.typeMetadata(),
+                    workaround.getValue() + contentsTranslation.preamble());
+        }
+        return contentsTranslation;
+    }
+
+    /**
+     * Unnests command substitutions as needed.
+     *
+     * @see Translation
+     * @see #printStatement(BashpileParser.PrintStatementContext)
+     * @param ctx the context.
+     * @return A translation, possibly with the {@link Translation#preamble()} set.
+     */
+    @Override
+    public Translation commandSubstitution(BashpileParser.CommandSubstitutionContext ctx) {
+        final boolean nested = LevelCounter.psudoInCommandSubstitution();
+        try (LevelCounter ignored = new LevelCounter(LevelCounter.COMMAND_SUBSTITUTION)) {
+            final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
+            final Translation joined = toTranslation(children, Type.STR, COMMAND_SUBSTITUTION).unescapeText();
+            if (!nested) {
+                return joined;
+            } // else nested
+            final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.text());
+            return new Translation(
+                    "${%s}".formatted(subshell.getKey()),
+                    Type.STR,
+                    COMMAND_SUBSTITUTION,
+                    joined.preamble() + subshell.getValue());
+        }
     }
 }

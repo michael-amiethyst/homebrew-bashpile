@@ -41,9 +41,7 @@ public interface TranslationEngine {
 
     // expression translations
 
-    Translation shellString(final BashpileParser.ShellStringContext ctx);
-
-    Translation commandSubstitution(final BashpileParser.CommandSubstitutionContext ctx);
+    Translation typecastExpression(final BashpileParser.TypecastExpressionContext ctx);
 
     Translation functionCallExpression(final BashpileParser.FunctionCallExpressionContext ctx);
 
@@ -52,4 +50,10 @@ public interface TranslationEngine {
     Translation calculationExpression(final BashpileParser.CalculationExpressionContext ctx);
 
     Translation idExpression(final BashpileParser.IdExpressionContext ctx);
+
+    // expression helper translations
+
+    Translation shellString(final BashpileParser.ShellStringContext ctx);
+
+    Translation commandSubstitution(final BashpileParser.CommandSubstitutionContext ctx);
 }

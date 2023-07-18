@@ -8,8 +8,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.bashpile.commandline.ExecutionResults.SUCCESS;
+import static org.junit.jupiter.api.Assertions.*;
 
 // TODO verify comment line is emitted
 @Order(50)
@@ -33,27 +33,35 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test @Order(30)
     public void runInvalidCommandHadBadExitCode() {
         final ExecutionResults results = runText("#(invalid_command_example_for_testing)");
-        assertTrue(results.exitCode() != ExecutionResults.SUCCESS);
+        assertTrue(results.exitCode() != SUCCESS);
     }
 
     @Test @Order(40)
     public void runEchoParenthesisWorks() {
         final ExecutionResults results = runPath(Path.of("runEchoParenthesis.bashpile"));
-        assertEquals(ExecutionResults.SUCCESS, results.exitCode());
+        assertEquals(SUCCESS, results.exitCode());
         assertEquals("()\n", results.stdout());
     }
 
     @Test @Order(50)
     public void nestedShellStringsWork() {
         final ExecutionResults results = runText("#(cat #(src/test/resources/testdata.txt))");
-        assertEquals(ExecutionResults.SUCCESS, results.exitCode());
+        assertEquals(SUCCESS, results.exitCode());
         assertEquals("test\n", results.stdout());
     }
 
     @Test @Order(60)
     public void shellStringsWithHashWork() {
         final ExecutionResults results = runText("#(echo '#')");
-        assertEquals(ExecutionResults.SUCCESS, results.exitCode());
+        assertEquals(SUCCESS, results.exitCode());
         assertEquals("#\n", results.stdout());
+    }
+
+    @Test @Order(70)
+    public void shellStringInCalcWorks() {
+        final String bashpile = """
+                print(1 + #(expr 1 + 1):int)
+                """;
+        assertNotEquals(SUCCESS, runText(bashpile).exitCode());
     }
 }

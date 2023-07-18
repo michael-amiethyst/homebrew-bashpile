@@ -29,6 +29,11 @@ public class LevelCounter implements Closeable {
         return counters.containsKey(name);
     }
 
+    /** Are we in an explicit command substitution or anything implemented with a command substitution? */
+    public static boolean psudoInCommandSubstitution() {
+        return LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.COMMAND_SUBSTITUTION);
+    }
+
     public static int get(@Nonnull final String name) {
         return counters.getOrDefault(name, 0);
     }
