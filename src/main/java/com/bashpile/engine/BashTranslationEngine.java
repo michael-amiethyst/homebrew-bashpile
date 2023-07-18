@@ -344,8 +344,8 @@ public class BashTranslationEngine implements TranslationEngine {
             // insert echo right at start of last line
 
             // exprTranslation.text() does not end in newline and may be multiple lines
-            final String exprText = "# return statement, Bashpile line %d%s\n%s"
-                    .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.text());
+            final String exprText = "# return statement, Bashpile line %d%s\n%s%s"
+                    .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.preamble(), exprTranslation.text());
             final String[] retLines = exprText.split("\n");
             final int lastLineIndex = retLines.length - 1;
             retLines[lastLineIndex] = "echo " + retLines[lastLineIndex];
@@ -366,11 +366,11 @@ public class BashTranslationEngine implements TranslationEngine {
     // TODO bubble up preambles
     @Override
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
-        // TODO replace unwindChildren with subshellWorkaroundTextBlock
-        final Pair<String, List<Translation>> pair = unwindChildren(ctx);
-        final String unwoundSubshells = pair.getLeft();
-        final List<Translation> childTranslations = pair.getRight();
+        // TODO work in subshellWorkaroundTextBlock and other code from subshellString()
+        final List<Translation> childTranslations = unwindChildren(ctx);
+        final String preambles = childTranslations.stream().map(Translation::preamble).collect(Collectors.joining());
 
+        // child translations in the format of 'expr operator expr', so we are only interested in the first and last
         Translation first = childTranslations.get(0);
         Translation second = getLast(childTranslations);
         // check for nested calc call
@@ -382,13 +382,13 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (isStringExpression(childTranslations)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
-            return toStringTranslation(first.text() + second.text());
+            return new Translation(first.text() + second.text(), Type.STR, NORMAL, preambles);
         } else if (isNumberExpression(childTranslations)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::text).collect(Collectors.joining(" "));
             return new Translation(
-                    "%s$(bc <<< \"%s\")".formatted(unwoundSubshells, translationsString),
-                    Type.NUMBER, COMMAND_SUBSTITUTION);
+                    "$(bc <<< \"%s\")".formatted(translationsString),
+                    Type.NUMBER, COMMAND_SUBSTITUTION, preambles);
         // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(
@@ -402,22 +402,16 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /**
      * Bash doesn't support nested subshells so as a work-around we unwind (unnest) the nesting.
-     * More details in the comments of the unnestSubshells Function below.
-     * Simplified example: if a single child is a subshell `$(cmd)` we return <`var=$(cmd)`, `$var`>
+     * We move the logic of the inner shell to the Translation preamble and assign to a var.  The Translation text
+     * is just the ${var}.
      *
      * @param ctx the parent context.
-     * @return a preamble String of the unnested shells assigned to variables and the results of visiting the children
+     * @return The results of visiting the children.
      */
-    private Pair<String, List<Translation>> unwindChildren(@Nonnull final ParserRuleContext ctx) {
+    private List<Translation> unwindChildren(@Nonnull final ParserRuleContext ctx) {
         List<Translation> childTranslations;
-        // subshellVarTextBlock accumulates all the inner shells' results
-        final AtomicReference<String> subshellVarTextBlock = new AtomicReference<>("");
         try (LevelCounter ignored = new LevelCounter(CALC)) {
             final AtomicInteger varTextCount = new AtomicInteger(0);
-
-            // this is a work-around for nested sub-shells
-            // we run the inner sub-shell and put the results into a variable,
-            // and put the variable into the outer sub-shell
             final Function<Translation, Translation> unnestSubshells = childTranslation -> {
                 if (childTranslation.isNotSubshell()) {
                     return childTranslation;
@@ -427,10 +421,9 @@ public class BashTranslationEngine implements TranslationEngine {
                     // last %s is a subshell
                     final String assignString = "%s %s=%s\n"
                             .formatted(getLocalText(), varName, childTranslation.text());
-                    append(subshellVarTextBlock, assignString);
 
                     // create our translation as ${varName}
-                    return new Translation("${%s}".formatted(varName), Type.NUMBER, NORMAL);
+                    return new Translation("${%s}".formatted(varName), Type.NUMBER, NORMAL, assignString);
                 }
             };
 
@@ -440,8 +433,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .collect(Collectors.toList());
         } // end try-with-resources
 
-        assertTextBlock(subshellVarTextBlock.get());
-        return Pair.of(subshellVarTextBlock.get(), childTranslations);
+        return childTranslations;
     }
 
     private boolean isStringExpression(@Nonnull final List<Translation> translations) {
