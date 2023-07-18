@@ -126,16 +126,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public Translation visitShellString(BashpileParser.ShellStringContext ctx) {
-        return translator.shellString(ctx);
-    }
-
-    @Override
-    public Translation visitInline(BashpileParser.InlineContext ctx) {
-        return translator.inline(ctx);
-    }
-
-    @Override
     public @Nonnull Translation visitFunctionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
         return translator.functionCallExpression(ctx);
@@ -180,5 +170,17 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public @Nonnull Translation visitTerminal(@Nonnull final TerminalNode node) {
         return toStringTranslation(node.getText());
+    }
+
+    // expression helper rules
+
+    @Override
+    public Translation visitShellString(BashpileParser.ShellStringContext ctx) {
+        return translator.shellString(ctx);
+    }
+
+    @Override
+    public Translation visitInline(BashpileParser.InlineContext ctx) {
+        return translator.inline(ctx);
     }
 }

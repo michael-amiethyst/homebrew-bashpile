@@ -38,9 +38,6 @@ public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";
 
-    /** Used to ensure variable names are unique */
-    private static int subshellWorkaroundCounter = 0;
-
     // static methods
 
     private static @Nonnull String getLocalText() {
@@ -70,6 +67,9 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
     private int anonBlockCounter = 0;
+
+    /** Used to ensure variable names are unique */
+    private int subshellWorkaroundCounter = 0;
 
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
@@ -152,6 +152,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 Type.NA, NORMAL);
     }
 
+    // TODO handle preambles
     @Override
     public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReassignmentStatementContext ctx) {
         // get name and type
@@ -297,6 +298,7 @@ public class BashTranslationEngine implements TranslationEngine {
         return toStringTranslation(block);
     }
 
+    // TODO handle preambles
     @Override
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
@@ -369,8 +371,12 @@ public class BashTranslationEngine implements TranslationEngine {
                         } // else unwind subshell by moving logic to translation's preamble
                         final Pair<String, String> varAndLogic = subshellWorkaroundTextBlock(childTranslation.body());
                         // create our translation as ${varName}
+                        // TODO use and create fluent API
                         return new Translation(
-                                "${%s}".formatted(varAndLogic.getKey()), Type.NUMBER, NORMAL, varAndLogic.getValue());
+                                "${%s}".formatted(varAndLogic.getKey()),
+                                Type.NUMBER,
+                                NORMAL,
+                                childTranslation.preamble() + varAndLogic.getValue());
                     })
                     .collect(Collectors.toList());
         }
@@ -500,12 +506,14 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean nested = LevelCounter.inCommandSubstitution();
         try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
-            final Translation joined = toTranslation(children, Type.STR, INLINE).unescapeText();
+            final Translation joined = toTranslation(children, Type.STR, NORMAL).unescapeText();
             if (!nested) {
                 return joined;
             } // else nested
             final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.body());
             final String body = "${%s}".formatted(subshell.getKey());
+            // TODO remove typemetadata in favor of using LevelCounter
+            // TODO detect type automatically
             return new Translation(body, Type.STR, INLINE, joined.preamble() + subshell.getValue());
         }
     }
