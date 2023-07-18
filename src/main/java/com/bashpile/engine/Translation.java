@@ -12,16 +12,16 @@ import static org.apache.commons.lang3.StringUtils.join;
 /**
  * Decorator pattern for a String.
  *
- * @param text The target shell script (e.g. Bash) literal text.
+ * @param body The target shell script (e.g. Bash) literal text.
  * @param type The Bashpile type.
  * @param typeMetadata Further information of the type (e.g. is this a subshell?)
  * @param preamble This is text that needs to be emitted before the rest of the translation.<br>
  *                          This is to handle the case of a nested command substitution, since they are not supported
  *                          in Bash we need to assign the inner command substitution to a variable (while handling bad
- *                          exit codes, another work-around) and have the <code>text</code> just be the variable.
+ *                          exit codes, another work-around) and have the <code>body</code> just be the variable.
  */
 public record Translation(
-        @Nonnull String text,
+        @Nonnull String body,
         @Nonnull Type type,
         @Nonnull TypeMetadata typeMetadata,
         @Nonnull String preamble) {
@@ -38,7 +38,7 @@ public record Translation(
             @Nonnull final Type type,
             @Nonnull final TypeMetadata typeMetadata) {
         final Translation joined = stream.reduce(Translation::add).orElseThrow();
-        return new Translation(joined.text, type, typeMetadata, joined.preamble);
+        return new Translation(joined.body, type, typeMetadata, joined.preamble);
     }
 
     public static Translation toStringTranslation(final String... text) {
@@ -46,11 +46,11 @@ public record Translation(
     }
 
     public Translation add(@Nonnull final String appendText) {
-        return new Translation(text + appendText, this.type, typeMetadata, preamble);
+        return new Translation(body + appendText, this.type, typeMetadata, preamble);
     }
 
     public Translation add(@Nonnull final Translation other) {
-        return new Translation(text + other.text, type, typeMetadata, preamble + other.preamble);
+        return new Translation(body + other.body, type, typeMetadata, preamble + other.preamble);
     }
 
     public boolean isNotSubshell() {
@@ -58,11 +58,11 @@ public record Translation(
     }
 
     public Translation unescapeText() {
-        return new Translation(StringEscapeUtils.unescapeJava(text), type, typeMetadata, preamble);
+        return new Translation(StringEscapeUtils.unescapeJava(body), type, typeMetadata, preamble);
     }
 
     public Translation toType(@Nonnull final Type typecastType) {
-        return new Translation(text, typecastType, typeMetadata, preamble);
+        return new Translation(body, typecastType, typeMetadata, preamble);
     }
 
     public Translation text(@Nonnull final String setText) {

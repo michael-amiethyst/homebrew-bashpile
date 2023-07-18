@@ -48,7 +48,7 @@ public class AntlrUtils {
     private static @Nonnull String transpile(@Nonnull final ParseTree tree) {
         // visitor and engine linked in visitor constructor
         final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
-        return bashpileLogic.visit(tree).text();
+        return bashpileLogic.visit(tree).body();
     }
 
     /**
@@ -108,7 +108,7 @@ public class AntlrUtils {
     public static @Nonnull Translation visitBlock(
             @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> stmtStream) {
         final String translationText = stmtStream.map(visitor::visit)
-                .map(Translation::text)
+                .map(Translation::body)
                 // visit results may be multiline strings, convert to array of single lines
                 .map(str -> str.split("\n"))
                 // stream the lines, indent each line, then flatten

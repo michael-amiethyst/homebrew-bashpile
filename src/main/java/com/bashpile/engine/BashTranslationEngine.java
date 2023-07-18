@@ -119,7 +119,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String textBlock = """
                 # expression statement, Bashpile line %d
                 %s%s
-                """.formatted(ctx.start.getLine(), expr.preamble(), expr.text());
+                """.formatted(ctx.start.getLine(), expr.preamble(), expr.body());
         return new Translation(
                 textBlock, expr.type(), expr.typeMetadata());
     }
@@ -139,7 +139,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
         final String unnestedText = exprTranslation.preamble();
-        final String value = exprExists ? "=" + exprTranslation.text() : "";
+        final String value = exprExists ? "=" + exprTranslation.body() : "";
         /*
          * Translation will be something like:
          * `# assign statement, Bashpile line 1
@@ -168,7 +168,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create translation
         final String lineComment = "# reassign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String value = exprTranslation.text();
+        final String value = exprTranslation.body();
         return new Translation(
                 "%s\n%s%s=%s\n".formatted(lineComment, getLocalText(true), variableName, value),
                 Type.NA, NORMAL);
@@ -190,12 +190,12 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(visitor::visit)
                     .map(tr -> {
                         if (tr.isNotSubshell()) {
-                            return "%secho %s".formatted(tr.preamble(), tr.text());
+                            return "%secho %s".formatted(tr.preamble(), tr.body());
                         } // else tr is a subshell
-                        final Pair<String, String> subshell = subshellWorkaroundTextBlock(tr.text());
-                        final String echoText = subshell.getValue();
-                        return echoText + """
-                                %secho "${%s}\"""".formatted(tr.preamble(), subshell.getKey());
+                        final Pair<String, String> subshell = subshellWorkaroundTextBlock(tr.body());
+                        final String trBodyWorkaround = subshell.getValue();
+                        return """
+                                %s%secho "${%s}\"""".formatted(tr.preamble(), trBodyWorkaround, subshell.getKey());
                     })
                     .collect(Collectors.joining(" ")));
             return toStringTranslation(printText);
@@ -228,7 +228,7 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter ignored = new LevelCounter(FORWARD_DECL)) {
             final String lineComment =
                     "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
-            final String hoistedFunctionText = visitor.visit(functionDeclCtx).text();
+            final String hoistedFunctionText = visitor.visit(functionDeclCtx).body();
             assertTextBlock(hoistedFunctionText);
             final String ret = "%s\n%s".formatted(lineComment, hoistedFunctionText);
             return toStringTranslation(ret);
@@ -278,13 +278,13 @@ public class BashTranslationEngine implements TranslationEngine {
                     "%s%s\n".formatted(TAB, ctx.paramaters().typedId().stream()
                                     .map(BashpileParser.TypedIdContext::Id)
                                     .map(visitor::visit)
-                                    .map(Translation::text)
+                                    .map(Translation::body)
                                     .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
                                     .collect(Collectors.joining(" ")));
             assertTextLine(namedParams);
             final Stream<ParserRuleContext> contextStream =
                     addContexts(ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement());
-            final String blockText = visitBlock(visitor, contextStream).text();
+            final String blockText = visitBlock(visitor, contextStream).body();
             assertTextBlock(blockText);
             final String functionComment = "# function declaration, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
@@ -307,7 +307,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
             // map of x to x needed for upcasting to parent type
             final Stream<ParserRuleContext> stmtStream = ctx.statement().stream().map(x -> x);
-            final String blockBodyTextBlock = visitBlock(visitor, stmtStream).text();
+            final String blockBodyTextBlock = visitBlock(visitor, stmtStream).body();
             assertTextBlock(blockBodyTextBlock);
             final String lineComment = "# anonymous block, Bashpile line %d%s"
                     .formatted(ctx.start.getLine(), getHoisted());
@@ -336,9 +336,9 @@ public class BashTranslationEngine implements TranslationEngine {
         if (exprExists) {
             // insert echo right at start of last line
 
-            // exprTranslation.text() does not end in newline and may be multiple lines
+            // exprTranslation.body() does not end in newline and may be multiple lines
             final String exprText = "# return statement, Bashpile line %d%s\n%s%s"
-                    .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.preamble(), exprTranslation.text());
+                    .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.preamble(), exprTranslation.body());
             final String[] retLines = exprText.split("\n");
             final int lastLineIndex = retLines.length - 1;
             retLines[lastLineIndex] = "echo " + retLines[lastLineIndex];
@@ -356,7 +356,6 @@ public class BashTranslationEngine implements TranslationEngine {
         return expression.toType(Type.valueOf(ctx.Type().getText().toUpperCase()));
     }
 
-    // TODO bubble up preambles
     @Override
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
         // get the child translations
@@ -368,7 +367,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         if (childTranslation.isNotSubshell()) {
                             return childTranslation;
                         } // else unwind subshell by moving logic to translation's preamble
-                        final Pair<String, String> varAndLogic = subshellWorkaroundTextBlock(childTranslation.text());
+                        final Pair<String, String> varAndLogic = subshellWorkaroundTextBlock(childTranslation.body());
                         // create our translation as ${varName}
                         return new Translation(
                                 "${%s}".formatted(varAndLogic.getKey()), Type.NUMBER, NORMAL, varAndLogic.getValue());
@@ -389,13 +388,13 @@ public class BashTranslationEngine implements TranslationEngine {
             return toTranslation(Stream.of(first, second), Type.STR, NORMAL);
         } else if (areNumberExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
-                    .map(Translation::text).collect(Collectors.joining(" "));
+                    .map(Translation::body).collect(Collectors.joining(" "));
             return toTranslation(childTranslations.stream(), Type.NUMBER, COMMAND_SUBSTITUTION)
                     .text("$(bc <<< \"%s\")".formatted(translationsString));
         // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(
-                    first.text(), second.text()), ctx.start.getLine());
+                    first.body(), second.body()), ctx.start.getLine());
         } else {
             // throw type error for all others
             throw new TypeError("Incompatible types in calc: %s and %s".formatted(
@@ -418,7 +417,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation expr = visitor.visit(ctx.expression());
         // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
         final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
-        return new Translation(format.formatted(expr.text()), expr.type(), expr.typeMetadata());
+        return new Translation(format.formatted(expr.body()), expr.type(), expr.typeMetadata());
     }
 
     @Override
@@ -444,9 +443,9 @@ public class BashTranslationEngine implements TranslationEngine {
 
         final boolean hasArgs = ctx.argumentList() != null;
         // empty list or ' arg1Text arg2Text etc.'
-        // TODO handle case where arguments have unnested text blocks (e.g. nested command substitutions)
+        // TODO handle case where arguments have unnested ext blocks (e.g. nested command substitutions)
         final String args = hasArgs
-                ? " " + argListTranslationStream.get().map(Translation::text).collect(Collectors.joining(" "))
+                ? " " + argListTranslationStream.get().map(Translation::body).collect(Collectors.joining(" "))
                 : "";
 
         // lookup return type of this function
@@ -478,8 +477,10 @@ public class BashTranslationEngine implements TranslationEngine {
         final Stream<Translation> translationStream = ctx.shellStringContents().stream().map(visitor::visit);
         Translation contentsTranslation =
                 toTranslation(translationStream, Type.STR, TypeMetadata.COMMAND).unescapeText();
+        // TODO differentiate between Bash command substitution and Bashpile command interpolation
         if (LevelCounter.psudoInCommandSubstitution()) {
-            final Pair<String, String> workaround = subshellWorkaroundTextBlock(contentsTranslation.text());
+            final Pair<String, String> workaround =
+                    subshellWorkaroundTextBlock("$(%s)".formatted(contentsTranslation.body()));
             contentsTranslation = new Translation(
                     "${%s}".formatted(workaround.getKey()),
                     contentsTranslation.type(),
@@ -506,7 +507,7 @@ public class BashTranslationEngine implements TranslationEngine {
             if (!nested) {
                 return joined;
             } // else nested
-            final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.text());
+            final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.body());
             return new Translation(
                     "${%s}".formatted(subshell.getKey()),
                     Type.STR,

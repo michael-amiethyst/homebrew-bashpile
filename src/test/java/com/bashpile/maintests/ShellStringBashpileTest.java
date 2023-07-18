@@ -62,6 +62,6 @@ public class ShellStringBashpileTest extends BashpileTest {
         final String bashpile = """
                 print(1 + #(expr 1 + 1):int)
                 """;
-        assertNotEquals(SUCCESS, runText(bashpile).exitCode());
+        assertEquals("3\n", runText(bashpile).stdout());
     }
 }
