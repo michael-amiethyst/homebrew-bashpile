@@ -120,7 +120,16 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // statement translations
 
-    // TODO have all statements handle unnestedTextBlocks
+    @Override
+    public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
+        final Translation expr = visitor.visit(ctx.expression());
+        final String textBlock = """
+                # expression statement, Bashpile line %d
+                %s%s
+                """.formatted(ctx.start.getLine(), expr.unnestedTextBlock(), expr.text());
+        return new Translation(
+                textBlock, expr.type(), expr.typeMetadata());
+    }
 
     @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
@@ -212,7 +221,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
         // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
         final String workaroundText = """
-                %s=%s
+                export %s=%s
                 %s=$?
                 if [ "$%s" -ne 0 ]; then exit "$%s"; fi
                 """.formatted(subshellReturn, translatedText, exitCodeName, exitCodeName, exitCodeName);
@@ -452,11 +461,15 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         // visit contents
-        String shellString = ctx.shellStringContents().stream()
-                .map(visitor::visit).map(Translation::text).collect(Collectors.joining());
+        final List<Translation> translatedContents = ctx.shellStringContents().stream()
+                .map(visitor::visit).toList();
+        final String unnestedTextBlocks = translatedContents.stream()
+                .map(Translation::unnestedTextBlock).collect(Collectors.joining());
+        String shellString = translatedContents.stream().map(Translation::text).collect(Collectors.joining());
         // unescape -- especially \) and \\
         shellString = StringEscapeUtils.unescapeJava(shellString);
-        return new Translation(shellString, Type.STR, TypeMetadata.COMMAND);
+        // TODO try changing 4th param to a list of the children ParserRuleContexts
+        return new Translation(shellString, Type.STR, TypeMetadata.COMMAND, unnestedTextBlocks);
     }
 
     /**
@@ -513,6 +526,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         final boolean hasArgs = ctx.argumentList() != null;
         // empty list or ' arg1Text arg2Text etc.'
+        // TODO handle case where arguments have unnested text blocks (e.g. nested command substitutions)
         final String args = hasArgs
                 ? " " + argListTranslationStream.get().map(Translation::text).collect(Collectors.joining(" "))
                 : "";

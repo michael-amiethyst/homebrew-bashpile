@@ -37,9 +37,17 @@ public class CommandSubstutionBashpileTest extends BashpileTest {
         assertEquals("test\n", results.stdout());
     }
 
-    // TODO test
-    // #(export filename=src/test/resources/testdata.txt)
-    // var: str = #($(cat $(filename)))
+
+    @Test @Order(40)
+    public void nestedCommandSubstitutionInShellScriptWorks() {
+        final ExecutionResults results = runText("""
+                #(export filename=src/test/resources/testdata.txt)
+                contents: str = #($(cat $(echo $filename)))
+                print(contents)""");
+        assertEquals("test\n", results.stdout());
+    }
 
     // TODO test in calc
+
+    // TODO test all statements with nested subshells
 }

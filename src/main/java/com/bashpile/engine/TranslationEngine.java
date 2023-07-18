@@ -23,6 +23,8 @@ public interface TranslationEngine {
 
     // statement translations
 
+    Translation expressionStatement(final BashpileParser.ExpressionStatementContext ctx);
+
     Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
 
     Translation reassignmentStatement(final BashpileParser.ReassignmentStatementContext ctx);

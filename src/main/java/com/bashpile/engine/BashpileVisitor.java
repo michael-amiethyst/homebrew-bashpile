@@ -70,7 +70,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitExpressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
-        return visit(ctx.expression()).add("\n");
+        return translator.expressionStatement(ctx);
     }
 
     @Override
