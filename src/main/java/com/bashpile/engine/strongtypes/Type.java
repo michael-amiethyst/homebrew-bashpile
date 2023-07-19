@@ -11,6 +11,8 @@ public enum Type {
     NOT_FOUND,
     /** Not applicable -- as in for statements */
     NA,
+    /** Type could not be determined, matches any */
+    UNKNOWN,
     /** Instead of NIL or null we have the empty String or an empty object */
     EMPTY,
     BOOL,
@@ -40,7 +42,7 @@ public enum Type {
             type = Type.INT;
         } catch (NumberFormatException ignored) {
             Float.parseFloat(text);
-            type = Type.INT;
+            type = Type.FLOAT;
         }
         return type;
     }
@@ -54,6 +56,6 @@ public enum Type {
     }
 
     public boolean isNumeric() {
-        return this.equals(NUMBER) || this.equals(INT) || this.equals(FLOAT);
+        return this.equals(UNKNOWN) || this.equals(NUMBER) || this.equals(INT) || this.equals(FLOAT);
     }
 }

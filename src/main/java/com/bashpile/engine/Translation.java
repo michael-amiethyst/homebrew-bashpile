@@ -45,6 +45,19 @@ public record Translation(
         return new Translation(join(text), Type.STR, TypeMetadata.NORMAL);
     }
 
+    public static boolean areStringExpressions(@Nonnull final Translation... translations) {
+        // if all strings the stream of not-strings will be empty
+        return Stream.of(translations)
+                .filter(x -> x.type() != Type.STR && x.type() != Type.UNKNOWN)
+                .findAny()
+                .isEmpty();
+    }
+
+    public static boolean areNumberExpressions(@Nonnull final Translation... translations) {
+        // if all numbers the stream of not-numbers will be empty
+        return Stream.of(translations).filter(x -> !x.type().isNumeric()).findAny().isEmpty();
+    }
+
     public Translation add(@Nonnull final String appendText) {
         return new Translation(body + appendText, this.type, typeMetadata, preamble);
     }
@@ -67,5 +80,9 @@ public record Translation(
 
     public Translation body(@Nonnull final String nextBody) {
         return new Translation(nextBody, type, typeMetadata, preamble);
+    }
+
+    public Translation appendPreamble(@Nonnull final String append) {
+        return new Translation(body, type, typeMetadata, preamble + append);
     }
 }

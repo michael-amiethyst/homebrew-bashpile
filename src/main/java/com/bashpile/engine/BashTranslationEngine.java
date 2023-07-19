@@ -23,8 +23,7 @@ import java.util.stream.Stream;
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
-import static com.bashpile.engine.Translation.toStringTranslation;
-import static com.bashpile.engine.Translation.toTranslation;
+import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.TypeMetadata.INLINE;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.google.common.collect.Iterables.getLast;
@@ -369,14 +368,12 @@ public class BashTranslationEngine implements TranslationEngine {
                         if (childTranslation.isNotSubshell()) {
                             return childTranslation;
                         } // else unwind subshell by moving logic to translation's preamble
-                        final Pair<String, String> varAndLogic = subshellWorkaroundTextBlock(childTranslation.body());
+                        final Pair<String, String> bodyWorkaround =
+                                subshellWorkaroundTextBlock(childTranslation.body());
                         // create our translation as ${varName}
-                        // TODO use and create fluent API
-                        return new Translation(
-                                "${%s}".formatted(varAndLogic.getKey()),
-                                Type.NUMBER,
-                                NORMAL,
-                                childTranslation.preamble() + varAndLogic.getValue());
+                        return childTranslation
+                                .body("${%s}".formatted(bodyWorkaround.getKey()))
+                                .appendPreamble(bodyWorkaround.getValue());
                     })
                     .collect(Collectors.toList());
         }
@@ -406,16 +403,6 @@ public class BashTranslationEngine implements TranslationEngine {
             throw new TypeError("Incompatible types in calc: %s and %s".formatted(
                     first.type(), second.type()), ctx.start.getLine());
         }
-    }
-
-    private boolean areStringExpressions(@Nonnull final Translation... translations) {
-        // if all strings the stream of not-strings will be empty
-        return Stream.of(translations).filter(x -> x.type() != Type.STR).findAny().isEmpty();
-    }
-
-    private boolean areNumberExpressions(@Nonnull final Translation... translations) {
-        // if all numbers the stream of not-numbers will be empty
-        return Stream.of(translations).filter(x -> !x.type().isNumeric()).findAny().isEmpty();
     }
 
     @Override
@@ -513,8 +500,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.body());
             final String body = "${%s}".formatted(subshell.getKey());
             // TODO remove typemetadata in favor of using LevelCounter
-            // TODO detect type automatically
-            return new Translation(body, Type.STR, INLINE, joined.preamble() + subshell.getValue());
+            return new Translation(body, Type.UNKNOWN, INLINE, joined.preamble() + subshell.getValue());
         }
     }
 }

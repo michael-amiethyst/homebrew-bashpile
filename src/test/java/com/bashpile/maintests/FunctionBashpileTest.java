@@ -40,7 +40,7 @@ class FunctionBashpileTest extends BashpileTest {
                 (38. + 5) * .3
                 function functionName:int(x:int, y:int):
                     return x * y
-                x:int = 7.7
+                x:float = 7.7
                 x * x
                 """).stdoutLines();
         assertEquals(2, executionResults.size());

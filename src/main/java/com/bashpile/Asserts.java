@@ -84,6 +84,7 @@ public class Asserts {
                 final Type expected = expectedTypes.get(i);
                 final Type actual = actualTypes.get(i++);
                 // the types match if they are equal
+                // TODO move to Type
                 typesMatch = expected.equals(actual)
                         // a FLOAT also matches an INT
                         || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))

@@ -1,6 +1,7 @@
 package com.bashpile.maintests;
 
 import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -55,6 +56,14 @@ class StatementBashpileTest extends BashpileTest {
                 someVar: int = 1 + 1
                 someVar: str = "2"
                 """));
+    }
+
+    @Test
+    @Order(41)
+    public void assignFloatToIntThrows() {
+        assertThrows(TypeError.class, () -> runText("""
+                someVar: int = 2.2
+                print(someVar + 2)"""));
     }
 
     @Test
