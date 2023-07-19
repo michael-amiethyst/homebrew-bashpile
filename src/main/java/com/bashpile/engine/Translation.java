@@ -13,7 +13,8 @@ import static org.apache.commons.lang3.StringUtils.join;
  * Decorator pattern for a String.
  *
  * @param body The target shell script (e.g. Bash) literal text.
- * @param type The Bashpile type.
+ * @param type The Bashpile type.  For Shell Strings and Command Substitutions this is the type of the result.
+ *             E.g. $(expr 1 + 1) could have a type of int.
  * @param typeMetadata Further information of the type (e.g. is this a subshell?)
  * @param preamble This is text that needs to be emitted before the rest of the translation.<br>
  *                          This is to handle the case of a nested command substitution, since they are not supported

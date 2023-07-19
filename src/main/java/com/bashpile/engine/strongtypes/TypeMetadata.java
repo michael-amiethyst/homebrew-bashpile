@@ -8,6 +8,9 @@ public enum TypeMetadata {
     COMMAND,
     /** Bash example: (commands) */
     SUBSHELL,
-    /** Our name for Bash command substitution, i.e. $(commands) */
+    /**
+     * Our name for Bash command substitution, i.e. $(commands).
+     * An inline translation needs the inline logic to be moved into the preamble still.
+     */
     INLINE
 }

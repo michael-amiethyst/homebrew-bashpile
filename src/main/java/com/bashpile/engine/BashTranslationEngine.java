@@ -52,7 +52,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     private static @Nonnull String getLocalText(final boolean reassignment) {
-        final boolean indented = LevelCounter.in(BLOCK);
+        final boolean indented = LevelCounter.in(BLOCK_LABEL);
         if (indented && !reassignment) {
             return "local ";
         } else if (indented) { // and a reassignment
@@ -63,7 +63,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     private static @Nonnull String getHoisted() {
-        return LevelCounter.in(FORWARD_DECL) ? " (hoisted)" : "";
+        return LevelCounter.in(FORWARD_DECL_LABEL) ? " (hoisted)" : "";
     }
 
     // instance variables
@@ -199,7 +199,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // body
-        try (final LevelCounter ignored = new LevelCounter(PRINT)) {
+        try (final LevelCounter ignored = new LevelCounter(PRINT_LABEL)) {
             final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
             final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
                     .map(visitor::visit)
@@ -242,7 +242,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation functionForwardDeclarationStatement(
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
-        try (LevelCounter ignored = new LevelCounter(FORWARD_DECL)) {
+        try (LevelCounter ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
             final String lineComment =
                     "# function forward declaration, Bashpile line %d".formatted(ctx.start.getLine());
             final String hoistedFunctionText = visitor.visit(functionDeclCtx).body();
@@ -279,7 +279,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create block
         String block;
-        try (LevelCounter ignored = new LevelCounter(BLOCK)) {
+        try (LevelCounter ignored = new LevelCounter(BLOCK_LABEL)) {
             typeStack.push();
 
             // register local variable types
@@ -319,7 +319,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
         String block;
-        try (LevelCounter ignored = new LevelCounter(BLOCK)) {
+        try (LevelCounter ignored = new LevelCounter(BLOCK_LABEL)) {
             typeStack.push();
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
@@ -378,7 +378,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
         // get the child translations
         List<Translation> childTranslations;
-        try (LevelCounter ignored = new LevelCounter(CALC)) {
+        try (LevelCounter ignored = new LevelCounter(CALC_LABEL)) {
             childTranslations = ctx.children.stream()
                     .map(visitor::visit)
                     .map(childTranslation -> {
@@ -399,7 +399,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation first = childTranslations.get(0);
         final Translation second = getLast(childTranslations);
         // check for nested calc call
-        if (LevelCounter.in(CALC) && areNumberExpressions(first, second)) {
+        if (LevelCounter.in(CALC_LABEL) && areNumberExpressions(first, second)) {
             return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
         // types section
         } else if (areStringExpressions(first, second)) {
@@ -426,7 +426,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
         final Translation expr = visitor.visit(ctx.expression());
         // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
-        final String format = expr.type().isNumeric() && LevelCounter.in(CALC) ? "(%s)" : "%s";
+        final String format = expr.type().isNumeric() && LevelCounter.in(CALC_LABEL) ? "(%s)" : "%s";
         return new Translation(format.formatted(expr.body()), expr.type(), expr.typeMetadata());
     }
 
@@ -463,7 +463,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
-        final boolean topLevelStatement = !in(CALC) && !in(PRINT);
+        final boolean topLevelStatement = !in(CALC_LABEL) && !in(PRINT_LABEL);
         if (topLevelStatement) {
             return toStringTranslation(id + args + " >/dev/null");
         } // else return a command substitution
@@ -508,8 +508,8 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation inline(BashpileParser.InlineContext ctx) {
         final boolean nested = LevelCounter.inCommandSubstitution();
-        final boolean inline = LevelCounter.in(LevelCounter.INLINE);
-        try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE)) {
+        final boolean inlineNested = LevelCounter.in(LevelCounter.INLINE_LABEL);
+        try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
             final Translation joined = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeText();
             if (!nested) {
@@ -518,9 +518,8 @@ public class BashTranslationEngine implements TranslationEngine {
             log.trace("Inline rule {} is nested.", ctx.getText());
             final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.body());
             final String body = "${%s}".formatted(subshell.getKey());
-            // TODO remove typemetadata in favor of using LevelCounter
             return new Translation(
-                    body, Type.UNKNOWN, inline ? INLINE : NORMAL, joined.preamble() + subshell.getValue());
+                    body, Type.UNKNOWN, inlineNested ? INLINE : NORMAL, joined.preamble() + subshell.getValue());
         }
     }
 }

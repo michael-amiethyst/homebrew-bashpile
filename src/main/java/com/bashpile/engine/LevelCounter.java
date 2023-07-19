@@ -8,19 +8,19 @@ import java.util.HashMap;
 public class LevelCounter implements Closeable {
 
     /** LevelCounter label */
-    public static final String BLOCK = "block";
+    public static final String BLOCK_LABEL = "block";
 
     /** LevelCounter label */
-    public static final String CALC = "calc";
+    public static final String CALC_LABEL = "calc";
 
     /** LevelCounter label */
-    public static final String INLINE = "inline";
+    public static final String INLINE_LABEL = "inline";
 
     /** LevelCounter label */
-    public static final String FORWARD_DECL = "forwardDecl";
+    public static final String FORWARD_DECL_LABEL = "forwardDecl";
 
     /** LevelCounter label */
-    public static final String PRINT = "print";
+    public static final String PRINT_LABEL = "print";
 
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
 
@@ -31,7 +31,7 @@ public class LevelCounter implements Closeable {
 
     /** Are we in anything implemented with a Bash Command Substitution? */
     public static boolean inCommandSubstitution() {
-        return LevelCounter.in(CALC) || LevelCounter.in(LevelCounter.INLINE);
+        return LevelCounter.in(CALC_LABEL) || LevelCounter.in(LevelCounter.INLINE_LABEL);
     }
 
     public static int get(@Nonnull final String name) {
