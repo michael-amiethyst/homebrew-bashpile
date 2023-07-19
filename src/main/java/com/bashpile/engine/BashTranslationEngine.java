@@ -242,12 +242,12 @@ public class BashTranslationEngine implements TranslationEngine {
         // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
         assertNoMatch(tr.body(), subshellWorkaroundVariable);
         final String workaroundText = """
-                ## subshell workaround preamble for %s
+                ## unnest for %s
                 export %s=%s
                 %s=$?
                 if [ "$%s" -ne 0 ]; then exit "$%s"; fi
                 """.formatted(tr.body(), subshellReturn, tr.body(), exitCodeName, exitCodeName, exitCodeName);
-        return tr.appendPreamble(workaroundText).body("${%s}\n".formatted(subshellReturn));
+        return tr.appendPreamble(workaroundText).body("${%s}".formatted(subshellReturn));
     }
 
     @Override
@@ -393,17 +393,7 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter ignored = new LevelCounter(CALC_LABEL)) {
             childTranslations = ctx.children.stream()
                     .map(visitor::visit)
-                    .map(childTranslation -> {
-                        if (childTranslation.isNotSubshell()) {
-                            return childTranslation;
-                        } // else unwind subshell by moving logic to translation's preamble
-                        final Pair<String, String> bodyWorkaround =
-                                subshellWorkaroundTextBlock(childTranslation.body());
-                        // create our translation as ${varName}
-                        return childTranslation
-                                .body("${%s}".formatted(bodyWorkaround.getKey()))
-                                .appendPreamble(bodyWorkaround.getValue());
-                    })
+                    .map(tr -> tr.isNotSubshell() ? tr : unnest(tr))
                     .collect(Collectors.toList());
         }
 
