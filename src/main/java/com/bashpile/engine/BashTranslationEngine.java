@@ -9,7 +9,10 @@ import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -17,6 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,6 +40,10 @@ public class BashTranslationEngine implements TranslationEngine {
     // static variables
 
     public static final String TAB = "    ";
+
+    private static final Logger log = LogManager.getLogger(BashTranslationEngine.class);
+
+    private static final Pattern subshellWorkaroundVariable = Pattern.compile("^\\$\\{__bp.*");
 
     // static methods
 
@@ -137,6 +145,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
+        final String indentedComment =
+                StringUtils.isEmpty(exprTranslation.preamble()) ? "" : "## assign statement body\n";
         final String unnestedText = exprTranslation.preamble();
         final String value = exprExists ? "=" + exprTranslation.body() : "";
         /*
@@ -146,9 +156,14 @@ public class BashTranslationEngine implements TranslationEngine {
          * or just the comment line and
          * `local variableName`
          */
-        return new Translation(
-                "%s\n%s%s%s%s\n".formatted(lineComment, unnestedText, getLocalText(), variableName, value),
-                Type.NA, NORMAL);
+        // TODO check for error exit code in assignment in a function/anonymous block
+        // need to break 'local var=$(errorCommand)' into 'local var' and 'var=$(errorCommand)'
+        // to avoid error suppression
+        final String body = lineComment + "\n"
+                + unnestedText    // includes newline
+                + indentedComment // includes newline
+                + getLocalText() + variableName + value + "\n";
+        return new Translation(body, Type.NA, NORMAL);
     }
 
     // TODO handle preambles
@@ -213,11 +228,13 @@ public class BashTranslationEngine implements TranslationEngine {
         final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
         // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
+        assertNoMatch(translatedText, subshellWorkaroundVariable);
         final String workaroundText = """
+                ## subshell workaround preamble for %s
                 export %s=%s
                 %s=$?
                 if [ "$%s" -ne 0 ]; then exit "$%s"; fi
-                """.formatted(subshellReturn, translatedText, exitCodeName, exitCodeName, exitCodeName);
+                """.formatted(translatedText, subshellReturn, translatedText, exitCodeName, exitCodeName, exitCodeName);
         return Pair.of(subshellReturn, workaroundText);
     }
 
@@ -491,16 +508,19 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation inline(BashpileParser.InlineContext ctx) {
         final boolean nested = LevelCounter.inCommandSubstitution();
+        final boolean inline = LevelCounter.in(LevelCounter.INLINE);
         try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
-            final Translation joined = toTranslation(children, Type.STR, NORMAL).unescapeText();
+            final Translation joined = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeText();
             if (!nested) {
                 return joined;
             } // else nested
+            log.trace("Inline rule {} is nested.", ctx.getText());
             final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.body());
             final String body = "${%s}".formatted(subshell.getKey());
             // TODO remove typemetadata in favor of using LevelCounter
-            return new Translation(body, Type.UNKNOWN, INLINE, joined.preamble() + subshell.getValue());
+            return new Translation(
+                    body, Type.UNKNOWN, inline ? INLINE : NORMAL, joined.preamble() + subshell.getValue());
         }
     }
 }

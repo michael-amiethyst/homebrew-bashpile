@@ -42,12 +42,24 @@ public class Asserts {
         assertMatches(str, textLine);
     }
 
+    /** Checks for a complete match (i.e. whole string must match) */
     public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
             final String winNewlines = str.contains("\r") ? "found" : "not found";
             throw new BashpileUncheckedAssertionException(
                     "Str [%s] didn't match regex %s, windows newlines %s"
+                            .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
+        }
+    }
+
+    /** Checks for a complete match (i.e. whole string must match) */
+    public static void assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
+        final Matcher matchResults = regex.matcher(str);
+        if (matchResults.matches()) {
+            final String winNewlines = str.contains("\r") ? "found" : "not found";
+            throw new BashpileUncheckedAssertionException(
+                    "Str [%s] matched regex %s, windows newlines were %s"
                             .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
         }
     }
@@ -86,6 +98,8 @@ public class Asserts {
                 // the types match if they are equal
                 // TODO move to Type
                 typesMatch = expected.equals(actual)
+                        // unknown matches everything
+                        || expected.equals(Type.UNKNOWN) || actual.equals(Type.UNKNOWN)
                         // a FLOAT also matches an INT
                         || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))
                         // a NUMBER also matches an INT or a FLOAT
