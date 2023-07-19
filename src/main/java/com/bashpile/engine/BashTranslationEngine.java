@@ -9,9 +9,6 @@ import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -41,8 +38,6 @@ public class BashTranslationEngine implements TranslationEngine {
     // static variables
 
     public static final String TAB = "    ";
-
-    private static final Logger log = LogManager.getLogger(BashTranslationEngine.class);
 
     private static final Pattern subshellWorkaroundVariable = Pattern.compile("^\\$\\{__bp.*");
 
@@ -216,26 +211,12 @@ public class BashTranslationEngine implements TranslationEngine {
     /**
      * Subshell errored exit codes are ignored in Bash despite all configurations.
      * This workaround explicitly propagates errored exit codes.
-     * @param translatedText We run this subshell Bash text and check for errors.
-     * @return The variable name assigned to the value of running <code>translatedText</code> and
-     * the workaround in three lines, ending with newline.
+     *
+     * @param tr The base translation.
+     * @return A Translation where the preamble is <code>tr</code>'s body and the work-around.
+     * The body is a Command Substitution of a created variable
+     * that holds the results of executing <code>tr</code>'s body.
      */
-    // TODO change to unnest
-    @Deprecated
-    private Pair<String, String> subshellWorkaroundTextBlock(@Nonnull final String translatedText) {
-        final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
-        final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
-        // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
-        assertNoMatch(translatedText, subshellWorkaroundVariable);
-        final String workaroundText = """
-                ## subshell workaround preamble for %s
-                export %s=%s
-                %s=$?
-                if [ "$%s" -ne 0 ]; then exit "$%s"; fi
-                """.formatted(translatedText, subshellReturn, translatedText, exitCodeName, exitCodeName, exitCodeName);
-        return Pair.of(subshellReturn, workaroundText);
-    }
-
     private Translation unnest(@Nonnull final Translation tr) {
         final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
@@ -383,7 +364,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         final Translation expression = visitor.visit(ctx.expression());
-        return expression.toType(Type.valueOf(ctx.Type().getText().toUpperCase()));
+        return expression.type(Type.valueOf(ctx.Type().getText().toUpperCase()));
     }
 
     @Override
@@ -509,14 +490,9 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
             final Translation joined = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeText();
-            if (!nested) {
-                return joined;
-            } // else nested
-            log.trace("Inline rule {} is nested.", ctx.getText());
-            final Pair<String, String> subshell = subshellWorkaroundTextBlock(joined.body());
-            final String body = "${%s}".formatted(subshell.getKey());
-            return new Translation(
-                    body, Type.UNKNOWN, inlineNested ? INLINE : NORMAL, joined.preamble() + subshell.getValue());
+            return !nested
+                ? joined
+                : unnest(joined).typeMetadata(inlineNested ? INLINE : NORMAL);
         }
     }
 }

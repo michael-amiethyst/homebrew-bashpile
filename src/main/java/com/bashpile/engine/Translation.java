@@ -75,8 +75,12 @@ public record Translation(
         return new Translation(StringEscapeUtils.unescapeJava(body), type, typeMetadata, preamble);
     }
 
-    public Translation toType(@Nonnull final Type typecastType) {
+    public Translation type(@Nonnull final Type typecastType) {
         return new Translation(body, typecastType, typeMetadata, preamble);
+    }
+
+    public Translation typeMetadata(@Nonnull final TypeMetadata meta) {
+        return new Translation(body, type, meta, preamble);
     }
 
     public Translation appendPreamble(@Nonnull final String append) {
