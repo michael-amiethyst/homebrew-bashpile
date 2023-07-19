@@ -488,13 +488,8 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation shellStringTranslation =
                 toTranslation(translationStream, UNKNOWN, NORMAL).unescapeText();
         if (LevelCounter.inCommandSubstitution()) {
-            final Pair<String, String> workaround =
-                    subshellWorkaroundTextBlock("$(%s)".formatted(shellStringTranslation.body()));
-            shellStringTranslation = new Translation(
-                    "${%s}".formatted(workaround.getKey()),
-                    shellStringTranslation.type(),
-                    shellStringTranslation.typeMetadata(),
-                    workaround.getValue() + shellStringTranslation.preamble());
+            shellStringTranslation = shellStringTranslation.body("$(%s)".formatted(shellStringTranslation.body()));
+            shellStringTranslation = unnest(shellStringTranslation);
         }
         return shellStringTranslation;
     }
