@@ -60,7 +60,7 @@ public record Translation(
     }
 
     public Translation add(@Nonnull final String appendText) {
-        return new Translation(body + appendText, this.type, typeMetadata, preamble);
+        return new Translation(body + appendText, type, typeMetadata, preamble);
     }
 
     public Translation add(@Nonnull final Translation other) {
@@ -79,11 +79,15 @@ public record Translation(
         return new Translation(body, typecastType, typeMetadata, preamble);
     }
 
+    public Translation appendPreamble(@Nonnull final String append) {
+        return new Translation(body, type, typeMetadata, preamble + append);
+    }
+
     public Translation body(@Nonnull final String nextBody) {
         return new Translation(nextBody, type, typeMetadata, preamble);
     }
 
-    public Translation appendPreamble(@Nonnull final String append) {
-        return new Translation(body, type, typeMetadata, preamble + append);
+    public Translation mergePreamble() {
+        return new Translation(preamble + body, type, typeMetadata);
     }
 }

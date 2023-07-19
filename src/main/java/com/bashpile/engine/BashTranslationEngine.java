@@ -4,7 +4,6 @@ import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
-import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
@@ -28,6 +27,8 @@ import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.strongtypes.Type.STR;
+import static com.bashpile.engine.strongtypes.Type.UNKNOWN;
 import static com.bashpile.engine.strongtypes.TypeMetadata.INLINE;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.google.common.collect.Iterables.getLast;
@@ -200,20 +201,15 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // body
         try (final LevelCounter ignored = new LevelCounter(PRINT_LABEL)) {
-            final String lineComment = "# print statement, Bashpile line %d".formatted(ctx.start.getLine());
-            final String printText = ("%s\n%s\n").formatted(lineComment, argList.expression().stream()
+            final Translation lineComment = toStringTranslation(
+                    "# print statement, Bashpile line %d\n".formatted(ctx.start.getLine()));
+            final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
-                    .map(tr -> {
-                        if (tr.isNotSubshell()) {
-                            return "%secho %s".formatted(tr.preamble(), tr.body());
-                        } // else tr is a subshell
-                        final Pair<String, String> subshell = subshellWorkaroundTextBlock(tr.body());
-                        final String trBodyWorkaround = subshell.getValue();
-                        return """
-                                %s%secho "${%s}\"""".formatted(tr.preamble(), trBodyWorkaround, subshell.getKey());
-                    })
-                    .collect(Collectors.joining(" ")));
-            return toStringTranslation(printText);
+                    .map(tr -> tr.isNotSubshell() ? tr : unnest(tr))
+                    .map(tr -> tr.body("echo %s\n".formatted(tr.body())))
+                    .reduce(Translation::add)
+                    .orElseThrow();
+            return lineComment.add(arguments).mergePreamble();
         }
     }
 
@@ -224,6 +220,8 @@ public class BashTranslationEngine implements TranslationEngine {
      * @return The variable name assigned to the value of running <code>translatedText</code> and
      * the workaround in three lines, ending with newline.
      */
+    // TODO change to unnest
+    @Deprecated
     private Pair<String, String> subshellWorkaroundTextBlock(@Nonnull final String translatedText) {
         final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
@@ -236,6 +234,20 @@ public class BashTranslationEngine implements TranslationEngine {
                 if [ "$%s" -ne 0 ]; then exit "$%s"; fi
                 """.formatted(translatedText, subshellReturn, translatedText, exitCodeName, exitCodeName, exitCodeName);
         return Pair.of(subshellReturn, workaroundText);
+    }
+
+    private Translation unnest(@Nonnull final Translation tr) {
+        final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
+        final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
+        // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
+        assertNoMatch(tr.body(), subshellWorkaroundVariable);
+        final String workaroundText = """
+                ## subshell workaround preamble for %s
+                export %s=%s
+                %s=$?
+                if [ "$%s" -ne 0 ]; then exit "$%s"; fi
+                """.formatted(tr.body(), subshellReturn, tr.body(), exitCodeName, exitCodeName, exitCodeName);
+        return tr.appendPreamble(workaroundText).body("${%s}\n".formatted(subshellReturn));
     }
 
     @Override
@@ -405,7 +417,7 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (areStringExpressions(first, second)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
-            return toTranslation(Stream.of(first, second), Type.STR, NORMAL);
+            return toTranslation(Stream.of(first, second), STR, NORMAL);
         } else if (areNumberExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
@@ -484,7 +496,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         final Stream<Translation> translationStream = ctx.shellStringContents().stream().map(visitor::visit);
         Translation shellStringTranslation =
-                toTranslation(translationStream, Type.STR, TypeMetadata.COMMAND).unescapeText();
+                toTranslation(translationStream, UNKNOWN, NORMAL).unescapeText();
         if (LevelCounter.inCommandSubstitution()) {
             final Pair<String, String> workaround =
                     subshellWorkaroundTextBlock("$(%s)".formatted(shellStringTranslation.body()));

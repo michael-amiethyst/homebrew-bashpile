@@ -12,6 +12,7 @@ Implement testrig.bp
 (Not ordered)
 * remaining types (array, map, ref)
 * imports
+* sub shells, Bash `()`, Bashpile `&()`?
 * default values for functions
 * exponents, other operators
 * commas in large values (e.g. 1,001)
