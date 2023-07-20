@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -61,6 +62,14 @@ public class InlineBashpileTest extends BashpileTest {
                 result = $(expr 2 - $(expr 3 + 4)) + 5
                 print(result)""");
         assertEquals("0\n", results.stdout());
+    }
+
+    @Test @Order(70)
+    public void nestedInlineWithExpressionStatementWorks() {
+        final ExecutionResults results = runText("""
+                $(expr 2 - $(expr 3 + 4)) + 5""");
+        assertEquals(ExecutionResults.COMMAND_NOT_FOUND, results.exitCode());
+        assertTrue(results.stdout().contains("0"));
     }
 
     // TODO test all statements with nested subshells

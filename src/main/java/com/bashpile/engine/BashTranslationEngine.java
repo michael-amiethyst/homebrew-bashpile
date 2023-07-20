@@ -209,29 +209,6 @@ public class BashTranslationEngine implements TranslationEngine {
         }
     }
 
-    /**
-     * Subshell errored exit codes are ignored in Bash despite all configurations.
-     * This workaround explicitly propagates errored exit codes.
-     *
-     * @param tr The base translation.
-     * @return A Translation where the preamble is <code>tr</code>'s body and the work-around.
-     * The body is a Command Substitution of a created variable
-     * that holds the results of executing <code>tr</code>'s body.
-     */
-    private Translation unnest(@Nonnull final Translation tr) {
-        final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
-        final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
-        // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
-        assertNoMatch(tr.body(), subshellWorkaroundVariable);
-        final String workaroundText = """
-                ## unnest for %s
-                export %s=%s
-                %s=$?
-                if [ "$%s" -ne 0 ]; then exit "$%s"; fi
-                """.formatted(tr.body(), subshellReturn, tr.body(), exitCodeName, exitCodeName, exitCodeName);
-        return tr.appendPreamble(workaroundText).body("${%s}".formatted(subshellReturn));
-    }
-
     @Override
     public @Nonnull Translation functionForwardDeclarationStatement(
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
@@ -286,6 +263,7 @@ public class BashTranslationEngine implements TranslationEngine {
             // the empty string or ...
             final String namedParams = ctx.paramaters().typedId().isEmpty() ? "" :
                     // local var1=$1; local var2=$2; etc
+                    // TODO handle preambles
                     "%s%s\n".formatted(TAB, ctx.paramaters().typedId().stream()
                                     .map(BashpileParser.TypedIdContext::Id)
                                     .map(visitor::visit)
@@ -308,7 +286,6 @@ public class BashTranslationEngine implements TranslationEngine {
         return toStringTranslation(block);
     }
 
-    // TODO handle preambles
     @Override
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
@@ -332,6 +309,7 @@ public class BashTranslationEngine implements TranslationEngine {
         return toStringTranslation(block);
     }
 
+    // TODO handle preambles
     @Override
     public @Nonnull Translation returnPsudoStatement(@Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
         final boolean exprExists = ctx.expression() != null;
@@ -462,7 +440,7 @@ public class BashTranslationEngine implements TranslationEngine {
         return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
     }
 
-    // expression helpers
+    // expression helper rules
 
     @Override
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
@@ -496,4 +474,30 @@ public class BashTranslationEngine implements TranslationEngine {
                 : unnest(joined).typeMetadata(inlineNested ? INLINE : NORMAL);
         }
     }
+
+    // helpers
+
+    /**
+     * Subshell errored exit codes are ignored in Bash despite all configurations.
+     * This workaround explicitly propagates errored exit codes.
+     *
+     * @param tr The base translation.
+     * @return A Translation where the preamble is <code>tr</code>'s body and the work-around.
+     * The body is a Command Substitution of a created variable
+     * that holds the results of executing <code>tr</code>'s body.
+     */
+    private Translation unnest(@Nonnull final Translation tr) {
+        final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
+        final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
+        // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
+        assertNoMatch(tr.body(), subshellWorkaroundVariable);
+        final String workaroundText = """
+                ## unnest for %s
+                export %s=%s
+                %s=$?
+                if [ "$%s" -ne 0 ]; then exit "$%s"; fi
+                """.formatted(tr.body(), subshellReturn, tr.body(), exitCodeName, exitCodeName, exitCodeName);
+        return tr.appendPreamble(workaroundText).body("${%s}".formatted(subshellReturn));
+    }
+
 }
