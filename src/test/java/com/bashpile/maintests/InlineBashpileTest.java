@@ -108,5 +108,12 @@ public class InlineBashpileTest extends BashpileTest {
         assertEquals("0\n", results.stdout());
     }
 
-    // TODO test all statements with nested subshells
+    @Test @Order(120)
+    public void nestedInlineInFunctionCallWorks() {
+        final ExecutionResults results = runText("""
+                function mathIt:int(first:int):
+                    return first + 5
+                print(mathIt($(expr 2 - $(expr 3 + 4))))""");
+        assertEquals("0\n", results.stdout());
+    }
 }

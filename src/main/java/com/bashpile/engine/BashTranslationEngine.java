@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -142,23 +141,14 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create translation
         final String lineComment = "# assign statement, Bashpile line %d".formatted(ctx.start.getLine());
-        final String indentedComment =
+        final String subcomment =
                 StringUtils.isEmpty(exprTranslation.preamble()) ? "" : "## assign statement body\n";
         final String unnestedText = exprTranslation.preamble();
         final String assignment = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
-        /*
-         * Translation will be something like:
-         * `# assign statement, Bashpile line 1
-         * local variableName=value`
-         * or just the comment line and
-         * `local variableName`
-         */
-        // TODO check for error exit code in assignment in a function/anonymous block
-        // need to break 'local var=$(errorCommand)' into 'local var' and 'var=$(errorCommand)'
-        // to avoid error suppression
+
         final String body = lineComment + "\n"
                 + unnestedText    // includes newline
-                + indentedComment // includes newline
+                + subcomment // includes newline
                 + getLocalText() + variableName + "\n"
                 + assignment; // includes newline
         return new Translation(body, Type.NA, NORMAL);
@@ -265,7 +255,6 @@ public class BashTranslationEngine implements TranslationEngine {
             // the empty string or ...
             final String namedParams = ctx.paramaters().typedId().isEmpty() ? "" :
                     // local var1=$1; local var2=$2; etc
-                    // TODO handle preambles
                     "%s%s\n".formatted(TAB, ctx.paramaters().typedId().stream()
                                     .map(BashpileParser.TypedIdContext::Id)
                                     .map(visitor::visit)
@@ -311,7 +300,6 @@ public class BashTranslationEngine implements TranslationEngine {
         return toStringTranslation(block);
     }
 
-    // TODO handle preambles
     @Override
     public @Nonnull Translation returnPsudoStatement(@Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
         final boolean exprExists = ctx.expression() != null;
@@ -415,12 +403,12 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get functionName and a stream creator
         final String functionName = ctx.Id().getText();
-        final Supplier<Stream<Translation>> argListTranslationStream =
-                () -> ctx.argumentList().expression().stream().map(visitor::visit);
+        final List<Translation> argumentTranslations =
+                ctx.argumentList().expression().stream().map(visitor::visit).toList();
         // get the expected and actual types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
         final List<Type> actualTypes = ctx.argumentList() != null
-                ? argListTranslationStream.get().map(Translation::type).collect(Collectors.toList())
+                ? argumentTranslations.stream().map(Translation::type).toList()
                 : List.of();
         // assert equals
         Asserts.assertTypesMatch(expectedTypes.parameterTypes(), actualTypes, functionName, ctx.start.getLine());
@@ -429,9 +417,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
         final boolean hasArgs = ctx.argumentList() != null;
         // empty list or ' arg1Text arg2Text etc.'
-        // TODO handle case where arguments have unnested ext blocks (e.g. nested command substitutions)
         final String args = hasArgs
-                ? " " + argListTranslationStream.get().map(Translation::body).collect(Collectors.joining(" "))
+                ? " " + argumentTranslations.stream().map(Translation::body).collect(Collectors.joining(" "))
                 : "";
 
         // lookup return type of this function
@@ -440,11 +427,12 @@ public class BashTranslationEngine implements TranslationEngine {
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
         final boolean topLevelStatement = !in(CALC_LABEL) && !in(PRINT_LABEL);
+        final Translation joined = argumentTranslations.stream().reduce(Translation::add).orElseThrow();
         if (topLevelStatement) {
-            return toStringTranslation(id + args + " >/dev/null");
-        } // else return a command substitution
+            return new Translation(id + args + " >/dev/null", retType, NORMAL, joined.preamble());
+        } // else return an inline (command substitution)
         final String text = "$(%s%s)".formatted(id, args);
-        return new Translation(text, retType, INLINE);
+        return new Translation(text, retType, INLINE, joined.preamble());
     }
 
     @Override
@@ -509,7 +497,6 @@ public class BashTranslationEngine implements TranslationEngine {
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
         // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
         assertNoMatch(tr.body(), subshellWorkaroundVariable);
-        // TODO break this up
         final String workaroundText = """
                 ## unnest for %s
                 export %s
