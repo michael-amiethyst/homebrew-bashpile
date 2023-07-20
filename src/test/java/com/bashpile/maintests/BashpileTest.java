@@ -13,7 +13,7 @@ abstract public class BashpileTest {
     private static final Logger log = LogManager.getLogger(BashpileTest.class);
 
     protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
-        log.debug("Start of {}", bashText);
+        log.debug("Start of:\n{}", bashText);
         BashpileMain bashpile = new BashpileMain(bashText);
         return bashpile.execute();
     }

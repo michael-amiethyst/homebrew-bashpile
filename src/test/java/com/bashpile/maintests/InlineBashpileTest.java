@@ -82,6 +82,24 @@ public class InlineBashpileTest extends BashpileTest {
     }
 
     @Test @Order(90)
+    public void inlineWithErroredCalcInAnonymousBlockThrows() {
+        String bashText = """
+                block:
+                    result: int = $(expr 3 + 4; exit 1)
+                    print(result)""";
+        assertEquals(1, runText(bashText).exitCode());
+    }
+
+    @Test @Order(100)
+    public void nestedInlineWithErroredCalcInAnonymousBlockThrows() {
+        String bashText = """
+                block:
+                    result: int = $(expr 2 - $(expr 3 + 4; exit 1)) + 5
+                    print(result)""";
+        assertEquals(1, runText(bashText).exitCode());
+    }
+
+    @Test @Order(110)
     public void nestedInlineWithCalcInReturnPsudoStatementWorks() {
         final ExecutionResults results = runText("""
                 function mathIt:int(last:int):

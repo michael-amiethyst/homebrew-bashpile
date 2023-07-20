@@ -145,7 +145,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String indentedComment =
                 StringUtils.isEmpty(exprTranslation.preamble()) ? "" : "## assign statement body\n";
         final String unnestedText = exprTranslation.preamble();
-        final String value = exprExists ? "=" + exprTranslation.body() : "";
+        final String assignment = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
         /*
          * Translation will be something like:
          * `# assign statement, Bashpile line 1
@@ -159,7 +159,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final String body = lineComment + "\n"
                 + unnestedText    // includes newline
                 + indentedComment // includes newline
-                + getLocalText() + variableName + value + "\n";
+                + getLocalText() + variableName + "\n"
+                + assignment; // includes newline
         return new Translation(body, Type.NA, NORMAL);
     }
 
@@ -508,12 +509,15 @@ public class BashTranslationEngine implements TranslationEngine {
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
         // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
         assertNoMatch(tr.body(), subshellWorkaroundVariable);
+        // TODO break this up
         final String workaroundText = """
                 ## unnest for %s
-                export %s=%s
+                export %s
+                %s=%s
                 %s=$?
                 if [ "$%s" -ne 0 ]; then exit "$%s"; fi
-                """.formatted(tr.body(), subshellReturn, tr.body(), exitCodeName, exitCodeName, exitCodeName);
+                """.formatted(
+                        tr.body(), subshellReturn, subshellReturn, tr.body(), exitCodeName, exitCodeName, exitCodeName);
         return tr.appendPreamble(workaroundText).body("${%s}".formatted(subshellReturn));
     }
 
