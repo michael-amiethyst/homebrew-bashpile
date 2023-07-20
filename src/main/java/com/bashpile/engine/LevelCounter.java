@@ -31,7 +31,7 @@ public class LevelCounter implements Closeable {
 
     /** Are we in anything implemented with a Bash Command Substitution? */
     public static boolean inCommandSubstitution() {
-        return LevelCounter.in(CALC_LABEL) || LevelCounter.in(LevelCounter.INLINE_LABEL);
+        return in(CALC_LABEL) || in(INLINE_LABEL) || in(FORWARD_DECL_LABEL);
     }
 
     public static int get(@Nonnull final String name) {

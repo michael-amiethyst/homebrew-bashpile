@@ -67,8 +67,8 @@ public record Translation(
         return new Translation(body + other.body, type, typeMetadata, preamble + other.preamble);
     }
 
-    public boolean isNotSubshell() {
-        return !typeMetadata.equals(TypeMetadata.SUBSHELL) && !typeMetadata.equals(TypeMetadata.INLINE);
+    public boolean isInlineOrSubshell() {
+        return typeMetadata.equals(TypeMetadata.SUBSHELL) || typeMetadata.equals(TypeMetadata.INLINE);
     }
 
     public Translation unescapeText() {

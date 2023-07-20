@@ -202,7 +202,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     "# print statement, Bashpile line %d\n".formatted(ctx.start.getLine()));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
-                    .map(tr -> tr.isNotSubshell() ? tr : unnest(tr))
+                    .map(tr -> tr.isInlineOrSubshell() && inCommandSubstitution() ? unnest(tr) : tr)
                     .map(tr -> tr.body("echo %s\n".formatted(tr.body())))
                     .reduce(Translation::add)
                     .orElseThrow();
@@ -365,7 +365,8 @@ public class BashTranslationEngine implements TranslationEngine {
         try (LevelCounter ignored = new LevelCounter(CALC_LABEL)) {
             childTranslations = ctx.children.stream()
                     .map(visitor::visit)
-                    .map(tr -> tr.isNotSubshell() ? tr : unnest(tr))
+                    // if we have a nested command substitution, then unnest
+                    .map(tr -> tr.isInlineOrSubshell() && inCommandSubstitution() ? unnest(tr) : tr)
                     .collect(Collectors.toList());
         }
 
@@ -477,13 +478,17 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation inline(BashpileParser.InlineContext ctx) {
         final boolean nested = LevelCounter.inCommandSubstitution();
-        final boolean inlineNested = LevelCounter.in(LevelCounter.INLINE_LABEL);
+        // get the inline nesting level before our try-with-resources statement
+        final int inlineNesting = LevelCounter.get(LevelCounter.INLINE_LABEL);
         try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
-            final Translation joined = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeText();
-            return !nested
-                ? joined
-                : unnest(joined).typeMetadata(inlineNested ? INLINE : NORMAL);
+            Translation joined = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeText();
+            if (nested) {
+                joined = unnest(joined);
+                final boolean stillNested = inlineNesting - 1 > 0;
+                joined = stillNested ? joined.typeMetadata(INLINE) : joined;
+            }
+            return joined;
         }
     }
 
