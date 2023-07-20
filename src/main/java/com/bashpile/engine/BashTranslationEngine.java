@@ -119,10 +119,11 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
         final Translation expr = visitor.visit(ctx.expression());
+        final String subcomment = StringUtils.isEmpty(expr.preamble()) ? "" : "## expression statement body\n";
         final String textBlock = """
                 # expression statement, Bashpile line %d
-                %s%s
-                """.formatted(ctx.start.getLine(), expr.preamble(), expr.body());
+                %s%s%s
+                """.formatted(ctx.start.getLine(), expr.preamble(), subcomment, expr.body());
         return new Translation(
                 textBlock, expr.type(), expr.typeMetadata());
     }
@@ -327,15 +328,26 @@ public class BashTranslationEngine implements TranslationEngine {
             // insert echo right at start of last line
 
             // exprTranslation.body() does not end in newline and may be multiple lines
-            final String exprText = "# return statement, Bashpile line %d%s\n%s%s"
-                    .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.preamble(), exprTranslation.body());
-            final String[] retLines = exprText.split("\n");
-            final int lastLineIndex = retLines.length - 1;
-            retLines[lastLineIndex] = "echo " + retLines[lastLineIndex];
-            final String retText = String.join("\n", retLines) + "\n";
-            return toStringTranslation(retText);
+            final String exprBody = prependLastLine("echo ", exprTranslation.body());
+            final String body = "# return statement, Bashpile line %d%s\n%s%s"
+                    .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.preamble(), exprBody);
+            return toStringTranslation(body);
         } // else
         return Translation.EMPTY_STRING;
+    }
+
+    /**
+     * Prepends a String to the last line of the text.
+     *
+     * @param prepend The string to prepend
+     * @param text Does not need to end with a newline.
+     * @return A text block (ends with a newline).
+     */
+    private String prependLastLine(@Nonnull final String prepend, @Nonnull final String text) {
+        final String[] retLines = text.split("\n");
+        final int lastLineIndex = retLines.length - 1;
+        retLines[lastLineIndex] = prepend + retLines[lastLineIndex];
+        return String.join("\n", retLines) + "\n";
     }
 
     // expressions

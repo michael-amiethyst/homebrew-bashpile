@@ -105,7 +105,6 @@ public class AntlrUtils {
         }
     }
 
-    // TODO handle preambles (test with anonymous block)
     public static @Nonnull Translation visitBlock(
             @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> stmtStream) {
         final String translationText = stmtStream.map(visitor::visit)

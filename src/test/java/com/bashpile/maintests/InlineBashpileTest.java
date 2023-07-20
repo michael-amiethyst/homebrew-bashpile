@@ -72,5 +72,14 @@ public class InlineBashpileTest extends BashpileTest {
         assertTrue(results.stdout().contains("0"));
     }
 
+    @Test @Order(80)
+    public void nestedInlineWithCalcInAnonymousBlockWorks() {
+        final ExecutionResults results = runText("""
+                block:
+                    result: int = $(expr 2 - $(expr 3 + 4)) + 5
+                    print(result)""");
+        assertEquals("0\n", results.stdout());
+    }
+
     // TODO test all statements with nested subshells
 }
