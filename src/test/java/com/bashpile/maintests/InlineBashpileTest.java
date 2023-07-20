@@ -49,8 +49,17 @@ public class InlineBashpileTest extends BashpileTest {
     @Test @Order(50)
     public void nestedInlineWithCalcWorks() {
         final ExecutionResults results = runText("""
-                contents: int = $(expr 2 - $(expr 3 + 4)) + 5
-                print(contents)""");
+                result: int = $(expr 2 - $(expr 3 + 4)) + 5
+                print(result)""");
+        assertEquals("0\n", results.stdout());
+    }
+
+    @Test @Order(60)
+    public void nestedInlineWithCalcReassignmentWorks() {
+        final ExecutionResults results = runText("""
+                result: int = 5
+                result = $(expr 2 - $(expr 3 + 4)) + 5
+                print(result)""");
         assertEquals("0\n", results.stdout());
     }
 

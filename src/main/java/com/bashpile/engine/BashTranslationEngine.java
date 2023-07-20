@@ -162,7 +162,6 @@ public class BashTranslationEngine implements TranslationEngine {
         return new Translation(body, Type.NA, NORMAL);
     }
 
-    // TODO handle preambles
     @Override
     public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReassignmentStatementContext ctx) {
         // get name and type
@@ -180,9 +179,11 @@ public class BashTranslationEngine implements TranslationEngine {
         // create translation
         final String lineComment = "# reassign statement, Bashpile line %d".formatted(ctx.start.getLine());
         final String value = exprTranslation.body();
-        return new Translation(
-                "%s\n%s%s=%s\n".formatted(lineComment, getLocalText(true), variableName, value),
-                Type.NA, NORMAL);
+        final String body = """
+                %s
+                %s%s=%s
+                """.formatted(lineComment, getLocalText(true), variableName, value);
+        return new Translation(body, Type.NA, NORMAL, exprTranslation.preamble()).mergePreamble();
     }
 
     @Override
