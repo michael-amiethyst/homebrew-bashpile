@@ -177,7 +177,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 %s
                 %s%s=%s
                 """.formatted(lineComment, getLocalText(true), variableName, value);
-        return new Translation(body, Type.NA, NORMAL, exprTranslation.preamble()).mergePreamble();
+        return new Translation(exprTranslation.preamble(), body, Type.NA, NORMAL).mergePreamble();
     }
 
     @Override
@@ -435,10 +435,10 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean topLevelStatement = !in(CALC_LABEL) && !in(PRINT_LABEL);
         final Translation joined = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
         if (topLevelStatement) {
-            return new Translation(id + args + " >/dev/null", retType, NORMAL, joined.preamble());
+            return new Translation(joined.preamble(), id + args + " >/dev/null", retType, NORMAL);
         } // else return an inline (command substitution)
         final String text = "$(%s%s)".formatted(id, args);
-        return new Translation(text, retType, INLINE, joined.preamble());
+        return new Translation(joined.preamble(), text, retType, INLINE);
     }
 
     @Override

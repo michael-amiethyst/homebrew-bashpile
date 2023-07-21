@@ -95,7 +95,7 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals(expected, executionResults);
     }
 
-    // TODO make only some expressions take types
+    // TODO implement and test typecasting vigorously
     @Test
     @Order(110)
     public void numberAndStringExpressionsWork() {
