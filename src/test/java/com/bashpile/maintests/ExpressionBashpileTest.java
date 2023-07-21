@@ -105,9 +105,9 @@ class ExpressionBashpileTest extends BashpileTest {
                 i = 4
                 j = .5
                 print((38. + i) * j)
-                print(7.7 - "0.7":float)""");
+                print(7.7 - ".7":float)""");
         // confirm string is unquoted on typecast
-        assertFalse(executionResults.stdin().contains("\"0.7\""));
+        assertFalse(executionResults.stdin().contains("\".7\""));
         // header has 1 export, definitions of i and j have one export each.  Reassigns should not have exports
         assertEquals(3, executionResults.stdinLines().stream().filter(x -> x.contains("export")).count());
         List<String> stdoutLines = executionResults.stdoutLines();

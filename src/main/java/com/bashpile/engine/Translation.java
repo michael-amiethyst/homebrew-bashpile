@@ -22,7 +22,6 @@ import static org.apache.commons.lang3.StringUtils.join;
  *                          in Bash we need to assign the inner command substitution to a variable (while handling bad
  *                          exit codes, another work-around) and have the <code>body</code> just be the variable.
  */
-// TODO put preamble first
 public record Translation(
         @Nonnull String preamble,
         @Nonnull String body,
@@ -60,7 +59,10 @@ public record Translation(
 
     public static boolean areNumberExpressions(@Nonnull final Translation... translations) {
         // if all numbers the stream of not-numbers will be empty
-        return Stream.of(translations).filter(x -> !x.type().isNumeric()).findAny().isEmpty();
+        return Stream.of(translations)
+                .filter(x -> !x.type().isNumeric() && x.type() != Type.UNKNOWN)
+                .findAny()
+                .isEmpty();
     }
 
     public Translation add(@Nonnull final String appendText) {
