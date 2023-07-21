@@ -403,13 +403,12 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get functionName and a stream creator
         final String functionName = ctx.Id().getText();
-        final List<Translation> argumentTranslations =
-                ctx.argumentList().expression().stream().map(visitor::visit).toList();
+        final List<Translation> argumentTranslations = ctx.argumentList() != null
+                ? ctx.argumentList().expression().stream().map(visitor::visit).toList()
+                : List.of();
         // get the expected and actual types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
-        final List<Type> actualTypes = ctx.argumentList() != null
-                ? argumentTranslations.stream().map(Translation::type).toList()
-                : List.of();
+        final List<Type> actualTypes = argumentTranslations.stream().map(Translation::type).toList();
         // assert equals
         Asserts.assertTypesMatch(expectedTypes.parameterTypes(), actualTypes, functionName, ctx.start.getLine());
 
@@ -427,7 +426,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
         final boolean topLevelStatement = !in(CALC_LABEL) && !in(PRINT_LABEL);
-        final Translation joined = argumentTranslations.stream().reduce(Translation::add).orElseThrow();
+        final Translation joined = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_STRING);
         if (topLevelStatement) {
             return new Translation(id + args + " >/dev/null", retType, NORMAL, joined.preamble());
         } // else return an inline (command substitution)
@@ -450,8 +449,12 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation shellStringTranslation =
                 toTranslation(translationStream, UNKNOWN, NORMAL).unescapeText();
         if (LevelCounter.inCommandSubstitution()) {
-            shellStringTranslation = shellStringTranslation.body("$(%s)".formatted(shellStringTranslation.body()));
+            shellStringTranslation = shellStringTranslation
+                    .body("$(%s)".formatted(shellStringTranslation.body()));
             shellStringTranslation = unnest(shellStringTranslation);
+            shellStringTranslation = LevelCounter.getCommandSubstitution() <= 1
+                    ? shellStringTranslation
+                    : shellStringTranslation.typeMetadata(INLINE);
         }
         return shellStringTranslation;
     }

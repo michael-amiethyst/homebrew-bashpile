@@ -95,17 +95,7 @@ public class Asserts {
             while (typesMatch && i < actualTypes.size()) {
                 final Type expected = expectedTypes.get(i);
                 final Type actual = actualTypes.get(i++);
-                // the types match if they are equal
-                // TODO move to Type
-                typesMatch = expected.equals(actual)
-                        // unknown matches everything
-                        || expected.equals(Type.UNKNOWN) || actual.equals(Type.UNKNOWN)
-                        // a FLOAT also matches an INT
-                        || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))
-                        // a NUMBER also matches an INT or a FLOAT
-                        || (expected.equals(Type.NUMBER) && (actual.equals(Type.INT) || actual.equals(Type.FLOAT)))
-                        // an INT or a FLOAT also match NUMBER
-                        || ((expected.equals(Type.INT) || expected.equals(Type.FLOAT)) && (actual.equals(Type.NUMBER)));
+                typesMatch = actual.coercesTo(expected);
             }
         }
         if (!typesMatch) {

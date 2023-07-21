@@ -58,4 +58,17 @@ public enum Type {
     public boolean isNumeric() {
         return this.equals(UNKNOWN) || this.equals(NUMBER) || this.equals(INT) || this.equals(FLOAT);
     }
+
+    public boolean coercesTo(@Nonnull final Type other) {
+        // the types match if they are equal
+        return this.equals(other)
+                // unknown coerces to everything
+                || this.equals(Type.UNKNOWN) || other.equals(Type.UNKNOWN)
+                // an INT coerces to a FLOAT
+                || (this.equals(Type.INT) && other.equals(Type.FLOAT))
+                // a NUMBER coerces to an INT or a FLOAT
+                || (this.equals(Type.NUMBER) && other.isNumeric())
+                // an INT or a FLOAT coerces to a NUMBER
+                || (this.isNumeric() && other.equals(Type.NUMBER));
+    }
 }

@@ -34,6 +34,10 @@ public class LevelCounter implements Closeable {
         return in(CALC_LABEL) || in(INLINE_LABEL) || in(FORWARD_DECL_LABEL);
     }
 
+    public static int getCommandSubstitution() {
+        return get(CALC_LABEL) + get(INLINE_LABEL) + get(FORWARD_DECL_LABEL);
+    }
+
     public static int get(@Nonnull final String name) {
         return counters.getOrDefault(name, 0);
     }
