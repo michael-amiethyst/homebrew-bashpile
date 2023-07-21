@@ -55,6 +55,7 @@ public enum Type {
         return this.equals(STR);
     }
 
+    // TODO take unknown out of there
     public boolean isNumeric() {
         return this.equals(UNKNOWN) || this.equals(NUMBER) || this.equals(INT) || this.equals(FLOAT);
     }

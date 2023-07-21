@@ -5,6 +5,7 @@ import com.bashpile.engine.strongtypes.TypeMetadata;
 import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang3.StringUtils.join;
@@ -21,6 +22,7 @@ import static org.apache.commons.lang3.StringUtils.join;
  *                          in Bash we need to assign the inner command substitution to a variable (while handling bad
  *                          exit codes, another work-around) and have the <code>body</code> just be the variable.
  */
+// TODO put preamble first
 public record Translation(
         @Nonnull String body,
         @Nonnull Type type,
@@ -28,7 +30,9 @@ public record Translation(
         @Nonnull String preamble) {
 
     public static final Translation EMPTY_TYPE = new Translation("", Type.EMPTY, TypeMetadata.NORMAL);
-    public static final Translation EMPTY_STRING = toStringTranslation("");
+    public static final Translation EMPTY_TRANSLATION = new Translation("", Type.UNKNOWN, TypeMetadata.NORMAL);
+
+    private static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
 
     public Translation(@Nonnull final String text, @Nonnull final Type type, @Nonnull final TypeMetadata typeMetadata) {
         this(text, type, typeMetadata, "");
@@ -89,6 +93,10 @@ public record Translation(
 
     public Translation body(@Nonnull final String nextBody) {
         return new Translation(nextBody, type, typeMetadata, preamble);
+    }
+
+    public Translation unquoteBody() {
+        return new Translation(STRING_QUOTES.matcher(body).replaceAll(""), type, typeMetadata, preamble);
     }
 
     public Translation mergePreamble() {

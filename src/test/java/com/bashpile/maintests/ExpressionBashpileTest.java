@@ -1,5 +1,6 @@
 package com.bashpile.maintests;
 
+import com.bashpile.commandline.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,6 @@ import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO add strings and numbers
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileTest extends BashpileTest {
@@ -93,5 +93,26 @@ class ExpressionBashpileTest extends BashpileTest {
         List<String> expected = List.of("21.0", "7.0");
         assertEquals(2, executionResults.size());
         assertEquals(expected, executionResults);
+    }
+
+    // TODO make only some expressions take types
+    @Test
+    @Order(110)
+    public void numberAndStringExpressionsWork() {
+        ExecutionResults executionResults = runText("""
+                i: int
+                j: float
+                i = 4
+                j = .5
+                print((38. + i) * j)
+                print(7.7 - "0.7":float)""");
+        // confirm string is unquoted on typecast
+        assertFalse(executionResults.stdin().contains("\"0.7\""));
+        // header has 1 export, definitions of i and j have one export each.  Reassigns should not have exports
+        assertEquals(3, executionResults.stdinLines().stream().filter(x -> x.contains("export")).count());
+        List<String> stdoutLines = executionResults.stdoutLines();
+        List<String> expected = List.of("21.0", "7.0");
+        assertEquals(2, stdoutLines.size());
+        assertEquals(expected, stdoutLines);
     }
 }

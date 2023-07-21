@@ -50,10 +50,10 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean indented = LevelCounter.in(BLOCK_LABEL);
         if (indented && !reassignment) {
             return "local ";
-        } else if (indented) { // and a reassignment
-            return "";
-        } else { // not indented
+        } else if (!indented && !reassignment) {
             return "export ";
+        } else { // reassignment
+            return "";
         }
     }
 
@@ -136,7 +136,9 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
-        final Translation exprTranslation = exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_STRING;
+        final Translation exprTranslation = exprExists
+                ? visitor.visit(ctx.expression())
+                : Translation.EMPTY_TRANSLATION;
         Asserts.assertTypesMatch(type, exprTranslation.type(), ctx.typedId().Id().getText(), ctx.start.getLine());
 
         // create translation
@@ -223,7 +225,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // avoid translating twice if was part of a forward declaration
         final String functionName = ctx.typedId().Id().getText();
         if (foundForwardDeclarations.contains(functionName)) {
-            return Translation.EMPTY_STRING;
+            return Translation.EMPTY_TRANSLATION;
         }
 
         // check for double declaration
@@ -322,7 +324,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.preamble(), exprBody);
             return toStringTranslation(body);
         } // else
-        return Translation.EMPTY_STRING;
+        return Translation.EMPTY_TRANSLATION;
     }
 
     /**
@@ -343,8 +345,13 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
-        final Translation expression = visitor.visit(ctx.expression());
-        return expression.type(Type.valueOf(ctx.Type().getText().toUpperCase()));
+        final Type castTo = Type.valueOf(ctx.Type().getText().toUpperCase());
+        Translation expression = visitor.visit(ctx.expression());
+        expression = expression.type().equals(STR) && castTo.isNumeric()
+                ? expression.unquoteBody()
+                : expression;
+        expression = expression.type(castTo);
+        return expression;
     }
 
     @Override
@@ -426,7 +433,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
         final boolean topLevelStatement = !in(CALC_LABEL) && !in(PRINT_LABEL);
-        final Translation joined = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_STRING);
+        final Translation joined = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
         if (topLevelStatement) {
             return new Translation(id + args + " >/dev/null", retType, NORMAL, joined.preamble());
         } // else return an inline (command substitution)
