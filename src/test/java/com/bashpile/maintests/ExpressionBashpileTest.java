@@ -16,16 +16,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileTest extends BashpileTest {
 
-    @Test
-    @Order(10)
+    @Test @Order(10)
     public void printCalcWorks() {
         var ret = runText("print(1 + 1)");
         assertNotNull(ret);
         assertEquals("2\n", ret.stdout());
     }
 
-    @Test
-    @Order(20)
+    @Test @Order(20)
     public void multilineCalcWorks() {
         List<String> ret = runText("""
                 print(1 + 1)
@@ -37,8 +35,7 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("0", ret.get(1));
     }
 
-    @Test
-    @Order(30)
+    @Test @Order(30)
     public void stringConcatWorks() {
         var runResult = runText("""
                 print("hello" + " " + "world")""");
@@ -47,15 +44,13 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("hello world", getLast(outLines));
     }
 
-    @Test
-    @Order(40)
+    @Test @Order(40)
     public void stringBadOperatorThrows() {
         assertThrows(AssertionError.class, () -> runText("""
                 print("hello " * "world")"""));
     }
 
-    @Test
-    @Order(50)
+    @Test @Order(50)
     public void parenStringWorks() {
         List<String> ret = runText("""
                 print((("hello" + " world") + (", you" + " good?")))""").stdoutLines();
@@ -63,8 +58,7 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("hello world, you good?", ret.get(0));
     }
 
-    @Test
-    @Order(80)
+    @Test @Order(80)
     public void intExpressionsWork() {
         String bashpile = """
                 print((3 + 5) * 3)
@@ -76,16 +70,14 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals(expected, executionResults);
     }
 
-    @Test
-    @Order(90)
+    @Test @Order(90)
     public void parenIntExpressionsWork() {
         List<String> ret = runText("print(((1 + 2) * (3 + 4)))").stdoutLines();
         assertEquals(1, ret.size(), "Unexpected number of lines");
         assertEquals("21", ret.get(0));
     }
 
-    @Test
-    @Order(100)
+    @Test @Order(100)
     public void floatExpressionsWork() {
         List<String> executionResults = runText("""
                 print((38. + 4) * .5)
@@ -95,9 +87,7 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals(expected, executionResults);
     }
 
-    // TODO implement and test typecasting vigorously
-    @Test
-    @Order(110)
+    @Test @Order(110)
     public void numberAndStringExpressionsWork() {
         ExecutionResults executionResults = runText("""
                 i: int
@@ -115,4 +105,11 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals(2, stdoutLines.size());
         assertEquals(expected, stdoutLines);
     }
+
+    // TODO cast bool to int, float and string
+    // TODO cast int to bool, float and string
+    // TODO cast float to bool, int and string
+    // TODO cast string to bool, int and float
+    // TODO cast number to bool, int, float and string
+    // TODO disallow casting of/to EMPTY, UNKNOWN, NA or NOT_FOUND
 }
