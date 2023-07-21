@@ -116,4 +116,22 @@ public class InlineBashpileTest extends BashpileTest {
                 print(mathIt($(expr 2 - $(expr 3 + 4))))""");
         assertEquals("0\n", results.stdout());
     }
+
+    @Test @Order(120)
+    public void inlineInFunctionCallWithVariableWorks() {
+        final ExecutionResults results = runText("""
+                function mathIt:int(first:int):
+                    return first + 5
+                seven: float = 7
+                print(mathIt($(expr 2 - $seven)))""");
+        assertEquals("0\n", results.stdout());
+    }
+
+    @Test @Order(130)
+    public void inlineWithVariableWorks() {
+        final ExecutionResults results = runText("""
+                seven: float = 7
+                print($(expr 2 - $seven))""");
+        assertEquals("-5\n", results.stdout());
+    }
 }
