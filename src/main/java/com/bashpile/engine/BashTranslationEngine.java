@@ -347,9 +347,26 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         final Type castTo = Type.valueOf(ctx.Type().getText().toUpperCase());
         Translation expression = visitor.visit(ctx.expression());
-        expression = expression.type().equals(STR) && castTo.isNumeric()
-                ? expression.unquoteBody()
-                : expression;
+        // double switch -- first is for the type we're casting from, the second is for the type we're casting to
+        switch (expression.type()) {
+            case BOOL -> {
+                final String expressionText = ctx.expression().getText();
+                switch (castTo) {
+                    case BOOL -> {}
+                    case INT -> expression = expression.body(expressionText.equals("true") ? "1" : "0");
+                    case FLOAT ->
+                            expression = expression.body(expressionText.equals("true") ? "1.0" : "0.0");
+                    case STR -> expression = expression.body("\"" + expressionText + "\"");
+                    default -> throw new TypeError(
+                            "Casting %s to %s is not supported".formatted(expression.type(), castTo), ctx.start.getLine());
+                }
+            }
+            case STR -> {
+                if (castTo.isNumeric()) {
+                    expression = expression.unquoteBody();
+                }
+            }
+        }
         expression = expression.type(castTo);
         return expression;
     }

@@ -106,10 +106,26 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals(expected, stdoutLines);
     }
 
-    // TODO cast bool to int, float and string
+    @Test @Order(120)
+    public void boolTypecastsWork() {
+        final String bashpile = """
+                function times2point5:float(x:float):
+                    return x * 2.5
+                print(false:int * 38)
+                print(times2point5(true: float))
+                print("Genre: " + true:str + " crime")""";
+        final ExecutionResults result = runText(bashpile);
+        final List<String> lines = result.stdoutLines();
+        assertEquals("0", lines.get(0));
+        assertEquals("2.5", lines.get(1));
+        assertEquals("Genre: true crime", lines.get(2));
+    }
+
     // TODO cast int to bool, float and string
     // TODO cast float to bool, int and string
     // TODO cast string to bool, int and float
     // TODO cast number to bool, int, float and string
     // TODO disallow casting of/to EMPTY, UNKNOWN, NA or NOT_FOUND
+
+    // TODO implement boolean logic
 }
