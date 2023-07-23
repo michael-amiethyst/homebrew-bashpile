@@ -5,6 +5,8 @@ import com.bashpile.exceptions.TypeError;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public enum Type {
     /** Not Found */
@@ -34,14 +36,13 @@ public enum Type {
         throw new TypeError("No type info for " + ctx.Id(), ctx.start.getLine());
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static Type parseNumberString(String text) {
         Type type;
         try {
-            Integer.parseInt(text);
+            new BigInteger(text);
             type = Type.INT;
         } catch (NumberFormatException ignored) {
-            Float.parseFloat(text);
+            new BigDecimal(text);
             type = Type.FLOAT;
         }
         return type;

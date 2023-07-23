@@ -32,19 +32,12 @@ Creates : 'creates';
 
 Id: ID_START ID_CONTINUE*;
 
-Number
- : Integer
- | Float
- ;
+Number: Integer | Float;
 
-Integer
- : NON_ZERO_DIGIT DIGIT*
- ;
+// future proof for octals to start with '0' like in C
+Integer: NON_ZERO_DIGIT DIGIT* | '0';
 
-Float
- : INT_PART? FRACTION
- | INT_PART '.'
- ;
+Float: INT_PART? FRACTION | INT_PART '.';
 
 // newlines, whitespace and comments
 Newline      : '\r'? '\n' ' '*;
@@ -92,7 +85,7 @@ mode SHELL_STRING;
 
 ShellStringHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
 ShellStringDollarOParen  : '$(' -> type(DollarOParen), pushMode(INLINE);
-ShellStringText          : (~[\\\r\n\f)#$]
+ShellStringText          : (~[\\\f)#$]
                          // LookAhead 1 - don't match '#(' but match other '#' characters
                          | '#' {_input.LA(1) != '('}?
                          | '$' {_input.LA(1) != '('}?
@@ -117,21 +110,8 @@ InlineCParen        : ')' -> type(CParen), popMode;
 fragment ID_START: [a-zA-Z_];
 fragment ID_CONTINUE: [a-zA-Z0-9_];
 
-/// nonzerodigit   ::=  "1"..."9"
-fragment NON_ZERO_DIGIT
- : [1-9]
- ;
+fragment NON_ZERO_DIGIT: [1-9];
+fragment DIGIT: [0-9];
 
-/// digit          ::=  "0"..."9"
-fragment DIGIT
- : [0-9]
- ;
-
-fragment INT_PART
- : DIGIT+
- ;
-
-/// fraction      ::=  "." digit+
-fragment FRACTION
- : '.' DIGIT+
- ;
+fragment INT_PART: DIGIT+;
+fragment FRACTION: '.' DIGIT+;

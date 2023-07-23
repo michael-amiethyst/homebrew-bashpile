@@ -97,6 +97,10 @@ public record Translation(
         return new Translation(preamble, nextBody, type, typeMetadata);
     }
 
+    public Translation quoteBody() {
+        return new Translation(preamble, "\"" + body + "\"", type, typeMetadata);
+    }
+
     public Translation unquoteBody() {
         return new Translation(preamble, STRING_QUOTES.matcher(body).replaceAll(""), type, typeMetadata);
     }

@@ -121,6 +121,30 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("Genre: true crime", lines.get(2));
     }
 
+    @Test @Order(130)
+    public void intTypecastsWork() {
+        final String bashpile = """
+                function times2point5:float(x:float):
+                    return x * 2.5
+                b1: bool = 8000000000 : bool
+                b2: bool = -1 : bool
+                b3: bool = 0 : bool
+                print(#(if [ "$b1" = true ] && [ "$b2" = true ]; then echo "true"; else echo "false"; fi))
+                print(#(if [ "$b1" = true ] && [ "$b2" = true ] && [ "$b3" = true ]; then
+                    echo "true"
+                else
+                    echo "false"
+                fi))
+                print(times2point5(8000000000000: float))
+                print("NCC-" + 1701:str + "-D")""";
+        final ExecutionResults result = runText(bashpile);
+        final List<String> lines = result.stdoutLines();
+        assertEquals("true", lines.get(0));
+        assertEquals("false", lines.get(1));
+        assertEquals("20000000000000.0", lines.get(2));
+        assertEquals("NCC-1701-D", lines.get(3));
+    }
+
     // TODO cast int to bool, float and string
     // TODO cast float to bool, int and string
     // TODO cast string to bool, int and float

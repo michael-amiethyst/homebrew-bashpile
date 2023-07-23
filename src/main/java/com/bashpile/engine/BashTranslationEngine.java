@@ -347,18 +347,27 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         final Type castTo = Type.valueOf(ctx.Type().getText().toUpperCase());
         Translation expression = visitor.visit(ctx.expression());
+        final String expressionText = ctx.expression().getText();
+        final TypeError typecastError = new TypeError(
+                "Casting %s to %s is not supported".formatted(expression.type(), castTo), ctx.start.getLine());
         // double switch -- first is for the type we're casting from, the second is for the type we're casting to
         switch (expression.type()) {
             case BOOL -> {
-                final String expressionText = ctx.expression().getText();
                 switch (castTo) {
                     case BOOL -> {}
                     case INT -> expression = expression.body(expressionText.equals("true") ? "1" : "0");
                     case FLOAT ->
                             expression = expression.body(expressionText.equals("true") ? "1.0" : "0.0");
-                    case STR -> expression = expression.body("\"" + expressionText + "\"");
-                    default -> throw new TypeError(
-                            "Casting %s to %s is not supported".formatted(expression.type(), castTo), ctx.start.getLine());
+                    case STR -> expression = expression.quoteBody();
+                    default -> throw typecastError;
+                }
+            }
+            case INT -> {
+                switch (castTo) {
+                    case BOOL -> expression = expression.body(expressionText.equals("0") ? "false" : "true");
+                    case INT, FLOAT -> {}
+                    case STR -> expression = expression.quoteBody();
+                    default -> throw typecastError;
                 }
             }
             case STR -> {
@@ -366,6 +375,13 @@ public class BashTranslationEngine implements TranslationEngine {
                     expression = expression.unquoteBody();
                 }
             }
+            case UNKNOWN -> {
+                switch (castTo) {
+                    case BOOL, INT, FLOAT, STR -> {}
+                    default -> throw typecastError;
+                }
+            }
+            default -> throw typecastError;
         }
         expression = expression.type(castTo);
         return expression;
@@ -479,6 +495,9 @@ public class BashTranslationEngine implements TranslationEngine {
             shellStringTranslation = LevelCounter.getCommandSubstitution() <= 1
                     ? shellStringTranslation
                     : shellStringTranslation.typeMetadata(INLINE);
+        } else if (LevelCounter.in(PRINT_LABEL)) {
+            shellStringTranslation = shellStringTranslation
+                    .body("$(%s)".formatted(shellStringTranslation.body()));
         }
         return shellStringTranslation;
     }
