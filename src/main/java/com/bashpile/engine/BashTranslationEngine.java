@@ -24,8 +24,7 @@ import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
-import static com.bashpile.engine.strongtypes.Type.STR;
-import static com.bashpile.engine.strongtypes.Type.UNKNOWN;
+import static com.bashpile.engine.strongtypes.Type.*;
 import static com.bashpile.engine.strongtypes.TypeMetadata.INLINE;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.google.common.collect.Iterables.getLast;
@@ -335,6 +334,8 @@ public class BashTranslationEngine implements TranslationEngine {
      * @param text Does not need to end with a newline.
      * @return A text block (ends with a newline).
      */
+    // TODO factor out into StringUtils that extends Apache's StringUtils, mixin StringEscapeUtils
+    // TODO stop calling Apache libs directly
     private String prependLastLine(@Nonnull final String prepend, @Nonnull final String text) {
         final String[] retLines = text.split("\n");
         final int lastLineIndex = retLines.length - 1;
@@ -348,7 +349,6 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         final Type castTo = Type.valueOf(ctx.Type().getText().toUpperCase());
         Translation expression = visitor.visit(ctx.expression());
-        final String expressionText = ctx.expression().getText();
         final TypeError typecastError = new TypeError(
                 "Casting %s to %s is not supported".formatted(expression.type(), castTo), ctx.start.getLine());
         // double switch -- first is for the type we're casting from, the second is for the type we're casting to
@@ -356,23 +356,23 @@ public class BashTranslationEngine implements TranslationEngine {
             case BOOL -> {
                 switch (castTo) {
                     case BOOL -> {}
-                    case INT -> expression = expression.body(expressionText.equals("true") ? "1" : "0");
+                    case INT -> expression = expression.body(expression.body().equals("true") ? "1" : "0");
                     case FLOAT ->
-                            expression = expression.body(expressionText.equals("true") ? "1.0" : "0.0");
+                            expression = expression.body(expression.body().equals("true") ? "1.0" : "0.0");
                     case STR -> expression = expression.quoteBody();
                     default -> throw typecastError;
                 }
             }
             case INT -> {
                 switch (castTo) {
-                    case BOOL -> expression = expression.body(expressionText.equals("0") ? "false" : "true");
+                    case BOOL -> expression = expression.body(expression.body().equals("0") ? "false" : "true");
                     case INT, FLOAT -> {}
                     case STR -> expression = expression.quoteBody();
                     default -> throw typecastError;
                 }
             }
             case FLOAT -> {
-                final BigDecimal expressionValue = new BigDecimal(expressionText);
+                final BigDecimal expressionValue = new BigDecimal(expression.body());
                 switch (castTo) {
                     case BOOL -> expression = expression.body(expressionValue.compareTo(BigDecimal.ZERO) == 0
                             ? "false"
@@ -384,8 +384,40 @@ public class BashTranslationEngine implements TranslationEngine {
                 }
             }
             case STR -> {
-                if (castTo.isNumeric()) {
-                    expression = expression.unquoteBody();
+                switch (castTo) {
+                    case BOOL -> {
+                        expression = expression.unquoteBody();
+                        if (!expression.body().equalsIgnoreCase("true")
+                                && !expression.body().equalsIgnoreCase("false")) {
+                            throw new TypeError("""
+                                Could not cast STR to BOOL.  Only 'true' and 'false' allowed.  Text was %s."""
+                                    .formatted(expression.body()), ctx.start.getLine());
+                        }
+                        expression = expression.body(expression.body().toLowerCase());
+                    }
+                    case INT -> {
+                        // no automatic rounding for things like `"2.5":int`
+                        expression = expression.unquoteBody();
+                        final Type foundType = Type.parseNumberString(expression.body());
+                        if (!INT.equals(foundType)) {
+                            throw new TypeError("""
+                                Could not cast FLOAT value in STR to INT.  Try casting to float first.  Text was %s."""
+                                    .formatted(expression.body()), ctx.start.getLine());
+                        }
+                    }
+                    case FLOAT -> {
+                        expression = expression.unquoteBody();
+                        // verify the body parses as a valid number
+                        try {
+                            Type.parseNumberString(expression.body());
+                        } catch (NumberFormatException e) {
+                            throw new TypeError("""
+                                Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
+                                    .formatted(expression.body()), ctx.start.getLine());
+                        }
+                    }
+                    case STR -> {}
+                    default -> throw typecastError;
                 }
             }
             case UNKNOWN -> {

@@ -28,7 +28,7 @@ public enum Type {
     /** A Bash reference */
     REF;
 
-    public static @Nonnull Type valueOf(@Nonnull BashpileParser.TypedIdContext ctx) {
+    public static @Nonnull Type valueOf(@Nonnull final BashpileParser.TypedIdContext ctx) {
         final boolean hasTypeInfo = ctx.Type() != null && StringUtils.isNotBlank(ctx.Type().getText());
         if (hasTypeInfo) {
             return valueOf(ctx.Type().getText().toUpperCase());
@@ -36,7 +36,8 @@ public enum Type {
         throw new TypeError("No type info for " + ctx.Id(), ctx.start.getLine());
     }
 
-    public static Type parseNumberString(String text) {
+    /** Throws NumberFormatException on bad parse. */
+    public static Type parseNumberString(final String text) {
         Type type;
         try {
             new BigInteger(text);

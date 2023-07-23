@@ -1,6 +1,7 @@
 package com.bashpile.maintests;
 
 import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.exceptions.TypeError;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -169,10 +170,51 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("1701.01.0", lines.get(3));
     }
 
-    // TODO cast string to bool, int and float
+    @Test @Order(150)
+    public void strTypecastsWork() {
+        final String bashpile = """
+                function times2point5:float(x:int):
+                    return x * 2.5
+                function times2point5ForFloats:float(x:float):
+                    return x * 2.5
+                b1: bool = "true" : bool
+                b2: bool = "TRUE" : bool
+                b3: bool = "false" : bool
+                print(#(if [ "$b1" = true ] && [ "$b2" = true ]; then echo "true"; else echo "false"; fi))
+                print(#(if [ "$b1" = true ] && [ "$b2" = true ] && [ "$b3" = true ]; then
+                    echo "true"
+                else
+                    echo "false"
+                fi))
+                print(times2point5("2.5" : float : int))
+                print(times2point5ForFloats("2.50" : float))""";
+        final ExecutionResults result = runText(bashpile);
+        final List<String> lines = result.stdoutLines();
+        assertEquals("true", lines.get(0));
+        assertEquals("false", lines.get(1));
+        assertEquals("5.0", lines.get(2));
+        assertEquals("6.25", lines.get(3));
+    }
+
+    @Test @Order(150)
+    public void badStrTypecastsFloatToIntThrow() {
+        final String bashpile = """
+                function times2point5:float(x:int):
+                    return x * 2.5
+                print(times2point5("2.5" : int))""";
+        assertThrows(TypeError.class, () -> runText(bashpile));
+    }
+
+    @Test @Order(160)
+    public void badStrTypecastsTextToFloatThrow() {
+        final String bashpile = """
+                function times2point5:float(x:float):
+                    return x * 2.5
+                print(times2point5("NCC-1701" : float))""";
+        assertThrows(TypeError.class, () -> runText(bashpile));
+    }
+
     // TODO cast number to bool, int, float and string
     // TODO disallow casting to UNKNOWN
     // TODO disallow casting of/to EMPTY, NA or NOT_FOUND
-
-    // TODO implement boolean logic
 }
