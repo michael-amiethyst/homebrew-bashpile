@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -366,6 +367,18 @@ public class BashTranslationEngine implements TranslationEngine {
                 switch (castTo) {
                     case BOOL -> expression = expression.body(expressionText.equals("0") ? "false" : "true");
                     case INT, FLOAT -> {}
+                    case STR -> expression = expression.quoteBody();
+                    default -> throw typecastError;
+                }
+            }
+            case FLOAT -> {
+                final BigDecimal expressionValue = new BigDecimal(expressionText);
+                switch (castTo) {
+                    case BOOL -> expression = expression.body(expressionValue.compareTo(BigDecimal.ZERO) == 0
+                            ? "false"
+                            : "true");
+                    case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
+                    case FLOAT -> {}
                     case STR -> expression = expression.quoteBody();
                     default -> throw typecastError;
                 }

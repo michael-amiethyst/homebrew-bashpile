@@ -145,11 +145,34 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("NCC-1701-D", lines.get(3));
     }
 
-    // TODO cast int to bool, float and string
-    // TODO cast float to bool, int and string
+    @Test @Order(140)
+    public void floatTypecastsWork() {
+        final String bashpile = """
+                function times2point5:float(x:int):
+                    return x * 2.5
+                b1: bool = 8000000000.9999 : bool
+                b2: bool = -1.0 : bool
+                b3: bool = 0.0 : bool
+                print(#(if [ "$b1" = true ] && [ "$b2" = true ]; then echo "true"; else echo "false"; fi))
+                print(#(if [ "$b1" = true ] && [ "$b2" = true ] && [ "$b3" = true ]; then
+                    echo "true"
+                else
+                    echo "false"
+                fi))
+                print(times2point5(2.5 : int))
+                print(1701.0:str + 1.0:str)""";
+        final ExecutionResults result = runText(bashpile);
+        final List<String> lines = result.stdoutLines();
+        assertEquals("true", lines.get(0));
+        assertEquals("false", lines.get(1));
+        assertEquals("5.0", lines.get(2));
+        assertEquals("1701.01.0", lines.get(3));
+    }
+
     // TODO cast string to bool, int and float
     // TODO cast number to bool, int, float and string
-    // TODO disallow casting of/to EMPTY, UNKNOWN, NA or NOT_FOUND
+    // TODO disallow casting to UNKNOWN
+    // TODO disallow casting of/to EMPTY, NA or NOT_FOUND
 
     // TODO implement boolean logic
 }
