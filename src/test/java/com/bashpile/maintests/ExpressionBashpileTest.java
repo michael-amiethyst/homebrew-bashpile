@@ -214,7 +214,10 @@ class ExpressionBashpileTest extends BashpileTest {
         assertThrows(TypeError.class, () -> runText(bashpile));
     }
 
-    // TODO cast number to bool, int, float and string
-    // TODO disallow casting to UNKNOWN
-    // TODO disallow casting of/to EMPTY, NA or NOT_FOUND
+    @Test @Order(170)
+    public void numberTypecastsWork() {
+        final String bashpile = """
+                b1: bool = (1 + 2 + 3) : bool""";
+        assertThrows(TypeError.class, () -> runText(bashpile));
+    }
 }

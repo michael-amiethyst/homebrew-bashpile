@@ -356,7 +356,13 @@ public class BashTranslationEngine implements TranslationEngine {
                 }
             }
             case FLOAT -> {
-                final BigDecimal expressionValue = new BigDecimal(expression.body());
+                BigDecimal expressionValue;
+                try {
+                    expressionValue = new BigDecimal(expression.body());
+                } catch (final NumberFormatException e) {
+                    throw new UserError(
+                            "Couldn't parse %s to a FLOAT".formatted(expression.body()), ctx.start.getLine());
+                }
                 switch (castTo) {
                     case BOOL -> expression = expression.body(expressionValue.compareTo(BigDecimal.ZERO) == 0
                             ? "false"
