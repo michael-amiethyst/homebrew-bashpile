@@ -2,13 +2,13 @@ package com.bashpile.engine;
 
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeMetadata;
-import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static org.apache.commons.lang3.StringUtils.join;
+import static com.bashpile.StringUtils.join;
+import static com.bashpile.StringUtils.unescape;
 
 /**
  * Decorator pattern for a String.
@@ -65,10 +65,6 @@ public record Translation(
                 .isEmpty();
     }
 
-    public Translation add(@Nonnull final String appendText) {
-        return new Translation(preamble, body + appendText, type, typeMetadata);
-    }
-
     public Translation add(@Nonnull final Translation other) {
         return new Translation(preamble + other.preamble, body + other.body, type, typeMetadata);
     }
@@ -78,7 +74,7 @@ public record Translation(
     }
 
     public Translation unescapeText() {
-        return new Translation(preamble, StringEscapeUtils.unescapeJava(body), type, typeMetadata);
+        return new Translation(preamble, unescape(body), type, typeMetadata);
     }
 
     public Translation type(@Nonnull final Type typecastType) {

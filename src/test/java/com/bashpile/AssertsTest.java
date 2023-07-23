@@ -88,8 +88,4 @@ class AssertsTest {
         final String test = "line one\nline two\n";
         assertThrows(BashpileUncheckedException.class, () -> assertTextLine(test));
     }
-
-    @Test
-    void assertMatches() {
-    }
 }

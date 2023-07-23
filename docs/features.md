@@ -58,7 +58,7 @@ See [Bash Strict Mode](http://redsymbol.net/articles/unofficial-bash-strict-mode
 ## Multiple Shell Support
 Bashpile is written to be extensible with different target script languages in the future, not just Bash 5.
 
-## Anonymous Blocks and automatic Lexcical Scoping
+## Anonymous Blocks and automatic Lexical Scoping
 
 With a simple
 ```
@@ -89,7 +89,7 @@ Tag functions for a given data flow, a layer or whatever you can think of!
 
 ### Function forward declarations
 
-In Bash you need to declare a (helper) function before you can use it.  This leads to constructions like:
+In Bash, you need to declare a (helper) function before you can use it.  This leads to constructions like:
 
 ```
 helperFunction() {

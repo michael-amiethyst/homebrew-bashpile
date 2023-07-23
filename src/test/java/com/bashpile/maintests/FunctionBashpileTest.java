@@ -10,7 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.util.List;
 
 import static com.bashpile.Asserts.assertExecutionSuccess;
-import static org.apache.commons.lang3.StringUtils.join;
+import static com.bashpile.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

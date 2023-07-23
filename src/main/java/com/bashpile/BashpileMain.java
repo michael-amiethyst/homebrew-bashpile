@@ -65,7 +65,7 @@ public class BashpileMain implements Callable<Integer> {
     }
 
     /** Called by the picocli framework */
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "SameReturnValue"})
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
     public int executeCommand() {
         System.out.println(execute().stdout());
@@ -93,7 +93,7 @@ public class BashpileMain implements Callable<Integer> {
     }
 
     /** Called by Picocli framework */
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "SameReturnValue"})
     @CommandLine.Command(name = "transpile", description = "Converts Bashpile lines to bash")
     public int transpileCommand() throws IOException {
         System.out.println(transpile());

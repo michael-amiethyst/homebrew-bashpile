@@ -2,13 +2,13 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
+import com.bashpile.StringUtils;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
@@ -319,28 +319,12 @@ public class BashTranslationEngine implements TranslationEngine {
             // insert echo right at start of last line
 
             // exprTranslation.body() does not end in newline and may be multiple lines
-            final String exprBody = prependLastLine("echo ", exprTranslation.body());
+            final String exprBody = StringUtils.prependLastLine("echo ", exprTranslation.body());
             final String body = "# return statement, Bashpile line %d%s\n%s%s"
                     .formatted(ctx.start.getLine(), getHoisted(), exprTranslation.preamble(), exprBody);
             return toStringTranslation(body);
         } // else
         return Translation.EMPTY_TRANSLATION;
-    }
-
-    /**
-     * Prepends a String to the last line of the text.
-     *
-     * @param prepend The string to prepend
-     * @param text Does not need to end with a newline.
-     * @return A text block (ends with a newline).
-     */
-    // TODO factor out into StringUtils that extends Apache's StringUtils, mixin StringEscapeUtils
-    // TODO stop calling Apache libs directly
-    private String prependLastLine(@Nonnull final String prepend, @Nonnull final String text) {
-        final String[] retLines = text.split("\n");
-        final int lastLineIndex = retLines.length - 1;
-        retLines[lastLineIndex] = prepend + retLines[lastLineIndex];
-        return String.join("\n", retLines) + "\n";
     }
 
     // expressions

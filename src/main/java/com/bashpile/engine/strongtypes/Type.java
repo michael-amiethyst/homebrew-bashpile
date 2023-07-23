@@ -1,8 +1,8 @@
 package com.bashpile.engine.strongtypes;
 
 import com.bashpile.BashpileParser;
+import com.bashpile.StringUtils;
 import com.bashpile.exceptions.TypeError;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;

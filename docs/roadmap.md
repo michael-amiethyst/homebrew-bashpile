@@ -15,7 +15,7 @@
 (Not ordered)
 * remaining types (array, map, ref)
 * imports
-* sub shells, Bash `()`, Bashpile `&()`?
+* subshells, Bash `()`, Bashpile `&()`?
 * default values for functions
 * operator overloading for functions
 * exponents, other operators

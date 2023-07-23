@@ -175,7 +175,7 @@ class StatementBashpileTest extends BashpileTest {
                 block:
                     x: float = /* inside of a statement comment */ 5.5
                     /*
-                     * extended comment on how leet this line is
+                     * extended comment on how fantastic this line is
                      */
                     print(x + x)
                 x: float = 7.7
