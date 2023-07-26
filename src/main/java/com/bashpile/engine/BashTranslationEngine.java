@@ -117,15 +117,14 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
-        final Translation expr = visitor.visit(ctx.expression());
-        final String subcomment = StringUtils.isEmpty(expr.preamble()) ? "" : "## expression statement body\n";
-        // TODO redo with Translation.add and .mergePreamble
-        final String body = """
-                # expression statement, Bashpile line %d
-                %s%s%s
-                """.formatted(
-                        lineNumber(ctx), assertIsParagraph(expr.preamble()), subcomment, assertIsPhrase(expr.body()));
-        return new Translation(body, expr.type(), expr.typeMetadata());
+        final Translation expr = visitor.visit(ctx.expression()).add(toStringTranslation("\n"));
+        final Translation comment = toStringTranslation(
+                "# expression statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
+        final Translation subcomment =
+                toStringTranslation(StringUtils.isEmpty(expr.preamble()) ? "" : "## expression statement body\n");
+        // order is: comment, preamble, subcomment, expr
+        final Translation exprStatement = subcomment.add(expr).mergePreamble();
+        return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
     }
 
     @Override
@@ -576,7 +575,6 @@ public class BashTranslationEngine implements TranslationEngine {
      * The body is a Command Substitution of a created variable
      * that holds the results of executing <code>tr</code>'s body.
      */
-    // TODO move to Translation
     private Translation unnest(@Nonnull final Translation tr) {
         final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
