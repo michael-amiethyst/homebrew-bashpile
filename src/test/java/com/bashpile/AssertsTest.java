@@ -3,8 +3,8 @@ package com.bashpile;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.junit.jupiter.api.Test;
 
-import static com.bashpile.Asserts.assertTextBlock;
-import static com.bashpile.Asserts.assertTextLine;
+import static com.bashpile.Asserts.assertIsParagraph;
+import static com.bashpile.Asserts.assertIsLine;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AssertsTest {
@@ -17,7 +17,7 @@ class AssertsTest {
                 trailing
                 newline
                 """;
-        assertTextBlock(test);
+        assertIsParagraph(test);
     }
 
     @Test
@@ -29,7 +29,7 @@ class AssertsTest {
                 
                 line
                 """;
-        assertTextBlock(test);
+        assertIsParagraph(test);
     }
 
     @Test
@@ -58,7 +58,7 @@ class AssertsTest {
                 echo "$__bp_textReturn";
                 
                 """;
-        assertTextBlock(test);
+        assertIsParagraph(test);
     }
 
     @Test
@@ -68,24 +68,24 @@ class AssertsTest {
                 without a
                 trailing
                 newline""";
-        assertThrows(BashpileUncheckedException.class, () -> assertTextBlock(test));
+        assertThrows(BashpileUncheckedException.class, () -> assertIsParagraph(test));
     }
 
     @Test
     void assertTextLineCanPass() {
         final String test = "one line with newline\n";
-        assertTextLine(test);
+        assertIsLine(test);
     }
 
     @Test
     void assertTextLineCanFail() {
         final String test = "no newline";
-        assertThrows(BashpileUncheckedException.class, () -> assertTextLine(test));
+        assertThrows(BashpileUncheckedException.class, () -> assertIsLine(test));
     }
 
     @Test
     void assertTextLineCanFailTwoLines() {
         final String test = "line one\nline two\n";
-        assertThrows(BashpileUncheckedException.class, () -> assertTextLine(test));
+        assertThrows(BashpileUncheckedException.class, () -> assertIsLine(test));
     }
 }

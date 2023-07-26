@@ -25,21 +25,35 @@ public class Asserts {
     private static final Pattern textLine = Pattern.compile("^[^\n]*$\n|^$");
 
     /**
-     * A text block is a group of text lines.
+     * A text block is a group of text lines.  Each line ends with a newline.
      *
-     * @see #assertTextLine(String)
+     * @see #assertIsLine(String)
      */
-    public static void assertTextBlock(@Nonnull final String str) {
+    public static String assertIsParagraph(@Nonnull final String str) {
         assertMatches(str, textBlock);
+        return str;
     }
 
     /**
-     * A text line contains only one newline at the end of the string.
+     * A text line contains only one newline at the end of the string.  Must end with newline or be blank.
      *
      * @param str the string to check.
      */
-    public static void assertTextLine(@Nonnull final String str) {
+    public static String assertIsLine(@Nonnull final String str) {
         assertMatches(str, textLine);
+        return str;
+    }
+
+    /**
+     * A text line contains only one newline at the end of the string.  Must end with newline or be blank.
+     *
+     * @param str the string to check.
+     */
+    public static String assertIsPhrase(@Nonnull final String str) {
+        if (str.contains("\n")) {
+            throw new BashpileUncheckedAssertionException("Found newline in text Phase");
+        }
+        return str;
     }
 
     /** Checks for a complete match (i.e. whole string must match) */

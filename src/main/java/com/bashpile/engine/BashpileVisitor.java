@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.util.stream.Collectors;
 
-import static com.bashpile.Asserts.assertTextBlock;
+import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.engine.Translation.toStringTranslation;
 
 /**
@@ -53,13 +53,13 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         contextRoot = ctx;
 
         // prepend strictMode text to the statement results
-        final String header = translator.strictModeHeader().body();
-        assertTextBlock(header);
-        String translatedTextBlock = ctx.statement().stream()
-                .map(this::visit)
-                .map(Translation::body)
-                .collect(Collectors.joining());
-        assertTextBlock(translatedTextBlock);
+        final String header = assertIsParagraph(translator.strictModeHeader().body());
+        // TODO assert no preambles in statements
+        final String translatedTextBlock = assertIsParagraph(
+                ctx.statement().stream()
+                        .map(this::visit)
+                        .map(Translation::body)
+                        .collect(Collectors.joining()));
 
         final String importLibs = translator.importsHeaders().body();
 
