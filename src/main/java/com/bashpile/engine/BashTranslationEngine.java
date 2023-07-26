@@ -216,12 +216,10 @@ public class BashTranslationEngine implements TranslationEngine {
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (LevelCounter ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
-            final String lineComment =
-                    "# function forward declaration, Bashpile line %d".formatted(lineNumber(ctx));
-            final String hoistedFunctionText = assertIsParagraph(visitor.visit(functionDeclCtx).body());
-            // TODO use Translation.add
-            final String ret = "%s\n%s".formatted(lineComment, assertIsParagraph(hoistedFunctionText));
-            return toStringTranslation(ret);
+            final Translation comment = toStringTranslation(
+                    "# function forward declaration, Bashpile line %d\n".formatted(lineNumber(ctx)));
+            final Translation hoistedFunctionText = toParagraphTranslation(visitor.visit(functionDeclCtx).body());
+            return comment.add(hoistedFunctionText);
         } finally {
             foundForwardDeclarations.add(ctx.typedId().Id().getText());
         }
