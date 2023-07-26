@@ -197,7 +197,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // body
         try (final LevelCounter ignored = new LevelCounter(PRINT_LABEL)) {
-            final Translation lineComment = toStringTranslation(
+            final Translation comment = toStringTranslation(
                     "# print statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
@@ -205,8 +205,9 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(tr -> tr.body("echo %s\n".formatted(tr.body())))
                     .reduce(Translation::add)
                     .orElseThrow();
-            // TODO add(arguments.mergePreamble)
-            return lineComment.add(arguments).mergePreamble();
+            final Translation subcomment =
+                    toStringTranslation(isEmpty(arguments.preamble()) ? "" : "## print statement body\n");
+            return comment.add(subcomment.add(arguments).mergePreamble());
         }
     }
 
