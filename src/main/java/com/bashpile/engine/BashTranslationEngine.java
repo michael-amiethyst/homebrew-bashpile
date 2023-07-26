@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
+import static com.bashpile.StringUtils.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
@@ -121,7 +122,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = toStringTranslation(
                 "# expression statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toStringTranslation(StringUtils.isEmpty(expr.preamble()) ? "" : "## expression statement body\n");
+                toStringTranslation(isEmpty(expr.preamble()) ? "" : "## expression statement body\n");
         // order is: comment, preamble, subcomment, expr
         final Translation exprStatement = subcomment.add(expr).mergePreamble();
         return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
@@ -141,20 +142,19 @@ public class BashTranslationEngine implements TranslationEngine {
                 : Translation.EMPTY_TRANSLATION;
         assertTypesMatch(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
-        // create translation
-        final String lineComment = "# assign statement, Bashpile line %d".formatted(lineNumber(ctx));
-        final String subcomment =
-                StringUtils.isEmpty(exprTranslation.preamble()) ? "" : "## assign statement body\n";
-        final String unnestedText = exprTranslation.preamble();
-        final String assignment = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
+        // create translations
+        final Translation comment = toStringTranslation(
+                "# assign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
+        final Translation subcomment =
+                toStringTranslation(isEmpty(exprTranslation.preamble()) ? "" : "## assign statement body\n");
+        final Translation varDecl = toStringTranslation(getLocalText() + variableName + "\n");
+        // merge expr into the assignment
+        final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
+        final Translation assignment = toStringTranslation(assignmentBody).appendPreamble(exprTranslation.preamble());
 
-        // TODO redo with Translation.add and .mergePreamble
-        final String body = lineComment + "\n"
-                + assertIsParagraph(unnestedText)
-                + assertIsLine(subcomment)
-                + getLocalText() + variableName + "\n"
-                + assertIsLine(assignment);
-        return new Translation(body, Type.NA, NORMAL);
+        // order is comment, preamble, subcomment, variable declaration, assignment
+        final Translation subcommentToAssignment = subcomment.add(varDecl).add(assignment);
+        return comment.add(subcommentToAssignment.mergePreamble()).type(NA).typeMetadata(NORMAL);
     }
 
     @Override
@@ -320,7 +320,7 @@ public class BashTranslationEngine implements TranslationEngine {
             // insert echo right at start of last line
 
             // exprTranslation.body() does not end in newline and may be multiple lines
-            final String exprBody = StringUtils.prependLastLine("echo ", exprTranslation.body());
+            final String exprBody = prependLastLine("echo ", exprTranslation.body());
             // TODO redo with Translation.add and .mergePreamble
             final String body = "# return statement, Bashpile line %d%s\n%s%s"
                     .formatted(lineNumber(ctx), getHoisted(), exprTranslation.preamble(), exprBody);
