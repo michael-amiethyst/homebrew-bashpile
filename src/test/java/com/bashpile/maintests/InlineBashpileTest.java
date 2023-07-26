@@ -47,6 +47,16 @@ public class InlineBashpileTest extends BashpileTest {
         assertEquals("test\n", results.stdout());
     }
 
+    @Test @Order(41)
+    public void nestedInlineInShellScriptWithReassignmentWorks() {
+        final ExecutionResults results = runText("""
+                #(export filename=src/test/resources/testdata.txt)
+                contents: str = "Stub contents"
+                contents = #($(cat $(echo $filename)))
+                print(contents)""");
+        assertEquals("test\n", results.stdout());
+    }
+
     @Test @Order(50)
     public void nestedInlineWithCalcWorks() {
         final ExecutionResults results = runText("""

@@ -2,7 +2,6 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
-import com.bashpile.StringUtils;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
@@ -22,7 +21,8 @@ import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
-import static com.bashpile.StringUtils.*;
+import static com.bashpile.StringUtils.isEmpty;
+import static com.bashpile.StringUtils.prependLastLine;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
@@ -171,15 +171,20 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesMatch(expectedType, actualType, variableName, lineNumber(ctx));
 
-        // create translation
-        final String lineComment = "# reassign statement, Bashpile line %d".formatted(lineNumber(ctx));
-        final String value = exprTranslation.body();
-        // TODO redo with Translation.add and .mergePreamble
-        final String body = """
-                %s
-                %s%s=%s
-                """.formatted(lineComment, getLocalText(true), variableName, value);
-        return new Translation(exprTranslation.preamble(), body, Type.NA, NORMAL).mergePreamble();
+        // create translations
+        final Translation comment = toStringTranslation(
+                "# reassign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
+        final Translation subcomment =
+                toStringTranslation(isEmpty(exprTranslation.preamble()) ? "" : "## reassignment statement body\n");
+        // merge exprTranslation into reassignment
+        final String reassignmentBody = "%s%s=%s\n".formatted(
+                getLocalText(true), variableName, exprTranslation.body());
+        final Translation reassignment =
+                toStringTranslation(reassignmentBody).appendPreamble(exprTranslation.preamble());
+
+        // order is: comment, preamble, subcomment, reassignment
+        final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
+        return comment.add(preambleToReassignment).type(NA).typeMetadata(NORMAL);
     }
 
     @Override
