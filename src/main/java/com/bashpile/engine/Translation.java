@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static com.bashpile.Asserts.assertIsLine;
 import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.StringUtils.join;
 import static com.bashpile.StringUtils.unescape;
@@ -48,6 +49,10 @@ public record Translation(
 
     public static Translation toParagraphTranslation(final String... text) {
         return new Translation(assertIsParagraph(join(text)), Type.STR, TypeMetadata.NORMAL);
+    }
+
+    public static Translation toLineTranslation(final String... text) {
+        return new Translation(assertIsLine(join(text)), Type.STR, TypeMetadata.NORMAL);
     }
 
     public static Translation toStringTranslation(final String... text) {

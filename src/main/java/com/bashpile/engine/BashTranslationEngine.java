@@ -248,8 +248,6 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
-        // create block
-        String block;
         try (LevelCounter ignored = new LevelCounter(BLOCK_LABEL)) {
             typeStack.push();
 
@@ -258,31 +256,31 @@ public class BashTranslationEngine implements TranslationEngine {
                     x -> typeStack.putVariableType(
                             x.Id().getText(), Type.valueOf(x.Type().getText().toUpperCase()), lineNumber(ctx)));
 
-            // handles nested blocks
+            // create Translations
+            final Translation comment = toLineTranslation(
+                    "# function declaration, Bashpile line %d%s\n".formatted(lineNumber(ctx), getHoisted()));
             final AtomicInteger i = new AtomicInteger(1);
             // the empty string or ...
-            final String namedParams = ctx.paramaters().typedId().isEmpty() ? "" :
-                    // local var1=$1; local var2=$2; etc
-                    "%s%s\n".formatted(TAB, ctx.paramaters().typedId().stream()
-                                    .map(BashpileParser.TypedIdContext::Id)
-                                    .map(visitor::visit)
-                                    .map(Translation::body)
-                                    .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
-                                    .collect(Collectors.joining(" ")));
-            assertIsLine(namedParams);
+            String namedParams = "";
+            if (!ctx.paramaters().typedId().isEmpty()) {
+                // local var1=$1; local var2=$2; etc
+                final String paramDeclarations = ctx.paramaters().typedId().stream()
+                        .map(BashpileParser.TypedIdContext::Id)
+                        .map(visitor::visit)
+                        .map(Translation::body)
+                        .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
+                        .collect(Collectors.joining(" "));
+                namedParams = "%s%s\n".formatted(TAB, paramDeclarations);
+            }
             final Stream<ParserRuleContext> contextStream =
                     addContexts(ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement());
-            final String blockText = assertIsParagraph(visitBlock(visitor, contextStream).body());
-            final String functionComment = "# function declaration, Bashpile line %d%s"
-                    .formatted(lineNumber(ctx), getHoisted());
-            // TODO add Translations
-            block = "%s\n%s () {\n%s%s}\n"
-                    .formatted(functionComment, functionName, namedParams, blockText);
+            final String blockBody = assertIsParagraph(visitBlock(visitor, contextStream).body());
+            final Translation block = toParagraphTranslation("%s () {\n%s%s}\n"
+                    .formatted(functionName, assertIsLine(namedParams), assertIsParagraph(blockBody)));
+            return comment.add(block);
         } finally {
             typeStack.pop();
         }
-        assertIsParagraph(block);
-        return toStringTranslation(block);
     }
 
     @Override
