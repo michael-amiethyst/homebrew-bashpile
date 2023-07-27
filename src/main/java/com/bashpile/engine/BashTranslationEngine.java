@@ -32,7 +32,6 @@ import static com.google.common.collect.Iterables.getLast;
 /**
  * Translates to Bash5 with four spaces as a tab.
  */
-// TODO check ?: operators for coding standards
 public class BashTranslationEngine implements TranslationEngine {
 
     // static variables
@@ -102,7 +101,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = toLineTranslation(
                 "# expression statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toLineTranslation(expr.emptyPreamble() ? "" : "## expression statement body\n");
+                toLineTranslation(expr.hasPreamble() ? "## expression statement body\n" : "");
         // order is: comment, preamble, subcomment, expr
         final Translation exprStatement = subcomment.add(expr).mergePreamble();
         return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
@@ -126,7 +125,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = toLineTranslation(
                 "# assign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toLineTranslation(exprTranslation.emptyPreamble() ? "" : "## assign statement body\n");
+                toLineTranslation(exprTranslation.hasPreamble() ? "## assign statement body\n" : "");
         final Translation varDecl = toLineTranslation(getLocalText() + variableName + "\n");
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
@@ -155,7 +154,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = toLineTranslation(
                 "# reassign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toLineTranslation(exprTranslation.emptyPreamble() ? "" : "## reassignment statement body\n");
+                toLineTranslation(exprTranslation.hasPreamble() ? "## reassignment statement body\n" : "");
         // merge exprTranslation into reassignment
         final String reassignmentBody = "%s%s=%s\n".formatted(
                 getLocalText(true), variableName, exprTranslation.body());
@@ -186,7 +185,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .reduce(Translation::add)
                     .orElseThrow();
             final Translation subcomment =
-                    toLineTranslation(arguments.emptyPreamble() ? "" : "## print statement body\n");
+                    toLineTranslation(arguments.hasPreamble() ? "## print statement body\n" : "");
             return comment.add(subcomment.add(arguments).mergePreamble());
         }
     }
@@ -331,7 +330,7 @@ public class BashTranslationEngine implements TranslationEngine {
             }
             case INT -> {
                 switch (castTo) {
-                    case BOOL -> expression = expression.body(expression.body().equals("0") ? "false" : "true");
+                    case BOOL -> expression = expression.body(!expression.body().equals("0") ? "true" : "false");
                     case INT, FLOAT -> {}
                     case STR -> expression = expression.quoteBody();
                     default -> throw typecastError;
@@ -346,9 +345,9 @@ public class BashTranslationEngine implements TranslationEngine {
                             "Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber(ctx));
                 }
                 switch (castTo) {
-                    case BOOL -> expression = expression.body(expressionValue.compareTo(BigDecimal.ZERO) == 0
-                            ? "false"
-                            : "true");
+                    case BOOL -> expression = expression.body(expressionValue.compareTo(BigDecimal.ZERO) != 0
+                            ? "true"
+                            : "false");
                     case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
                     case FLOAT -> {}
                     case STR -> expression = expression.quoteBody();

@@ -99,6 +99,10 @@ public record Translation(
         return new Translation(preamble + append, body, type, typeMetadata);
     }
 
+    public boolean hasPreamble() {
+        return !emptyPreamble();
+    }
+
     public boolean emptyPreamble() {
         return isEmpty(preamble);
     }
