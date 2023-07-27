@@ -12,13 +12,13 @@ public record ExecutionResults(@Nonnull String stdin, int exitCode, @Nonnull Str
 
     public static final int COMMAND_NOT_FOUND = 127;
 
-    private static final Pattern windowsLineEndings = Pattern.compile("\r\n");
+    private static final Pattern WINDOWS_LINE_ENDINGS = Pattern.compile("\r\n");
 
     public ExecutionResults(@Nonnull final String stdin, final int exitCode, @Nonnull final String stdout) {
         // convert windows line ending to Linux line endings
-        this.stdin = windowsLineEndings.matcher(stdin).replaceAll("\n");
+        this.stdin = WINDOWS_LINE_ENDINGS.matcher(stdin).replaceAll("\n");
         this.exitCode = exitCode;
-        this.stdout = windowsLineEndings.matcher(stdout).replaceAll("\n");
+        this.stdout = WINDOWS_LINE_ENDINGS.matcher(stdout).replaceAll("\n");
     }
 
     public @Nonnull List<String> stdinLines() {
