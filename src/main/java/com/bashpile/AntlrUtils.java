@@ -109,6 +109,7 @@ public class AntlrUtils {
     public static @Nonnull Translation visitBlock(
             @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> stmtStream) {
         final String translationText = stmtStream.map(visitor::visit)
+                .map(Translation::assertEmptyPreamble)
                 .map(Translation::body)
                 // visit results may be multiline strings, convert to array of single lines
                 .map(str -> str.split("\n"))

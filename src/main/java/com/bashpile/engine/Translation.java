@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeMetadata;
+import com.bashpile.exceptions.BashpileUncheckedException;
 
 import javax.annotation.Nonnull;
 import java.util.regex.Pattern;
@@ -97,6 +98,13 @@ public record Translation(
 
     public Translation appendPreamble(@Nonnull final String append) {
         return new Translation(preamble + append, body, type, typeMetadata);
+    }
+
+    public Translation assertEmptyPreamble() {
+        if (hasPreamble()) {
+            throw new BashpileUncheckedException("Found preamble in translation: " + this);
+        }
+        return this;
     }
 
     public boolean hasPreamble() {

@@ -7,7 +7,9 @@ import java.util.HashMap;
 /** All instances of the same label share static data */
 public class LevelCounter implements Closeable {
 
-    /** LevelCounter label */
+    // static constants and variables
+
+    /** A label for changing lexical scopes */
     public static final String BLOCK_LABEL = "block";
 
     /** A command substitution label */
@@ -23,6 +25,8 @@ public class LevelCounter implements Closeable {
     public static final String PRINT_LABEL = "print";
 
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
+
+    // static methods
 
     /** are we in any level of indention for this label */
     public static boolean in(@Nonnull final String name) {
@@ -41,6 +45,8 @@ public class LevelCounter implements Closeable {
     public static int get(@Nonnull final String name) {
         return counters.getOrDefault(name, 0);
     }
+
+    // class fields, constructors and methods
 
     private final String label;
 

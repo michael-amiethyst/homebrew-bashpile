@@ -2,8 +2,8 @@ package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
-import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.Type;
+import com.bashpile.engine.strongtypes.TypeMetadata;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
@@ -12,10 +12,9 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStream;
-import java.util.stream.Collectors;
 
-import static com.bashpile.Asserts.assertIsParagraph;
-import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.Translation.NEWLINE;
+import static com.bashpile.engine.Translation.toPhraseTranslation;
 
 /**
  * Antlr4 calls these methods.
@@ -52,18 +51,14 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         // save root for later usage
         contextRoot = ctx;
 
-        // prepend strictMode text to the statement results
-        final String header = assertIsParagraph(translator.strictModeHeader().body());
-        // TODO assert no preambles in statements
-        final String translatedTextBlock = assertIsParagraph(
-                ctx.statement().stream()
-                        .map(this::visit)
-                        .map(Translation::body)
-                        .collect(Collectors.joining()));
+        final Translation statementTranslation = ctx.statement().stream()
+                .map(this::visit)
+                .map(Translation::assertEmptyPreamble)
+                .reduce(Translation::add)
+                .orElseThrow();
 
-        final String importLibs = translator.importsHeaders().body();
-
-        return toParagraphTranslation(header, importLibs, translatedTextBlock);
+        // add header, libs and statements
+        return translator.strictModeHeader().add(translator.importsHeaders()).add(statementTranslation);
     }
 
     // visit statements
@@ -114,7 +109,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitBlankStmt(@Nonnull BashpileParser.BlankStmtContext ctx) {
-        // was returning "\r\n" on Windows without an override
+        // will return "\r\n" on Windows without an override
         return NEWLINE;
     }
 

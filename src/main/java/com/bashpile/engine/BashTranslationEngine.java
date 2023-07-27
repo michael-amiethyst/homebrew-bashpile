@@ -227,6 +227,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
+        // TODO implement TypeStackTracker
         try (LevelCounter ignored = new LevelCounter(BLOCK_LABEL)) {
             typeStack.push();
 
