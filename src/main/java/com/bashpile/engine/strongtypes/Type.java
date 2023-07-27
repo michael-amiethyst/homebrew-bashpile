@@ -28,6 +28,8 @@ public enum Type {
     /** A Bash reference */
     REF;
 
+    // static methods
+
     public static @Nonnull Type valueOf(@Nonnull final BashpileParser.TypedIdContext ctx) {
         final boolean hasTypeInfo = ctx.Type() != null && StringUtils.isNotBlank(ctx.Type().getText());
         if (hasTypeInfo) {
@@ -48,6 +50,8 @@ public enum Type {
         }
         return type;
     }
+
+    // class/enum methods
 
     public boolean isNotFound() {
         return this.equals(NOT_FOUND);

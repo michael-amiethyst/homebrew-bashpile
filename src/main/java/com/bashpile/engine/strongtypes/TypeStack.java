@@ -1,12 +1,13 @@
 package com.bashpile.engine.strongtypes;
 
-import com.bashpile.Asserts;
 import com.bashpile.exceptions.UserError;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
+
+import static com.bashpile.Asserts.assertMapDoesNotContainKey;
 
 /**
  * A call stack but just for Type information to implement strong typing.
@@ -24,18 +25,20 @@ public class TypeStack {
     public void putVariableType(
             @Nonnull final String variableName, @Nonnull final Type type, final int lineNumber) {
         final Map<String, Type> typeMap = frames.peek().variables();
-        Asserts.assertMapDoesNotContainKey(variableName, typeMap, new UserError(
+        assertMapDoesNotContainKey(variableName, typeMap, new UserError(
                 "%s is already declared as a %s".formatted(variableName, type.name()), lineNumber));
         typeMap.put(variableName, type);
     }
 
     public @Nonnull Type getVariableType(@Nonnull final String variableName) {
+
         // foreach stack frame search for variableName in the variableMap
         Optional<Map<String, Type>> topmostOptional = frames.stream()
                 .map(TypeStackframe::variables)
                 .filter(x -> x.containsKey(variableName))
                 // .stream() starts at the bottom of the stack so, we need to get the last match
                 .reduce((first, second) -> second);
+
         if (topmostOptional.isPresent()) {
             return topmostOptional.get().get(variableName);
         } // else
@@ -52,12 +55,14 @@ public class TypeStack {
     }
 
     public @Nonnull FunctionTypeInfo getFunctionTypes(@Nonnull final String functionName) {
+
         // foreach stack frame search for variableName in the variableMap
         Optional<Map<String, FunctionTypeInfo>> topmostOptional = frames.stream()
                 .map(TypeStackframe::functions)
                 .filter(x -> x.containsKey(functionName))
                 // .stream() starts at the bottom of the stack, so we need to get the last match
                 .reduce((first, second) -> second);
+
         if (topmostOptional.isPresent()) {
             return topmostOptional.get().get(functionName);
         } // else
