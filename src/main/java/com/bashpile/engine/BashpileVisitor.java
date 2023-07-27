@@ -15,7 +15,7 @@ import java.io.InputStream;
 import java.util.stream.Collectors;
 
 import static com.bashpile.Asserts.assertIsParagraph;
-import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.Translation.*;
 
 /**
  * Antlr4 calls these methods.
@@ -63,7 +63,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
         final String importLibs = translator.importsHeaders().body();
 
-        return toStringTranslation(header, importLibs, translatedTextBlock);
+        return toParagraphTranslation(header, importLibs, translatedTextBlock);
     }
 
     // visit statements
@@ -115,7 +115,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public @Nonnull Translation visitBlankStmt(@Nonnull BashpileParser.BlankStmtContext ctx) {
         // was returning "\r\n" on Windows without an override
-        return toStringTranslation("\n");
+        return NEWLINE;
     }
 
     // visit expressions
@@ -169,7 +169,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     /** Default type is STR */
     @Override
     public @Nonnull Translation visitTerminal(@Nonnull final TerminalNode node) {
-        return toStringTranslation(node.getText());
+        return toPhraseTranslation(node.getText());
     }
 
     // expression helper rules

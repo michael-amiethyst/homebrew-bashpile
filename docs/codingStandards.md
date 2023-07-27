@@ -22,7 +22,11 @@ Ours is
 
 ## Trinary Operator
 If the form is `object = test ? object.fluntInterfaceCall() : object` then the fluent interface call will always
-be the first choice.  If the line is too long it will be broken up like
+be the first choice.  
+
+Similarly, if the form is `object = notNullOrNotEmptyTest ? work : default` then the default will be the second choice.
+
+If the line is too long it will be broken up like
 ```java
 object = test
         ? firstChoice

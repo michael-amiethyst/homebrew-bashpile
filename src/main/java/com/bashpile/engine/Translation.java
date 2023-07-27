@@ -34,7 +34,10 @@ public record Translation(
     // static constants
 
     public static final Translation EMPTY_TYPE = new Translation("", Type.EMPTY, TypeMetadata.NORMAL);
+
     public static final Translation EMPTY_TRANSLATION = new Translation("", Type.UNKNOWN, TypeMetadata.NORMAL);
+
+    public static final Translation NEWLINE = toPhraseTranslation("\n");
 
     private static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
 
@@ -66,8 +69,7 @@ public record Translation(
         return new Translation(assertIsLine(join(text)), Type.STR, TypeMetadata.NORMAL);
     }
 
-    // TODO use toParagraphTranslation, toLineTranslation or toPhraseTranslation
-    public static Translation toStringTranslation(final String... text) {
+    public static Translation toPhraseTranslation(final String... text) {
         return new Translation(join(text), Type.STR, TypeMetadata.NORMAL);
     }
 

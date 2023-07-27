@@ -32,6 +32,7 @@ import static com.google.common.collect.Iterables.getLast;
 /**
  * Translates to Bash5 with four spaces as a tab.
  */
+// TODO check ?: operators for coding standards
 public class BashTranslationEngine implements TranslationEngine {
 
     // static variables
@@ -83,22 +84,22 @@ public class BashTranslationEngine implements TranslationEngine {
                 set -euo pipefail -o posix
                 export IFS=$'\\n\\t'
                 """;
-        return toStringTranslation("# strict mode header\n%s".formatted(strictMode));
+        return toParagraphTranslation("# strict mode header\n%s".formatted(strictMode));
     }
 
     @Override
     public @Nonnull Translation importsHeaders() {
         // stub
         String text = "";
-        return toStringTranslation(text);
+        return toParagraphTranslation(text);
     }
 
     // statement translations
 
     @Override
     public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
-        final Translation expr = visitor.visit(ctx.expression()).add(toStringTranslation("\n"));
-        final Translation comment = toStringTranslation(
+        final Translation expr = visitor.visit(ctx.expression()).add(NEWLINE);
+        final Translation comment = toLineTranslation(
                 "# expression statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
                 toLineTranslation(expr.emptyPreamble() ? "" : "## expression statement body\n");
@@ -122,14 +123,14 @@ public class BashTranslationEngine implements TranslationEngine {
         assertTypesMatch(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
-        final Translation comment = toStringTranslation(
+        final Translation comment = toLineTranslation(
                 "# assign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toStringTranslation(exprTranslation.emptyPreamble() ? "" : "## assign statement body\n");
-        final Translation varDecl = toStringTranslation(getLocalText() + variableName + "\n");
+                toLineTranslation(exprTranslation.emptyPreamble() ? "" : "## assign statement body\n");
+        final Translation varDecl = toLineTranslation(getLocalText() + variableName + "\n");
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
-        final Translation assignment = toStringTranslation(assignmentBody).appendPreamble(exprTranslation.preamble());
+        final Translation assignment = toParagraphTranslation(assignmentBody).appendPreamble(exprTranslation.preamble());
 
         // order is comment, preamble, subcomment, variable declaration, assignment
         final Translation subcommentToAssignment = subcomment.add(varDecl).add(assignment);
@@ -151,15 +152,15 @@ public class BashTranslationEngine implements TranslationEngine {
         Asserts.assertTypesMatch(expectedType, actualType, variableName, lineNumber(ctx));
 
         // create translations
-        final Translation comment = toStringTranslation(
+        final Translation comment = toLineTranslation(
                 "# reassign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toStringTranslation(exprTranslation.emptyPreamble() ? "" : "## reassignment statement body\n");
+                toLineTranslation(exprTranslation.emptyPreamble() ? "" : "## reassignment statement body\n");
         // merge exprTranslation into reassignment
         final String reassignmentBody = "%s%s=%s\n".formatted(
                 getLocalText(true), variableName, exprTranslation.body());
         final Translation reassignment =
-                toStringTranslation(reassignmentBody).appendPreamble(exprTranslation.preamble());
+                toLineTranslation(reassignmentBody).appendPreamble(exprTranslation.preamble());
 
         // order is: comment, preamble, subcomment, reassignment
         final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
@@ -171,12 +172,12 @@ public class BashTranslationEngine implements TranslationEngine {
         // guard
         final BashpileParser.ArgumentListContext argList = ctx.argumentList();
         if (argList == null) {
-            return toStringTranslation("echo\n");
+            return toLineTranslation("echo\n");
         }
 
         // body
         try (final LevelCounter ignored = new LevelCounter(PRINT_LABEL)) {
-            final Translation comment = toStringTranslation(
+            final Translation comment = toLineTranslation(
                     "# print statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
@@ -185,7 +186,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .reduce(Translation::add)
                     .orElseThrow();
             final Translation subcomment =
-                    toStringTranslation(arguments.emptyPreamble() ? "" : "## print statement body\n");
+                    toLineTranslation(arguments.emptyPreamble() ? "" : "## print statement body\n");
             return comment.add(subcomment.add(arguments).mergePreamble());
         }
     }
@@ -195,7 +196,7 @@ public class BashTranslationEngine implements TranslationEngine {
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (LevelCounter ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
-            final Translation comment = toStringTranslation(
+            final Translation comment = toLineTranslation(
                     "# function forward declaration, Bashpile line %d\n".formatted(lineNumber(ctx)));
             final Translation hoistedFunctionText = toParagraphTranslation(visitor.visit(functionDeclCtx).body());
             return comment.add(hoistedFunctionText);
@@ -568,6 +569,7 @@ public class BashTranslationEngine implements TranslationEngine {
     /**
      * Subshell errored exit codes are ignored in Bash despite all configurations.
      * This workaround explicitly propagates errored exit codes.
+     * Unnests one level.
      *
      * @param tr The base translation.
      * @return A Translation where the preamble is <code>tr</code>'s body and the work-around.
@@ -575,20 +577,27 @@ public class BashTranslationEngine implements TranslationEngine {
      * that holds the results of executing <code>tr</code>'s body.
      */
     private Translation unnest(@Nonnull final Translation tr) {
+        // check input
+        assertNoMatch(tr.body(), GENERATED_VARIABLE_NAME);
+
+        // assign Strings to use in translations
         final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
-        // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
-        assertNoMatch(tr.body(), GENERATED_VARIABLE_NAME);
-        // TODO break up with Translation.add
-        final String workaroundText = """
-                ## unnest for %s
-                export %s
-                %s=%s
-                %s=$?
+
+        // create 5 lines of translations
+        final Translation subcomment = toLineTranslation("## unnest for %s\n".formatted(tr.body()));
+        final Translation export     = toLineTranslation("export %s\n".formatted(subshellReturn));
+        final Translation assign     = toLineTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
+        final Translation exitCode   = toLineTranslation("%s=$?\n".formatted(exitCodeName));
+        final Translation check      = toLineTranslation("""
                 if [ "$%s" -ne 0 ]; then exit "$%s"; fi
-                """.formatted(
-                        tr.body(), subshellReturn, subshellReturn, tr.body(), exitCodeName, exitCodeName, exitCodeName);
-        return tr.appendPreamble(workaroundText).body("${%s}".formatted(subshellReturn));
+                """.formatted(exitCodeName, exitCodeName));
+
+        // add the lines up
+        final Translation preambles = subcomment.add(export).add(assign).add(exitCode).add(check);
+
+        // add the preambles and swap the body
+        return tr.appendPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
     }
     
     /** Get the Bashpile script linenumber that ctx is found in. */

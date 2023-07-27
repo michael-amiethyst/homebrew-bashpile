@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.Translation.toParagraphTranslation;
 
 /** Has the Antlr parser and a lot of helper methods to BashTranslationEngine */
 public class AntlrUtils {
@@ -55,7 +55,8 @@ public class AntlrUtils {
      * Helper to {@link BashTranslationEngine#functionForwardDeclarationStatement(BashpileParser.FunctionForwardDeclarationStatementContext)}
      */
     public static @Nonnull ParserRuleContext getFunctionDeclCtx(
-            @Nonnull final BashpileVisitor visitor, @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
+            @Nonnull final BashpileVisitor visitor,
+            @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final String functionName = ctx.typedId().Id().getText();
         assert visitor.getContextRoot() != null;
         final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
@@ -114,7 +115,7 @@ public class AntlrUtils {
                 // stream the lines, indent each line, then flatten
                 .flatMap(lines -> Arrays.stream(lines).sequential().map(s -> TAB + s + "\n"))
                 .collect(Collectors.joining());
-        return toStringTranslation(translationText);
+        return toParagraphTranslation(translationText);
     }
 
     /** Concatenates inputs into stream */
