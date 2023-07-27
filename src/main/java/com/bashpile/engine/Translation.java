@@ -112,6 +112,10 @@ public record Translation(
         return new Translation(preamble, STRING_QUOTES.matcher(body).replaceAll(""), type, typeMetadata);
     }
 
+    public Translation parenthesizeBody() {
+        return new Translation(preamble, "(" + body + ")", type, typeMetadata);
+    }
+
     public Translation mergePreamble() {
         return new Translation(preamble + body, type, typeMetadata);
     }

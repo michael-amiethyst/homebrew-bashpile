@@ -465,10 +465,14 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
-        final Translation expr = visitor.visit(ctx.expression());
-        // No parens for strings and no parens for numbers not in a calc (e.g. "(((5)))" becomes "5" eventually)
-        final String format = expr.type().isNumeric() && LevelCounter.in(CALC_LABEL) ? "(%s)" : "%s";
-        return new Translation(format.formatted(expr.body()), expr.type(), expr.typeMetadata());
+        // drop parenthesis
+        Translation ret = visitor.visit(ctx.expression());
+
+        // only keep parenthesis for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
+        if (ret.type().isPossiblyNumeric() && LevelCounter.in(CALC_LABEL)) {
+            ret = ret.parenthesizeBody();
+        }
+        return ret;
     }
 
     @Override
@@ -478,9 +482,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // check arg types
 
-        // get functionName and a stream creator
+        // get functionName and the argumentTranslations
         final String functionName = ctx.Id().getText();
-        final List<Translation> argumentTranslations = ctx.argumentList() != null
+        final boolean hasArgs = ctx.argumentList() != null;
+        final List<Translation> argumentTranslations = hasArgs
                 ? ctx.argumentList().expression().stream().map(visitor::visit).toList()
                 : List.of();
 
@@ -489,13 +494,14 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Type> actualTypes = argumentTranslations.stream().map(Translation::type).toList();
         Asserts.assertTypesMatch(expectedTypes.parameterTypes(), actualTypes, functionName, lineNumber(ctx));
 
-        // get arguments
-
-        final boolean hasArgs = ctx.argumentList() != null;
+        // extract argText and preambles from argumentTranslations
         // empty list or ' arg1Text arg2Text etc.'
-        final String args = hasArgs
-                ? " " + argumentTranslations.stream().map(Translation::body).collect(Collectors.joining(" "))
-                : "";
+        String argText = "";
+        if (hasArgs) {
+            argText = " " + argumentTranslations.stream()
+                    .map(Translation::body).collect(Collectors.joining(" "));
+        }
+        final Translation preambles = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
 
         // lookup return type of this function
         final Type retType = typeStack.getFunctionTypes(id).returnType();
@@ -503,18 +509,18 @@ public class BashTranslationEngine implements TranslationEngine {
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
         final boolean topLevelStatement = !in(CALC_LABEL) && !in(PRINT_LABEL);
-        final Translation joined = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
         if (topLevelStatement) {
-            return new Translation(joined.preamble(), id + args + " >/dev/null", retType, NORMAL);
+            return new Translation(preambles.preamble(), id + argText + " >/dev/null", retType, NORMAL);
         } // else return an inline (command substitution)
-        final String text = "$(%s%s)".formatted(id, args);
-        return new Translation(joined.preamble(), text, retType, INLINE);
+        final String text = "$(%s%s)".formatted(id, argText);
+        return new Translation(preambles.preamble(), text, retType, INLINE);
     }
 
     @Override
     public Translation idExpression(BashpileParser.IdExpressionContext ctx) {
         final String variableName = ctx.Id().getText();
         final Type type = typeStack.getVariableType(variableName);
+        // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
         return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
     }
 
@@ -522,25 +528,23 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
-        final Stream<Translation> translationStream = ctx.shellStringContents().stream().map(visitor::visit);
-        Translation shellStringTranslation =
-                toTranslation(translationStream, UNKNOWN, NORMAL).unescapeText();
+        // get the contents -- ditches the #() syntax
+        final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
+        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL).unescapeText();
         if (LevelCounter.inCommandSubstitution()) {
-            shellStringTranslation = shellStringTranslation
-                    .body("$(%s)".formatted(shellStringTranslation.body()));
-            shellStringTranslation = unnest(shellStringTranslation);
-            shellStringTranslation = LevelCounter.getCommandSubstitution() <= 1
-                    ? shellStringTranslation
-                    : shellStringTranslation.typeMetadata(INLINE);
+            // then wrap in command substitution and unnest as needed
+            contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
+            for (int i = 0; i < LevelCounter.getCommandSubstitution(); i++) {
+                contentsTranslation = unnest(contentsTranslation);
+            }
         } else if (LevelCounter.in(PRINT_LABEL)) {
-            shellStringTranslation = shellStringTranslation
-                    .body("$(%s)".formatted(shellStringTranslation.body()));
-        }
-        return shellStringTranslation;
+            contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
+        } // else top level -- no additional processing needed
+        return contentsTranslation;
     }
 
     /**
-     * Unnests command substitutions as needed.
+     * Unnests inlines (Bashpile command substitutions) as needed.
      *
      * @see Translation
      * @see #printStatement(BashpileParser.PrintStatementContext)
@@ -549,18 +553,15 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     @Override
     public Translation inline(BashpileParser.InlineContext ctx) {
-        final boolean nested = LevelCounter.inCommandSubstitution();
         // get the inline nesting level before our try-with-resources statement
-        final int inlineNesting = LevelCounter.get(LevelCounter.INLINE_LABEL);
+        final int inlineNestingDepth = LevelCounter.get(LevelCounter.INLINE_LABEL);
         try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
-            Translation joined = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeText();
-            if (nested) {
-                joined = unnest(joined);
-                final boolean stillNested = inlineNesting - 1 > 0;
-                joined = stillNested ? joined.typeMetadata(INLINE) : joined;
+            Translation childrenTranslation = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeText();
+            for (int i = 0; i < inlineNestingDepth; i++) {
+                childrenTranslation = unnest(childrenTranslation);
             }
-            return joined;
+            return childrenTranslation;
         }
     }
 

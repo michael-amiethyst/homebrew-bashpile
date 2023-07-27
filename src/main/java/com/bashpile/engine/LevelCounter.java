@@ -10,13 +10,13 @@ public class LevelCounter implements Closeable {
     /** LevelCounter label */
     public static final String BLOCK_LABEL = "block";
 
-    /** LevelCounter label */
+    /** A command substitution label */
     public static final String CALC_LABEL = "calc";
 
-    /** LevelCounter label */
+    /** A command substitution label */
     public static final String INLINE_LABEL = "inline";
 
-    /** LevelCounter label */
+    /** A command substitution label */
     public static final String FORWARD_DECL_LABEL = "forwardDecl";
 
     /** LevelCounter label */

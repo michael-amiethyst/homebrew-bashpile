@@ -53,6 +53,10 @@ public enum Type {
         return this.equals(NOT_FOUND);
     }
 
+    public boolean isPossiblyNumeric() {
+        return this.equals(UNKNOWN) || this.isNumeric();
+    }
+
     public boolean isNumeric() {
         return this.equals(NUMBER) || this.equals(INT) || this.equals(FLOAT);
     }
