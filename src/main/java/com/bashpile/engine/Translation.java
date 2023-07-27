@@ -8,9 +8,7 @@ import javax.annotation.Nonnull;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static com.bashpile.Asserts.assertIsLine;
-import static com.bashpile.Asserts.assertIsParagraph;
-import static com.bashpile.StringUtils.join;
+import static com.bashpile.Asserts.*;
 import static com.bashpile.StringUtils.unescape;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
@@ -38,7 +36,7 @@ public record Translation(
 
     public static final Translation EMPTY_TRANSLATION = new Translation("", Type.UNKNOWN, TypeMetadata.NORMAL);
 
-    public static final Translation NEWLINE = toPhraseTranslation("\n");
+    public static final Translation NEWLINE = toLineTranslation("\n");
 
     private static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
 
@@ -62,17 +60,15 @@ public record Translation(
 
     // static initializers
 
-    public static Translation toParagraphTranslation(final String... text) {
-        return new Translation(assertIsParagraph(join(text)), Type.STR, TypeMetadata.NORMAL);
+    public static Translation toParagraphTranslation(@Nonnull final String text) {
+        return new Translation(assertIsParagraph(text), Type.STR, TypeMetadata.NORMAL);
     }
 
-    public static Translation toLineTranslation(final String... text) {
-        return new Translation(assertIsLine(join(text)), Type.STR, TypeMetadata.NORMAL);
+    public static Translation toLineTranslation(@Nonnull final String text) {
+        return new Translation(assertIsLine(text), Type.STR, TypeMetadata.NORMAL);
     }
 
-    public static Translation toPhraseTranslation(final String... text) {
-        return new Translation(join(text), Type.STR, TypeMetadata.NORMAL);
-    }
+    // toPhraseTranslation not used/needed
 
     // constructors
 

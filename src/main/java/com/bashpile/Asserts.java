@@ -44,18 +44,6 @@ public class Asserts {
         return str;
     }
 
-    /**
-     * A text line contains only one newline at the end of the string.  Must end with newline or be blank.
-     *
-     * @param str the string to check.
-     */
-    public static String assertIsPhrase(@Nonnull final String str) {
-        if (str.contains("\n")) {
-            throw new BashpileUncheckedAssertionException("Found newline in text Phase");
-        }
-        return str;
-    }
-
     /** Checks for a complete match (i.e. whole string must match) */
     public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);

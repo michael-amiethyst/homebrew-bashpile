@@ -3,7 +3,6 @@ package com.bashpile.engine;
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
 import com.bashpile.engine.strongtypes.Type;
-import com.bashpile.engine.strongtypes.TypeMetadata;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
@@ -14,7 +13,7 @@ import javax.annotation.Nullable;
 import java.io.InputStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
-import static com.bashpile.engine.Translation.toPhraseTranslation;
+import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 
 /**
  * Antlr4 calls these methods.
@@ -136,7 +135,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
-        return new Translation(ctx.getText(), Type.parseNumberString(ctx.Number().getText()), TypeMetadata.NORMAL);
+        return new Translation(ctx.getText(), Type.parseNumberString(ctx.Number().getText()), NORMAL);
     }
 
     @Override
@@ -150,7 +149,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
-        return new Translation(ctx.Bool().getText(), Type.BOOL, TypeMetadata.NORMAL);
+        return new Translation(ctx.Bool().getText(), Type.BOOL, NORMAL);
     }
 
     /**
@@ -164,7 +163,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     /** Default type is STR */
     @Override
     public @Nonnull Translation visitTerminal(@Nonnull final TerminalNode node) {
-        return toPhraseTranslation(node.getText());
+        // may or may not be multi-line
+        return new Translation(node.getText(), Type.STR, NORMAL);
     }
 
     // expression helper rules
