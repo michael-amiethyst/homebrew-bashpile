@@ -11,6 +11,7 @@ import static com.bashpile.Asserts.assertIsLine;
 import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.StringUtils.join;
 import static com.bashpile.StringUtils.unescape;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 /**
  * Decorator pattern for a String.
@@ -30,35 +31,14 @@ public record Translation(
         @Nonnull Type type,
         @Nonnull TypeMetadata typeMetadata) {
 
+    // static constants
+
     public static final Translation EMPTY_TYPE = new Translation("", Type.EMPTY, TypeMetadata.NORMAL);
     public static final Translation EMPTY_TRANSLATION = new Translation("", Type.UNKNOWN, TypeMetadata.NORMAL);
 
     private static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
 
-    public Translation(@Nonnull final String text, @Nonnull final Type type, @Nonnull final TypeMetadata typeMetadata) {
-        this("", text, type, typeMetadata);
-    }
-
-    public static Translation toTranslation(
-            @Nonnull final Stream<Translation> stream,
-            @Nonnull final Type type,
-            @Nonnull final TypeMetadata typeMetadata) {
-        final Translation joined = stream.reduce(Translation::add).orElseThrow();
-        return new Translation(joined.preamble, joined.body, type, typeMetadata);
-    }
-
-    public static Translation toParagraphTranslation(final String... text) {
-        return new Translation(assertIsParagraph(join(text)), Type.STR, TypeMetadata.NORMAL);
-    }
-
-    public static Translation toLineTranslation(final String... text) {
-        return new Translation(assertIsLine(join(text)), Type.STR, TypeMetadata.NORMAL);
-    }
-
-    // TODO use toParagraphTranslation, toLineTranslation or toPhraseTranslation
-    public static Translation toStringTranslation(final String... text) {
-        return new Translation(join(text), Type.STR, TypeMetadata.NORMAL);
-    }
+    // static methods
 
     public static boolean areStringExpressions(@Nonnull final Translation... translations) {
         // if all strings the stream of not-strings will be empty
@@ -76,32 +56,63 @@ public record Translation(
                 .isEmpty();
     }
 
+    // static initializers
+
+    public static Translation toParagraphTranslation(final String... text) {
+        return new Translation(assertIsParagraph(join(text)), Type.STR, TypeMetadata.NORMAL);
+    }
+
+    public static Translation toLineTranslation(final String... text) {
+        return new Translation(assertIsLine(join(text)), Type.STR, TypeMetadata.NORMAL);
+    }
+
+    // TODO use toParagraphTranslation, toLineTranslation or toPhraseTranslation
+    public static Translation toStringTranslation(final String... text) {
+        return new Translation(join(text), Type.STR, TypeMetadata.NORMAL);
+    }
+
+    // constructors
+
+    public Translation(@Nonnull final String text, @Nonnull final Type type, @Nonnull final TypeMetadata typeMetadata) {
+        this("", text, type, typeMetadata);
+    }
+
+    public static Translation toTranslation(
+            @Nonnull final Stream<Translation> stream,
+            @Nonnull final Type type,
+            @Nonnull final TypeMetadata typeMetadata) {
+        final Translation joined = stream.reduce(Translation::add).orElseThrow();
+        return new Translation(joined.preamble, joined.body, type, typeMetadata);
+    }
+
+    // instance methods
+
     public Translation add(@Nonnull final Translation other) {
         return new Translation(preamble + other.preamble, body + other.body, type, typeMetadata);
     }
 
-    public boolean isInlineOrSubshell() {
-        return typeMetadata.equals(TypeMetadata.SUBSHELL) || typeMetadata.equals(TypeMetadata.INLINE);
-    }
-
-    public Translation unescapeText() {
-        return new Translation(preamble, unescape(body), type, typeMetadata);
-    }
-
-    public Translation type(@Nonnull final Type typecastType) {
-        return new Translation(preamble, body, typecastType, typeMetadata);
-    }
-
-    public Translation typeMetadata(@Nonnull final TypeMetadata meta) {
-        return new Translation(preamble, body, type, meta);
-    }
+    // preamble instance methods
 
     public Translation appendPreamble(@Nonnull final String append) {
         return new Translation(preamble + append, body, type, typeMetadata);
     }
 
+    public boolean emptyPreamble() {
+        return isEmpty(preamble);
+    }
+
+    public Translation mergePreamble() {
+        return new Translation(preamble + body, type, typeMetadata);
+    }
+
+    // body instance methods
+
     public Translation body(@Nonnull final String nextBody) {
         return new Translation(preamble, nextBody, type, typeMetadata);
+    }
+
+    public Translation unescapeBody() {
+        return new Translation(preamble, unescape(body), type, typeMetadata);
     }
 
     public Translation quoteBody() {
@@ -116,8 +127,18 @@ public record Translation(
         return new Translation(preamble, "(" + body + ")", type, typeMetadata);
     }
 
-    public Translation mergePreamble() {
-        return new Translation(preamble + body, type, typeMetadata);
+    // type and typeMetadata instance methods
+
+    public Translation type(@Nonnull final Type typecastType) {
+        return new Translation(preamble, body, typecastType, typeMetadata);
+    }
+
+    public Translation typeMetadata(@Nonnull final TypeMetadata meta) {
+        return new Translation(preamble, body, type, meta);
+    }
+
+    public boolean isInlineOrSubshell() {
+        return typeMetadata.equals(TypeMetadata.SUBSHELL) || typeMetadata.equals(TypeMetadata.INLINE);
     }
 
     // TODO create verifyNoPreamble method, use vigorously

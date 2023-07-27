@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
-import static com.bashpile.StringUtils.isEmpty;
 import static com.bashpile.StringUtils.prependLastLine;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
@@ -39,31 +38,11 @@ public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";
 
-    private static final Pattern subshellWorkaroundVariable = Pattern.compile("^\\$\\{__bp.*");
-
-    // static methods
-
-    private static @Nonnull String getLocalText() {
-        return getLocalText(false);
-    }
-
-    private static @Nonnull String getLocalText(final boolean reassignment) {
-        final boolean indented = LevelCounter.in(BLOCK_LABEL);
-        if (indented && !reassignment) {
-            return "local ";
-        } else if (!indented && !reassignment) {
-            return "export ";
-        } else { // reassignment
-            return "";
-        }
-    }
-
-    private static @Nonnull String getHoisted() {
-        return LevelCounter.in(FORWARD_DECL_LABEL) ? " (hoisted)" : "";
-    }
+    private static final Pattern GENERATED_VARIABLE_NAME = Pattern.compile("^\\$\\{__bp.*");
 
     // instance variables
 
+    /** This is how we enforce type checking at compile time.  Mutable. */
     private final TypeStack typeStack = new TypeStack();
 
     private BashpileVisitor visitor;
@@ -122,7 +101,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = toStringTranslation(
                 "# expression statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toStringTranslation(isEmpty(expr.preamble()) ? "" : "## expression statement body\n");
+                toLineTranslation(expr.emptyPreamble() ? "" : "## expression statement body\n");
         // order is: comment, preamble, subcomment, expr
         final Translation exprStatement = subcomment.add(expr).mergePreamble();
         return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
@@ -146,7 +125,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = toStringTranslation(
                 "# assign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toStringTranslation(isEmpty(exprTranslation.preamble()) ? "" : "## assign statement body\n");
+                toStringTranslation(exprTranslation.emptyPreamble() ? "" : "## assign statement body\n");
         final Translation varDecl = toStringTranslation(getLocalText() + variableName + "\n");
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
@@ -175,7 +154,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = toStringTranslation(
                 "# reassign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
-                toStringTranslation(isEmpty(exprTranslation.preamble()) ? "" : "## reassignment statement body\n");
+                toStringTranslation(exprTranslation.emptyPreamble() ? "" : "## reassignment statement body\n");
         // merge exprTranslation into reassignment
         final String reassignmentBody = "%s%s=%s\n".formatted(
                 getLocalText(true), variableName, exprTranslation.body());
@@ -206,7 +185,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .reduce(Translation::add)
                     .orElseThrow();
             final Translation subcomment =
-                    toStringTranslation(isEmpty(arguments.preamble()) ? "" : "## print statement body\n");
+                    toStringTranslation(arguments.emptyPreamble() ? "" : "## print statement body\n");
             return comment.add(subcomment.add(arguments).mergePreamble());
         }
     }
@@ -530,7 +509,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         // get the contents -- ditches the #() syntax
         final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
-        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL).unescapeText();
+        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL).unescapeBody();
         if (LevelCounter.inCommandSubstitution()) {
             // then wrap in command substitution and unnest as needed
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
@@ -557,7 +536,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final int inlineNestingDepth = LevelCounter.get(LevelCounter.INLINE_LABEL);
         try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
-            Translation childrenTranslation = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeText();
+            Translation childrenTranslation = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeBody();
             for (int i = 0; i < inlineNestingDepth; i++) {
                 childrenTranslation = unnest(childrenTranslation);
             }
@@ -566,6 +545,25 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     // helpers
+
+    private static @Nonnull String getLocalText() {
+        return getLocalText(false);
+    }
+
+    private static @Nonnull String getLocalText(final boolean reassignment) {
+        final boolean indented = LevelCounter.in(BLOCK_LABEL);
+        if (indented && !reassignment) {
+            return "local ";
+        } else if (!indented && !reassignment) {
+            return "export ";
+        } else { // reassignment
+            return "";
+        }
+    }
+
+    private static @Nonnull String getHoisted() {
+        return LevelCounter.in(FORWARD_DECL_LABEL) ? " (hoisted)" : "";
+    }
 
     /**
      * Subshell errored exit codes are ignored in Bash despite all configurations.
@@ -580,7 +578,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
         // assign subshellReturn, assign exitCodeName, exit with exitCodeName on error (if not equal to 0)
-        assertNoMatch(tr.body(), subshellWorkaroundVariable);
+        assertNoMatch(tr.body(), GENERATED_VARIABLE_NAME);
         // TODO break up with Translation.add
         final String workaroundText = """
                 ## unnest for %s
