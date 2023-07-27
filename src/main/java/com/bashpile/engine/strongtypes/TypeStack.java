@@ -74,11 +74,15 @@ public class TypeStack {
         return foundFunction != FunctionTypeInfo.EMPTY;
     }
 
-    public void push() {
+    public TypeStackClosable closable() {
+        return new TypeStackClosable(this);
+    }
+
+    /* package */ void push() {
         frames.push(TypeStackframe.of());
     }
 
-    public void pop() {
+    /* package */ void pop() {
         frames.pop();
     }
 }

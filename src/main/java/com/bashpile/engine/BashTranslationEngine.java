@@ -175,7 +175,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // body
-        try (final LevelCounter ignored = new LevelCounter(PRINT_LABEL)) {
+        try (final var ignored = new LevelCounter(PRINT_LABEL)) {
             final Translation comment = toLineTranslation(
                     "# print statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
             final Translation arguments = argList.expression().stream()
@@ -194,7 +194,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation functionForwardDeclarationStatement(
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
-        try (LevelCounter ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
+        try (var ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
             final Translation comment = toLineTranslation(
                     "# function forward declaration, Bashpile line %d\n".formatted(lineNumber(ctx)));
             final Translation hoistedFunctionText = toParagraphTranslation(visitor.visit(functionDeclCtx).body());
@@ -227,9 +227,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
-        // TODO implement TypeStackTracker
-        try (LevelCounter ignored = new LevelCounter(BLOCK_LABEL)) {
-            typeStack.push();
+        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.closable()) {
 
             // register local variable types
             ctx.paramaters().typedId().forEach(
@@ -258,17 +256,13 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation functionDeclaration = toParagraphTranslation("%s () {\n%s%s}\n"
                     .formatted(functionName, assertIsLine(namedParams), assertIsParagraph(blockBody)));
             return comment.add(functionDeclaration);
-        } finally {
-            typeStack.pop();
         }
     }
 
     @Override
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
-        try (LevelCounter ignored = new LevelCounter(BLOCK_LABEL)) {
-            typeStack.push();
-
+        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.closable()) {
             final Translation comment = toLineTranslation(
                     "# anonymous block, Bashpile line %d%s\n".formatted(lineNumber(ctx), getHoisted()));
             // behind the scenes we need to name the anonymous function
@@ -280,8 +274,6 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation selfCallingAnonymousFunction = toParagraphTranslation("%s () {\n%s}; %s\n"
                     .formatted(anonymousFunctionName, assertIsParagraph(blockBody), anonymousFunctionName));
             return comment.add(selfCallingAnonymousFunction);
-        } finally {
-            typeStack.pop();
         }
     }
 
@@ -408,7 +400,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
         // get the child translations
         List<Translation> childTranslations;
-        try (LevelCounter ignored = new LevelCounter(CALC_LABEL)) {
+        try (var ignored = new LevelCounter(CALC_LABEL)) {
             childTranslations = ctx.children.stream()
                     .map(visitor::visit)
                     // if we have a nested command substitution, then unnest
@@ -535,7 +527,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation inline(BashpileParser.InlineContext ctx) {
         // get the inline nesting level before our try-with-resources statement
         final int inlineNestingDepth = LevelCounter.get(LevelCounter.INLINE_LABEL);
-        try (LevelCounter ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
+        try (var ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
             final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
             Translation childrenTranslation = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeBody();
             for (int i = 0; i < inlineNestingDepth; i++) {
