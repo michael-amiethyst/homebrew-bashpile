@@ -5,6 +5,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import javax.annotation.Nonnull;
 
 public class StringUtils extends org.apache.commons.lang3.StringUtils {
+
     public static String unescape(@Nonnull final String text) {
         return StringEscapeUtils.unescapeJava(text);
     }

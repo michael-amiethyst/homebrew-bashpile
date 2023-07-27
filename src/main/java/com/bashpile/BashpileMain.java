@@ -26,14 +26,18 @@ import static com.bashpile.AntlrUtils.parse;
 )
 public class BashpileMain implements Callable<Integer> {
 
-    private static final Logger log = LogManager.getLogger(BashpileMain.class);
+    // statics
+
+    private static final Logger LOG = LogManager.getLogger(BashpileMain.class);
 
     public static void main(final String[] args) {
         final BashpileMain bashpile = new BashpileMain();
         final CommandLine argProcessor = new CommandLine(bashpile);
-        bashpile.setCommandLine(argProcessor);
+        bashpile.setPicocliCommandLine(argProcessor);
         System.exit(argProcessor.execute(args));
     }
+
+    // class fields
 
     @CommandLine.Option(names = {"-i", "--inputFile"},
             description = "Use the specified bashpile file.  Has precedence over the -c option.")
@@ -45,7 +49,7 @@ public class BashpileMain implements Callable<Integer> {
     @Nullable
     private String command;
 
-    private CommandLine commandLine;
+    private CommandLine picocliCommandLine;
 
     public BashpileMain() {}
 
@@ -60,7 +64,7 @@ public class BashpileMain implements Callable<Integer> {
     @Override
     public @Nonnull Integer call() {
         // prints help text and returns 'general error'
-        commandLine.usage(System.out);
+        picocliCommandLine.usage(System.out);
         return 1;
     }
 
@@ -73,7 +77,7 @@ public class BashpileMain implements Callable<Integer> {
     }
 
     public @Nonnull ExecutionResults execute() {
-        log.debug("In {}", System.getProperty("user.dir"));
+        LOG.debug("In {}", System.getProperty("user.dir"));
         String bashScript = null;
         try {
             bashScript = transpile();
@@ -117,7 +121,7 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
-    public void setCommandLine(@Nonnull final CommandLine commandLine) {
-        this.commandLine = commandLine;
+    public void setPicocliCommandLine(@Nonnull final CommandLine picocliCommandLine) {
+        this.picocliCommandLine = picocliCommandLine;
     }
 }
