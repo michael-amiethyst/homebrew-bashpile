@@ -119,7 +119,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation exprTranslation = exprExists
                 ? visitor.visit(ctx.expression())
                 : Translation.EMPTY_TRANSLATION;
-        assertTypesMatch(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
+        assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
         final Translation comment = toLineTranslation(
@@ -148,7 +148,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get expression and it's type
         final Translation exprTranslation = visitor.visit(ctx.expression());
         final Type actualType = exprTranslation.type();
-        Asserts.assertTypesMatch(expectedType, actualType, variableName, lineNumber(ctx));
+        Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
 
         // create translations
         final Translation comment = toLineTranslation(
@@ -288,7 +288,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
         final Translation exprTranslation =
                 exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_TYPE;
-        assertTypesMatch(functionTypes.returnType(), exprTranslation.type(), functionName, lineNumber(ctx));
+        assertTypesCoerce(functionTypes.returnType(), exprTranslation.type(), functionName, lineNumber(ctx));
 
         if (!exprExists) {
             return EMPTY_TRANSLATION;
@@ -464,7 +464,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // check types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
         final List<Type> actualTypes = argumentTranslations.stream().map(Translation::type).toList();
-        Asserts.assertTypesMatch(expectedTypes.parameterTypes(), actualTypes, functionName, lineNumber(ctx));
+        Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, functionName, lineNumber(ctx));
 
         // extract argText and preambles from argumentTranslations
         // empty list or ' arg1Text arg2Text etc.'

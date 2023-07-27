@@ -1,6 +1,5 @@
 package com.bashpile;
 
-import com.bashpile.commandline.ExecutionResults;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.TypeError;
@@ -48,10 +47,8 @@ public class Asserts {
     public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
-            final String winNewlines = str.contains("\r") ? "found" : "not found";
             throw new BashpileUncheckedAssertionException(
-                    "Str [%s] didn't match regex %s, windows newlines %s"
-                            .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
+                    "Str [%s] didn't match regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
         }
     }
 
@@ -59,19 +56,17 @@ public class Asserts {
     public static void assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (matchResults.matches()) {
-            final String winNewlines = str.contains("\r") ? "found" : "not found";
             throw new BashpileUncheckedAssertionException(
-                    "Str [%s] matched regex %s, windows newlines were %s"
-                            .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
+                    "Str [%s] matched regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
         }
     }
 
-    public static void assertTypesMatch(
+    public static void assertTypesCoerce(
             @Nonnull final Type expectedType,
             @Nonnull final Type actualType,
             @Nonnull final String functionName,
-            int contextStartLine) {
-        assertTypesMatch(List.of(expectedType), List.of(actualType), functionName, contextStartLine);
+            final int contextStartLine) {
+        assertTypesCoerce(List.of(expectedType), List.of(actualType), functionName, contextStartLine);
     }
 
     /**
@@ -82,44 +77,27 @@ public class Asserts {
      * @param functionName for the error message on a bad match.
      * @param contextStartLine for the error message on a bad match.
      */
-    public static void assertTypesMatch(
+    public static void assertTypesCoerce(
             @Nonnull final List<Type> expectedTypes,
             @Nonnull final List<Type> actualTypes,
             @Nonnull final String functionName,
-            int contextStartLine) {
+            final int contextStartLine) {
 
         // check if the argument lengths match
-        boolean typesMatch = actualTypes.size() == expectedTypes.size();
-        // if the lengths match iterate over both lists
-        if (typesMatch) {
-            // lazily iterate over both lists looking for a non-match
-            int i = 0;
-            while (typesMatch && i < actualTypes.size()) {
-                final Type expected = expectedTypes.get(i);
-                final Type actual = actualTypes.get(i++);
-                typesMatch = actual.coercesTo(expected);
-            }
+        boolean typesCoerce = actualTypes.size() == expectedTypes.size();
+
+        // lazily iterate over both lists looking for a non-match
+        int i = 0;
+        while (typesCoerce && i < actualTypes.size()) {
+            final Type expected = expectedTypes.get(i);
+            final Type actual = actualTypes.get(i++);
+            typesCoerce = actual.coercesTo(expected);
         }
-        if (!typesMatch) {
+
+        if (!typesCoerce) {
             throw new TypeError("Expected %s %s but was %s %s"
                     .formatted(functionName, expectedTypes, functionName, actualTypes), contextStartLine);
         }
-    }
-
-    public static void assertEquals(final int expected, final int actual) {
-        assertEquals(expected, actual, null);
-    }
-
-    public static void assertEquals(final int expected, final int actual, @Nullable final String message) {
-        if (expected != actual) {
-            throw new AssertionError(requireNonNullElse(message, "Expected %d but got %d".formatted(expected, actual)));
-        }
-    }
-
-    public static void assertExecutionSuccess(@Nonnull final ExecutionResults executionResults) {
-        assertEquals(0, executionResults.exitCode(),
-                "Found failing (non-0) 'nix exit code: %s.  Full text results:\n%s".formatted(
-                        executionResults.exitCode(), executionResults.stdout()));
     }
 
     public static void assertEquals(

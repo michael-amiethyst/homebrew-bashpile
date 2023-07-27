@@ -1,6 +1,7 @@
 package com.bashpile;
 
 import com.bashpile.commandline.BashExecutor;
+import com.bashpile.maintests.BashpileTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
@@ -11,13 +12,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.io.IOException;
 import java.util.List;
 
-import static com.bashpile.Asserts.assertExecutionSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class BashpileMainIntegrationTest {
+public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
@@ -41,7 +41,7 @@ public class BashpileMainIntegrationTest {
         var executionResults = BashExecutor.run(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
-        assertTrue(outputText.endsWith("\r\n\r\n") || outputText.endsWith("\n\n"));
+        assertTrue(outputText.endsWith("\n\n"));
     }
 
     @Test @Order(30)
