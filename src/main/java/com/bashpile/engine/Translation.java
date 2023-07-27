@@ -55,6 +55,7 @@ public record Translation(
         return new Translation(assertIsLine(join(text)), Type.STR, TypeMetadata.NORMAL);
     }
 
+    // TODO use toParagraphTranslation, toLineTranslation or toPhraseTranslation
     public static Translation toStringTranslation(final String... text) {
         return new Translation(join(text), Type.STR, TypeMetadata.NORMAL);
     }
@@ -114,4 +115,6 @@ public record Translation(
     public Translation mergePreamble() {
         return new Translation(preamble + body, type, typeMetadata);
     }
+
+    // TODO create verifyNoPreamble method, use vigorously
 }

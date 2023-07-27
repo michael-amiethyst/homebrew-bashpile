@@ -270,14 +270,14 @@ public class BashTranslationEngine implements TranslationEngine {
                         .map(Translation::body)
                         .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
                         .collect(Collectors.joining(" "));
-                namedParams = "%s%s\n".formatted(TAB, paramDeclarations);
+                namedParams = TAB + paramDeclarations + "\n";
             }
             final Stream<ParserRuleContext> contextStream =
                     addContexts(ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement());
-            final String blockBody = assertIsParagraph(visitBlock(visitor, contextStream).body());
-            final Translation block = toParagraphTranslation("%s () {\n%s%s}\n"
+            final String blockBody = visitBlock(visitor, contextStream).body();
+            final Translation functionDeclaration = toParagraphTranslation("%s () {\n%s%s}\n"
                     .formatted(functionName, assertIsLine(namedParams), assertIsParagraph(blockBody)));
-            return comment.add(block);
+            return comment.add(functionDeclaration);
         } finally {
             typeStack.pop();
         }
@@ -286,23 +286,23 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
-        String block;
         try (LevelCounter ignored = new LevelCounter(BLOCK_LABEL)) {
             typeStack.push();
+
+            final Translation comment = toLineTranslation(
+                    "# anonymous block, Bashpile line %d%s\n".formatted(lineNumber(ctx), getHoisted()));
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
             // map of x to x needed for upcasting to parent type
             final Stream<ParserRuleContext> stmtStream = ctx.statement().stream().map(x -> x);
-            final String blockBody = assertIsParagraph(visitBlock(visitor, stmtStream).body());
-            final String lineComment = "# anonymous block, Bashpile line %d%s"
-                    .formatted(lineNumber(ctx), getHoisted());
+            final String blockBody = visitBlock(visitor, stmtStream).body();
             // define function and then call immediately with no arguments
-            block = "%s\n%s () {\n%s}; %s\n"
-                    .formatted(lineComment, anonymousFunctionName, blockBody, anonymousFunctionName);
+            final Translation selfCallingAnonymousFunction = toParagraphTranslation("%s () {\n%s}; %s\n"
+                    .formatted(anonymousFunctionName, assertIsParagraph(blockBody), anonymousFunctionName));
+            return comment.add(selfCallingAnonymousFunction);
         } finally {
             typeStack.pop();
         }
-        return toStringTranslation(block);
     }
 
     @Override
@@ -318,17 +318,15 @@ public class BashTranslationEngine implements TranslationEngine {
                 exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_TYPE;
         assertTypesMatch(functionTypes.returnType(), exprTranslation.type(), functionName, lineNumber(ctx));
 
-        if (exprExists) {
-            // insert echo right at start of last line
+        if (!exprExists) {
+            return EMPTY_TRANSLATION;
+        }
 
-            // exprTranslation.body() does not end in newline and may be multiple lines
-            final String exprBody = prependLastLine("echo ", exprTranslation.body());
-            // TODO redo with Translation.add and .mergePreamble
-            final String body = "# return statement, Bashpile line %d%s\n%s%s"
-                    .formatted(lineNumber(ctx), getHoisted(), exprTranslation.preamble(), exprBody);
-            return toStringTranslation(body);
-        } // else
-        return Translation.EMPTY_TRANSLATION;
+        final Translation comment = toLineTranslation(
+                "# return statement, Bashpile line %d%s\n".formatted(lineNumber(ctx), getHoisted()));
+        final Translation exprBody = toParagraphTranslation(prependLastLine("echo ", exprTranslation.body()))
+                .appendPreamble(exprTranslation.preamble());
+        return comment.add(exprBody.mergePreamble());
     }
 
     // expressions
