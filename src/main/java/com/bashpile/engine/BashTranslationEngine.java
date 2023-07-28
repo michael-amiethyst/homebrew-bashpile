@@ -306,7 +306,8 @@ public class BashTranslationEngine implements TranslationEngine {
     // expressions
 
     /**
-     * True/False cast to 1/0.  Any number besides 0 casts to true.
+     * True/False cast to 1/0.  Any number besides 0 casts to true.  "true" and "false" (any case) cast to BOOLs.
+     * Quoted numbers (numbers in STRs) cast to BOOLs like numbers.  Anything cast to an STR gets quotes around it.
      */
     @Override
     public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
@@ -332,11 +333,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get the child translations
         List<Translation> childTranslations;
         try (var ignored = new LevelCounter(CALC_LABEL)) {
-            childTranslations = ctx.children.stream()
-                    .map(visitor::visit)
-                    // if we have a nested command substitution, then unnest
-                    .map(tr -> tr.isInlineOrSubshell() && inCommandSubstitution() ? unnest(tr) : tr)
-                    .collect(Collectors.toList());
+            childTranslations = ctx.children.stream().map(visitor::visit).toList();
         }
 
         // child translations in the format of 'expr operator expr', so we are only interested in the first and last

@@ -104,11 +104,7 @@ public record Translation(
     }
 
     public boolean hasPreamble() {
-        return !emptyPreamble();
-    }
-
-    public boolean emptyPreamble() {
-        return isEmpty(preamble);
+        return !isEmpty(preamble);
     }
 
     public Translation mergePreamble() {
