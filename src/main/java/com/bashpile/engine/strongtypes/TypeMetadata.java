@@ -11,7 +11,7 @@ public enum TypeMetadata {
     SUBSHELL,
     /**
      * Our name for Bash command substitution, i.e. $(commands).
-     * An inline translation needs the inline logic to be moved into the preamble still.
+     * An inline translation may need the inline logic to be moved into the preamble still.
      */
     INLINE
 }
