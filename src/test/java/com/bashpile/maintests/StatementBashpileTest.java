@@ -238,4 +238,6 @@ class StatementBashpileTest extends BashpileTest {
     // TODO sleep for a long time then send an interrupt and check that the created file is deleted
 
     // TODO check preambles are handled correctly
+
+    // TODO check nested create statements
 }

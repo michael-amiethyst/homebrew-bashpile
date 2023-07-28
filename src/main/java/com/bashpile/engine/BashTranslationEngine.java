@@ -276,11 +276,10 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     @Override
     public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
-        // TODO comment
-        // TODO sub comment
+        // create child translations and other variables
         final Translation shellString = visitor.visit(ctx.shellString());
         final String filename = visitor.visit(ctx.String()).body();
-        Function<Translation, Translation> prependTabsToBodyLines = tr -> {
+        final Function<Translation, Translation> prependTabsToBodyLines = tr -> {
             final String[] lines = tr.body().split("\n");
             final String tabbedBody = Arrays.stream(lines)
                     .map(str -> StringUtils.prependIfMissing(str, TAB))
@@ -292,13 +291,21 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(prependTabsToBodyLines)
                 .reduce(Translation::add)
                 .orElseThrow();
+
+        // create other translations
+
+        // TODO factor out createComment method
+        final Translation comment = toLineTranslation(
+                "# creates statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         // set noclobber avoids some race conditions
         // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
         // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
         final String body = """
                 if (set -o noclobber; %s) 2> /dev/null; then
                     trap 'rm -f %s; exit $?' INT TERM EXIT
+                    ## wrapped body of creates statement
                 %s
+                    ## end of wrapped body of creates statement
                     rm -f %s
                     trap - INT TERM EXIT
                 else
@@ -306,9 +313,10 @@ public class BashTranslationEngine implements TranslationEngine {
                     exit 1
                 fi
                 """.formatted(shellString.body(), filename, statements.body(), filename, filename);
+        final Translation bodyTranslation = toParagraphTranslation(body);
 
-        // handle preambles
-        return toParagraphTranslation(body)
+        // merge translations and preambles
+        return comment.add(bodyTranslation)
                 .appendPreamble(shellString.preamble())
                 .appendPreamble(statements.preamble())
                 .mergePreamble();
