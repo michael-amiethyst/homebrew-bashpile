@@ -196,6 +196,24 @@ class ExpressionBashpileTest extends BashpileTest {
     }
 
     @Test @Order(150)
+    public void numericStrTypecastsWork() {
+        final String bashpile = """
+                b1: bool = "-1." : bool
+                b2: bool = ".000001" : bool
+                b3: bool = "0" : bool
+                print(#(if [ "$b1" = true ] && [ "$b2" = true ]; then echo "true"; else echo "false"; fi))
+                print(#(if [ "$b1" = true ] && [ "$b2" = true ] && [ "$b3" = true ]; then
+                    echo "true"
+                else
+                    echo "false"
+                fi))""";
+        final ExecutionResults result = runText(bashpile);
+        final List<String> lines = result.stdoutLines();
+        assertEquals("true", lines.get(0));
+        assertEquals("false", lines.get(1));
+    }
+
+    @Test @Order(150)
     public void badStrTypecastsFloatToIntThrow() {
         final String bashpile = """
                 function times2point5:float(x:int):

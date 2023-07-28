@@ -38,8 +38,17 @@ public enum Type {
         throw new TypeError("No type info for " + ctx.Id(), ctx.start.getLine());
     }
 
+    public static boolean isNumberString(@Nonnull final String text) {
+        try {
+            parseNumberString(text);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     /** Throws NumberFormatException on bad parse. */
-    public static Type parseNumberString(final String text) {
+    public static Type parseNumberString(@Nonnull final String text) {
         Type type;
         try {
             new BigInteger(text);

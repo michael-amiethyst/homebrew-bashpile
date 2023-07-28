@@ -312,103 +312,15 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         final Type castTo = Type.valueOf(ctx.Type().getText().toUpperCase());
         Translation expression = visitor.visit(ctx.expression());
+        final int lineNumber = lineNumber(ctx);
         final TypeError typecastError = new TypeError(
-                "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber(ctx));
-        // double switch -- first is for the type we're casting from, the second is for the type we're casting to
+                "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber);
         switch (expression.type()) {
-            case BOOL -> {
-                switch (castTo) {
-                    case BOOL -> {}
-                    case INT -> expression =
-                            expression.body(expression.body().equalsIgnoreCase("true") ? "1" : "0");
-                    case FLOAT -> expression =
-                            expression.body(expression.body().equalsIgnoreCase("true") ? "1.0" : "0.0");
-                    case STR -> expression = expression.quoteBody();
-                    default -> throw typecastError;
-                }
-            }
-            case INT -> {
-                // parse expression to a BigInteger
-                BigInteger expressionValue;
-                try {
-                    expressionValue = new BigInteger(expression.body());
-                } catch (final NumberFormatException e) {
-                    throw new UserError(
-                            "Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber(ctx));
-                }
-
-                // cast
-                switch (castTo) {
-                    case BOOL -> expression =
-                            expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
-                    case INT, FLOAT -> {}
-                    case STR -> expression = expression.quoteBody();
-                    default -> throw typecastError;
-                }
-            }
-            case FLOAT -> {
-                // parse expression as a BigDecimal
-                BigDecimal expressionValue;
-                try {
-                    expressionValue = new BigDecimal(expression.body());
-                } catch (final NumberFormatException e) {
-                    throw new UserError("Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber(ctx));
-                }
-
-                // cast
-                switch (castTo) {
-                    case BOOL -> expression =
-                            expression.body(expressionValue.compareTo(BigDecimal.ZERO) != 0 ? "true" : "false");
-                    case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
-                    case FLOAT -> {}
-                    case STR -> expression = expression.quoteBody();
-                    default -> throw typecastError;
-                }
-            }
-            case STR -> {
-                switch (castTo) {
-                    case BOOL -> {
-                        expression = expression.unquoteBody();
-                        // TODO allow numbers in strings to cast to booleans
-                        if (!expression.body().equalsIgnoreCase("true")
-                                && !expression.body().equalsIgnoreCase("false")) {
-                            throw new TypeError("""
-                                Could not cast STR to BOOL.  Only 'true' and 'false' allowed.  Text was %s."""
-                                    .formatted(expression.body()), lineNumber(ctx));
-                        }
-                        expression = expression.body(expression.body().toLowerCase());
-                    }
-                    case INT -> {
-                        // no automatic rounding for things like `"2.5":int`
-                        expression = expression.unquoteBody();
-                        final Type foundType = Type.parseNumberString(expression.body());
-                        if (!INT.equals(foundType)) {
-                            throw new TypeError("""
-                                Could not cast FLOAT value in STR to INT.  Try casting to float first.  Text was %s."""
-                                    .formatted(expression.body()), lineNumber(ctx));
-                        }
-                    }
-                    case FLOAT -> {
-                        expression = expression.unquoteBody();
-                        // verify the body parses as a valid number
-                        try {
-                            Type.parseNumberString(expression.body());
-                        } catch (NumberFormatException e) {
-                            throw new TypeError("""
-                                Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
-                                    .formatted(expression.body()), lineNumber(ctx));
-                        }
-                    }
-                    case STR -> {}
-                    default -> throw typecastError;
-                }
-            }
-            case UNKNOWN -> {
-                switch (castTo) {
-                    case BOOL, INT, FLOAT, STR -> {}
-                    default -> throw typecastError;
-                }
-            }
+            case BOOL -> expression = typecastBool(castTo, expression, typecastError);
+            case INT -> expression = typecastInt(castTo, expression, lineNumber, typecastError);
+            case FLOAT -> expression = typecastFloat(castTo, expression, lineNumber, typecastError);
+            case STR -> expression = typecastStr(castTo, expression, lineNumber, typecastError);
+            case UNKNOWN -> typecastUnknown(castTo, typecastError);
             default -> throw typecastError;
         }
         expression = expression.type(castTo);
@@ -616,4 +528,129 @@ public class BashTranslationEngine implements TranslationEngine {
         return ctx.start.getLine();
     }
 
+    // typecast helpers
+
+
+
+    private static Translation typecastBool(
+            @Nonnull final Type castTo,
+            @Nonnull Translation expression,
+            @Nonnull final TypeError typecastError) {
+        switch (castTo) {
+            case BOOL -> {}
+            case INT -> expression =
+                    expression.body(expression.body().equalsIgnoreCase("true") ? "1" : "0");
+            case FLOAT -> expression =
+                    expression.body(expression.body().equalsIgnoreCase("true") ? "1.0" : "0.0");
+            case STR -> expression = expression.quoteBody();
+            default -> throw typecastError;
+        }
+        return expression;
+    }
+
+    @Nonnull
+    private static Translation typecastInt(
+            @Nonnull final Type castTo,
+            @Nonnull Translation expression,
+            final int lineNumber,
+            @Nonnull final TypeError typecastError) {
+        // parse expression to a BigInteger
+        BigInteger expressionValue;
+        try {
+            expressionValue = new BigInteger(expression.body());
+        } catch (final NumberFormatException e) {
+            throw new UserError(
+                    "Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber);
+        }
+
+        // cast
+        switch (castTo) {
+            case BOOL -> expression =
+                    expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
+            case INT, FLOAT -> {}
+            case STR -> expression = expression.quoteBody();
+            default -> throw typecastError;
+        }
+        return expression;
+    }
+
+    @Nonnull
+    private static Translation typecastFloat(
+            @Nonnull final Type castTo,
+            @Nonnull Translation expression,
+            final int lineNumber,
+            @Nonnull final TypeError typecastError) {
+        // parse expression as a BigDecimal
+        BigDecimal expressionValue;
+        try {
+            expressionValue = new BigDecimal(expression.body());
+        } catch (final NumberFormatException e) {
+            throw new UserError("Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber);
+        }
+
+        // cast
+        switch (castTo) {
+            case BOOL -> expression =
+                    expression.body(expressionValue.compareTo(BigDecimal.ZERO) != 0 ? "true" : "false");
+            case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
+            case FLOAT -> {}
+            case STR -> expression = expression.quoteBody();
+            default -> throw typecastError;
+        }
+        return expression;
+    }
+
+    private static Translation typecastStr(
+            @Nonnull final Type castTo,
+            @Nonnull Translation expression,
+            final int lineNumber,
+            @Nonnull final TypeError typecastError) {
+        switch (castTo) {
+            case BOOL -> {
+                expression = expression.unquoteBody();
+                if (Type.isNumberString(expression.body())) {
+                    expression = typecastFloat(castTo, expression, lineNumber, typecastError);
+                } else if (expression.body().equalsIgnoreCase("true")
+                        || expression.body().equalsIgnoreCase("false")) {
+                    expression = expression.body(expression.body().toLowerCase());
+                } else {
+                    throw new TypeError("""
+                            Could not cast STR to BOOL.
+                            Only 'true', 'false' and numbers in Strings allowed.
+                            Text was %s.""".formatted(expression.body()), lineNumber);
+                }
+            }
+            case INT -> {
+                // no automatic rounding for things like `"2.5":int`
+                expression = expression.unquoteBody();
+                final Type foundType = Type.parseNumberString(expression.body());
+                if (!INT.equals(foundType)) {
+                    throw new TypeError("""
+                        Could not cast FLOAT value in STR to INT.  Try casting to float first.  Text was %s."""
+                            .formatted(expression.body()), lineNumber);
+                }
+            }
+            case FLOAT -> {
+                expression = expression.unquoteBody();
+                // verify the body parses as a valid number
+                try {
+                    Type.parseNumberString(expression.body());
+                } catch (NumberFormatException e) {
+                    throw new TypeError("""
+                        Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
+                            .formatted(expression.body()), lineNumber);
+                }
+            }
+            case STR -> {}
+            default -> throw typecastError;
+        }
+        return expression;
+    }
+
+    private static void typecastUnknown(@Nonnull final Type castTo, @Nonnull final TypeError typecastError) {
+        switch (castTo) {
+            case BOOL, INT, FLOAT, STR -> {}
+            default -> throw typecastError;
+        }
+    }
 }
