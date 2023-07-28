@@ -1,8 +1,8 @@
-package com.bashpile;
+package com.bashpile.maintests;
 
 import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
-import com.bashpile.testhelper.BashpileMainTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -10,14 +10,13 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.List;
 
-import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class StatementBashpileMainTest extends BashpileMainTest {
+class StatementBashpileTest extends BashpileTest {
 
     @Test
     @Order(10)
@@ -56,6 +55,14 @@ class StatementBashpileMainTest extends BashpileMainTest {
                 someVar: int = 1 + 1
                 someVar: str = "2"
                 """));
+    }
+
+    @Test
+    @Order(41)
+    public void assignFloatToIntThrows() {
+        assertThrows(TypeError.class, () -> runText("""
+                someVar: int = 2.2
+                print(someVar + 2)"""));
     }
 
     @Test
@@ -167,7 +174,7 @@ class StatementBashpileMainTest extends BashpileMainTest {
                 block:
                     x: float = /* inside of a statement comment */ 5.5
                     /*
-                     * extended comment on how leet this line is
+                     * extended comment on how fantastic this line is
                      */
                     print(x + x)
                 x: float = 7.7

@@ -7,33 +7,46 @@ import java.util.HashMap;
 /** All instances of the same label share static data */
 public class LevelCounter implements Closeable {
 
-    /** LevelCounter label */
-    public static final String BLOCK = "block";
+    // static constants and variables
+
+    /** A label for changing lexical scopes */
+    public static final String BLOCK_LABEL = "block";
+
+    /** A command substitution label */
+    public static final String CALC_LABEL = "calc";
+
+    /** A command substitution label */
+    public static final String INLINE_LABEL = "inline";
+
+    /** A command substitution label */
+    public static final String FORWARD_DECL_LABEL = "forwardDecl";
 
     /** LevelCounter label */
-    public static final String CALC = "calc";
-
-    /** LevelCounter label */
-    public static final String FORWARD_DECL = "forwardDecl";
-
-    /** LevelCounter label */
-    public static final String PRINT = "print";
+    public static final String PRINT_LABEL = "print";
 
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
 
-    /**
-     * Returns our current indention level.
-     *
-     * @return whole numbers (integers always positive or 0)
-     */
-    public static int getIndent() {
-        return counters.getOrDefault(BLOCK, 0);
-    }
+    // static methods
 
     /** are we in any level of indention for this label */
-    public static boolean in(final String name) {
+    public static boolean in(@Nonnull final String name) {
         return counters.containsKey(name);
     }
+
+    /** Are we in anything implemented with a Bash Command Substitution? */
+    public static boolean inCommandSubstitution() {
+        return in(CALC_LABEL) || in(INLINE_LABEL) || in(FORWARD_DECL_LABEL);
+    }
+
+    public static int getCommandSubstitution() {
+        return get(CALC_LABEL) + get(INLINE_LABEL) + get(FORWARD_DECL_LABEL);
+    }
+
+    public static int get(@Nonnull final String name) {
+        return counters.getOrDefault(name, 0);
+    }
+
+    // class fields, constructors and methods
 
     private final String label;
 

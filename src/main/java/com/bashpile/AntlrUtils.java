@@ -17,21 +17,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.Translation.toParagraphTranslation;
 
 /** Has the Antlr parser and a lot of helper methods to BashTranslationEngine */
 public class AntlrUtils {
 
-    private static final Logger log = LogManager.getLogger(AntlrUtils.class);
+    private static final Logger LOG = LogManager.getLogger(AntlrUtils.class);
 
     /** antlr calls */
     public static @Nonnull String parse(@Nonnull final InputStream is) throws IOException {
-        log.trace("Starting parse");
+        LOG.trace("Starting parse");
         // lexer
         final CharStream input = CharStreams.fromStream(is);
         final BashpileLexer lexer = new BashpileLexer(input);
@@ -48,28 +49,29 @@ public class AntlrUtils {
     private static @Nonnull String transpile(@Nonnull final ParseTree tree) {
         // visitor and engine linked in visitor constructor
         final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
-        return bashpileLogic.visit(tree).text();
+        return bashpileLogic.visit(tree).body();
     }
 
     /**
      * Helper to {@link BashTranslationEngine#functionForwardDeclarationStatement(BashpileParser.FunctionForwardDeclarationStatementContext)}
      */
     public static @Nonnull ParserRuleContext getFunctionDeclCtx(
-            @Nonnull final BashpileVisitor visitor, @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
-        final String functionName = ctx.typedId().ID().getText();
+            @Nonnull final BashpileVisitor visitor,
+            @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
+        final String functionName = ctx.typedId().Id().getText();
         assert visitor.getContextRoot() != null;
         final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
         final Predicate<ParserRuleContext> namesMatch =
-                x -> {
-                    boolean isDeclaration = x instanceof BashpileParser.FunctionDeclarationStatementContext;
+                context -> {
+                    final boolean isDeclaration = context instanceof BashpileParser.FunctionDeclarationStatementContext;
                     // is a function declaration and the names match
                     if (!isDeclaration) {
                         return false;
                     }
                     final BashpileParser.FunctionDeclarationStatementContext decl =
-                            (BashpileParser.FunctionDeclarationStatementContext) x;
-                    final boolean nameMatches = decl.typedId().ID().getText().equals(functionName);
-                    return nameMatches && paramCompare(decl.paramaters(), ctx.paramaters());
+                            (BashpileParser.FunctionDeclarationStatementContext) context;
+                    final boolean nameMatches = decl.typedId().Id().getText().equals(functionName);
+                    return nameMatches && paramsMatch(decl.paramaters(), ctx.paramaters());
                 };
         return allContexts
                 .filter(namesMatch)
@@ -78,14 +80,21 @@ public class AntlrUtils {
                         () -> new BashpileUncheckedException("No matching function declaration for " + functionName));
     }
 
-    private static boolean paramCompare(
+    private static boolean paramsMatch(
             @Nonnull final BashpileParser.ParamatersContext left,
             @Nonnull final BashpileParser.ParamatersContext right) {
+        // create a stream of ids and a list of ids
         final Stream<String> leftStream = left.typedId().stream()
-                .map(BashpileParser.TypedIdContext::ID).map(ParseTree::getText);
+                .map(BashpileParser.TypedIdContext::Id).map(ParseTree::getText);
         final List<String> rightList = right.typedId().stream()
-                .map(BashpileParser.TypedIdContext::ID).map(ParseTree::getText).toList();
-        return leftStream.allMatch(rightList::contains);
+                .map(BashpileParser.TypedIdContext::Id).map(ParseTree::getText).toList();
+
+        // match each left id to the corresponding right id, record the mismatches
+        final AtomicInteger i = new AtomicInteger(0);
+        final Stream<String> mismatches = leftStream.filter(str -> !str.equals(rightList.get(i.getAndIncrement())));
+
+        // params match if we can't find any mismatches
+        return mismatches.findFirst().isEmpty();
     }
 
     /**
@@ -100,29 +109,31 @@ public class AntlrUtils {
         if (parentNode.getChildCount() == 0) {
             return Stream.of(parentNode);
         } else {
-            return Stream.concat(Stream.of(parentNode),
-                    parentNode.getRuleContexts(ParserRuleContext.class).stream().flatMap(AntlrUtils::stream));
+            final Stream<ParserRuleContext> children = parentNode.getRuleContexts(ParserRuleContext.class).stream();
+            return Stream.concat(Stream.of(parentNode), children.flatMap(AntlrUtils::stream));
         }
     }
 
     public static @Nonnull Translation visitBlock(
-            @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> stmtStream) {
-        final String translationText = stmtStream.map(visitor::visit)
-                .map(Translation::text)
+            @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> statementStream) {
+        final String translationText = statementStream.map(visitor::visit)
+                .map(Translation::assertEmptyPreamble)
+                .map(Translation::body)
                 // visit results may be multiline strings, convert to array of single lines
                 .map(str -> str.split("\n"))
                 // stream the lines, indent each line, then flatten
-                .flatMap(lines -> Arrays.stream(lines).sequential().map(s -> TAB + s + "\n"))
+                .flatMap(lines -> Arrays.stream(lines).sequential())
+                .map(str -> TAB + str + "\n")
                 .collect(Collectors.joining());
-        return toStringTranslation(translationText);
+        return toParagraphTranslation(translationText);
     }
 
     /** Concatenates inputs into stream */
     public static @Nonnull Stream<ParserRuleContext> addContexts(
-            @Nonnull final List<BashpileParser.StatementContext> stmts,
-            @Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
+            @Nonnull final List<BashpileParser.StatementContext> statements,
+            @Nonnull final BashpileParser.ReturnPsudoStatementContext returnPsudoStatementContext) {
         // map of x to x needed for upcasting to parent type
-        final Stream<ParserRuleContext> stmt = stmts.stream().map(x -> x);
-        return Stream.concat(stmt, Stream.of(ctx));
+        final Stream<ParserRuleContext> statementStream = statements.stream().map(x -> x);
+        return Stream.concat(statementStream, Stream.of(returnPsudoStatementContext));
     }
 }

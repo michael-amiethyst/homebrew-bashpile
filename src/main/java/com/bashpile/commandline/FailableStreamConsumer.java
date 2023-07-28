@@ -14,7 +14,9 @@ import java.io.InputStreamReader;
  * Adapted from <a href="https://www.baeldung.com/run-shell-command-in-java">a tutorial</a>.
  */
 public class FailableStreamConsumer implements Runnable {
+
     private final InputStream inputStream;
+
     private final FailableConsumer<String, Exception> consumer;
 
     public FailableStreamConsumer(@Nonnull final InputStream inputStream,

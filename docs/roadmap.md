@@ -1,18 +1,23 @@
 # MVP features / drink my own champaign
-Implement testrig.bp
-1. command substitution with $()
-2. String interpolation with $[]
-   1. include special __OPTIONS[] array for $@, $1, etc.
-3. try-with-resources
+
+# Implement testrig.bp
+1. try-with-resources
    1. syntax: #(command) creates "filename":
-4. Automatic script line detection (e.g. can write 'echo ...' or any other bash command)
-5. Bash Blocks (see XML Island Detection in book)
+2. Cache compiled files
+
+# Enhance testrig.bp
+1. String interpolation with $[]
+    1. include special __OPTIONS[] array for $@, $1, etc.
+2. conditionals (if-elseif-else), comparison operators (<, =>, etc) and boolean logic
+3. Factor out text for future localization and consistent end-user feel.
 
 # Later
 (Not ordered)
 * remaining types (array, map, ref)
 * imports
+* subshells, Bash `()`, Bashpile `&()`?
 * default values for functions
+* operator overloading for functions
 * exponents, other operators
 * commas in large values (e.g. 1,001)
 * Script super-blocks / sections
@@ -20,10 +25,8 @@ Implement testrig.bp
   * check generated Bash with ShellCheck (https://www.shellcheck.net/)
 * Scriptinos and easy testing
 * `until`
-* Logical operators, comparison operators
-  * `&&` like Java
-  * `expr AND expr` like Bash's `(expr;expr)` without the subshell
-* conditionals
+* `unless`
+* `expr AND expr` like Bash's `(expr;expr)` without the subshell (maybe)
 * loops
 
 # much later

@@ -1,13 +1,17 @@
 package com.bashpile.engine.strongtypes;
 
-/** The type of the type.  So we can have Strings that represent sub-shell substitutions for example. */
+/**
+ * Additional information about a Translation's Type.
+ * So we can have a Command that evaluates to an int for example.
+ */
 public enum TypeMetadata {
-    /** Just a string with no special handing usually needed */
+    /** Just a translation with no special handing needed */
     NORMAL,
-    /** A shell command, e.g. `echo filename | cat` */
-    COMMAND,
     /** Bash example: (commands) */
     SUBSHELL,
-    /** Bash example: $(commands) */
-    COMMAND_SUBSTITUTION
+    /**
+     * Our name for Bash command substitution, i.e. $(commands).
+     * An inline translation needs the inline logic to be moved into the preamble still.
+     */
+    INLINE
 }

@@ -1,7 +1,6 @@
-package com.bashpile;
+package com.bashpile.maintests;
 
 import com.bashpile.commandline.ExecutionResults;
-import com.bashpile.testhelper.BashpileMainTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -10,7 +9,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.nio.file.Path;
 import java.util.List;
 
-import static com.bashpile.Asserts.assertExecutionSuccess;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -20,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 @Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class LexerBashpileMainTest extends BashpileMainTest {
+class LexerBashpileTest extends BashpileTest {
 
     @Test
     @Order(10)

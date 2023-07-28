@@ -1,16 +1,20 @@
 package com.bashpile.engine.strongtypes;
 
 import com.bashpile.BashpileParser;
+import com.bashpile.StringUtils;
 import com.bashpile.exceptions.TypeError;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public enum Type {
     /** Not Found */
     NOT_FOUND,
     /** Not applicable -- as in for statements */
     NA,
+    /** Type could not be determined, matches any */
+    UNKNOWN,
     /** Instead of NIL or null we have the empty String or an empty object */
     EMPTY,
     BOOL,
@@ -24,36 +28,62 @@ public enum Type {
     /** A Bash reference */
     REF;
 
-    public static @Nonnull Type valueOf(@Nonnull BashpileParser.TypedIdContext ctx) {
-        final boolean hasTypeInfo = ctx.TYPE() != null && StringUtils.isNotBlank(ctx.TYPE().getText());
+    // static methods
+
+    public static @Nonnull Type valueOf(@Nonnull final BashpileParser.TypedIdContext ctx) {
+        final boolean hasTypeInfo = ctx.Type() != null && StringUtils.isNotBlank(ctx.Type().getText());
         if (hasTypeInfo) {
-            return valueOf(ctx.TYPE().getText().toUpperCase());
+            return valueOf(ctx.Type().getText().toUpperCase());
         }
-        throw new TypeError("No type info for " + ctx.ID(), ctx.start.getLine());
+        throw new TypeError("No type info for " + ctx.Id(), ctx.start.getLine());
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static Type parseNumberString(String text) {
+    public static boolean isNumberString(@Nonnull final String text) {
+        try {
+            parseNumberString(text);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /** Throws NumberFormatException on bad parse. */
+    public static Type parseNumberString(@Nonnull final String text) {
         Type type;
         try {
-            Integer.parseInt(text);
+            new BigInteger(text);
             type = Type.INT;
         } catch (NumberFormatException ignored) {
-            Float.parseFloat(text);
-            type = Type.INT;
+            new BigDecimal(text);
+            type = Type.FLOAT;
         }
         return type;
     }
+
+    // class/enum methods
 
     public boolean isNotFound() {
         return this.equals(NOT_FOUND);
     }
 
-    public boolean isStr() {
-        return this.equals(STR);
+    public boolean isPossiblyNumeric() {
+        return this.equals(UNKNOWN) || this.isNumeric();
     }
 
     public boolean isNumeric() {
         return this.equals(NUMBER) || this.equals(INT) || this.equals(FLOAT);
+    }
+
+    public boolean coercesTo(@Nonnull final Type other) {
+        // the types match if they are equal
+        return this.equals(other)
+                // unknown coerces to everything
+                || this.equals(Type.UNKNOWN) || other.equals(Type.UNKNOWN)
+                // an INT coerces to a FLOAT
+                || (this.equals(Type.INT) && other.equals(Type.FLOAT))
+                // a NUMBER coerces to an INT or a FLOAT
+                || (this.equals(Type.NUMBER) && other.isNumeric())
+                // an INT or a FLOAT coerces to a NUMBER
+                || (this.isNumeric() && other.equals(Type.NUMBER));
     }
 }

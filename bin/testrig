@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Usage: testrig com.bashpile.Bashpile program -gui src/test/resources/0120-functionCall.bashpile
+# Usage: testrig com.bashpile.Bashpile program -gui src/test/resources/testrigData.bashpile
 
 set -euo pipefail
 

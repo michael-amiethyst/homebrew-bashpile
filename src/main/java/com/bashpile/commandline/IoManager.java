@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.concurrent.*;
 
-import static org.apache.commons.lang3.StringUtils.appendIfMissing;
+import static com.bashpile.StringUtils.appendIfMissing;
 
 /**
  * Handles I/O and closing resources on a running child {@link Process}.<br>
@@ -63,8 +63,8 @@ public class IoManager implements Closeable {
     }
 
     public void writeLn(@Nonnull final String text) throws IOException {
-        final String textBlock = appendIfMissing(text, "\n");
-        childStdInWriter.write(textBlock);
+        final String paragraph = appendIfMissing(text, "\n");
+        childStdInWriter.write(paragraph);
     }
 
     /** Joins to both background threads (process and STDOUT stream reader) */

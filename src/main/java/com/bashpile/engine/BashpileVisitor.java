@@ -2,7 +2,6 @@ package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
-import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -12,10 +11,9 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStream;
-import java.util.stream.Collectors;
 
-import static com.bashpile.Asserts.assertTextBlock;
-import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.Translation.NEWLINE;
+import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 
 /**
  * Antlr4 calls these methods.
@@ -52,25 +50,21 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         // save root for later usage
         contextRoot = ctx;
 
-        // prepend strictMode text to the statement results
-        final String header = translator.strictModeHeader().text();
-        assertTextBlock(header);
-        String translatedTextBlock = ctx.statement().stream()
+        final Translation statementTranslation = ctx.statement().stream()
                 .map(this::visit)
-                .map(Translation::text)
-                .collect(Collectors.joining());
-        assertTextBlock(translatedTextBlock);
+                .map(Translation::assertEmptyPreamble)
+                .reduce(Translation::add)
+                .orElseThrow();
 
-        final String importLibs = translator.importsHeaders().text();
-
-        return toStringTranslation(header, importLibs, translatedTextBlock);
+        // add header, libs and statements
+        return translator.strictModeHeader().add(translator.importsHeaders()).add(statementTranslation);
     }
 
     // visit statements
 
     @Override
     public @Nonnull Translation visitExpressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
-        return visit(ctx.expression()).add("\n");
+        return translator.expressionStatement(ctx);
     }
 
     @Override
@@ -114,15 +108,15 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitBlankStmt(@Nonnull BashpileParser.BlankStmtContext ctx) {
-        // was returning "\r\n" on Windows without an override
-        return toStringTranslation("\n");
+        // will return "\r\n" on Windows without an override
+        return NEWLINE;
     }
 
     // visit expressions
 
     @Override
-    public Translation visitShellString(BashpileParser.ShellStringContext ctx) {
-        return translator.shellString(ctx);
+    public Translation visitTypecastExpression(BashpileParser.TypecastExpressionContext ctx) {
+        return translator.typecastExpression(ctx);
     }
 
     @Override
@@ -141,7 +135,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
-        return new Translation(ctx.getText(), Type.parseNumberString(ctx.NUMBER().getText()), TypeMetadata.NORMAL);
+        return new Translation(ctx.getText(), Type.parseNumberString(ctx.Number().getText()), NORMAL);
     }
 
     @Override
@@ -155,17 +149,33 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
-        return new Translation(ctx.BOOL().getText(), Type.BOOL, TypeMetadata.NORMAL);
+        return new Translation(ctx.Bool().getText(), Type.BOOL, NORMAL);
     }
 
+    /**
+     * Put variable into ${}, e.g. "var" becomes "${var}".
+     * */
     @Override
     public @Nonnull Translation visitIdExpression(@Nonnull final BashpileParser.IdExpressionContext ctx) {
-        return toStringTranslation(ctx.ID().getText());
+        return translator.idExpression(ctx);
     }
 
     /** Default type is STR */
     @Override
     public @Nonnull Translation visitTerminal(@Nonnull final TerminalNode node) {
-        return toStringTranslation(node.getText());
+        // may or may not be multi-line
+        return new Translation(node.getText(), Type.STR, NORMAL);
+    }
+
+    // expression helper rules
+
+    @Override
+    public Translation visitShellString(BashpileParser.ShellStringContext ctx) {
+        return translator.shellString(ctx);
+    }
+
+    @Override
+    public Translation visitInline(BashpileParser.InlineContext ctx) {
+        return translator.inline(ctx);
     }
 }

@@ -23,6 +23,8 @@ public interface TranslationEngine {
 
     // statement translations
 
+    Translation expressionStatement(final BashpileParser.ExpressionStatementContext ctx);
+
     Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
 
     Translation reassignmentStatement(final BashpileParser.ReassignmentStatementContext ctx);
@@ -39,11 +41,19 @@ public interface TranslationEngine {
 
     // expression translations
 
-    Translation shellString(final BashpileParser.ShellStringContext ctx);
+    Translation typecastExpression(final BashpileParser.TypecastExpressionContext ctx);
 
     Translation functionCallExpression(final BashpileParser.FunctionCallExpressionContext ctx);
 
     Translation parenthesisExpression(final BashpileParser.ParenthesisExpressionContext ctx);
 
     Translation calculationExpression(final BashpileParser.CalculationExpressionContext ctx);
+
+    Translation idExpression(final BashpileParser.IdExpressionContext ctx);
+
+    // expression helper translations
+
+    Translation shellString(final BashpileParser.ShellStringContext ctx);
+
+    Translation inline(final BashpileParser.InlineContext ctx);
 }

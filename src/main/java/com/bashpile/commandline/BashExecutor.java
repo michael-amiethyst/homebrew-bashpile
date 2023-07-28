@@ -15,10 +15,10 @@ import java.util.regex.Pattern;
  */
 public class BashExecutor {
 
-    private static final Pattern bogusScreenLine = Pattern.compile(
+    private static final Pattern BOGUS_SCREEN_LINE = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r?\n");
 
-    private static final Logger log = LogManager.getLogger(BashExecutor.class);
+    private static final Logger LOG = LogManager.getLogger(BashExecutor.class);
 
     /**
      * Executes @{link bashString} like it was at a Bash command prompt in spawned background threads.
@@ -29,7 +29,7 @@ public class BashExecutor {
      *  ExecutionException, InterruptedException or TimeoutException.
      */
     public static @Nonnull ExecutionResults run(@Nonnull final String bashString) throws IOException {
-        log.info("Executing bash text:\n" + bashString);
+        LOG.info("Executing bash text:\n" + bashString);
 
         // run our CommandLine process in background threads
         int exitCode;
@@ -52,13 +52,15 @@ public class BashExecutor {
 
             // munge stdout -- strip out inappropriate error lines
             String stdoutString = commandLine.getStdOut();
-            log.trace("Shell output before processing: [{}]", stdoutString);
-            stdoutString = bogusScreenLine.matcher(stdoutString).replaceAll("");
+            LOG.trace("Shell output before processing: [{}]", stdoutString);
+            stdoutString = BOGUS_SCREEN_LINE.matcher(stdoutString).replaceAll("");
             return new ExecutionResults(bashString, exitCode, stdoutString);
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new BashpileUncheckedException(e);
         }
     }
+
+    // helpers
 
     private static Process spawnLinuxProcess() throws IOException {
         ProcessBuilder linuxProcess = createProcessBuilder();
@@ -69,10 +71,10 @@ public class BashExecutor {
     private static ProcessBuilder createProcessBuilder() {
         final ProcessBuilder builder = new ProcessBuilder();
         if (isWindows()) {
-            log.trace("Detected windows");
+            LOG.trace("Detected windows");
             return builder.command("wsl");
         } // else
-        log.trace("Detected *nix");
+        LOG.trace("Detected *nix");
         return builder.command("bash");
     }
 

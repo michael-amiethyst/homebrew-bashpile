@@ -1,6 +1,5 @@
 package com.bashpile;
 
-import com.bashpile.commandline.ExecutionResults;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.TypeError;
@@ -25,39 +24,49 @@ public class Asserts {
     private static final Pattern textLine = Pattern.compile("^[^\n]*$\n|^$");
 
     /**
-     * A text block is a group of text lines.
+     * A text block is a group of text lines.  Each line ends with a newline.
      *
-     * @see #assertTextLine(String)
+     * @see #assertIsLine(String)
      */
-    public static void assertTextBlock(@Nonnull final String str) {
+    public static String assertIsParagraph(@Nonnull final String str) {
         assertMatches(str, textBlock);
+        return str;
     }
 
     /**
-     * A text line contains only one newline at the end of the string.
+     * A text line contains only one newline at the end of the string.  Must end with newline or be blank.
      *
      * @param str the string to check.
      */
-    public static void assertTextLine(@Nonnull final String str) {
+    public static String assertIsLine(@Nonnull final String str) {
         assertMatches(str, textLine);
+        return str;
     }
 
+    /** Checks for a complete match (i.e. whole string must match) */
     public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
-            final String winNewlines = str.contains("\r") ? "found" : "not found";
             throw new BashpileUncheckedAssertionException(
-                    "Str [%s] didn't match regex %s, windows newlines %s"
-                            .formatted(escapeJava(str), escapeJava(regex.pattern()), winNewlines));
+                    "Str [%s] didn't match regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
         }
     }
 
-    public static void assertTypesMatch(
+    /** Checks for a complete match (i.e. whole string must match) */
+    public static void assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
+        final Matcher matchResults = regex.matcher(str);
+        if (matchResults.matches()) {
+            throw new BashpileUncheckedAssertionException(
+                    "Str [%s] matched regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
+        }
+    }
+
+    public static void assertTypesCoerce(
             @Nonnull final Type expectedType,
             @Nonnull final Type actualType,
             @Nonnull final String functionName,
-            int contextStartLine) {
-        assertTypesMatch(List.of(expectedType), List.of(actualType), functionName, contextStartLine);
+            final int contextStartLine) {
+        assertTypesCoerce(List.of(expectedType), List.of(actualType), functionName, contextStartLine);
     }
 
     /**
@@ -68,51 +77,27 @@ public class Asserts {
      * @param functionName for the error message on a bad match.
      * @param contextStartLine for the error message on a bad match.
      */
-    public static void assertTypesMatch(
+    public static void assertTypesCoerce(
             @Nonnull final List<Type> expectedTypes,
             @Nonnull final List<Type> actualTypes,
             @Nonnull final String functionName,
-            int contextStartLine) {
+            final int contextStartLine) {
 
         // check if the argument lengths match
-        boolean typesMatch = actualTypes.size() == expectedTypes.size();
-        // if the lengths match iterate over both lists
-        if (typesMatch) {
-            // lazily iterate over both lists looking for a non-match
-            int i = 0;
-            while (typesMatch && i < actualTypes.size()) {
-                final Type expected = expectedTypes.get(i);
-                final Type actual = actualTypes.get(i++);
-                // the types match if they are equal
-                typesMatch = expected.equals(actual)
-                        // a FLOAT also matches an INT
-                        || (expected.equals(Type.FLOAT) && actual.equals(Type.INT))
-                        // a NUMBER also matches an INT or a FLOAT
-                        || (expected.equals(Type.NUMBER) && (actual.equals(Type.INT) || actual.equals(Type.FLOAT)))
-                        // an INT or a FLOAT also match NUMBER
-                        || ((expected.equals(Type.INT) || expected.equals(Type.FLOAT)) && (actual.equals(Type.NUMBER)));
-            }
+        boolean typesCoerce = actualTypes.size() == expectedTypes.size();
+
+        // lazily iterate over both lists looking for a non-match
+        int i = 0;
+        while (typesCoerce && i < actualTypes.size()) {
+            final Type expected = expectedTypes.get(i);
+            final Type actual = actualTypes.get(i++);
+            typesCoerce = actual.coercesTo(expected);
         }
-        if (!typesMatch) {
+
+        if (!typesCoerce) {
             throw new TypeError("Expected %s %s but was %s %s"
                     .formatted(functionName, expectedTypes, functionName, actualTypes), contextStartLine);
         }
-    }
-
-    public static void assertEquals(final int expected, final int actual) {
-        assertEquals(expected, actual, null);
-    }
-
-    public static void assertEquals(final int expected, final int actual, @Nullable final String message) {
-        if (expected != actual) {
-            throw new AssertionError(requireNonNullElse(message, "Expected %d but got %d".formatted(expected, actual)));
-        }
-    }
-
-    public static void assertExecutionSuccess(@Nonnull final ExecutionResults executionResults) {
-        assertEquals(0, executionResults.exitCode(),
-                "Found failing (non-0) 'nix exit code: %s.  Full text results:\n%s".formatted(
-                        executionResults.exitCode(), executionResults.stdout()));
     }
 
     public static void assertEquals(
