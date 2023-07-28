@@ -1,6 +1,6 @@
 package com.bashpile.maintests;
 
-import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -8,8 +8,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.nio.file.Path;
 
-import static com.bashpile.commandline.ExecutionResults.SUCCESS;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

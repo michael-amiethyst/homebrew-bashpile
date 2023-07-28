@@ -1,6 +1,7 @@
 package com.bashpile.maintests;
 
-import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.shell.BashShell;
+import com.bashpile.shell.ExecutionResults;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.junit.jupiter.api.MethodOrderer;
@@ -251,7 +252,24 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    // TODO sleep for a long time then send an interrupt and check that the created file is deleted
+    @Test
+    @Order(160)
+    public void createStatementTrapsWork() throws IOException {
+        // TODO finish
+        final String bashpileScript = """
+                #(rm -f captainsLog.txt || true)
+                contents: str
+                #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
+                    contents = $(cat captainsLog.txt)
+                    #(sleep 3)
+                print(contents)""";
+        try(final BashShell shell = runTextAsync(bashpileScript)) {
+            final ExecutionResults executionResults = shell.join();
+            assertSuccessfulExitCode(executionResults);
+            assertEquals("Captain's log, stardate...\n", executionResults.stdout());
+            assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
+        }
+    }
 
     // TODO check preambles are handled correctly
 

@@ -1,6 +1,6 @@
 package com.bashpile.maintests;
 
-import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;

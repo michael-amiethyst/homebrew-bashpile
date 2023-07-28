@@ -1,7 +1,8 @@
 package com.bashpile.maintests;
 
 import com.bashpile.BashpileMain;
-import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.shell.BashShell;
+import com.bashpile.shell.ExecutionResults;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -16,13 +17,13 @@ abstract public class BashpileTest {
     private static final Logger LOG = LogManager.getLogger(BashpileTest.class);
 
     protected static void assertSuccessfulExitCode(@Nonnull final ExecutionResults executionResults) {
-        assertEquals(0, executionResults.exitCode(),
+        assertEquals(ExecutionResults.SUCCESS, executionResults.exitCode(),
                 "Found failing (non-0) exit code: %s.  Full text results:\n%s".formatted(
                         executionResults.exitCode(), executionResults.stdout()));
     }
 
     protected static void assertFailedExitCode(@Nonnull final ExecutionResults executionResults) {
-        assertNotEquals(0, executionResults.exitCode(),
+        assertNotEquals(ExecutionResults.SUCCESS, executionResults.exitCode(),
                 "Found successful exit code (0) when expecting errored exit code.  Full text results:\n%s".formatted(
                         executionResults.stdout()));
     }
@@ -31,6 +32,12 @@ abstract public class BashpileTest {
         LOG.debug("Start of:\n{}", bashText);
         BashpileMain bashpile = new BashpileMain(bashText);
         return bashpile.execute();
+    }
+
+    protected @Nonnull BashShell runTextAsync(@Nonnull final String bashText) {
+        LOG.debug("Starting background threads for:\n{}", bashText);
+        BashpileMain bashpile = new BashpileMain(bashText);
+        return bashpile.executeAsync();
     }
 
     protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {

@@ -1,4 +1,4 @@
-package com.bashpile.commandline;
+package com.bashpile.shell;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
@@ -15,7 +15,7 @@ import static com.bashpile.StringUtils.appendIfMissing;
  * <br>
  * Call order should be: {@link #spawnConsumer(Process)}, one or many calls to {@link #writeLn(String)}, {@link #join()}, {@link #getStdOut()}.
  */
-public class IoManager implements Closeable {
+/* protected */ class IoManager implements Closeable {
 
     /** The wrapped child process */
     final private Process childProcess;

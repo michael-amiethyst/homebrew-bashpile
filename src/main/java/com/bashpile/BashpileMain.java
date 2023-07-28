@@ -1,7 +1,7 @@
 package com.bashpile;
 
-import com.bashpile.commandline.BashExecutor;
-import com.bashpile.commandline.ExecutionResults;
+import com.bashpile.shell.BashShell;
+import com.bashpile.shell.ExecutionResults;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
 import org.apache.commons.io.IOUtils;
@@ -84,19 +84,36 @@ public class BashpileMain implements Callable<Integer> {
         String bashScript = null;
         try {
             bashScript = transpile();
-            return BashExecutor.run(bashScript);
+            return BashShell.runAndJoin(bashScript);
         } catch (UserError | AssertionError e) {
             throw e;
         } catch (Throwable e) {
-            String msg = bashScript != null ? "\nCouldn't run `%s`".formatted(bashScript) : "\nCouldn't parse input";
-            if (e.getMessage() != null) {
-                msg += " because of\n`%s`".formatted(e.getMessage());
-            }
-            if (e.getCause() != null) {
-                msg += "\n caused by `%s`".formatted(e.getCause().getMessage());
-            }
-            throw new BashpileUncheckedException(msg, e);
+            throw createExecutionException(e, bashScript);
         }
+    }
+
+    public @Nonnull BashShell executeAsync() {
+        LOG.debug("In {}", System.getProperty("user.dir"));
+        String bashScript = null;
+        try {
+            bashScript = transpile();
+            return BashShell.runAsync(bashScript);
+        } catch (UserError | AssertionError e) {
+            throw e;
+        } catch (Throwable e) {
+            throw createExecutionException(e, bashScript);
+        }
+    }
+
+    private static BashpileUncheckedException createExecutionException(Throwable e, String bashScript) {
+        String msg = bashScript != null ? "\nCouldn't run `%s`".formatted(bashScript) : "\nCouldn't parse input";
+        if (e.getMessage() != null) {
+            msg += " because of\n`%s`".formatted(e.getMessage());
+        }
+        if (e.getCause() != null) {
+            msg += "\n caused by `%s`".formatted(e.getCause().getMessage());
+        }
+        return new BashpileUncheckedException(msg, e);
     }
 
     /** Called by Picocli framework */

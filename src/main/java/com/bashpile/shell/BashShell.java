@@ -1,10 +1,12 @@
-package com.bashpile.commandline;
+package com.bashpile.shell;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -13,12 +15,18 @@ import java.util.regex.Pattern;
 /**
  * Runs commands in Bash.  Runs `wsl bash` in Windows.
  */
-public class BashExecutor {
+public class BashShell implements Closeable {
 
     private static final Pattern BOGUS_SCREEN_LINE = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r?\n");
 
-    private static final Logger LOG = LogManager.getLogger(BashExecutor.class);
+    private static final Logger LOG = LogManager.getLogger(BashShell.class);
+
+    @Nonnull
+    private final IoManager ioManager;
+
+    @Nonnull
+    private final String bashScript;
 
     /**
      * Executes @{link bashString} like it was at a Bash command prompt in spawned background threads.
@@ -28,35 +36,59 @@ public class BashExecutor {
      * @throws IOException and {@link BashpileUncheckedException} wrapping
      *  ExecutionException, InterruptedException or TimeoutException.
      */
-    public static @Nonnull ExecutionResults run(@Nonnull final String bashString) throws IOException {
+    public static @Nonnull ExecutionResults runAndJoin(@Nonnull final String bashString) throws IOException {
+        try(final BashShell shell = runAsync(bashString)) {
+            return shell.join();
+        }
+    }
+
+    public static @Nonnull BashShell runAsync(@Nonnull final String bashString) throws IOException {
         LOG.info("Executing bash text:\n" + bashString);
 
         // run our CommandLine process in background threads
-        int exitCode;
-        try (final IoManager commandLine = IoManager.spawnConsumer(spawnLinuxProcess())) {
+        final IoManager commandLine = IoManager.spawnConsumer(spawnLinuxProcess());
+        final BashShell processes = new BashShell(commandLine, bashString);
 
-            // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
-            // also the Linux process starts in the user's shell, which may not be Bash (e.g. zsh)
-            commandLine.writeLn("bash");
+        // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
+        // also the Linux process starts in the user's shell, which may not be Bash (e.g. zsh)
+        commandLine.writeLn("bash");
 
-            // this is the core of the method
-            commandLine.writeLn(bashString);
+        // this is the core of the method
+        commandLine.writeLn(bashString);
 
-            // exit from subshell
-            commandLine.writeLn("exit $?");
-            // exit from shell
-            commandLine.writeLn("exit $?");
+        // exit from subshell
+        commandLine.writeLn("exit $?");
+        // exit from shell
+        commandLine.writeLn("exit $?");
+        return processes;
+    }
 
+    public BashShell(@Nonnull final IoManager ioManager, @Nonnull final String bashScript) {
+        this.ioManager = ioManager;
+        this.bashScript = bashScript;
+    }
+
+    public @Nonnull ExecutionResults join() throws IOException {
+        try {
             // wait for background threads to complete
-            exitCode = commandLine.join();
+            final int exitCode = ioManager.join();
 
             // munge stdout -- strip out inappropriate error lines
-            String stdoutString = commandLine.getStdOut();
+            String stdoutString = ioManager.getStdOut();
             LOG.trace("Shell output before processing: [{}]", stdoutString);
             stdoutString = BOGUS_SCREEN_LINE.matcher(stdoutString).replaceAll("");
-            return new ExecutionResults(bashString, exitCode, stdoutString);
+            return new ExecutionResults(bashScript, exitCode, stdoutString);
         } catch (ExecutionException | InterruptedException | TimeoutException e) {
             throw new BashpileUncheckedException(e);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            ioManager.close();
+        } finally {
+            IOUtils.closeQuietly(ioManager);
         }
     }
 
