@@ -39,7 +39,7 @@ class ExpressionBashpileTest extends BashpileTest {
     public void stringConcatWorks() {
         var runResult = runText("""
                 print("hello" + " " + "world")""");
-        assertExecutionSuccess(runResult);
+        assertSuccessfulExitCode(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("hello world", getLast(outLines));
     }

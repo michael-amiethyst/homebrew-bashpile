@@ -91,7 +91,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return w * l
                 print(rectArea(3, 4))
                 """);
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
         assertEquals("12", executionResults.stdoutLines().get(0));
     }
@@ -103,7 +103,7 @@ class FunctionBashpileTest extends BashpileTest {
                 function world: str ():
                     return "hello world"
                 print(world())""");
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertEquals(1, executionResults.stdoutLines().size());
         assertEquals("hello world", executionResults.stdoutLines().get(0));
     }
@@ -115,7 +115,7 @@ class FunctionBashpileTest extends BashpileTest {
                 function world: str ():
                     return "hello world"
                 world()""");
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertEquals("", executionResults.stdout());
     }
 
@@ -127,7 +127,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertEquals(2, executionResults.stdoutLines().size());
         assertEquals("3.14", executionResults.stdoutLines().get(0));
     }
@@ -163,7 +163,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                                 
                 print(twoCircleArea(1, -1))""");
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertEquals(1, executionResults.stdoutLines().size()
                 , "Wrong length, was: " + join(executionResults.stdoutLines()));
         assertEquals(1,
@@ -179,7 +179,7 @@ class FunctionBashpileTest extends BashpileTest {
         var executionResults = runText("""
                 born: str = "to be wild"
                 print(born)""");
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertEquals(1, executionResults.stdoutLines().size()
                 , "Wrong length, was: " + join(executionResults.stdoutLines()));
         assertEquals("to be wild", executionResults.stdoutLines().get(0),
@@ -217,7 +217,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(.5 + .5))""");
         List<String> lines = executionResults.stdoutLines();
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertEquals(1, lines.size(), "Wrong length, was: " + join(lines));
         assertEquals("3.14", lines.get(0));
     }

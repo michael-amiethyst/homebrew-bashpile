@@ -292,6 +292,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // set noclobber avoids some race conditions
         // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
         // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
+        // also `exit` in an if statement doesn't work, so we need to `return` and bubble up a failing exit code
         final String body = """
                 if (set -o noclobber; %s) 2> /dev/null; then
                     trap 'rm -f %s; exit $?' INT TERM EXIT
@@ -302,8 +303,10 @@ public class BashTranslationEngine implements TranslationEngine {
                     trap - INT TERM EXIT
                 else
                     echo "Failed to create %s."
-                    exit 1
+                    return 1
                 fi
+                __bp_exitCode=$?
+                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
                 """.formatted(shellString.body(), filename, statements.body(), filename, filename);
         final Translation bodyTranslation = toParagraphTranslation(body);
 

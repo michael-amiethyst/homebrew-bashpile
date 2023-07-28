@@ -63,7 +63,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
         List<String> lines = executionResults.stdoutLines();
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertTrue(lines.size() > 0, "No output");
         int lastLineIndex = lines.size() - 1;
         assertEquals("echo", lines.get(lastLineIndex),

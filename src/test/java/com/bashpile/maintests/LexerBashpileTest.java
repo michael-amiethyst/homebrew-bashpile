@@ -67,7 +67,7 @@ class LexerBashpileTest extends BashpileTest {
     public void stringWorks() {
         var runResult = runText("""
                 print("world")""");
-        assertExecutionSuccess(runResult);
+        assertSuccessfulExitCode(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("world", getLast(outLines));
     }

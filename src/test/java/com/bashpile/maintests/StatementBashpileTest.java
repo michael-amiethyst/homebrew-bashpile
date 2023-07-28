@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -99,7 +100,7 @@ class StatementBashpileTest extends BashpileTest {
         var runResult = runText("""
                 world:str="world"
                 print(world)""");
-        assertExecutionSuccess(runResult);
+        assertSuccessfulExitCode(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("world", getLast(outLines));
     }
@@ -110,7 +111,7 @@ class StatementBashpileTest extends BashpileTest {
         var runResult = runText("""
                 worldStr:str="world"
                 print("hello " + worldStr)""");
-        assertExecutionSuccess(runResult);
+        assertSuccessfulExitCode(runResult);
         List<String> outLines = runResult.stdoutLines();
         assertEquals("hello world", getLast(outLines));
     }
@@ -224,16 +225,31 @@ class StatementBashpileTest extends BashpileTest {
     @Order(140)
     public void createStatementsWork() {
         final ExecutionResults executionResults = runText("""
+                #(rm -f captainsLog.txt || true)
                 contents: str
                 #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
                     contents = $(cat captainsLog.txt)
                 print(contents)""");
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertEquals("Captain's log, stardate...\n", executionResults.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
     }
 
-    // TODO check that create errors propagate
+    @Test
+    @Order(150)
+    public void createStatementsCanFail() throws IOException {
+        try {
+            final ExecutionResults executionResults = runText("""
+                    #(touch captainsLog.txt || true)
+                    contents: str
+                    #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
+                        contents = $(cat captainsLog.txt)
+                    print(contents)""");
+            assertFailedExitCode(executionResults);
+        } finally {
+            Files.deleteIfExists(Path.of("captainsLog.txt"));
+        }
+    }
 
     // TODO sleep for a long time then send an interrupt and check that the created file is deleted
 

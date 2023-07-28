@@ -32,27 +32,44 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test @Order(30)
     public void runInvalidCommandHadBadExitCode() {
         final ExecutionResults results = runText("#(invalid_command_example_for_testing)");
-        assertTrue(results.exitCode() != SUCCESS);
+        assertFailedExitCode(results);
+    }
+
+    @Test @Order(31)
+    public void explicitErrorExitCodePropagates() {
+        final ExecutionResults results = runText("""
+                #(
+                    if false; then
+                        return 0
+                    else
+                        echo "Failed to create captainsLog.txt."
+                        return 1
+                    fi
+                    exitCode=$?
+                    if [ "$exitCode" -ne 0 ]; then exit "$exitCode"; fi
+                    echo ${contents}
+                )""");
+        assertFailedExitCode(results);
     }
 
     @Test @Order(40)
     public void runEchoParenthesisWorks() {
         final ExecutionResults results = runPath(Path.of("runEchoParenthesis.bashpile"));
-        assertEquals(SUCCESS, results.exitCode());
+        assertSuccessfulExitCode(results);
         assertEquals("()\n", results.stdout());
     }
 
     @Test @Order(50)
     public void nestedShellStringsWork() {
         final ExecutionResults results = runText("#(cat #(src/test/resources/testdata.txt))");
-        assertEquals(SUCCESS, results.exitCode());
+        assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());
     }
 
     @Test @Order(60)
     public void shellStringsWithHashWork() {
         final ExecutionResults results = runText("#(echo '#')");
-        assertEquals(SUCCESS, results.exitCode());
+        assertSuccessfulExitCode(results);
         assertEquals("#\n", results.stdout());
     }
 

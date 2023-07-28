@@ -2,6 +2,7 @@
 
 # Implement testrig.bp
 1. Cache compiled files
+2. Update wiki, docs (and maybe create videos) for end-users
 
 # Enhance testrig.bp
 1. String interpolation with $[]
