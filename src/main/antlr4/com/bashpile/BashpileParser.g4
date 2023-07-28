@@ -12,7 +12,8 @@ statement
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon INDENT statement+
                                    DEDENT # anonymousBlockStatement
-//    | shellString CREATES STRING COL      # createsStatement
+    | shellString Creates String Colon
+                 INDENT statement+ DEDENT # createsStatement
     | expression Newline                  # expressionStatement
     | Newline                             # blankStmt
     ;

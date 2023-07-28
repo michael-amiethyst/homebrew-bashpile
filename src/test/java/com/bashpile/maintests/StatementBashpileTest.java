@@ -8,11 +8,12 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static com.bashpile.ListUtils.getLast;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -218,4 +219,23 @@ class StatementBashpileTest extends BashpileTest {
                 "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
         assertEquals(expected, stdoutLines);
     }
+
+    @Test
+    @Order(140)
+    public void createStatementsWork() {
+        final ExecutionResults executionResults = runText("""
+                contents: str
+                #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
+                    contents = $(cat captainsLog.txt)
+                print(contents)""");
+        assertExecutionSuccess(executionResults);
+        assertEquals("Captain's log, stardate...\n", executionResults.stdout());
+        assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
+    }
+
+    // TODO check that create errors propagate
+
+    // TODO sleep for a long time then send an interrupt and check that the created file is deleted
+
+    // TODO check preambles are handled correctly
 }

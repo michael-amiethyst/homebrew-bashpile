@@ -23,8 +23,6 @@ public interface TranslationEngine {
 
     // statement translations
 
-    Translation expressionStatement(final BashpileParser.ExpressionStatementContext ctx);
-
     Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
 
     Translation reassignmentStatement(final BashpileParser.ReassignmentStatementContext ctx);
@@ -36,6 +34,10 @@ public interface TranslationEngine {
     Translation functionDeclarationStatement(final BashpileParser.FunctionDeclarationStatementContext ctx);
 
     Translation anonymousBlockStatement(final BashpileParser.AnonymousBlockStatementContext ctx);
+
+    Translation createsStatement(final BashpileParser.CreatesStatementContext ctx);
+
+    Translation expressionStatement(final BashpileParser.ExpressionStatementContext ctx);
 
     Translation returnPsudoStatement(final BashpileParser.ReturnPsudoStatementContext ctx);
 

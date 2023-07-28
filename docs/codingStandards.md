@@ -20,6 +20,10 @@ Ours is
 * Instance Methods and static helpers
 * Nested classes
 
+## Instance Order in BashpileVisitor, TranslationEngine and TranslationEngine classes
+
+They will follow the order in which they are defined in BashpileParser.g4.
+
 ## Trinary Operator
 If the form is `object = test ? object.fluntInterfaceCall() : object` then the fluent interface call will always
 be the first choice.  

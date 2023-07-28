@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
+import com.bashpile.StringUtils;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
@@ -12,10 +13,12 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,18 +98,6 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     // statement translations
-
-    @Override
-    public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
-        final Translation expr = visitor.visit(ctx.expression()).add(NEWLINE);
-        final Translation comment = toLineTranslation(
-                "# expression statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
-        final Translation subcomment =
-                toLineTranslation(expr.hasPreamble() ? "## expression statement body\n" : "");
-        // order is: comment, preamble, subcomment, expr
-        final Translation exprStatement = subcomment.add(expr).mergePreamble();
-        return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
-    }
 
     @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
@@ -279,6 +270,62 @@ public class BashTranslationEngine implements TranslationEngine {
         }
     }
 
+    /**
+     * See "Setting Traps" and "Race Conditions" at
+     * <a href="https://www.davidpashley.com/articles/writing-robust-shell-scripts/">Writing Robust Shell Scripts</a>
+     */
+    @Override
+    public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
+        // TODO comment
+        // TODO sub comment
+        final Translation shellString = visitor.visit(ctx.shellString());
+        final String filename = visitor.visit(ctx.String()).body();
+        Function<Translation, Translation> prependTabsToBodyLines = tr -> {
+            final String[] lines = tr.body().split("\n");
+            final String tabbedBody = Arrays.stream(lines)
+                    .map(str -> StringUtils.prependIfMissing(str, TAB))
+                    .collect(Collectors.joining("\n"));
+            return tr.body(tabbedBody);
+        };
+        final Translation statements = ctx.statement().stream()
+                .map(visitor::visit)
+                .map(prependTabsToBodyLines)
+                .reduce(Translation::add)
+                .orElseThrow();
+        // set noclobber avoids some race conditions
+        // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
+        // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
+        final String body = """
+                if (set -o noclobber; %s) 2> /dev/null; then
+                    trap 'rm -f %s; exit $?' INT TERM EXIT
+                %s
+                    rm -f %s
+                    trap - INT TERM EXIT
+                else
+                    echo "Failed to create %s."
+                    exit 1
+                fi
+                """.formatted(shellString.body(), filename, statements.body(), filename, filename);
+
+        // handle preambles
+        return toParagraphTranslation(body)
+                .appendPreamble(shellString.preamble())
+                .appendPreamble(statements.preamble())
+                .mergePreamble();
+    }
+
+    @Override
+    public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
+        final Translation expr = visitor.visit(ctx.expression()).add(NEWLINE);
+        final Translation comment = toLineTranslation(
+                "# expression statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
+        final Translation subcomment =
+                toLineTranslation(expr.hasPreamble() ? "## expression statement body\n" : "");
+        // order is: comment, preamble, subcomment, expr
+        final Translation exprStatement = subcomment.add(expr).mergePreamble();
+        return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
+    }
+
     @Override
     public @Nonnull Translation returnPsudoStatement(@Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
         final boolean exprExists = ctx.expression() != null;
@@ -329,53 +376,6 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
-        // get the child translations
-        List<Translation> childTranslations;
-        try (var ignored = new LevelCounter(CALC_LABEL)) {
-            childTranslations = ctx.children.stream().map(visitor::visit).toList();
-        }
-
-        // child translations in the format of 'expr operator expr', so we are only interested in the first and last
-        final Translation first = childTranslations.get(0);
-        final Translation second = getLast(childTranslations);
-        // check for nested calc call
-        if (LevelCounter.in(CALC_LABEL) && areNumberExpressions(first, second)) {
-            return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
-        // types section
-        } else if (areStringExpressions(first, second)) {
-            final String op = ctx.op.getText();
-            Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
-            return toTranslation(Stream.of(first, second), STR, NORMAL);
-        } else if (areNumberExpressions(first, second)) {
-            final String translationsString = childTranslations.stream()
-                    .map(Translation::body).collect(Collectors.joining(" "));
-            return toTranslation(childTranslations.stream(), Type.NUMBER, INLINE)
-                    .body("$(bc <<< \"%s\")".formatted(translationsString));
-        // found no matching types -- error section
-        } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
-            throw new UserError("`%s` or `%s` are undefined".formatted(
-                    first.body(), second.body()), lineNumber(ctx));
-        } else {
-            // throw type error for all others
-            throw new TypeError("Incompatible types in calc: %s and %s".formatted(
-                    first.type(), second.type()), lineNumber(ctx));
-        }
-    }
-
-    @Override
-    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
-        // drop parenthesis
-        Translation ret = visitor.visit(ctx.expression());
-
-        // only keep parenthesis for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
-        if (ret.type().isPossiblyNumeric() && LevelCounter.in(CALC_LABEL)) {
-            ret = ret.parenthesizeBody();
-        }
-        return ret;
-    }
-
-    @Override
     public @Nonnull Translation functionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
         final String id = ctx.Id().getText();
@@ -414,6 +414,53 @@ public class BashTranslationEngine implements TranslationEngine {
         } // else return an inline (command substitution)
         final String text = "$(%s%s)".formatted(id, argText);
         return new Translation(preambles.preamble(), text, retType, INLINE);
+    }
+
+    @Override
+    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
+        // drop parenthesis
+        Translation ret = visitor.visit(ctx.expression());
+
+        // only keep parenthesis for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
+        if (ret.type().isPossiblyNumeric() && LevelCounter.in(CALC_LABEL)) {
+            ret = ret.parenthesizeBody();
+        }
+        return ret;
+    }
+
+    @Override
+    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
+        // get the child translations
+        List<Translation> childTranslations;
+        try (var ignored = new LevelCounter(CALC_LABEL)) {
+            childTranslations = ctx.children.stream().map(visitor::visit).toList();
+        }
+
+        // child translations in the format of 'expr operator expr', so we are only interested in the first and last
+        final Translation first = childTranslations.get(0);
+        final Translation second = getLast(childTranslations);
+        // check for nested calc call
+        if (LevelCounter.in(CALC_LABEL) && areNumberExpressions(first, second)) {
+            return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
+            // types section
+        } else if (areStringExpressions(first, second)) {
+            final String op = ctx.op.getText();
+            Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
+            return toTranslation(Stream.of(first, second), STR, NORMAL);
+        } else if (areNumberExpressions(first, second)) {
+            final String translationsString = childTranslations.stream()
+                    .map(Translation::body).collect(Collectors.joining(" "));
+            return toTranslation(childTranslations.stream(), Type.NUMBER, INLINE)
+                    .body("$(bc <<< \"%s\")".formatted(translationsString));
+            // found no matching types -- error section
+        } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
+            throw new UserError("`%s` or `%s` are undefined".formatted(
+                    first.body(), second.body()), lineNumber(ctx));
+        } else {
+            // throw type error for all others
+            throw new TypeError("Incompatible types in calc: %s and %s".formatted(
+                    first.type(), second.type()), lineNumber(ctx));
+        }
     }
 
     @Override
