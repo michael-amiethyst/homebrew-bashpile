@@ -2,8 +2,8 @@ parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
 program: statement+;
-statement:
-      typedId (Equals expression)? Newline# assignmentStatement
+statement
+    : typedId (Equals expression)? Newline# assignmentStatement
     | Id Equals expression Newline        # reassignmentStatement
     | Print OParen argumentList? CParen
                                   Newline # printStatement
@@ -30,18 +30,19 @@ argumentList: expression (Comma expression)*;
 functionBlock       : INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: Return expression? Newline;
 
-expression: expression Colon Type       # typecastExpression
+expression
+    : expression Colon Type             # typecastExpression
     | shellString                       # shellStringExpression
     | inline                            # inlineExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
     | OParen expression CParen          # parenthesisExpression
-    | <assoc=right> Minus? Number       # numberExpression      // has to be above calculationExpression
     | expression
          op=(Multiply|Divide|Add|Minus)
                              expression # calculationExpression
     // type expressions
     | Bool                              # boolExpression
+    | <assoc=right> Minus? Number       # numberExpression
     | String                            # stringExpression
     | Id                                # idExpression
     ;

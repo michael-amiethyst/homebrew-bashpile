@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -116,9 +117,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
-        final Translation exprTranslation = exprExists
-                ? visitor.visit(ctx.expression())
-                : Translation.EMPTY_TRANSLATION;
+        final Translation exprTranslation = exprExists ? visitor.visit(ctx.expression()) : EMPTY_TRANSLATION;
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
@@ -126,13 +125,14 @@ public class BashTranslationEngine implements TranslationEngine {
                 "# assign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
         final Translation subcomment =
                 toLineTranslation(exprTranslation.hasPreamble() ? "## assign statement body\n" : "");
-        final Translation varDecl = toLineTranslation(getLocalText() + variableName + "\n");
+        final Translation variableDeclaration = toLineTranslation(getLocalText() + variableName + "\n");
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
-        final Translation assignment = toParagraphTranslation(assignmentBody).appendPreamble(exprTranslation.preamble());
+        final Translation assignment =
+                toParagraphTranslation(assignmentBody).appendPreamble(exprTranslation.preamble());
 
         // order is comment, preamble, subcomment, variable declaration, assignment
-        final Translation subcommentToAssignment = subcomment.add(varDecl).add(assignment);
+        final Translation subcommentToAssignment = subcomment.add(variableDeclaration).add(assignment);
         return comment.add(subcommentToAssignment.mergePreamble()).type(NA).typeMetadata(NORMAL);
     }
 
@@ -195,12 +195,14 @@ public class BashTranslationEngine implements TranslationEngine {
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (var ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
+            // create translations
             final Translation comment = toLineTranslation(
                     "# function forward declaration, Bashpile line %d\n".formatted(lineNumber(ctx)));
-            final Translation hoistedFunctionText = toParagraphTranslation(visitor.visit(functionDeclCtx).body());
-            return comment.add(hoistedFunctionText);
-        } finally {
+            final Translation hoistedFunction = toParagraphTranslation(visitor.visit(functionDeclCtx).body());
+            // register that this forward declaration has been handled
             foundForwardDeclarations.add(ctx.typedId().Id().getText());
+            // add translations
+            return comment.add(hoistedFunction.assertEmptyPreamble());
         }
     }
 
@@ -210,7 +212,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // avoid translating twice if was part of a forward declaration
         final String functionName = ctx.typedId().Id().getText();
         if (foundForwardDeclarations.contains(functionName)) {
-            return Translation.EMPTY_TRANSLATION;
+            return EMPTY_TRANSLATION;
         }
 
         // check for double declaration
@@ -252,7 +254,7 @@ public class BashTranslationEngine implements TranslationEngine {
             }
             final Stream<ParserRuleContext> contextStream =
                     addContexts(ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement());
-            final String blockBody = visitBlock(visitor, contextStream).body();
+            final String blockBody = visitBlock(visitor, contextStream).assertEmptyPreamble().body();
             final Translation functionDeclaration = toParagraphTranslation("%s () {\n%s%s}\n"
                     .formatted(functionName, assertIsLine(namedParams), assertIsParagraph(blockBody)));
             return comment.add(functionDeclaration);
@@ -303,6 +305,9 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // expressions
 
+    /**
+     * True/False cast to 1/0.  Any number besides 0 casts to true.
+     */
     @Override
     public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         final Type castTo = Type.valueOf(ctx.Type().getText().toUpperCase());
@@ -314,33 +319,46 @@ public class BashTranslationEngine implements TranslationEngine {
             case BOOL -> {
                 switch (castTo) {
                     case BOOL -> {}
-                    case INT -> expression = expression.body(expression.body().equals("true") ? "1" : "0");
-                    case FLOAT ->
-                            expression = expression.body(expression.body().equals("true") ? "1.0" : "0.0");
+                    case INT -> expression =
+                            expression.body(expression.body().equalsIgnoreCase("true") ? "1" : "0");
+                    case FLOAT -> expression =
+                            expression.body(expression.body().equalsIgnoreCase("true") ? "1.0" : "0.0");
                     case STR -> expression = expression.quoteBody();
                     default -> throw typecastError;
                 }
             }
             case INT -> {
+                // parse expression to a BigInteger
+                BigInteger expressionValue;
+                try {
+                    expressionValue = new BigInteger(expression.body());
+                } catch (final NumberFormatException e) {
+                    throw new UserError(
+                            "Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber(ctx));
+                }
+
+                // cast
                 switch (castTo) {
-                    case BOOL -> expression = expression.body(!expression.body().equals("0") ? "true" : "false");
+                    case BOOL -> expression =
+                            expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
                     case INT, FLOAT -> {}
                     case STR -> expression = expression.quoteBody();
                     default -> throw typecastError;
                 }
             }
             case FLOAT -> {
+                // parse expression as a BigDecimal
                 BigDecimal expressionValue;
                 try {
                     expressionValue = new BigDecimal(expression.body());
                 } catch (final NumberFormatException e) {
-                    throw new UserError(
-                            "Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber(ctx));
+                    throw new UserError("Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber(ctx));
                 }
+
+                // cast
                 switch (castTo) {
-                    case BOOL -> expression = expression.body(expressionValue.compareTo(BigDecimal.ZERO) != 0
-                            ? "true"
-                            : "false");
+                    case BOOL -> expression =
+                            expression.body(expressionValue.compareTo(BigDecimal.ZERO) != 0 ? "true" : "false");
                     case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
                     case FLOAT -> {}
                     case STR -> expression = expression.quoteBody();
@@ -351,6 +369,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 switch (castTo) {
                     case BOOL -> {
                         expression = expression.unquoteBody();
+                        // TODO allow numbers in strings to cast to booleans
                         if (!expression.body().equalsIgnoreCase("true")
                                 && !expression.body().equalsIgnoreCase("false")) {
                             throw new TypeError("""

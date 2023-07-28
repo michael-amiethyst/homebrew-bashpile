@@ -8,8 +8,7 @@
 # Enhance testrig.bp
 1. String interpolation with $[]
     1. include special __OPTIONS[] array for $@, $1, etc.
-2. conditionals (if-else if-else), comparison operators (<, =>, etc) and boolean logic
-   1. try typecasts for NUMBERS then
+2. conditionals (if-elseif-else), comparison operators (<, =>, etc) and boolean logic
 3. Factor out text for future localization and consistent end-user feel.
 
 # Later
