@@ -68,6 +68,11 @@ public class BashShell implements Closeable {
         this.bashScript = bashScript;
     }
 
+    /** This is the same as running `kill` on the async process */
+    public void sendTerminationSignal() {
+        ioManager.sigterm();
+    }
+
     public @Nonnull ExecutionResults join() throws IOException {
         try {
             // wait for background threads to complete

@@ -254,19 +254,19 @@ class StatementBashpileTest extends BashpileTest {
 
     @Test
     @Order(160)
-    public void createStatementTrapsWork() throws IOException {
-        // TODO finish
+    public void createStatementTrapsWorks() throws IOException {
         final String bashpileScript = """
                 #(rm -f captainsLog.txt || true)
                 contents: str
                 #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
+                    #(sleep 1)
                     contents = $(cat captainsLog.txt)
-                    #(sleep 3)
                 print(contents)""";
         try(final BashShell shell = runTextAsync(bashpileScript)) {
+            shell.sendTerminationSignal();
             final ExecutionResults executionResults = shell.join();
-            assertSuccessfulExitCode(executionResults);
-            assertEquals("Captain's log, stardate...\n", executionResults.stdout());
+            assertFailedExitCode(executionResults);
+            assertEquals("", executionResults.stdout());
             assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
         }
     }

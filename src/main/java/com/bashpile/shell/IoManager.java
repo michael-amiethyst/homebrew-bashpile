@@ -67,6 +67,12 @@ import static com.bashpile.StringUtils.appendIfMissing;
         childStdInWriter.write(paragraph);
     }
 
+    /** Sends the Termination Linux Signal (15) to our async process */
+    public void sigterm() {
+        // destroy sends SIGTERM
+        childProcess.destroy();
+    }
+
     /** Joins to both background threads (process and STDOUT stream reader) */
     public int join() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         flush();
