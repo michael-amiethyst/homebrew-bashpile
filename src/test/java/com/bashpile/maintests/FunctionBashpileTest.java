@@ -10,8 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.util.List;
 
 import static com.bashpile.StringUtils.join;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -171,6 +170,7 @@ class FunctionBashpileTest extends BashpileTest {
                 executionResults.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
                 "Wrong circleArea count");
         assertEquals("6.28", executionResults.stdoutLines().get(0), "Wrong return");
+        assertTrue(executionResults.stdin().contains("(hoisted)"));
     }
 
     @Test
