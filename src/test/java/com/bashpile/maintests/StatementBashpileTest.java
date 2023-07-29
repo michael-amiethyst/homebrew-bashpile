@@ -271,7 +271,19 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    // TODO check preambles are handled correctly
+    @Test
+    @Order(170)
+    public void createStatementsWithNestedInlinesWork() {
+        final ExecutionResults executionResults = runText("""
+                #(rm -f captainsLog.txt || true)
+                contents: str
+                #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog.txt) creates "captainsLog.txt":
+                    contents = $(cat $(echo captainsLog.txt))
+                print(contents)""");
+        assertSuccessfulExitCode(executionResults);
+        assertEquals("Captain's log, stardate...\n", executionResults.stdout());
+        assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
+    }
 
     // TODO check nested create statements
 }

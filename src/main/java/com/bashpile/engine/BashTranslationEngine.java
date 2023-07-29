@@ -289,6 +289,8 @@ public class BashTranslationEngine implements TranslationEngine {
         // create other translations
 
         final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
+        final Translation subcomment =
+                subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
         // set noclobber avoids some race conditions
         // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
         // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
@@ -311,10 +313,11 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation bodyTranslation = toParagraphTranslation(body);
 
         // merge translations and preambles
-        return comment.add(bodyTranslation)
+        return comment.add(
+                subcomment.add(bodyTranslation)
                 .appendPreamble(shellString.preamble())
-                .appendPreamble(statements.preamble())
-                .mergePreamble();
+//                .appendPreamble(statements.preamble())
+                .mergePreamble());
     }
 
     @Override
