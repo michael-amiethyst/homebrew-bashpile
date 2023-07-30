@@ -285,5 +285,27 @@ class StatementBashpileTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
     }
 
-    // TODO check nested create statements
+    @Test
+    @Order(180)
+    public void nestedCreateStatementsWithNestedInlinesWork() {
+        // TODO undo 'unnested'/preambles for shell strings and command substitutions
+        // TODO use subshells for nested create statements (for the traps)
+        final ExecutionResults executionResults = runText("""
+                #(rm -f captainsLog.txt || true)
+                #(rm -f captainsLog2.txt || true)
+                contents: str
+                contents2: str
+                #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog.txt) creates "captainsLog.txt":
+                    contents = $(cat $(echo captainsLog.txt))
+                    #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog2.txt) creates "captainsLog2.txt":
+                        contents2 = $(cat $(echo captainsLog2.txt))
+                print(contents)
+                print(contents2)""");
+        assertSuccessfulExitCode(executionResults);
+        assertEquals("Captain's log, stardate...\nCaptain's log, stardate...\n", executionResults.stdout());
+        assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
+        assertFalse(Files.exists(Path.of("captainsLog2.txt")), "file2 not deleted");
+        // TODO uncomment
+//        assertFalse(executionResults.stdinLines().stream().anyMatch(str -> str.matches("^[^#]+#.*$")));
+    }
 }

@@ -2,7 +2,6 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
-import com.bashpile.StringUtils;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
@@ -276,7 +275,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Function<Translation, Translation> prependTabsToBodyLines = tr -> {
             final String[] lines = tr.body().split("\n");
             final String tabbedBody = Arrays.stream(lines)
-                    .map(str -> StringUtils.prependIfMissing(str, TAB))
+                    .map(str -> TAB + str)
                     .collect(Collectors.joining("\n"));
             return tr.body(tabbedBody);
         };
