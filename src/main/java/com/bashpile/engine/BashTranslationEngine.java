@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
+import com.bashpile.StringUtils;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
@@ -151,7 +152,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // order is: comment, preamble, subcomment, reassignment
         final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
-        return comment.add(preambleToReassignment).type(NA).typeMetadata(NORMAL);
+        return comment.add(preambleToReassignment).assertParagraphBody().type(NA).typeMetadata(NORMAL);
     }
 
     @Override
@@ -275,15 +276,18 @@ public class BashTranslationEngine implements TranslationEngine {
         final Function<Translation, Translation> prependTabsToBodyLines = tr -> {
             final String[] lines = tr.body().split("\n");
             final String tabbedBody = Arrays.stream(lines)
+                    .filter(StringUtils::isNotBlank)
                     .map(str -> TAB + str)
                     .collect(Collectors.joining("\n"));
-            return tr.body(tabbedBody);
+            return tr.body(StringUtils.appendIfMissing(tabbedBody, "\n"));
         };
         final Translation statements = ctx.statement().stream()
                 .map(visitor::visit)
                 .map(prependTabsToBodyLines)
                 .reduce(Translation::add)
-                .orElseThrow();
+                .orElseThrow()
+                .assertParagraphBody()
+                .assertNoBlankLinesInBody();
 
         // create other translations
 
@@ -556,7 +560,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     /**
-     * Subshell errored exit codes are ignored in Bash despite all configurations.
+     * Subshell and inline errored exit codes are ignored in Bash despite all configurations.
      * This workaround explicitly propagates errored exit codes.
      * Unnests one level.
      *

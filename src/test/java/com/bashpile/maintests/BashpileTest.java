@@ -8,11 +8,14 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.nio.file.Path;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 abstract public class BashpileTest {
+
+    protected static final Pattern END_OF_LINE_COMMENT = Pattern.compile("^[^ #]+#.*$");
 
     private static final Logger LOG = LogManager.getLogger(BashpileTest.class);
 

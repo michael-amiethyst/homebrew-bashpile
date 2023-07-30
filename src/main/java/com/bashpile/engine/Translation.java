@@ -133,6 +133,16 @@ public record Translation(
         return new Translation(preamble, "(" + body + ")", type, typeMetadata);
     }
 
+    public Translation assertParagraphBody() {
+        assertIsParagraph(body);
+        return this;
+    }
+
+    public Translation assertNoBlankLinesInBody() {
+        assertNoBlankLines(body);
+        return this;
+    }
+
     // type and typeMetadata instance methods
 
     public Translation type(@Nonnull final Type typecastType) {

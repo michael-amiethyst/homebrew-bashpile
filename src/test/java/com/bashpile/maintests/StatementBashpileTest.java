@@ -288,7 +288,6 @@ class StatementBashpileTest extends BashpileTest {
     @Test
     @Order(180)
     public void nestedCreateStatementsWithNestedInlinesWork() {
-        // TODO undo 'unnested'/preambles for shell strings and command substitutions
         // TODO use subshells for nested create statements (for the traps)
         final ExecutionResults executionResults = runText("""
                 #(rm -f captainsLog.txt || true)
@@ -305,7 +304,6 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("Captain's log, stardate...\nCaptain's log, stardate...\n", executionResults.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
         assertFalse(Files.exists(Path.of("captainsLog2.txt")), "file2 not deleted");
-        // TODO uncomment
-//        assertFalse(executionResults.stdinLines().stream().anyMatch(str -> str.matches("^[^#]+#.*$")));
+        assertFalse(executionResults.stdinLines().stream().anyMatch(str -> END_OF_LINE_COMMENT.matcher(str).matches()));
     }
 }
