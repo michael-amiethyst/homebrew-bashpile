@@ -12,6 +12,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 
 import static com.bashpile.ListUtils.getLast;
@@ -305,5 +306,33 @@ class StatementBashpileTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
         assertFalse(Files.exists(Path.of("captainsLog2.txt")), "file2 not deleted");
         assertFalse(executionResults.stdinLines().stream().anyMatch(str -> END_OF_LINE_COMMENT.matcher(str).matches()));
+    }
+
+    @Test
+    @Order(190)
+    public void nestedCreateStatementTrapsWorks() throws IOException, InterruptedException {
+        final String bashpileScript = """
+                #(rm -f captainsLog.txt || true)
+                #(rm -f captainsLog2.txt || true)
+                contents: str
+                contents2: str
+                #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog.txt) creates "captainsLog.txt":
+                    contents = $(cat $(echo captainsLog.txt))
+                    #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog2.txt) creates "captainsLog2.txt":
+                        contents2 = $(cat $(echo captainsLog2.txt))
+                        #(sleep 1)
+                    #(sleep 1)
+                print(contents)
+                print(contents2)""";
+        try(final BashShell shell = runTextAsync(bashpileScript)) {
+            Thread.sleep(Duration.ofMillis(500));
+            shell.sendTerminationSignal();
+            final ExecutionResults executionResults = shell.join();
+            assertFailedExitCode(executionResults);
+            // TODO fix, this should NOT be empty
+            assertEquals("", executionResults.stdout());
+            assertFalse(Files.exists(Path.of("captainsLog2.txt")), "inner trap file not deleted");
+            assertFalse(Files.exists(Path.of("captainsLog.txt")), "outer trap file not deleted");
+        }
     }
 }

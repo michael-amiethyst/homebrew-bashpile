@@ -99,18 +99,26 @@ import static com.bashpile.StringUtils.appendIfMissing;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
+        try {
+            childStdInWriter.flush();
+            childStdInWriter.close();
+        } catch (IOException e) {
+            // swallow
+        } finally {
+            IOUtils.closeQuietly(childStdInWriter);
+        }
         try {
             // so many resources to deal with
             executorService.close();
-            childStdInWriter.flush();
-            childStdInWriter.close();
             childStdOutBuffer.flush();
             childStdOutBuffer.close();
             childStdOutWriter.flush();
             childStdOutWriter.close();
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
         } finally {
-            IOUtils.closeQuietly(childStdInWriter, childStdOutBuffer, childStdOutWriter);
+            IOUtils.closeQuietly(childStdOutBuffer, childStdOutWriter);
             executorService.close();  // executorService didn't qualify for closeQuietly
         }
     }

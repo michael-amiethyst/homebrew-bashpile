@@ -13,10 +13,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -59,6 +56,9 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
+
+    /** The current create statement filenames for using in a trap command */
+    private final Stack<String> createFilenames = new Stack<>();
 
     // instance methods
 
@@ -273,54 +273,63 @@ public class BashTranslationEngine implements TranslationEngine {
         // create child translations and other variables
         final Translation shellString = visitor.visit(ctx.shellString());
         final String filename = visitor.visit(ctx.String()).unquoteBody().body();
-        final Function<Translation, Translation> prependTabsToBodyLines = tr -> {
-            final String[] lines = tr.body().split("\n");
-            final String tabbedBody = Arrays.stream(lines)
-                    .filter(StringUtils::isNotBlank)
-                    .map(str -> TAB + str)
-                    .collect(Collectors.joining("\n"));
-            return tr.body(StringUtils.appendIfMissing(tabbedBody, "\n"));
-        };
-        final Translation statements = ctx.statement().stream()
-                .map(visitor::visit)
-                .map(prependTabsToBodyLines)
-                .reduce(Translation::add)
-                .orElseThrow()
-                .assertParagraphBody()
-                .assertNoBlankLinesInBody();
+        createFilenames.push(filename);
+        try {
+            final Function<Translation, Translation> prependTabsToBodyLines = tr -> {
+                final String[] lines = tr.body().split("\n");
+                final String tabbedBody = Arrays.stream(lines)
+                        .filter(StringUtils::isNotBlank)
+                        .map(str -> TAB + str)
+                        .collect(Collectors.joining("\n"));
+                return tr.body(StringUtils.appendIfMissing(tabbedBody, "\n"));
+            };
+            final Translation statements = ctx.statement().stream()
+                    .map(visitor::visit)
+                    .map(prependTabsToBodyLines)
+                    .reduce(Translation::add)
+                    .orElseThrow()
+                    .assertParagraphBody()
+                    .assertNoBlankLinesInBody();
 
-        // create other translations
+            // create other translations
 
-        final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
-        final Translation subcomment =
-                subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
-        // set noclobber avoids some race conditions
-        // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
-        // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
-        // also `exit` in an if statement doesn't work, so we need to `return` and bubble up a failing exit code
-        final String body = """
-                if (set -o noclobber; %s) 2> /dev/null; then
-                    trap 'rm -f %s; exit $?' INT TERM EXIT
-                    ## wrapped body of creates statement
-                %s
-                    ## end of wrapped body of creates statement
-                    rm -f %s
-                    trap - INT TERM EXIT
-                else
-                    echo "Failed to create %s."
-                    return 1
-                fi
-                __bp_exitCode=$?
-                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                """.formatted(shellString.body(), filename, statements.body(), filename, filename);
-        final Translation bodyTranslation = toParagraphTranslation(body);
+            final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
+            final Translation subcomment =
+                    subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
+            // set noclobber avoids some race conditions
+            // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
+            // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
+            // also `exit` in an if statement doesn't work, so we need to `return` and bubble up a failing exit code
+            final String body = """
+                    if (set -o noclobber; %s) 2> /dev/null; then
+                        trap 'rm -f %s; exit $?' INT TERM EXIT
+                        ## wrapped body of creates statement
+                    %s
+                        ## end of wrapped body of creates statement
+                        rm -f %s
+                        trap - INT TERM EXIT
+                    else
+                        echo "Failed to create %s."
+                        return 1
+                    fi
+                    __bp_exitCode=$?
+                    if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                    """.formatted(
+                            shellString.body(),
+                            String.join(" ", createFilenames),
+                            statements.body(),
+                            filename,
+                            filename);
+            final Translation bodyTranslation = toParagraphTranslation(body);
 
-        // merge translations and preambles
-        return comment.add(
-                subcomment.add(bodyTranslation)
-                .appendPreamble(shellString.preamble())
-//                .appendPreamble(statements.preamble())
-                .mergePreamble());
+            // merge translations and preambles
+            return comment.add(
+                    subcomment.add(bodyTranslation)
+                    .appendPreamble(shellString.preamble())
+                    .mergePreamble());
+        } finally {
+            createFilenames.pop();
+        }
     }
 
     @Override
