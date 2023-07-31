@@ -89,7 +89,7 @@ public class BashShell implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         try {
             ioManager.close();
         } finally {

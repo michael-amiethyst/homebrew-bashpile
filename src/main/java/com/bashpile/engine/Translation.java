@@ -38,7 +38,7 @@ public record Translation(
 
     public static final Translation NEWLINE = toLineTranslation("\n");
 
-    private static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
+    public static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
 
     // static methods
 

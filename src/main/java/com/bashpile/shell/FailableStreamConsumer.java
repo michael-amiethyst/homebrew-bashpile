@@ -13,7 +13,7 @@ import java.io.InputStreamReader;
  * <br>
  * Adapted from <a href="https://www.baeldung.com/run-shell-command-in-java">a tutorial</a>.
  */
-/* protected */ class FailableStreamConsumer implements Runnable {
+/* package */ class FailableStreamConsumer implements Runnable {
 
     private final InputStream inputStream;
 

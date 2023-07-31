@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
-import static com.bashpile.StringUtils.prependLastLine;
+import static com.bashpile.StringUtils.lambdaLastLine;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
@@ -160,7 +160,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // guard
         final BashpileParser.ArgumentListContext argList = ctx.argumentList();
         if (argList == null) {
-            return toLineTranslation("echo\n");
+            return toLineTranslation("printf \"\\n\"");
         }
 
         // body
@@ -311,7 +311,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         rm -f %s
                         trap - INT TERM EXIT
                     else
-                        echo "Failed to create %s."
+                        printf "Failed to create %s."
                         return 1
                     fi
                     __bp_exitCode=$?
@@ -363,7 +363,10 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         final Translation comment = createHoistedCommentTranslation("return statement", lineNumber(ctx));
-        final Translation exprBody = toParagraphTranslation(prependLastLine("echo ", exprTranslation.body()))
+        final Function<String, String> toPrintf =
+                str -> "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""));
+        final Translation exprBody = toParagraphTranslation(
+                lambdaLastLine(toPrintf, exprTranslation.body()))
                 .appendPreamble(exprTranslation.preamble());
         return comment.add(exprBody.mergePreamble());
     }
