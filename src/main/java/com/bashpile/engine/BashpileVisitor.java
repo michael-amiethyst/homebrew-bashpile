@@ -63,11 +63,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit statements
 
     @Override
-    public @Nonnull Translation visitExpressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
-        return translator.expressionStatement(ctx);
-    }
-
-    @Override
     public @Nonnull Translation visitAssignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         return translator.assignmentStatement(ctx);
     }
@@ -101,15 +96,25 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public @Nonnull Translation visitReturnPsudoStatement(
-            @Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
-        return translator.returnPsudoStatement(ctx);
+    public Translation visitCreatesStatement(BashpileParser.CreatesStatementContext ctx) {
+        return translator.createsStatement(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitExpressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
+        return translator.expressionStatement(ctx);
     }
 
     @Override
     public @Nonnull Translation visitBlankStmt(@Nonnull BashpileParser.BlankStmtContext ctx) {
         // will return "\r\n" on Windows without an override
         return NEWLINE;
+    }
+
+    @Override
+    public @Nonnull Translation visitReturnPsudoStatement(
+            @Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
+        return translator.returnPsudoStatement(ctx);
     }
 
     // visit expressions
@@ -134,11 +139,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
-        return new Translation(ctx.getText(), Type.parseNumberString(ctx.Number().getText()), NORMAL);
-    }
-
-    @Override
     public @Nonnull Translation visitCalculationExpression(
             @Nonnull final BashpileParser.CalculationExpressionContext ctx) {
         log.trace("In Calc with {} children", ctx.children.size());
@@ -150,6 +150,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
         return new Translation(ctx.Bool().getText(), Type.BOOL, NORMAL);
+    }
+
+    @Override
+    public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
+        return new Translation(ctx.getText(), Type.parseNumberString(ctx.Number().getText()), NORMAL);
     }
 
     /**

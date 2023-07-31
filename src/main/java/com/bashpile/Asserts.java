@@ -18,10 +18,12 @@ import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 public class Asserts {
 
     /** In MULTILINE mode use a non-capturing group to match 0 or more lines (or blanks) */
-    private static final Pattern textBlock = Pattern.compile("(?m)(?:^[^\n]*$\n)*");
+    private static final Pattern TEXT_BLOCK = Pattern.compile("(?m)(?:^[^\n]*$\n)*");
 
     /** Match a line of text with a Linux line ending at the end OR the empty string */
-    private static final Pattern textLine = Pattern.compile("^[^\n]*$\n|^$");
+    private static final Pattern TEXT_LINE = Pattern.compile("^[^\n]*$\n|^$");
+
+    private static final Pattern BLANK_LINE = Pattern.compile("\n *\n");
 
     /**
      * A text block is a group of text lines.  Each line ends with a newline.
@@ -29,7 +31,7 @@ public class Asserts {
      * @see #assertIsLine(String)
      */
     public static String assertIsParagraph(@Nonnull final String str) {
-        assertMatches(str, textBlock);
+        assertMatches(str, TEXT_BLOCK);
         return str;
     }
 
@@ -39,8 +41,12 @@ public class Asserts {
      * @param str the string to check.
      */
     public static String assertIsLine(@Nonnull final String str) {
-        assertMatches(str, textLine);
+        assertMatches(str, TEXT_LINE);
         return str;
+    }
+
+    public static void assertNoBlankLines(@Nonnull final String str) {
+        assertNoMatch(str, BLANK_LINE);
     }
 
     /** Checks for a complete match (i.e. whole string must match) */

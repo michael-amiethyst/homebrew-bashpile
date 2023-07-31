@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
+import com.bashpile.StringUtils;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
@@ -12,17 +13,16 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
-import static com.bashpile.StringUtils.prependLastLine;
+import static com.bashpile.StringUtils.lambdaLastLine;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
@@ -56,6 +56,9 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
+
+    /** The current create statement filenames for using in a trap command */
+    private final Stack<String> createFilenames = new Stack<>();
 
     // instance methods
 
@@ -97,18 +100,6 @@ public class BashTranslationEngine implements TranslationEngine {
     // statement translations
 
     @Override
-    public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
-        final Translation expr = visitor.visit(ctx.expression()).add(NEWLINE);
-        final Translation comment = toLineTranslation(
-                "# expression statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
-        final Translation subcomment =
-                toLineTranslation(expr.hasPreamble() ? "## expression statement body\n" : "");
-        // order is: comment, preamble, subcomment, expr
-        final Translation exprStatement = subcomment.add(expr).mergePreamble();
-        return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
-    }
-
-    @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         // add this variable to the type map
         final String variableName = ctx.typedId().Id().getText();
@@ -121,10 +112,9 @@ public class BashTranslationEngine implements TranslationEngine {
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
-        final Translation comment = toLineTranslation(
-                "# assign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
+        final Translation comment = createCommentTranslation("assign statement", lineNumber(ctx));
         final Translation subcomment =
-                toLineTranslation(exprTranslation.hasPreamble() ? "## assign statement body\n" : "");
+                subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "assign statement body");
         final Translation variableDeclaration = toLineTranslation(getLocalText() + variableName + "\n");
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
@@ -151,10 +141,9 @@ public class BashTranslationEngine implements TranslationEngine {
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
 
         // create translations
-        final Translation comment = toLineTranslation(
-                "# reassign statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
+        final Translation comment = createCommentTranslation("reassign statement", lineNumber(ctx));
         final Translation subcomment =
-                toLineTranslation(exprTranslation.hasPreamble() ? "## reassignment statement body\n" : "");
+                subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "reassignment statement body");
         // merge exprTranslation into reassignment
         final String reassignmentBody = "%s%s=%s\n".formatted(
                 getLocalText(true), variableName, exprTranslation.body());
@@ -163,7 +152,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // order is: comment, preamble, subcomment, reassignment
         final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
-        return comment.add(preambleToReassignment).type(NA).typeMetadata(NORMAL);
+        return comment.add(preambleToReassignment).assertParagraphBody().type(NA).typeMetadata(NORMAL);
     }
 
     @Override
@@ -171,21 +160,22 @@ public class BashTranslationEngine implements TranslationEngine {
         // guard
         final BashpileParser.ArgumentListContext argList = ctx.argumentList();
         if (argList == null) {
-            return toLineTranslation("echo\n");
+            return toLineTranslation("printf \"\\n\"\n");
         }
 
         // body
         try (final var ignored = new LevelCounter(PRINT_LABEL)) {
-            final Translation comment = toLineTranslation(
-                    "# print statement, Bashpile line %d\n".formatted(lineNumber(ctx)));
+            final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
                     .map(tr -> tr.isInlineOrSubshell() && inCommandSubstitution() ? unnest(tr) : tr)
-                    .map(tr -> tr.body("echo %s\n".formatted(tr.body())))
+                    .map(tr -> tr.body("""
+                            printf "%s\\n"
+                            """.formatted(tr.unquoteBody().body())))
                     .reduce(Translation::add)
                     .orElseThrow();
             final Translation subcomment =
-                    toLineTranslation(arguments.hasPreamble() ? "## print statement body\n" : "");
+                    subcommentTranslationOrDefault(arguments.hasPreamble(), "print statement body");
             return comment.add(subcomment.add(arguments).mergePreamble());
         }
     }
@@ -196,8 +186,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
         try (var ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
             // create translations
-            final Translation comment = toLineTranslation(
-                    "# function forward declaration, Bashpile line %d\n".formatted(lineNumber(ctx)));
+            final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
             final Translation hoistedFunction = toParagraphTranslation(visitor.visit(functionDeclCtx).body());
             // register that this forward declaration has been handled
             foundForwardDeclarations.add(ctx.typedId().Id().getText());
@@ -237,8 +226,7 @@ public class BashTranslationEngine implements TranslationEngine {
                             x.Id().getText(), Type.valueOf(x.Type().getText().toUpperCase()), lineNumber(ctx)));
 
             // create Translations
-            final Translation comment = toLineTranslation(
-                    "# function declaration, Bashpile line %d%s\n".formatted(lineNumber(ctx), getHoisted()));
+            final Translation comment = createHoistedCommentTranslation("function declaration", lineNumber(ctx));
             final AtomicInteger i = new AtomicInteger(1);
             // the empty string or ...
             String namedParams = "";
@@ -265,8 +253,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
         try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.closable()) {
-            final Translation comment = toLineTranslation(
-                    "# anonymous block, Bashpile line %d%s\n".formatted(lineNumber(ctx), getHoisted()));
+            final Translation comment = createHoistedCommentTranslation("anonymous block", lineNumber(ctx));
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
             // map of x to x needed for upcasting to parent type
@@ -277,6 +264,85 @@ public class BashTranslationEngine implements TranslationEngine {
                     .formatted(anonymousFunctionName, assertIsParagraph(blockBody), anonymousFunctionName));
             return comment.add(selfCallingAnonymousFunction);
         }
+    }
+
+    /**
+     * See "Setting Traps" and "Race Conditions" at
+     * <a href="https://www.davidpashley.com/articles/writing-robust-shell-scripts/">Writing Robust Shell Scripts</a>
+     */
+    @Override
+    public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
+        // create child translations and other variables
+        final Translation shellString = visitor.visit(ctx.shellString());
+        final String filename = visitor.visit(ctx.String()).unquoteBody().body();
+        createFilenames.push(filename);
+        try {
+            final Function<Translation, Translation> prependTabsToBodyLines = tr -> {
+                final String[] lines = tr.body().split("\n");
+                final String tabbedBody = Arrays.stream(lines)
+                        .filter(StringUtils::isNotBlank)
+                        .map(str -> TAB + str)
+                        .collect(Collectors.joining("\n"));
+                return tr.body(StringUtils.appendIfMissing(tabbedBody, "\n"));
+            };
+            final Translation statements = ctx.statement().stream()
+                    .map(visitor::visit)
+                    .map(prependTabsToBodyLines)
+                    .reduce(Translation::add)
+                    .orElseThrow()
+                    .assertParagraphBody()
+                    .assertNoBlankLinesInBody();
+
+            // create other translations
+
+            final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
+            final Translation subcomment =
+                    subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
+            // set noclobber avoids some race conditions
+            // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
+            // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
+            // also `exit` in an if statement doesn't work, so we need to `return` and bubble up a failing exit code
+            final String body = """
+                    if (set -o noclobber; %s) 2> /dev/null; then
+                        trap 'rm -f %s; exit $?' INT TERM EXIT
+                        ## wrapped body of creates statement
+                    %s
+                        ## end of wrapped body of creates statement
+                        rm -f %s
+                        trap - INT TERM EXIT
+                    else
+                        printf "Failed to create %s."
+                        return 1
+                    fi
+                    __bp_exitCode=$?
+                    if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                    """.formatted(
+                            shellString.body(),
+                            String.join(" ", createFilenames),
+                            statements.body(),
+                            filename,
+                            filename);
+            final Translation bodyTranslation = toParagraphTranslation(body);
+
+            // merge translations and preambles
+            return comment.add(
+                    subcomment.add(bodyTranslation)
+                    .appendPreamble(shellString.preamble())
+                    .mergePreamble());
+        } finally {
+            createFilenames.pop();
+        }
+    }
+
+    @Override
+    public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
+        final Translation expr = visitor.visit(ctx.expression()).add(NEWLINE);
+        final Translation comment = createCommentTranslation("expression statement", lineNumber(ctx));
+        final Translation subcomment =
+                subcommentTranslationOrDefault(expr.hasPreamble(), "expression statement body");
+        // order is: comment, preamble, subcomment, expr
+        final Translation exprStatement = subcomment.add(expr).mergePreamble();
+        return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
     }
 
     @Override
@@ -296,9 +362,11 @@ public class BashTranslationEngine implements TranslationEngine {
             return EMPTY_TRANSLATION;
         }
 
-        final Translation comment = toLineTranslation(
-                "# return statement, Bashpile line %d%s\n".formatted(lineNumber(ctx), getHoisted()));
-        final Translation exprBody = toParagraphTranslation(prependLastLine("echo ", exprTranslation.body()))
+        final Translation comment = createHoistedCommentTranslation("return statement", lineNumber(ctx));
+        final Function<String, String> toPrintf =
+                str -> "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""));
+        final Translation exprBody = toParagraphTranslation(
+                lambdaLastLine(toPrintf, exprTranslation.body()))
                 .appendPreamble(exprTranslation.preamble());
         return comment.add(exprBody.mergePreamble());
     }
@@ -326,53 +394,6 @@ public class BashTranslationEngine implements TranslationEngine {
         }
         expression = expression.type(castTo);
         return expression;
-    }
-
-    @Override
-    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
-        // get the child translations
-        List<Translation> childTranslations;
-        try (var ignored = new LevelCounter(CALC_LABEL)) {
-            childTranslations = ctx.children.stream().map(visitor::visit).toList();
-        }
-
-        // child translations in the format of 'expr operator expr', so we are only interested in the first and last
-        final Translation first = childTranslations.get(0);
-        final Translation second = getLast(childTranslations);
-        // check for nested calc call
-        if (LevelCounter.in(CALC_LABEL) && areNumberExpressions(first, second)) {
-            return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
-        // types section
-        } else if (areStringExpressions(first, second)) {
-            final String op = ctx.op.getText();
-            Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
-            return toTranslation(Stream.of(first, second), STR, NORMAL);
-        } else if (areNumberExpressions(first, second)) {
-            final String translationsString = childTranslations.stream()
-                    .map(Translation::body).collect(Collectors.joining(" "));
-            return toTranslation(childTranslations.stream(), Type.NUMBER, INLINE)
-                    .body("$(bc <<< \"%s\")".formatted(translationsString));
-        // found no matching types -- error section
-        } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
-            throw new UserError("`%s` or `%s` are undefined".formatted(
-                    first.body(), second.body()), lineNumber(ctx));
-        } else {
-            // throw type error for all others
-            throw new TypeError("Incompatible types in calc: %s and %s".formatted(
-                    first.type(), second.type()), lineNumber(ctx));
-        }
-    }
-
-    @Override
-    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
-        // drop parenthesis
-        Translation ret = visitor.visit(ctx.expression());
-
-        // only keep parenthesis for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
-        if (ret.type().isPossiblyNumeric() && LevelCounter.in(CALC_LABEL)) {
-            ret = ret.parenthesizeBody();
-        }
-        return ret;
     }
 
     @Override
@@ -417,6 +438,53 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
+    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
+        // drop parenthesis
+        Translation ret = visitor.visit(ctx.expression());
+
+        // only keep parenthesis for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
+        if (ret.type().isPossiblyNumeric() && LevelCounter.in(CALC_LABEL)) {
+            ret = ret.parenthesizeBody();
+        }
+        return ret;
+    }
+
+    @Override
+    public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
+        // get the child translations
+        List<Translation> childTranslations;
+        try (var ignored = new LevelCounter(CALC_LABEL)) {
+            childTranslations = ctx.children.stream().map(visitor::visit).toList();
+        }
+
+        // child translations in the format of 'expr operator expr', so we are only interested in the first and last
+        final Translation first = childTranslations.get(0);
+        final Translation second = getLast(childTranslations);
+        // check for nested calc call
+        if (LevelCounter.in(CALC_LABEL) && areNumberExpressions(first, second)) {
+            return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
+            // types section
+        } else if (areStringExpressions(first, second)) {
+            final String op = ctx.op.getText();
+            Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
+            return toTranslation(Stream.of(first.unquoteBody(), second.unquoteBody()), STR, NORMAL);
+        } else if (areNumberExpressions(first, second)) {
+            final String translationsString = childTranslations.stream()
+                    .map(Translation::body).collect(Collectors.joining(" "));
+            return toTranslation(childTranslations.stream(), Type.NUMBER, INLINE)
+                    .body("$(bc <<< \"%s\")".formatted(translationsString));
+            // found no matching types -- error section
+        } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
+            throw new UserError("`%s` or `%s` are undefined".formatted(
+                    first.body(), second.body()), lineNumber(ctx));
+        } else {
+            // throw type error for all others
+            throw new TypeError("Incompatible types in calc: %s and %s".formatted(
+                    first.type(), second.type()), lineNumber(ctx));
+        }
+    }
+
+    @Override
     public Translation idExpression(BashpileParser.IdExpressionContext ctx) {
         final String variableName = ctx.Id().getText();
         final Type type = typeStack.getVariableType(variableName);
@@ -430,7 +498,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         // get the contents -- ditches the #() syntax
         final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
-        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL).unescapeBody();
+        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL);
         if (LevelCounter.inCommandSubstitution()) {
             // then wrap in command substitution and unnest as needed
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
@@ -440,7 +508,7 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (LevelCounter.in(PRINT_LABEL)) {
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
         } // else top level -- no additional processing needed
-        return contentsTranslation;
+        return contentsTranslation.unescapeBody();
     }
 
     /**
@@ -467,6 +535,29 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // helpers
 
+    /** Get the Bashpile script linenumber that ctx is found in. */
+    private int lineNumber(@Nonnull final ParserRuleContext ctx) {
+        return ctx.start.getLine();
+    }
+
+    private static @Nonnull Translation createCommentTranslation(@Nonnull final String name, final int lineNumber) {
+        return toLineTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
+    }
+
+    private static @Nonnull Translation createHoistedCommentTranslation(
+            @Nonnull final String name, final int lineNumber) {
+        final String hoisted = LevelCounter.in(FORWARD_DECL_LABEL) ? " (hoisted)" : "";
+        return toLineTranslation("# %s, Bashpile line %d%s\n".formatted(name, lineNumber, hoisted));
+    }
+
+    private static @Nonnull Translation subcommentTranslationOrDefault(
+            final boolean subcommentNeeded, @Nonnull final String name) {
+        if (subcommentNeeded) {
+            return toLineTranslation("## %s\n".formatted(name));
+        }
+        return EMPTY_TRANSLATION;
+    }
+
     private static @Nonnull String getLocalText() {
         return getLocalText(false);
     }
@@ -482,12 +573,8 @@ public class BashTranslationEngine implements TranslationEngine {
         }
     }
 
-    private static @Nonnull String getHoisted() {
-        return LevelCounter.in(FORWARD_DECL_LABEL) ? " (hoisted)" : "";
-    }
-
     /**
-     * Subshell errored exit codes are ignored in Bash despite all configurations.
+     * Subshell and inline errored exit codes are ignored in Bash despite all configurations.
      * This workaround explicitly propagates errored exit codes.
      * Unnests one level.
      *
@@ -497,8 +584,10 @@ public class BashTranslationEngine implements TranslationEngine {
      * that holds the results of executing <code>tr</code>'s body.
      */
     private Translation unnest(@Nonnull final Translation tr) {
-        // check input
-        assertNoMatch(tr.body(), GENERATED_VARIABLE_NAME);
+        // guard to check if unnest not needed
+        if (GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
+            return tr;
+        }
 
         // assign Strings to use in translations
         final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
@@ -519,15 +608,8 @@ public class BashTranslationEngine implements TranslationEngine {
         // add the preambles and swap the body
         return tr.appendPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
     }
-    
-    /** Get the Bashpile script linenumber that ctx is found in. */
-    private int lineNumber(@Nonnull final ParserRuleContext ctx) {
-        return ctx.start.getLine();
-    }
 
     // typecast helpers
-
-
 
     private static Translation typecastBool(
             @Nonnull final Type castTo,

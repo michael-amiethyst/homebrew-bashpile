@@ -1,6 +1,5 @@
 package com.bashpile;
 
-import com.bashpile.commandline.BashExecutor;
 import com.bashpile.maintests.BashpileTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.io.IOException;
 import java.util.List;
 
+import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,7 +25,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void noSubCommandTest() throws IOException {
         log.debug("In noSubCommandTest");
         String command = "bin/bashpile";
-        var executionResults = BashExecutor.run(command);
+        var executionResults = runAndJoin(command);
         log.debug("Output text:\n{}", executionResults.stdout());
         assertEquals(1, executionResults.exitCode());
         assertTrue(executionResults.stdoutLines().size() > 0,
@@ -38,7 +38,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void executeTest() throws IOException {
         log.debug("In executeTest");
         String command = "bin/bashpile -c=\"print()\" execute";
-        var executionResults = BashExecutor.run(command);
+        var executionResults = runAndJoin(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
         assertTrue(outputText.endsWith("\n\n"));
@@ -48,7 +48,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void executePathTest() throws IOException {
         log.debug("In executeTest");
         String command = "bin/bashpile -i=src/test/resources/scripts/escapedString.bashpile execute";
-        var executionResults = BashExecutor.run(command);
+        var executionResults = runAndJoin(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
         List<String> stdoutLines = executionResults.stdoutLines();
@@ -59,14 +59,14 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void transpileCommandTest() throws IOException {
         log.debug("In transpileTest");
         String command = "bin/bashpile -c \"print()\" transpile";
-        var executionResults = BashExecutor.run(command);
+        var executionResults = runAndJoin(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
         List<String> lines = executionResults.stdoutLines();
-        assertExecutionSuccess(executionResults);
+        assertSuccessfulExitCode(executionResults);
         assertTrue(lines.size() > 0, "No output");
         int lastLineIndex = lines.size() - 1;
-        assertEquals("echo", lines.get(lastLineIndex),
+        assertEquals("printf \"\\n\"", lines.get(lastLineIndex),
                 "Unexpected output: %s".formatted(outputText));
     }
 }

@@ -1,9 +1,8 @@
 # MVP features / drink my own champaign
 
 # Implement testrig.bp
-1. try-with-resources
-   1. syntax: #(command) creates "filename":
-2. Cache compiled files
+1. Cache compiled files
+2. Update wiki, docs (and maybe create videos) for end-users
 
 # Enhance testrig.bp
 1. String interpolation with $[]

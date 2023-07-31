@@ -2,6 +2,7 @@ package com.bashpile.maintests;
 
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
+import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -10,8 +11,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.util.List;
 
 import static com.bashpile.StringUtils.join;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -20,29 +20,38 @@ class FunctionBashpileTest extends BashpileTest {
     @Test
     @Order(10)
     public void functionDeclarationWorks() {
-        List<String> executionResults = runText("""
-                (38. + 5) * .3
+        final ExecutionResults results = runText("""
+                print((38. + 5) * .3)
                 function functionName: int ():
                     x: float = 5.5
                     return x * x
                 x: float = 7.7
-                x * x
-                """).stdoutLines();
-        assertEquals(2, executionResults.size(),
-                "Unexpected line length, was:\n" + join(executionResults));
+                print(x * x)
+                """);
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        assertEquals(2, lines.size(),
+                "Unexpected line length, was:\n" + join(lines));
+        assertEquals("12.9", lines.get(0));
+        assertEquals("59.2", lines.get(1));
     }
 
     @Test
     @Order(20)
     public void functionDeclarationParamsWork() {
-        List<String> executionResults = runText("""
-                (38. + 5) * .3
+        final ExecutionResults results = runText("""
+                print((38. + 5) * .3)
                 function functionName:int(x:int, y:int):
                     return x * y
                 x:float = 7.7
-                x * x
-                """).stdoutLines();
-        assertEquals(2, executionResults.size());
+                print(x * x)
+                """);
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        assertEquals(2, lines.size(),
+                "Unexpected line length, was:\n" + join(lines));
+        assertEquals("12.9", lines.get(0));
+        assertEquals("59.2", lines.get(1));
     }
 
     @Test
@@ -74,63 +83,62 @@ class FunctionBashpileTest extends BashpileTest {
     @Test
     @Order(50)
     public void functionCallWorks() {
-        List<String> executionResults = runText("""
+        final ExecutionResults results = runText("""
                 function circleArea:float(r:float):
                     return 3.14 * r * r
                 print(circleArea(1))
-                print(circleArea(-1))""").stdoutLines();
-        assertEquals(2, executionResults.size());
-        assertEquals("3.14", executionResults.get(0));
-        assertEquals("3.14", executionResults.get(1));
+                print(circleArea(-1))""");
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        assertEquals(2, lines.size());
+        assertEquals("3.14", lines.get(0));
+        assertEquals("3.14", lines.get(1));
     }
 
     @Test
     @Order(60)
     public void functionCallMultipleParamsWorks() {
-        var executionResults = runText("""
+        final ExecutionResults results = runText("""
                 function rectArea: float (w: float, l: float):
                     return w * l
                 print(rectArea(3, 4))
                 """);
-        assertExecutionSuccess(executionResults);
-        assertEquals(1, executionResults.stdoutLines().size());
-        assertEquals("12", executionResults.stdoutLines().get(0));
+        assertSuccessfulExitCode(results);
+        assertEquals("12\n", results.stdout());
     }
 
     @Test
     @Order(70)
     public void functionCallReturnStringWorks() {
-        var executionResults = runText("""
+        final ExecutionResults results = runText("""
                 function world: str ():
                     return "hello world"
                 print(world())""");
-        assertExecutionSuccess(executionResults);
-        assertEquals(1, executionResults.stdoutLines().size());
-        assertEquals("hello world", executionResults.stdoutLines().get(0));
+        assertSuccessfulExitCode(results);
+        assertEquals("hello world\n", results.stdout());
     }
 
     @Test
     @Order(71)
     public void functionCallIgnoreReturnStringWorks() {
-        var executionResults = runText("""
+        final ExecutionResults results = runText("""
                 function world: str ():
                     return "hello world"
                 world()""");
-        assertExecutionSuccess(executionResults);
-        assertEquals("", executionResults.stdout());
+        assertSuccessfulExitCode(results);
+        assertEquals("", results.stdout());
     }
 
     @Test
     @Order(80)
     public void functionCallTagsWork() {
-        var executionResults = runText("""
+        final ExecutionResults results = runText("""
                 function circleArea: float (r: float) ["math" "test" "function test"]:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
-        assertExecutionSuccess(executionResults);
-        assertEquals(2, executionResults.stdoutLines().size());
-        assertEquals("3.14", executionResults.stdoutLines().get(0));
+        assertSuccessfulExitCode(results);
+        assertEquals("3.14\n3.14\n", results.stdout());
     }
 
     @Test
@@ -154,7 +162,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Test
     @Order(130)
     public void functionForwardDeclarationWorks() {
-        var executionResults = runText("""
+        final ExecutionResults results = runText("""
                 function circleArea: float (r: float)
                                 
                 function twoCircleArea: float (r1: float, r2: float):
@@ -164,39 +172,41 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                                 
                 print(twoCircleArea(1, -1))""");
-        assertExecutionSuccess(executionResults);
-        assertEquals(1, executionResults.stdoutLines().size()
-                , "Wrong length, was: " + join(executionResults.stdoutLines()));
+        assertSuccessfulExitCode(results);
+        assertEquals(1, results.stdoutLines().size()
+                , "Wrong length, was: " + join(results.stdoutLines()));
         assertEquals(1,
-                executionResults.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
+                results.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
                 "Wrong circleArea count");
-        assertEquals("6.28", executionResults.stdoutLines().get(0), "Wrong return");
+        assertEquals("6.28", results.stdoutLines().get(0), "Wrong return");
+        assertTrue(results.stdin().contains("(hoisted)"));
     }
 
     @Test
     @Order(140)
     public void stringTypeWorks() {
-        var executionResults = runText("""
+        final ExecutionResults results = runText("""
                 born: str = "to be wild"
                 print(born)""");
-        assertExecutionSuccess(executionResults);
-        assertEquals(1, executionResults.stdoutLines().size()
-                , "Wrong length, was: " + join(executionResults.stdoutLines()));
-        assertEquals("to be wild", executionResults.stdoutLines().get(0),
-                "Wrong return");
+        assertSuccessfulExitCode(results);
+        assertEquals(1, results.stdoutLines().size(),
+                "Wrong length, was: " + join(results.stdoutLines()));
+        assertEquals("to be wild\n", results.stdout(), "Wrong return");
     }
 
     @Test
     @Order(150)
     public void functionDeclTypesWork() {
-        List<String> executionResults = runText("""
+        final ExecutionResults results = runText("""
                 function circleArea: float(r: float) ["need to remove the quotes"]:
                     return 3.14 * r * r
                 print(circleArea(1))
-                print(circleArea(-1))""").stdoutLines();
-        assertEquals(2, executionResults.size());
-        assertEquals("3.14", executionResults.get(0));
-        assertEquals("3.14", executionResults.get(1));
+                print(circleArea(-1))""");
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        assertEquals(2, lines.size());
+        assertEquals("3.14", lines.get(0));
+        assertEquals("3.14", lines.get(1));
     }
 
     @Test
@@ -212,14 +222,12 @@ class FunctionBashpileTest extends BashpileTest {
     @Test
     @Order(170)
     public void functionDeclTypesCalcExpressionsWork() {
-        var executionResults = runText("""
+        final ExecutionResults results = runText("""
                 function circleArea: float(r: float) ["need to remove the quotes"]:
                     return 3.14 * r * r
                 print(circleArea(.5 + .5))""");
-        List<String> lines = executionResults.stdoutLines();
-        assertExecutionSuccess(executionResults);
-        assertEquals(1, lines.size(), "Wrong length, was: " + join(lines));
-        assertEquals("3.14", lines.get(0));
+        assertSuccessfulExitCode(results);
+        assertEquals("3.14\n", results.stdout());
     }
 
     @Test

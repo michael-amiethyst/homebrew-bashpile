@@ -17,8 +17,20 @@ Ours is
 * Instance Fields
 * Static initializers (i.e. static methods that act like constructors)
 * Constructors
-* Instance Methods and static helpers
+* Instance Methods and single method (possibly static) helpers
+* (Possibly static) helpers called from multiple methods
 * Nested classes
+
+## Instance Order
+
+### Helpers
+
+Helpers to a single method may be declared immediately after the method.  Helpers in the helper section are arranged
+in order of appearance.
+
+### In BashpileVisitor, TranslationEngine and TranslationEngine classes
+
+They will follow the order in which they are defined in BashpileParser.g4.
 
 ## Trinary Operator
 If the form is `object = test ? object.fluntInterfaceCall() : object` then the fluent interface call will always

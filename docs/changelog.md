@@ -5,3 +5,4 @@
 * 0.5.0 - Function forward declarations, line number comments in translated Bash
 * 0.6.0 - Single line comments, Multiline Comments, BashpileDocs (like JavaDocs)
 * 0.7.0 - Shell Strings, Inlines (Bash Command Substitutions)
+* 0.8.0 - Create statement

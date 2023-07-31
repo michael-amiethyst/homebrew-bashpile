@@ -147,3 +147,12 @@ fileContents: str = $(cat $filename)
 #(export filename=/tmp/tmp.txt)
 slurpString: str = "Temporary file contents: " + $(cat $(echo $filename)): str
 ```
+
+## Create statements
+
+Similar to Java's try-with-resources you can declare a block like:
+```
+#(command) creates "filename":
+    slurpString: str = #(cat $filename)
+// filename will be deleted from the filesystem here
+```

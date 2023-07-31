@@ -38,7 +38,7 @@ public record Translation(
 
     public static final Translation NEWLINE = toLineTranslation("\n");
 
-    private static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
+    public static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
 
     // static methods
 
@@ -131,6 +131,16 @@ public record Translation(
 
     public Translation parenthesizeBody() {
         return new Translation(preamble, "(" + body + ")", type, typeMetadata);
+    }
+
+    public Translation assertParagraphBody() {
+        assertIsParagraph(body);
+        return this;
+    }
+
+    public Translation assertNoBlankLinesInBody() {
+        assertNoBlankLines(body);
+        return this;
     }
 
     // type and typeMetadata instance methods

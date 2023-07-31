@@ -1,4 +1,4 @@
-package com.bashpile.commandline;
+package com.bashpile.shell;
 
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.stream.Streams;
@@ -13,7 +13,7 @@ import java.io.InputStreamReader;
  * <br>
  * Adapted from <a href="https://www.baeldung.com/run-shell-command-in-java">a tutorial</a>.
  */
-public class FailableStreamConsumer implements Runnable {
+/* package */ class FailableStreamConsumer implements Runnable {
 
     private final InputStream inputStream;
 

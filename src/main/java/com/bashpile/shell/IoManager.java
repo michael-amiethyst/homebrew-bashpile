@@ -1,4 +1,4 @@
-package com.bashpile.commandline;
+package com.bashpile.shell;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
@@ -15,7 +15,7 @@ import static com.bashpile.StringUtils.appendIfMissing;
  * <br>
  * Call order should be: {@link #spawnConsumer(Process)}, one or many calls to {@link #writeLn(String)}, {@link #join()}, {@link #getStdOut()}.
  */
-public class IoManager implements Closeable {
+/* package */ class IoManager implements Closeable {
 
     /** The wrapped child process */
     final private Process childProcess;
@@ -67,6 +67,12 @@ public class IoManager implements Closeable {
         childStdInWriter.write(paragraph);
     }
 
+    /** Sends the Termination Linux Signal (15) to our async process */
+    public void sigterm() {
+        // destroy sends SIGTERM
+        childProcess.destroy();
+    }
+
     /** Joins to both background threads (process and STDOUT stream reader) */
     public int join() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         flush();
@@ -93,18 +99,26 @@ public class IoManager implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
+        try {
+            childStdInWriter.flush();
+            childStdInWriter.close();
+        } catch (IOException e) {
+            // swallow
+        } finally {
+            IOUtils.closeQuietly(childStdInWriter);
+        }
         try {
             // so many resources to deal with
             executorService.close();
-            childStdInWriter.flush();
-            childStdInWriter.close();
             childStdOutBuffer.flush();
             childStdOutBuffer.close();
             childStdOutWriter.flush();
             childStdOutWriter.close();
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
         } finally {
-            IOUtils.closeQuietly(childStdInWriter, childStdOutBuffer, childStdOutWriter);
+            IOUtils.closeQuietly(childStdOutBuffer, childStdOutWriter);
             executorService.close();  // executorService didn't qualify for closeQuietly
         }
     }
