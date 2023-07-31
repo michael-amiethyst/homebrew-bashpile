@@ -47,6 +47,14 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("hello world\n", results.stdout());
     }
 
+    @Test @Order(31)
+    public void stringConcatWithNewlineWorks() {
+        final ExecutionResults results = runText("""
+                print("hello" + "\\n" + "world")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("hello\nworld\n", results.stdout());
+    }
+
     @Test @Order(40)
     public void stringBadOperatorThrows() {
         assertThrows(AssertionError.class, () -> runText("""

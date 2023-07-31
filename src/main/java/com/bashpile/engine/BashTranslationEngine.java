@@ -169,7 +169,9 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
                     .map(tr -> tr.isInlineOrSubshell() && inCommandSubstitution() ? unnest(tr) : tr)
-                    .map(tr -> tr.body("echo %s\n".formatted(tr.body())))
+                    .map(tr -> tr.body("""
+                            printf "%s\\n"
+                            """.formatted(tr.unquoteBody().body())))
                     .reduce(Translation::add)
                     .orElseThrow();
             final Translation subcomment =
@@ -462,7 +464,7 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (areStringExpressions(first, second)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
-            return toTranslation(Stream.of(first, second), STR, NORMAL);
+            return toTranslation(Stream.of(first.unquoteBody(), second.unquoteBody()), STR, NORMAL);
         } else if (areNumberExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
@@ -493,7 +495,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         // get the contents -- ditches the #() syntax
         final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
-        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL).unescapeBody();
+        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL);
         if (LevelCounter.inCommandSubstitution()) {
             // then wrap in command substitution and unnest as needed
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
@@ -503,7 +505,7 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (LevelCounter.in(PRINT_LABEL)) {
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
         } // else top level -- no additional processing needed
-        return contentsTranslation;
+        return contentsTranslation.unescapeBody();
     }
 
     /**
@@ -579,8 +581,10 @@ public class BashTranslationEngine implements TranslationEngine {
      * that holds the results of executing <code>tr</code>'s body.
      */
     private Translation unnest(@Nonnull final Translation tr) {
-        // check input
-        assertNoMatch(tr.body(), GENERATED_VARIABLE_NAME);
+        // guard to check if unnest not needed
+        if (GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
+            return tr;
+        }
 
         // assign Strings to use in translations
         final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);

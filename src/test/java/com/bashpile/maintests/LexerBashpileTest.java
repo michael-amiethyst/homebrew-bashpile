@@ -9,7 +9,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.nio.file.Path;
 import java.util.List;
 
-import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -52,8 +51,7 @@ class LexerBashpileTest extends BashpileTest {
     public void intWorks() {
         final ExecutionResults results = runText("print(1701)");
         assertSuccessfulExitCode(results);
-        final List<String> bashLines = results.stdinLines();
-        assertEquals("echo 1701", getLast(bashLines));
+        assertEquals("1701\n", results.stdout());
     }
 
     @Test

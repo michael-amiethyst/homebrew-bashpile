@@ -11,8 +11,6 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO verify that test check exitCode and using correct API
-// TODO verify that test use current APIs
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ShellStringBashpileTest extends BashpileTest {
@@ -21,6 +19,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test @Order(10)
     public void runLsWorks() {
         final ExecutionResults results = runText("#(ls)");
+        assertSuccessfulExitCode(results);
         assertTrue(results.stdout().contains("pom.xml\n"));
     }
 
@@ -28,6 +27,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test @Order(20)
     public void runEchoWorks() {
         final ExecutionResults results = runText("#(echo hello command object)");
+        assertSuccessfulExitCode(results);
         assertEquals("hello command object\n", results.stdout());
     }
 
@@ -81,5 +81,22 @@ public class ShellStringBashpileTest extends BashpileTest {
                 print(1 + #(expr 1 + 1):int)
                 """;
         assertEquals("3\n", runText(bashpile).stdout());
+    }
+
+    @Test @Order(80)
+    public void shellStringInCalcWithEscapesWorks() {
+        final String bashpile = """
+                print(#(printf "NCC-1701") + "\\n" + "\\n")
+                """;
+        assertEquals("NCC-1701\n\n\n", runText(bashpile).stdout());
+    }
+
+    @Test @Order(90)
+    public void shellStringWithEscapesInCalcWorks() {
+        final String bashpile = """
+                #(export IFS=$'\t')
+                print(#(printf "NCC\\n1701"))
+                """;
+        assertEquals("NCC\n1701\n", runText(bashpile).stdout());
     }
 }

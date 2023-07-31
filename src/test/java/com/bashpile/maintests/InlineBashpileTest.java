@@ -150,7 +150,7 @@ public class InlineBashpileTest extends BashpileTest {
     public void inlineWithVariableWorks() {
         final ExecutionResults results = runText("""
                 seven: float = 7
-                print($(expr 2 - $seven))""");
-        assertEquals("-5\n", results.stdout());
+                print("result: " + $(expr 2 - $seven))""");
+        assertEquals("result: -5\n", results.stdout());
     }
 }
