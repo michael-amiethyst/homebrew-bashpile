@@ -66,7 +66,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertSuccessfulExitCode(executionResults);
         assertTrue(lines.size() > 0, "No output");
         int lastLineIndex = lines.size() - 1;
-        assertEquals("echo", lines.get(lastLineIndex),
+        assertEquals("printf \"\\n\"", lines.get(lastLineIndex),
                 "Unexpected output: %s".formatted(outputText));
     }
 }

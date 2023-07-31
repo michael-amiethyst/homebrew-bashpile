@@ -160,7 +160,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // guard
         final BashpileParser.ArgumentListContext argList = ctx.argumentList();
         if (argList == null) {
-            return toLineTranslation("printf \"\\n\"");
+            return toLineTranslation("printf \"\\n\"\n");
         }
 
         // body
