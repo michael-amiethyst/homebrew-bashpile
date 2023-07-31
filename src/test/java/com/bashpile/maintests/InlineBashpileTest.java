@@ -9,8 +9,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO verify that test check exitCode and using correct API
-// TODO verify that test use current APIs
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class InlineBashpileTest extends BashpileTest {
@@ -21,6 +19,7 @@ public class InlineBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 fileContents: str = $(cat src/test/resources/testdata.txt)
                 print(fileContents)""");
+        assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());
     }
 
@@ -28,6 +27,7 @@ public class InlineBashpileTest extends BashpileTest {
     public void shellStringInlineWorks() {
         final ExecutionResults results = runText("""
                 #(echo $(cat src/test/resources/testdata.txt))""");
+        assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());
     }
 
@@ -37,6 +37,7 @@ public class InlineBashpileTest extends BashpileTest {
                 #(export filename=src/test/resources/testdata.txt)
                 contents: str = $(cat $(echo $filename))
                 print(contents)""");
+        assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());
     }
 
@@ -46,6 +47,7 @@ public class InlineBashpileTest extends BashpileTest {
                 #(export filename=src/test/resources/testdata.txt)
                 contents: str = #($(cat $(echo $filename)))
                 print(contents)""");
+        assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());
     }
 
@@ -56,6 +58,7 @@ public class InlineBashpileTest extends BashpileTest {
                 contents: str = "Stub contents"
                 contents = #($(cat $(echo $filename)))
                 print(contents)""");
+        assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());
     }
 
@@ -64,6 +67,7 @@ public class InlineBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 result: int = $(expr 2 - $(expr 3 + 4)) + 5
                 print(result)""");
+        assertSuccessfulExitCode(results);
         assertEquals("0\n", results.stdout());
     }
 
@@ -71,6 +75,7 @@ public class InlineBashpileTest extends BashpileTest {
     public void nestedInlineWithCalcInPrintWorks() {
         final ExecutionResults results = runText("""
                 print($(expr 2 - $(expr 3 + 4)) + 5)""");
+        assertSuccessfulExitCode(results);
         assertEquals("0\n", results.stdout());
     }
 
@@ -80,6 +85,7 @@ public class InlineBashpileTest extends BashpileTest {
                 result: int = 5
                 result = $(expr 2 - $(expr 3 + 4)) + 5
                 print(result)""");
+        assertSuccessfulExitCode(results);
         assertEquals("0\n", results.stdout());
     }
 
@@ -97,25 +103,26 @@ public class InlineBashpileTest extends BashpileTest {
                 block:
                     result: int = $(expr 2 - $(expr 3 + 4)) + 5
                     print(result)""");
+        assertSuccessfulExitCode(results);
         assertEquals("0\n", results.stdout());
     }
 
     @Test @Order(90)
     public void inlineWithErroredCalcInAnonymousBlockThrows() {
-        String bashText = """
+        final String bashpileScript = """
                 block:
                     result: int = $(expr 3 + 4; exit 1)
                     print(result)""";
-        assertEquals(1, runText(bashText).exitCode());
+        assertEquals(1, runText(bashpileScript).exitCode());
     }
 
     @Test @Order(100)
     public void nestedInlineWithErroredCalcInAnonymousBlockThrows() {
-        String bashText = """
+        final String bashpileScript = """
                 block:
                     result: int = $(expr 2 - $(expr 3 + 4; exit 1)) + 5
                     print(result)""";
-        assertEquals(1, runText(bashText).exitCode());
+        assertEquals(1, runText(bashpileScript).exitCode());
     }
 
     @Test @Order(110)
@@ -124,6 +131,7 @@ public class InlineBashpileTest extends BashpileTest {
                 function mathIt:int(last:int):
                     return $(expr 2 - $(expr 3 + 4)) + last
                 print(mathIt(5))""");
+        assertSuccessfulExitCode(results);
         assertEquals("0\n", results.stdout());
     }
 
@@ -133,6 +141,7 @@ public class InlineBashpileTest extends BashpileTest {
                 function mathIt:int(first:int):
                     return first + 5
                 print(mathIt($(expr 2 - $(expr 3 + 4))))""");
+        assertSuccessfulExitCode(results);
         assertEquals("0\n", results.stdout());
     }
 
@@ -143,6 +152,7 @@ public class InlineBashpileTest extends BashpileTest {
                     return first + 5
                 seven: float = 7
                 print(mathIt($(expr 2 - $seven)))""");
+        assertSuccessfulExitCode(results);
         assertEquals("0\n", results.stdout());
     }
 
@@ -151,6 +161,7 @@ public class InlineBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 seven: float = 7
                 print("result: " + $(expr 2 - $seven))""");
+        assertSuccessfulExitCode(results);
         assertEquals("result: -5\n", results.stdout());
     }
 }
