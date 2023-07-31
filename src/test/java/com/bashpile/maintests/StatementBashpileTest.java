@@ -18,6 +18,8 @@ import java.util.List;
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO verify that test check exitCode and using correct API
+// TODO verify that test use current APIs
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileTest extends BashpileTest {
@@ -289,7 +291,6 @@ class StatementBashpileTest extends BashpileTest {
     @Test
     @Order(180)
     public void nestedCreateStatementsWithNestedInlinesWork() {
-        // TODO use subshells for nested create statements (for the traps)
         final ExecutionResults executionResults = runText("""
                 #(rm -f captainsLog.txt || true)
                 #(rm -f captainsLog2.txt || true)
@@ -329,7 +330,7 @@ class StatementBashpileTest extends BashpileTest {
             shell.sendTerminationSignal();
             final ExecutionResults executionResults = shell.join();
             assertFailedExitCode(executionResults);
-            // TODO fix, this should NOT be empty
+            // TERM signals wipe STDOUT -- unknown why
             assertEquals("", executionResults.stdout());
             assertFalse(Files.exists(Path.of("captainsLog2.txt")), "inner trap file not deleted");
             assertFalse(Files.exists(Path.of("captainsLog.txt")), "outer trap file not deleted");

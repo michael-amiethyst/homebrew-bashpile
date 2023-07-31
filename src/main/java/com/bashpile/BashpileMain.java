@@ -24,9 +24,6 @@ import static com.bashpile.AntlrUtils.parse;
         name = "bashpile",
         description = "Converts Bashpile lines to Bash"
 )
-// TODO verify that tests check exitCode and using correct API
-// TODO verify that tests use current APIs
-// TODO verify that tests use Star Trek dummy data
 public class BashpileMain implements Callable<Integer> {
 
     // statics

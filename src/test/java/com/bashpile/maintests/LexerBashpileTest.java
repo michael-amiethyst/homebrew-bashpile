@@ -11,7 +11,6 @@ import java.util.List;
 
 import static com.bashpile.ListUtils.getLast;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
@@ -23,100 +22,106 @@ class LexerBashpileTest extends BashpileTest {
     @Test
     @Order(10)
     public void printWorks() {
-        String ret = runText("print()").stdout();
-        assertNotNull(ret);
-        assertEquals("\n", ret);
+        ExecutionResults results = runText("print()");
+        assertSuccessfulExitCode(results);
+        assertEquals("\n", results.stdout());
     }
 
     @Test
     @Order(20)
     public void multilinePrintWorks() {
-        String translatedLines = runText("""
+        ExecutionResults results = runText("""
                 print()
-                print()""").stdout();
-        assertNotNull(translatedLines);
-        assertEquals("\n\n", translatedLines);
+                print()""");
+        assertSuccessfulExitCode(results);
+        assertEquals("\n\n", results.stdout());
     }
 
     @Test
     @Order(30)
     public void boolWorks() {
-        List<String> outLines = runText("""
+        ExecutionResults results = runText("""
                 var: bool = false
-                print(var)""").stdoutLines();
-        assertEquals("false", outLines.get(0));
+                print(var)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
     }
 
     @Test
     @Order(40)
     public void intWorks() {
-        List<String> bashLines = runText("print(42)").stdinLines();
-        assertEquals("echo 42", getLast(bashLines));
+        ExecutionResults results = runText("print(1701)");
+        assertSuccessfulExitCode(results);
+        List<String> bashLines = results.stdinLines();
+        assertEquals("echo 1701", getLast(bashLines));
     }
 
     @Test
     @Order(50)
     public void parenIntWorks() {
-        List<String> ret = runText("print(((21)))").stdoutLines();
-        assertEquals(1, ret.size(), "Unexpected number of lines");
-        assertEquals("21", ret.get(0));
+        ExecutionResults results = runText("print(((1701)))");
+        assertSuccessfulExitCode(results);
+        assertEquals("1701\n", results.stdout());
     }
 
     @Test
     @Order(60)
     public void stringWorks() {
-        var runResult = runText("""
-                print("world")""");
-        assertSuccessfulExitCode(runResult);
-        List<String> outLines = runResult.stdoutLines();
-        assertEquals("world", getLast(outLines));
+        var results = runText("""
+                print("NCC-1701")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("NCC-1701\n", results.stdout());
     }
 
     @Test
     @Order(70)
     public void parenStringWorks() {
-        List<String> ret = runText("""
-                print(((("hello"))))""").stdoutLines();
-        assertEquals(1, ret.size(), "Unexpected number of lines");
-        assertEquals("hello", ret.get(0));
+        ExecutionResults results = runText("""
+                print(((("hello"))))""");
+        assertSuccessfulExitCode(results);
+        assertEquals("hello\n", results.stdout());
     }
 
     @Test
     @Order(80)
     public void escapedStringWorks() {
-        List<String> ret = runPath(Path.of("escapedString.bashpile")).stdoutLines();
-        assertEquals(1, ret.size(), "Unexpected number of lines");
-        assertEquals("\"hello\"", ret.get(0));
+        ExecutionResults results = runPath(Path.of("escapedString.bashpile"));
+        assertSuccessfulExitCode(results);
+        assertEquals("\"hello\"\n", results.stdout());
     }
 
     @Test
     @Order(100)
     public void floatsWork() {
-        List<String> executionResults = runText("""
+        ExecutionResults results = runText("""
                 print(.5)
-                print(0.7)""").stdoutLines();
+                print(0.7)""");
+        assertSuccessfulExitCode(results);
+        List<String> lines = results.stdoutLines();
         List<String> expected = List.of(".5", "0.7");
-        assertEquals(2, executionResults.size());
-        assertEquals(expected, executionResults);
+        assertEquals(2, lines.size());
+        assertEquals(expected, lines);
     }
 
     @Test
     @Order(110)
     public void commentsWork() {
-        List<String> executionResults = runText("""
+        ExecutionResults results = runText("""
                 // no leading 0
                 print(.5)
                                 
                 // leading whole number
-                print(1.7)""").stdoutLines();
+                print(1.7)""");
+        assertSuccessfulExitCode(results);
+        List<String> lines = results.stdoutLines();
         List<String> expected = List.of(".5", "1.7");
-        assertEquals(2, executionResults.size());
-        assertEquals(expected, executionResults);
+        assertEquals(2, lines.size());
+        assertEquals(expected, lines);
     }
 
     @Test @Order(120)
     public void blockCommentsWork() {
-        ExecutionResults executionResults = runText("""
+        ExecutionResults results = runText("""
                 /*
                     This language is
                     really starting to shape up.
@@ -133,16 +138,17 @@ class LexerBashpileTest extends BashpileTest {
                 x: float = 7.7
                 print(x - 0.7)
                 """);
-        List<String> stdoutLines = executionResults.stdoutLines();
+        assertSuccessfulExitCode(results);
+        List<String> stdoutLines = results.stdoutLines();
         List<String> expected = List.of("21.0", "11.0", "7.0");
         assertEquals(3, stdoutLines.size(),
-                "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
+                "Expected 3 lines but got: [%s]".formatted(results.stdout()));
         assertEquals(expected, stdoutLines);
     }
 
     @Test @Order(130)
     public void bashpileDocsWork() {
-        ExecutionResults executionResults = runText("""
+        ExecutionResults results = runText("""
                 /**
                     This language is
                     really starting to shape up.
@@ -163,10 +169,11 @@ class LexerBashpileTest extends BashpileTest {
                 // leading whole number
                 print(1.7)
                 """);
-        List<String> stdoutLines = executionResults.stdoutLines();
+        assertSuccessfulExitCode(results);
+        List<String> stdoutLines = results.stdoutLines();
         List<String> expected = List.of(".5", "1.7");
         assertEquals(2, stdoutLines.size(),
-                "Expected 3 lines but got: [%s]".formatted(executionResults.stdout()));
+                "Expected 3 lines but got: [%s]".formatted(results.stdout()));
         assertEquals(expected, stdoutLines);
     }
 }

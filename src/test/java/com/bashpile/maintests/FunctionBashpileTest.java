@@ -12,6 +12,8 @@ import java.util.List;
 import static com.bashpile.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO verify that test check exitCode and using correct API
+// TODO verify that test use current APIs
 @Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FunctionBashpileTest extends BashpileTest {
