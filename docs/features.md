@@ -156,3 +156,7 @@ Similar to Java's try-with-resources you can declare a block like:
     slurpString: str = #(cat $filename)
 // filename will be deleted from the filesystem here
 ```
+
+## Easy Running
+
+You can either use Bashpile from the Shebang line or run `bashpile -inputFile=FILE transpile > BASH_SCRIPT`.

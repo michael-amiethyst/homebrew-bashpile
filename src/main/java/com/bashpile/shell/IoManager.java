@@ -81,9 +81,19 @@ import static com.bashpile.StringUtils.appendIfMissing;
         return ret;
     }
 
-    private void flush() throws IOException {
-        childStdInWriter.flush();
-        childStdOutBuffer.flush();
+    private void flush() {
+        try {
+            childStdInWriter.flush();
+        } catch (IOException e) {
+            // ignore
+        }
+
+        try {
+            childStdOutBuffer.flush();
+        } catch (IOException e) {
+            // ignore
+        }
+
         childStdOutWriter.flush();
     }
 
