@@ -47,12 +47,24 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Test @Order(30)
     public void executePathTest() throws IOException {
         log.debug("In executeTest");
-        String command = "bin/bashpile -i=src/test/resources/scripts/escapedString.bashpile execute";
+        String command = "bin/bashpile src/test/resources/scripts/escapedString.bashpile";
         var executionResults = runAndJoin(command);
         String outputText = executionResults.stdout();
         log.debug("Output text:\n{}", outputText);
         List<String> stdoutLines = executionResults.stdoutLines();
         assertEquals("\"hello\"", ListUtils.getLast(stdoutLines));
+    }
+
+    @Test @Order(40)
+    public void executePathWithArgumentsTest() throws IOException {
+        log.debug("In executeTest");
+        String command = "bin/testrig src/test/resources/testrigData.bashpile";
+        var results = runAndJoin(command);
+        String outputText = results.stdout();
+        log.debug("Output text:\n{}", outputText);
+        List<String> stdoutLines = results.stdoutLines();
+        assertEquals("\"hello\"", ListUtils.getLast(stdoutLines),
+                "Unexpected output.  Was:\n" + results.stdout());
     }
 
     @Test @Order(40)

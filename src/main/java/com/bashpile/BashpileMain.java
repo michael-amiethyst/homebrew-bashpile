@@ -1,9 +1,9 @@
 package com.bashpile;
 
-import com.bashpile.shell.BashShell;
-import com.bashpile.shell.ExecutionResults;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
+import com.bashpile.shell.BashShell;
+import com.bashpile.shell.ExecutionResults;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,11 +11,14 @@ import picocli.CommandLine;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
@@ -28,6 +31,8 @@ public class BashpileMain implements Callable<Integer> {
 
     // statics
 
+    private static final Pattern SHE_BANG = Pattern.compile("^#!.*$");
+
     private static final Logger LOG = LogManager.getLogger(BashpileMain.class);
 
     public static void main(final String[] args) {
@@ -39,15 +44,20 @@ public class BashpileMain implements Callable<Integer> {
 
     // class fields
 
-    @CommandLine.Option(names = {"-i", "--inputFile"},
-            description = "Use the specified bashpile file.  Has precedence over the -c option.")
-    @Nullable
-    private Path inputFile;
-
     @CommandLine.Option(names = {"-c", "--command"},
             description = "Use the specified text.  -i option has precedence if both are specified.")
     @Nullable
-    private String command;
+    private String bashpileScript;
+
+    @CommandLine.Parameters(arity = "0..1",
+            description = "Use the specified bashpile file.")
+    @Nullable
+    private Path inputFile;
+
+    @CommandLine.Parameters(arity = "0..*",
+            description = "Arguments to the script")
+    @Nullable
+    private List<String> scriptArgs;
 
     private CommandLine picocliCommandLine;
 
@@ -57,23 +67,29 @@ public class BashpileMain implements Callable<Integer> {
         this.inputFile = inputFile;
     }
 
-    public BashpileMain(@Nullable final String command) {
-        this.command = command;
+    public BashpileMain(@Nullable final String bashpileScript) {
+        this.bashpileScript = bashpileScript;
     }
 
     @Override
     public @Nonnull Integer call() {
-        // prints help text and returns 'general error'
-        picocliCommandLine.usage(System.out);
-        return 1;
+        return executeCommand();
     }
 
     /** Called by the picocli framework */
     @SuppressWarnings({"unused", "SameReturnValue"})
     @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
     public int executeCommand() {
-        System.out.println(execute().stdout());
-        return 0;
+        if (inputFile == null && StringUtils.isEmpty(bashpileScript)) {
+            // prints help text and returns 'general error'
+            picocliCommandLine.usage(System.out);
+            return 1;
+        }
+
+        // TODO pass in args
+        final ExecutionResults results = execute();
+        System.out.println(results.stdout());
+        return results.exitCode();
     }
 
     public @Nonnull ExecutionResults execute() {
@@ -129,12 +145,16 @@ public class BashpileMain implements Callable<Integer> {
 
     private @Nonnull InputStream getInputStream() throws IOException {
         if (inputFile != null) {
+            final List<String> lines = Files.readAllLines(inputFile);
+            if (SHE_BANG.matcher(lines.get(0)).matches()) {
+                final String removedShebang = String.join("", lines.subList(1, lines.size()));
+                return IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
+            }
             return Files.newInputStream(inputFile);
-        } else if (command != null) {
-            return IOUtils.toInputStream(command, StandardCharsets.UTF_8);
+        } else if (bashpileScript != null) {
+            return IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
         } else {
-            System.out.println("Enter your bashpile program, ending with a newline and EOF (ctrl-D).");
-            return System.in;
+            throw new BashpileUncheckedException("Neither inputFile nor bashpileScript supplied.");
         }
     }
 

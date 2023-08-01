@@ -1,10 +1,11 @@
-#!/usr/bin/env bash
+#!/mnt/c/Users/desig/win-dev/bashpile/bin/bashpile
 
-# Usage: testrig com.bashpile.Bashpile program -gui src/test/resources/testrigData.bashpile
+// Usage: testrig src/test/resources/testrigData.bashpile
 
-set -euo pipefail
+classPath: str
+#(mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt) creates "cpath.txt":
+    classPath = $(cat cpath.txt)
+#(java -cp target/classes:$classPath org.antlr.v4.gui.TestRig com.bashpile.Bashpile program -gui "$@")
 
-mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt
-MAVEN_CLASSPATH=$(cat cpath.txt)
-rm cpath.txt
-java -cp target/classes:"$MAVEN_CLASSPATH" org.antlr.v4.gui.TestRig "$@"
+// enhanced syntax
+// #(java -cp target/classes:$[classPath] org.antlr.v4.gui.TestRig $[__OPTIONS["all"]])
