@@ -35,6 +35,7 @@ public class BashpileMain implements Callable<Integer> {
     private static final Logger LOG = LogManager.getLogger(BashpileMain.class);
 
     public static void main(final String[] args) {
+        System.out.println("Starting Bashpile Transpiler");
         final BashpileMain bashpile = new BashpileMain();
         final CommandLine argProcessor = new CommandLine(bashpile);
         bashpile.setPicocliCommandLine(argProcessor);

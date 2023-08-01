@@ -33,9 +33,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // verify transpile worked
         assertSuccessfulExitCode(results);
-        assertTrue(results.stdoutLines().size() > 0,
-                "No output for `bashpile` command");
-        assertTrue(results.stdoutLines().get(0).contains(" testrigData"),
+        assertTrue(results.stdout().contains(" testrigData"),
                 "Unexpected output for `bashpile` command: " + results.stdout());
         final Path bashScript = Path.of("testRigData");
         assertTrue(Files.exists(bashScript));
