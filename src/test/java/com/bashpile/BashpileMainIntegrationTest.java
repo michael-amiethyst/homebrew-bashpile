@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,30 +23,29 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
     @Test @Order(10)
-    public void noSubCommandTest() throws IOException {
+    public void noSubCommandTranspiles() throws IOException {
         log.debug("In noSubCommandTest");
+
+        // transpile
         String command = "bin/bashpile src/test/resources/testrigData.bashpile";
         var results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
-        assertEquals(0, results.exitCode());
+
+        // verify transpile worked
+        assertSuccessfulExitCode(results);
         assertTrue(results.stdoutLines().size() > 0,
                 "No output for `bashpile` command");
         assertTrue(results.stdoutLines().get(0).contains(" testrigData"),
                 "Unexpected output for `bashpile` command: " + results.stdout());
-    }
+        final Path bashScript = Path.of("testRigData");
+        assertTrue(Files.exists(bashScript));
 
-    @Test @Order(20)
-    public void transpileCommandTest() throws IOException {
-        log.debug("In transpileTest");
-        String command = "bin/bashpile -c \"print()\" transpile";
-        var executionResults = runAndJoin(command);
-        String outputText = executionResults.stdout();
-        log.debug("Output text:\n{}", outputText);
-        List<String> lines = executionResults.stdoutLines();
-        assertSuccessfulExitCode(executionResults);
-        assertTrue(lines.size() > 0, "No output");
-        int lastLineIndex = lines.size() - 1;
-        assertEquals("printf \"\\n\"", lines.get(lastLineIndex),
-                "Unexpected output: %s".formatted(outputText));
+        // verify generated script works
+        var bashResults = runAndJoin("./" + bashScript);
+        assertSuccessfulExitCode(bashResults);
+        assertEquals("test\n", bashResults.stdout());
+
+        // cleanup
+        Files.deleteIfExists(bashScript);
     }
 }

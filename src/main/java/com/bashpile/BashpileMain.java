@@ -1,9 +1,7 @@
 package com.bashpile;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
-import com.bashpile.exceptions.UserError;
-import com.bashpile.shell.BashShell;
-import com.bashpile.shell.ExecutionResults;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -45,8 +43,6 @@ public class BashpileMain implements Callable<Integer> {
 
     // class fields
 
-    @CommandLine.Option(names = {"-c", "--command"},
-            description = "Use the specified text.  -i option has precedence if both are specified.")
     @Nullable
     private String bashpileScript;
 
@@ -67,6 +63,10 @@ public class BashpileMain implements Callable<Integer> {
         this.bashpileScript = bashpileScript;
     }
 
+    public void setPicocliCommandLine(@Nonnull final CommandLine picocliCommandLine) {
+        this.picocliCommandLine = picocliCommandLine;
+    }
+
     /** Saves transpiled input file to basename of input file */
     @Override
     public @Nonnull Integer call() throws IOException {
@@ -84,67 +84,9 @@ public class BashpileMain implements Callable<Integer> {
         return 0;
     }
 
-    /** Called by the picocli framework */
-    @SuppressWarnings({"unused", "SameReturnValue"})
-    @CommandLine.Command(name = "execute", description = "Converts Bashpile lines to bash and executes them")
-    public int executeCommand() {
-        if (inputFile == null && StringUtils.isEmpty(bashpileScript)) {
-            // prints help text and returns 'general error'
-            picocliCommandLine.usage(System.out);
-            return 1;
-        }
+    // helpers
 
-        // TODO pass in args
-        final ExecutionResults results = execute();
-        System.out.println(results.stdout());
-        return results.exitCode();
-    }
-
-    public @Nonnull ExecutionResults execute() {
-        LOG.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = null;
-        try {
-            bashScript = transpile();
-            return BashShell.runAndJoin(bashScript);
-        } catch (UserError | AssertionError e) {
-            throw e;
-        } catch (Throwable e) {
-            throw createExecutionException(e, bashScript);
-        }
-    }
-
-    public @Nonnull BashShell executeAsync() {
-        LOG.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = null;
-        try {
-            bashScript = transpile();
-            return BashShell.runAsync(bashScript);
-        } catch (UserError | AssertionError e) {
-            throw e;
-        } catch (Throwable e) {
-            throw createExecutionException(e, bashScript);
-        }
-    }
-
-    private static BashpileUncheckedException createExecutionException(Throwable e, String bashScript) {
-        String msg = bashScript != null ? "\nCouldn't run `%s`".formatted(bashScript) : "\nCouldn't parse input";
-        if (e.getMessage() != null) {
-            msg += " because of\n`%s`".formatted(e.getMessage());
-        }
-        if (e.getCause() != null) {
-            msg += "\n caused by `%s`".formatted(e.getCause().getMessage());
-        }
-        return new BashpileUncheckedException(msg, e);
-    }
-
-    /** Called by Picocli framework */
-    @SuppressWarnings({"unused", "SameReturnValue"})
-    @CommandLine.Command(name = "transpile", description = "Converts Bashpile lines to bash")
-    public int transpileCommand() throws IOException {
-        System.out.println(transpile());
-        return 0;
-    }
-
+    @VisibleForTesting
     public @Nonnull String transpile() throws IOException {
         try (InputStream inputStream = getInputStream()) {
             return parse(inputStream);
@@ -165,9 +107,5 @@ public class BashpileMain implements Callable<Integer> {
         } else {
             throw new BashpileUncheckedException("Neither inputFile nor bashpileScript supplied.");
         }
-    }
-
-    public void setPicocliCommandLine(@Nonnull final CommandLine picocliCommandLine) {
-        this.picocliCommandLine = picocliCommandLine;
     }
 }
