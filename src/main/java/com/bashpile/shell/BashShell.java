@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 /**
  * Runs commands in Bash.  Runs `wsl bash` in Windows.
  */
+// TODO move into test section
 public class BashShell implements Closeable {
 
     private static final Pattern BOGUS_SCREEN_LINE = Pattern.compile(

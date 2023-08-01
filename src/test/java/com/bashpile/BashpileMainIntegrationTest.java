@@ -24,50 +24,17 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Test @Order(10)
     public void noSubCommandTest() throws IOException {
         log.debug("In noSubCommandTest");
-        String command = "bin/bashpile";
-        var executionResults = runAndJoin(command);
-        log.debug("Output text:\n{}", executionResults.stdout());
-        assertEquals(1, executionResults.exitCode());
-        assertTrue(executionResults.stdoutLines().size() > 0,
+        String command = "bin/bashpile src/test/resources/testrigData.bashpile";
+        var results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+        assertEquals(0, results.exitCode());
+        assertTrue(results.stdoutLines().size() > 0,
                 "No output for `bashpile` command");
-        assertTrue(executionResults.stdoutLines().get(0).startsWith("Usage"),
-                "Unexpected output for `bashpile` command");
+        assertTrue(results.stdoutLines().get(0).contains(" testrigData"),
+                "Unexpected output for `bashpile` command: " + results.stdout());
     }
 
     @Test @Order(20)
-    public void executeTest() throws IOException {
-        log.debug("In executeTest");
-        String command = "bin/bashpile -c=\"print()\" execute";
-        var executionResults = runAndJoin(command);
-        String outputText = executionResults.stdout();
-        log.debug("Output text:\n{}", outputText);
-        assertTrue(outputText.endsWith("\n\n"));
-    }
-
-    @Test @Order(30)
-    public void executePathTest() throws IOException {
-        log.debug("In executeTest");
-        String command = "bin/bashpile src/test/resources/scripts/escapedString.bashpile";
-        var executionResults = runAndJoin(command);
-        String outputText = executionResults.stdout();
-        log.debug("Output text:\n{}", outputText);
-        List<String> stdoutLines = executionResults.stdoutLines();
-        assertEquals("\"hello\"", ListUtils.getLast(stdoutLines));
-    }
-
-    @Test @Order(40)
-    public void executePathWithArgumentsTest() throws IOException {
-        log.debug("In executeTest");
-        String command = "bin/testrig src/test/resources/testrigData.bashpile";
-        var results = runAndJoin(command);
-        String outputText = results.stdout();
-        log.debug("Output text:\n{}", outputText);
-        List<String> stdoutLines = results.stdoutLines();
-        assertEquals("\"hello\"", ListUtils.getLast(stdoutLines),
-                "Unexpected output.  Was:\n" + results.stdout());
-    }
-
-    @Test @Order(40)
     public void transpileCommandTest() throws IOException {
         log.debug("In transpileTest");
         String command = "bin/bashpile -c \"print()\" transpile";

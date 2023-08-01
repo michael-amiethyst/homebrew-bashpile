@@ -4,6 +4,7 @@ import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.BashShell;
 import com.bashpile.shell.ExecutionResults;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,11 +55,6 @@ public class BashpileMain implements Callable<Integer> {
     @Nullable
     private Path inputFile;
 
-    @CommandLine.Parameters(arity = "0..*",
-            description = "Arguments to the script")
-    @Nullable
-    private List<String> scriptArgs;
-
     private CommandLine picocliCommandLine;
 
     public BashpileMain() {}
@@ -71,9 +67,21 @@ public class BashpileMain implements Callable<Integer> {
         this.bashpileScript = bashpileScript;
     }
 
+    /** Saves transpiled input file to basename of input file */
     @Override
-    public @Nonnull Integer call() {
-        return executeCommand();
+    public @Nonnull Integer call() throws IOException {
+        final String filename = inputFile != null ? inputFile.toString() : "";
+        final String transpiledFilename = FilenameUtils.removeExtension(filename);
+        if (StringUtils.isEmpty(filename) || filename.equals(transpiledFilename)) {
+            System.out.println("Input file must be specified and have an extension.");
+            picocliCommandLine.usage(System.out);
+            return 1;
+        }
+        final Path outputFile = Path.of(transpiledFilename).getFileName();
+        System.out.printf("Transpiling %s to %s%n", filename, outputFile);
+        final String bashScript = "#!/usr/bin/env bash\n\n" + transpile();
+        Files.writeString(outputFile, bashScript);
+        return 0;
     }
 
     /** Called by the picocli framework */
@@ -147,7 +155,8 @@ public class BashpileMain implements Callable<Integer> {
         if (inputFile != null) {
             final List<String> lines = Files.readAllLines(inputFile);
             if (SHE_BANG.matcher(lines.get(0)).matches()) {
-                final String removedShebang = String.join("", lines.subList(1, lines.size()));
+                final String removedShebang = String.join("\n", lines.subList(1, lines.size()));
+                LOG.info("Removed shebang to get:\n" + removedShebang);
                 return IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
             }
             return Files.newInputStream(inputFile);
