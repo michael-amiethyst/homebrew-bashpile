@@ -99,6 +99,7 @@
     </dependencies>
 
     <build>
+        <finalName>bashpile</finalName>
         <plugins>
             <plugin>
                 <groupId>org.antlr</groupId>
