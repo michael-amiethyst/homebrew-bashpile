@@ -48,7 +48,7 @@ public class BashpileMain implements Callable<Integer> {
     @Nullable
     private String bashpileScript;
 
-    @CommandLine.Parameters(arity = "0..1",
+    @CommandLine.Parameters(arity = "1..1",
             description = "Use the specified bashpile file.")
     @Nullable
     private Path inputFile;
@@ -73,9 +73,12 @@ public class BashpileMain implements Callable<Integer> {
     @Override
     public @Nonnull Integer call() throws IOException {
         final String filename = inputFile != null ? inputFile.toString() : "";
-        final String transpiledFilename = FilenameUtils.removeExtension(filename);
-        if (StringUtils.isEmpty(filename) || filename.equals(transpiledFilename)) {
-            System.out.println("Input file must be specified and have an extension.");
+        String transpiledFilename = FilenameUtils.removeExtension(filename);
+        if (filename.equals(transpiledFilename)) {
+            transpiledFilename += ".bpt";
+        }
+        if (StringUtils.isEmpty(filename)) {
+            System.out.println("Input file must be specified.");
             picocliCommandLine.usage(System.out);
             return 1;
         }
@@ -103,7 +106,7 @@ public class BashpileMain implements Callable<Integer> {
             final List<String> lines = Files.readAllLines(inputFile);
             if (SHE_BANG.matcher(lines.get(0)).matches()) {
                 final String removedShebang = String.join("\n", lines.subList(1, lines.size()));
-                LOG.info("Removed shebang to get:\n" + removedShebang);
+                LOG.debug("Removed shebang to get:\n" + removedShebang);
                 return IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
             }
             return Files.newInputStream(inputFile);

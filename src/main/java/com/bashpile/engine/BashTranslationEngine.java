@@ -304,7 +304,7 @@ public class BashTranslationEngine implements TranslationEngine {
             // also `exit` in an if statement doesn't work, so we need to `return` and bubble up a failing exit code
             final String body = """
                     if (set -o noclobber; %s) 2> /dev/null; then
-                        trap '%s exit $?' INT TERM EXIT
+                        trap 'rm -f %s; exit 10' INT TERM EXIT
                         ## wrapped body of creates statement
                     %s
                         ## end of wrapped body of creates statement
@@ -318,9 +318,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
                     """.formatted(
                             shellString.body(),
-                            createFilenames.stream()
-                                    .map("rm -f %s;"::formatted)
-                                    .collect(Collectors.joining(" ")),
+                            String.join(" ", createFilenames),
                             statements.body(),
                             filename,
                             filename);

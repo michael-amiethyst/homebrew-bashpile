@@ -1,6 +1,6 @@
 #!/mnt/c/Users/desig/win-dev/bashpile/bin/bashpile
 
-// Usage: testrig src/test/resources/testrigData.bashpile
+// Usage: testrig src/test/resources/testrigData.bps
 
 classPath: str
 #(mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt) creates "cpath.txt":
