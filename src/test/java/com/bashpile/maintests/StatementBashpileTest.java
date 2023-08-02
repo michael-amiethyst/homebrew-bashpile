@@ -333,17 +333,14 @@ class StatementBashpileTest extends BashpileTest {
         final Path innerFile = Path.of("captainsLog2.txt");
         final Path outerFile = Path.of("captainsLog.txt");
         try(final BashShell shell = runTextAsync(bashpileScript)) {
-            Thread.sleep(Duration.ofMillis(500));
+            Thread.sleep(Duration.ofMillis(100));
             shell.sendTerminationSignal();
             final ExecutionResults results = shell.join();
             assertFailedExitCode(results);
             // TERM signals wipe STDOUT -- unknown why
             assertEquals("", results.stdout());
-            // TODO find out why these are not being run (exit code 1, in Java only)
-            if (results.exitCode() == 10) {
-                assertFalse(Files.exists(innerFile), "inner trap file not deleted");
-                assertFalse(Files.exists(outerFile), "outer trap file not deleted");
-            }
+            assertFalse(Files.exists(innerFile), "inner trap file not deleted");
+            assertFalse(Files.exists(outerFile), "outer trap file not deleted");
         } finally {
             Files.deleteIfExists(innerFile);
             Files.deleteIfExists(outerFile);
