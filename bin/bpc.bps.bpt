@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# strict mode header
+set -euo pipefail -o posix
+export IFS=$'\n\t'
+# assign statement, Bashpile line 3
+export SOURCE
+SOURCE=${BASH_SOURCE[0]}
+# assign statement, Bashpile line 4
+export DIR
+DIR=$(dirname "$SOURCE")
+# assign statement, Bashpile line 6
+export PROJECT_PATH
+PROJECT_PATH="$DIR/.."
+# assign statement, Bashpile line 7
+export JAR_PATH
+JAR_PATH="${PROJECT_PATH}/target/bashpile-jar-with-dependencies.jar"
+# expression statement, Bashpile line 8
+java -jar "$JAR_PATH" "$1" | tee output.txt
+# assign statement, Bashpile line 9
+export TRANSLATED_FILENAME
+TRANSLATED_FILENAME=$(tail --lines 1 < output.txt)
+# expression statement, Bashpile line 10
+shift
+# print statement, Bashpile line 11
+printf "Start of $TRANSLATED_FILENAME\n"
+# expression statement, Bashpile line 12
+./"$TRANSLATED_FILENAME" "$@"
+# expression statement, Bashpile line 13
+rm -f "$TRANSLATED_FILENAME" output.txt

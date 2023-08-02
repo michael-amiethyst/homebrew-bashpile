@@ -2,7 +2,6 @@ package com.bashpile;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,22 +70,24 @@ public class BashpileMain implements Callable<Integer> {
     @Override
     public @Nonnull Integer call() throws IOException {
         final String filename = inputFile != null ? inputFile.toString() : "";
-        String transpiledFilename = FilenameUtils.removeExtension(filename);
-        if (filename.equals(transpiledFilename)) {
-            transpiledFilename += ".bpt";
-        }
         if (StringUtils.isEmpty(filename)) {
             System.out.println("Input file must be specified.");
             picocliCommandLine.usage(System.out);
             return 1;
         }
-        final Path outputFile = Path.of(transpiledFilename).getFileName();
-        LOG.info("Transpiling {} to {}", filename, outputFile);
+
+        final String transpiledFilename = filename + ".bpt";
+        final Path outputFile = Path.of(transpiledFilename);
+        if (Files.exists(outputFile)) {
+            System.out.println(transpiledFilename + " already exists.  Will not overwrite.");
+            return 2;
+        }
+        LOG.info("Transpiling {} to {}", filename, transpiledFilename);
         final String bashScript = "#!/usr/bin/env bash\n\n" + transpile();
         Files.writeString(outputFile, bashScript);
         // last line must be the filename we created
         LOG.info("Created file is:");
-        System.out.println(outputFile);
+        System.out.println(transpiledFilename);
         return 0;
     }
 
@@ -101,7 +102,7 @@ public class BashpileMain implements Callable<Integer> {
 
     private @Nonnull InputStream getInputStream() throws IOException {
         if (inputFile != null) {
-            final List<String> lines = Files.readAllLines(inputFile);
+            final List<String> lines = Files.readAllLines(findFile(inputFile));
             if (SHE_BANG.matcher(lines.get(0)).matches()) {
                 final String removedShebang = String.join("\n", lines.subList(1, lines.size()));
                 LOG.debug("Removed shebang to get:\n" + removedShebang);
@@ -113,5 +114,18 @@ public class BashpileMain implements Callable<Integer> {
         } else {
             throw new BashpileUncheckedException("Neither inputFile nor bashpileScript supplied.");
         }
+    }
+
+    private @Nonnull Path findFile(@Nonnull Path path) {
+        path = path.normalize().toAbsolutePath();
+        final Path filename = path.getFileName();
+        while(!Files.exists(path) && path.getParent() != null && path.getParent().getParent() != null) {
+            path = path.getParent().getParent().resolve(filename);
+            LOG.info("Looking for path " + path);
+        }
+        if (Files.exists(path)) {
+            return path;
+        }
+        throw new  BashpileUncheckedException("Could not find " + path);
     }
 }
