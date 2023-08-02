@@ -26,6 +26,8 @@ import static com.bashpile.AntlrUtils.parse;
         name = "bashpile",
         description = "Converts Bashpile lines to Bash"
 )
+// TODO allow transpiling files without extensions
+// TODO create tests with timeouts
 public class BashpileMain implements Callable<Integer> {
 
     // statics
@@ -35,7 +37,6 @@ public class BashpileMain implements Callable<Integer> {
     private static final Logger LOG = LogManager.getLogger(BashpileMain.class);
 
     public static void main(final String[] args) {
-        System.out.println("Starting Bashpile Transpiler");
         final BashpileMain bashpile = new BashpileMain();
         final CommandLine argProcessor = new CommandLine(bashpile);
         bashpile.setPicocliCommandLine(argProcessor);
@@ -79,9 +80,12 @@ public class BashpileMain implements Callable<Integer> {
             return 1;
         }
         final Path outputFile = Path.of(transpiledFilename).getFileName();
-        System.out.printf("Transpiling %s to %s%n", filename, outputFile);
+        LOG.info("Transpiling {} to {}", filename, outputFile);
         final String bashScript = "#!/usr/bin/env bash\n\n" + transpile();
         Files.writeString(outputFile, bashScript);
+        // last line must be the filename we created
+        LOG.info("Created file is:");
+        System.out.println(outputFile);
         return 0;
     }
 

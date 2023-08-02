@@ -9,12 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.List;
 
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -26,24 +24,15 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void noSubCommandTranspiles() throws IOException {
         log.debug("In noSubCommandTest");
 
-        // transpile
-        String command = "bin/bashpile src/test/resources/testrigData.bashpile";
+        String command = "bin/bashpile src/test/resources/testrigData.bps";
         var results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
-        // verify transpile worked
         assertSuccessfulExitCode(results);
-        assertTrue(results.stdout().contains(" testrigData"),
-                "Unexpected output for `bashpile` command: " + results.stdout());
-        final Path bashScript = Path.of("testRigData");
-        assertTrue(Files.exists(bashScript));
-
-        // verify generated script works
-        var bashResults = runAndJoin("./" + bashScript);
-        assertSuccessfulExitCode(bashResults);
-        assertEquals("test\n", bashResults.stdout());
-
-        // cleanup
-        Files.deleteIfExists(bashScript);
+        final List<String> lines = results.stdoutLines();
+        var lastLines = lines.subList(lines.size() - 3 , lines.size());
+        assertEquals("testrigData", lastLines.get(0));
+        assertEquals("Start of testrigData", lastLines.get(1));
+        assertEquals("test", lastLines.get(2));
     }
 }
