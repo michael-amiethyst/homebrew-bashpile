@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 // TODO split bpr from bpc
+// TODO bpc.bps use creates for output.txt
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BashpileMainIntegrationTest extends BashpileTest {
 
@@ -37,7 +38,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test @Timeout(5) @Order(20)
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
-        log.debug("In noSubCommandTest");
+        log.debug("In noSubCommandWithNoExtensionTranspiles");
 
         final String command = "bin/bpc.bps.bpt src/test/resources/testrigData";
         final ExecutionResults results = runAndJoin(command);
@@ -51,5 +52,14 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertEquals("test", lastLines.get(2));
     }
 
-    // TODO test for non-existing file
+    @Test @Timeout(5) @Order(30)
+    public void noSubCommandWithMissingFileFails() throws IOException {
+        log.debug("In noSubCommandWithMissingFileFails");
+
+        final String command = "bin/bpc.bps.bpt src/test/resources/testrigData.fileDoesNotExist";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertFailedExitCode(results);
+    }
 }

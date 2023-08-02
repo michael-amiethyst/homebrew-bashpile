@@ -121,11 +121,11 @@ public class BashpileMain implements Callable<Integer> {
         final Path filename = path.getFileName();
         while(!Files.exists(path) && path.getParent() != null && path.getParent().getParent() != null) {
             path = path.getParent().getParent().resolve(filename);
-            LOG.info("Looking for path " + path);
+            LOG.trace("Looking for path " + path);
         }
         if (Files.exists(path)) {
             return path;
         }
-        throw new  BashpileUncheckedException("Could not find " + path);
+        throw new  BashpileUncheckedException("Could not find " + path.getFileName());
     }
 }
