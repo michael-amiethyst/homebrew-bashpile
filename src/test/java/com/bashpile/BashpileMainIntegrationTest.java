@@ -4,10 +4,7 @@ import com.bashpile.maintests.BashpileTest;
 import com.bashpile.shell.ExecutionResults;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -21,7 +18,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
-    @Test @Order(10)
+    @Test @Timeout(8) @Order(10)
     public void noSubCommandTranspiles() throws IOException {
         log.debug("In noSubCommandTest");
 
@@ -37,7 +34,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertEquals("test", lastLines.get(2));
     }
 
-    @Test @Order(20)
+    @Test @Timeout(5) @Order(20)
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
         log.debug("In noSubCommandTest");
 

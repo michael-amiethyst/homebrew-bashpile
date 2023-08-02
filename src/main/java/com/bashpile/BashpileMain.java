@@ -26,8 +26,6 @@ import static com.bashpile.AntlrUtils.parse;
         name = "bashpile",
         description = "Converts Bashpile lines to Bash"
 )
-// TODO allow transpiling files without extensions
-// TODO create tests with timeouts
 public class BashpileMain implements Callable<Integer> {
 
     // statics
