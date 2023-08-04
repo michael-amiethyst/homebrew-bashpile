@@ -11,7 +11,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO add assertCorrectFormatting to this suite
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileTest extends BashpileTest {
@@ -19,7 +18,7 @@ class ExpressionBashpileTest extends BashpileTest {
     @Test @Order(10)
     public void printCalcWorks() {
         final ExecutionResults results = runText("print(1 + 1)");
-        assertNotNull(results);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("2\n", results.stdout());
     }
@@ -29,6 +28,7 @@ class ExpressionBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 print(1 + 1)
                 print(1-1)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
 
         final List<String> lines = results.stdoutLines();
@@ -44,6 +44,7 @@ class ExpressionBashpileTest extends BashpileTest {
     public void stringConcatWorks() {
         final ExecutionResults results = runText("""
                 print("hello" + " " + "world")""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world\n", results.stdout());
     }
@@ -52,6 +53,7 @@ class ExpressionBashpileTest extends BashpileTest {
     public void stringConcatWithNewlineWorks() {
         final ExecutionResults results = runText("""
                 print("hello" + "\\n" + "world")""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello\nworld\n", results.stdout());
     }
@@ -66,6 +68,7 @@ class ExpressionBashpileTest extends BashpileTest {
     public void parenStringWorks() {
         final ExecutionResults results = runText("""
                 print((("hello" + " world") + (", you" + " good?")))""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world, you good?\n", results.stdout());
     }
@@ -77,6 +80,7 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(32000 + 32000)
                 print(64 + 64)""";
         final ExecutionResults results = runText(bashpileScript);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("24", "64000", "128");
@@ -87,6 +91,7 @@ class ExpressionBashpileTest extends BashpileTest {
     @Test @Order(90)
     public void parenIntExpressionsWork() {
         final ExecutionResults results = runText("print(((1 + 2) * (3 + 4)))");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("21\n", results.stdout());
     }
@@ -96,6 +101,7 @@ class ExpressionBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 print((38. + 4) * .5)
                 print(7.7 - 0.7)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "7.0");
@@ -112,6 +118,7 @@ class ExpressionBashpileTest extends BashpileTest {
                 j = .5
                 print((38. + i) * j)
                 print(7.7 - ".7":float)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
 
         // confirm string is unquoted on typecast
@@ -134,6 +141,7 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(times2point5(true: float))
                 print("Genre: " + true:str + " crime")""";
         final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("0", lines.get(0));
@@ -158,6 +166,7 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(times2point5(8000000000000: float))
                 print("NCC-" + 1701:str + "-D")""";
         final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("true", lines.get(0));
@@ -183,6 +192,7 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(times2point5(2.5 : int))
                 print(1701.0:str + 1.0:str)""";
         final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("true", lines.get(0));
@@ -210,6 +220,7 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(times2point5("2.5" : float : int))
                 print(times2point5ForFloats("2.50" : float))""";
         final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("true", lines.get(0));
@@ -231,6 +242,7 @@ class ExpressionBashpileTest extends BashpileTest {
                     echo "false"
                 fi))""";
         final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("true", lines.get(0));

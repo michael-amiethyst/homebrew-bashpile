@@ -54,8 +54,9 @@ abstract public class BashpileTest {
             }
             final long tabs = spaces / 4;
             final String[] tokens = line.stripLeading().split(" ");
-            final String keyword = tokens[0];
-            switch (keyword) {
+            final String firstToken = tokens[0];
+            // TODO change to if/else
+            switch (firstToken) {
                 case "if" -> {
                     if (tabs != indentLevel.get()) {
                         erroredLines.get().add(i);
@@ -77,12 +78,20 @@ abstract public class BashpileTest {
                     }
                 }
                 default -> {
+                    // check for other decrements
+                    if (firstToken.startsWith("fi")) {
+                        indentLevel.getAndDecrement();
+                    }
                     // check indents
                     if (tabs != indentLevel.get()) {
                         erroredLines.get().add(i);
                     }
-                    // check for function
-                    if (keyword.matches("\\w(?:\\w|\\d)+") && "{".equals(tokens[tokens.length - 1])) {
+                    // check for other increments
+                    final String lastToken = tokens[tokens.length - 1];
+                    final boolean isStartOfFunctionBlock =
+                            firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
+                    final boolean isNestedIf = line.contains("if") && lastToken.equals("then");
+                    if (isStartOfFunctionBlock || isNestedIf) {
                         indentLevel.getAndIncrement();
                     }
                 }
