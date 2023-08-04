@@ -41,7 +41,9 @@ abstract public class BashpileTest {
                         executionResults.stdout()));
     }
 
-    /** Couldn't find an off the shelf linter to check for correct indents */
+    /**
+     * Couldn't find an off the shelf linter to check for correct indents.  Maybe a Bash parser would be better?
+     */
     protected static void assertCorrectFormatting(@Nonnull final ExecutionResults executionResults) {
         // track if, else, fi for now
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
@@ -55,45 +57,36 @@ abstract public class BashpileTest {
             final long tabs = spaces / 4;
             final String[] tokens = line.stripLeading().split(" ");
             final String firstToken = tokens[0];
-            // TODO change to if/else
-            switch (firstToken) {
-                case "if" -> {
-                    if (tabs != indentLevel.get()) {
-                        erroredLines.get().add(i);
-                    }
-                    // generated code uses a Bash if all on one line (e.g. starts with if and ends with fi)
-                    if (!line.endsWith("fi")) {
-                        indentLevel.getAndIncrement();
-                    }
+            final String lastToken = tokens[tokens.length - 1];
+
+            // check for increments
+            final boolean isStartOfFunctionBlock =
+                    firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
+            final boolean isNestedIf = line.contains("if") && lastToken.equals("then");
+            if (firstToken.equals("if") || isStartOfFunctionBlock || isNestedIf) {
+                if (tabs != indentLevel.get()) {
+                    erroredLines.get().add(i);
                 }
-                case "else" -> {
-                    if (tabs != indentLevel.get() - 1) {
-                        erroredLines.get().add(i);
-                    }
+                // generated code uses a Bash if all on one line (e.g. starts with if and ends with fi)
+                if (!line.endsWith("fi")) {
+                    indentLevel.getAndIncrement();
                 }
-                case "fi", "}", "};" -> {
-                    indentLevel.getAndDecrement();
-                    if (tabs != indentLevel.get()) {
-                        erroredLines.get().add(i);
-                    }
+                return line;
+            } // else
+
+            // check for middle statements (e.g. else in an if-then-else statement)
+            if (firstToken.equals("else")) {
+                if (tabs != indentLevel.get() - 1) {
+                    erroredLines.get().add(i);
                 }
-                default -> {
-                    // check for other decrements
-                    if (firstToken.startsWith("fi")) {
-                        indentLevel.getAndDecrement();
-                    }
-                    // check indents
-                    if (tabs != indentLevel.get()) {
-                        erroredLines.get().add(i);
-                    }
-                    // check for other increments
-                    final String lastToken = tokens[tokens.length - 1];
-                    final boolean isStartOfFunctionBlock =
-                            firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
-                    final boolean isNestedIf = line.contains("if") && lastToken.equals("then");
-                    if (isStartOfFunctionBlock || isNestedIf) {
-                        indentLevel.getAndIncrement();
-                    }
+                return line;
+            } // else
+
+            // check for decrements
+            if (List.of("fi", "}", "};").contains(firstToken) || firstToken.startsWith("fi")) {
+                indentLevel.getAndDecrement();
+                if (tabs != indentLevel.get()) {
+                    erroredLines.get().add(i);
                 }
             }
             return line;
