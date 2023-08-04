@@ -11,6 +11,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+// TODO add assertCorrectFormatting to this suite
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
  */

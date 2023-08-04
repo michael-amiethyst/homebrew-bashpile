@@ -13,6 +13,7 @@ import java.util.List;
 import static com.bashpile.StringUtils.join;
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO add assertCorrectFormatting to this suite
 @Order(40)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FunctionBashpileTest extends BashpileTest {

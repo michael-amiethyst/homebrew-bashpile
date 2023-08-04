@@ -27,6 +27,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 var: bool = false
                 print(var)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -37,6 +38,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 var: int = 42
                 print(var)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("42\n", results.stdout());
     }
@@ -47,6 +49,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 someVar: int = 1 + 1
                 print(someVar + 2)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }
@@ -86,6 +89,7 @@ class StatementBashpileTest extends BashpileTest {
                 someVar: int = 1 + 1
                 someVar = 3
                 print(someVar + 2)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("5\n", results.stdout());
     }
@@ -96,6 +100,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 var: float = 4000000.999
                 print(var)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("4000000.999\n", results.stdout());
     }
@@ -106,6 +111,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 world:str="world"
                 print(world)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("world\n", results.stdout());
     }
@@ -116,6 +122,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 world:str="world"
                 print("hello " + world)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world\n", results.stdout());
     }
@@ -137,6 +144,7 @@ class StatementBashpileTest extends BashpileTest {
                     print(32000 + 32000)
                     block:
                         print(64 + 64)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("24", "64000", "128");
@@ -167,6 +175,7 @@ class StatementBashpileTest extends BashpileTest {
                     print(x * 3)
                 x: float = 7.7
                 print(x - 0.7)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> stdoutLines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "16.5", "7.0");
@@ -188,6 +197,7 @@ class StatementBashpileTest extends BashpileTest {
                     print(x + x)
                 x: float = 7.7
                 print(x - 0.7)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> stdoutLines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "11.0", "7.0");
@@ -222,6 +232,7 @@ class StatementBashpileTest extends BashpileTest {
                 print(x - 0.7)
                 print(myString)
                 """);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> stdoutLines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "0", "7.0", "To boldly go");
@@ -239,10 +250,10 @@ class StatementBashpileTest extends BashpileTest {
                 #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
                     contents = $(cat captainsLog.txt)
                 print(contents)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\n", results.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
-        assertCorrectFormatting(results);
     }
 
     @Test
@@ -255,6 +266,7 @@ class StatementBashpileTest extends BashpileTest {
                     #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
                         contents = $(cat captainsLog.txt)
                     print(contents)""");
+            assertCorrectFormatting(results);
             assertFailedExitCode(results);
         } finally {
             Files.deleteIfExists(Path.of("captainsLog.txt"));
@@ -274,6 +286,7 @@ class StatementBashpileTest extends BashpileTest {
         try(final BashShell shell = runTextAsync(bashpileScript)) {
             shell.sendTerminationSignal();
             final ExecutionResults results = shell.join();
+            assertCorrectFormatting(results);
             assertFailedExitCode(results);
             assertEquals("", results.stdout());
             assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
@@ -289,6 +302,7 @@ class StatementBashpileTest extends BashpileTest {
                 #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog.txt) creates "captainsLog.txt":
                     contents = $(cat $(echo captainsLog.txt))
                 print(contents)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\n", results.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
@@ -308,6 +322,7 @@ class StatementBashpileTest extends BashpileTest {
                         contents2 = $(cat $(echo captainsLog2.txt))
                 print(contents)
                 print(contents2)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\nCaptain's log, stardate...\n", results.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
@@ -337,6 +352,7 @@ class StatementBashpileTest extends BashpileTest {
             Thread.sleep(Duration.ofMillis(100));
             shell.sendTerminationSignal();
             final ExecutionResults results = shell.join();
+            assertCorrectFormatting(results);
             assertFailedExitCode(results);
             // TERM signals wipe STDOUT -- unknown why
             assertEquals("", results.stdout());

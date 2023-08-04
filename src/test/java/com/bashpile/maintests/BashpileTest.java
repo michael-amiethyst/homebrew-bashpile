@@ -41,7 +41,7 @@ abstract public class BashpileTest {
                         executionResults.stdout()));
     }
 
-    // TODO add this to all tests
+    /** Couldn't find an off the shelf linter to check for correct indents */
     protected static void assertCorrectFormatting(@Nonnull final ExecutionResults executionResults) {
         // track if, else, fi for now
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
@@ -53,7 +53,8 @@ abstract public class BashpileTest {
                 return line;
             }
             final long tabs = spaces / 4;
-            final String keyword = line.stripLeading().split(" ", 2)[0];
+            final String[] tokens = line.stripLeading().split(" ");
+            final String keyword = tokens[0];
             switch (keyword) {
                 case "if" -> {
                     if (tabs != indentLevel.get()) {
@@ -69,15 +70,20 @@ abstract public class BashpileTest {
                         erroredLines.get().add(i);
                     }
                 }
-                case "fi" -> {
+                case "fi", "}", "};" -> {
                     indentLevel.getAndDecrement();
                     if (tabs != indentLevel.get()) {
                         erroredLines.get().add(i);
                     }
                 }
                 default -> {
+                    // check indents
                     if (tabs != indentLevel.get()) {
                         erroredLines.get().add(i);
+                    }
+                    // check for function
+                    if (keyword.matches("\\w(?:\\w|\\d)+") && "{".equals(tokens[tokens.length - 1])) {
+                        indentLevel.getAndIncrement();
                     }
                 }
             }

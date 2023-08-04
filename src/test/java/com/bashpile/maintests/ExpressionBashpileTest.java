@@ -11,6 +11,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO add assertCorrectFormatting to this suite
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileTest extends BashpileTest {

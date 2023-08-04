@@ -9,6 +9,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// TODO add assertCorrectFormatting to this suite
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class InlineBashpileTest extends BashpileTest {
