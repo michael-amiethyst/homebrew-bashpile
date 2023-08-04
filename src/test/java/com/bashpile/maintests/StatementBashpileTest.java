@@ -242,6 +242,7 @@ class StatementBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\n", results.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
+        assertCorrectFormatting(results);
     }
 
     @Test

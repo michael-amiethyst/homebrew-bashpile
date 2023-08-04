@@ -2,6 +2,7 @@ package com.bashpile;
 
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 
 import javax.annotation.Nonnull;
@@ -31,8 +32,12 @@ public class Asserts {
      * @see #assertIsLine(String)
      */
     public static String assertIsParagraph(@Nonnull final String str) {
-        assertMatches(str, TEXT_BLOCK);
-        return str;
+        try {
+            return assertMatches(str, TEXT_BLOCK);
+        } catch (BashpileUncheckedAssertionException e) {
+            throw new BashpileUncheckedException(
+                    "Expected String [%s] to be a paragraph and have every line end in a '\\n'.".formatted(str));
+        }
     }
 
     /**
@@ -41,30 +46,37 @@ public class Asserts {
      * @param str the string to check.
      */
     public static String assertIsLine(@Nonnull final String str) {
-        assertMatches(str, TEXT_LINE);
-        return str;
+        try {
+            return assertMatches(str, TEXT_LINE);
+        } catch (BashpileUncheckedAssertionException e) {
+            throw new BashpileUncheckedException(
+                    "Expected String [%s] to be a single line.  It should have a single '\\n', at the end.".formatted(
+                            str));
+        }
     }
 
-    public static void assertNoBlankLines(@Nonnull final String str) {
-        assertNoMatch(str, BLANK_LINE);
+    public static String assertNoBlankLines(@Nonnull final String str) {
+        return assertNoMatch(str, BLANK_LINE);
     }
 
     /** Checks for a complete match (i.e. whole string must match) */
-    public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
+    public static String assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
             throw new BashpileUncheckedAssertionException(
                     "Str [%s] didn't match regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
         }
+        return str;
     }
 
     /** Checks for a complete match (i.e. whole string must match) */
-    public static void assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
+    public static String assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (matchResults.matches()) {
             throw new BashpileUncheckedAssertionException(
                     "Str [%s] matched regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
         }
+        return str;
     }
 
     public static void assertTypesCoerce(

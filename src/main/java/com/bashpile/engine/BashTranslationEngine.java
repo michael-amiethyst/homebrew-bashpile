@@ -287,7 +287,6 @@ public class BashTranslationEngine implements TranslationEngine {
             };
             final Translation statements = ctx.statement().stream()
                     .map(visitor::visit)
-                    .map(prependTabsToBodyLines)
                     .reduce(Translation::add)
                     .orElseThrow()
                     .assertParagraphBody()
@@ -298,41 +297,38 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
             final Translation subcomment =
                     subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
-            // TODO break up this mega text block into smaller translations, maybe TranslationBuilder class?
+
+            // create an ifBody to put into the bodyTranslation
+            // only one trap can be in effect at a time, so we keep a stack of all current filenames to delete
+            String ifBody = """
+                    trap 'rm -f %s; exit 10' INT TERM EXIT
+                    ## wrapped body of creates statement
+                    %s
+                    ## end of wrapped body of creates statement
+                    rm -f %s
+                    trap - INT TERM EXIT""".formatted(
+                    String.join(" ", createFilenames), statements.body(), filename);
+            ifBody = StringUtils.lambdaAllLines(ifBody, str -> TAB + str);
+            ifBody = StringUtils.lambdaFirstLine(ifBody, String::stripLeading);
+
+            // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
+            final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
+            String elseBody = """
+                    printf "Failed to create %s properly."
+                    rm -f %s
+                    %s 1""".formatted(filename, filename, exitOrReturn);
+            elseBody = StringUtils.lambdaAllLines(elseBody, str -> TAB + str);
+            elseBody = StringUtils.lambdaFirstLine(elseBody, String::stripLeading);
             // set noclobber avoids some race conditions
-            // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
-            // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
-            // also `exit` in an if statement doesn't work, so we need to `return` and bubble up a failing exit code
             final String body = """
                     if (set -o noclobber; %s) 2> /dev/null; then
-                        trap 'rm -f %s; exit 10' INT TERM EXIT
-                        ## wrapped body of creates statement
-                    %s
-                        ## end of wrapped body of creates statement
-                        rm -f %s
-                        trap - INT TERM EXIT
+                        %s
                     else
-                        printf "Failed to create %s properly."
-                        rm -f %s
-                        %s 1
+                        %s
                     fi
                     __bp_exitCode=$?
                     if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                    """.formatted(
-                            // in subshell
-                            shellString.body(),
-                            // in trap
-                            String.join(" ", createFilenames),
-                            // wrapped body
-                            statements.body(),
-                            // rm in happy path
-                            filename,
-                            // else block - printf
-                            filename,
-                            // else block - rm
-                            filename,
-                            // else block - exit 1 or return 1
-                            isTopLevel() ? "exit" : "return");
+                    """.formatted(shellString.body(), ifBody, elseBody);
             final Translation bodyTranslation = toParagraphTranslation(body);
 
             // merge translations and preambles
@@ -376,8 +372,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = createHoistedCommentTranslation("return statement", lineNumber(ctx));
         final Function<String, String> toPrintf =
                 str -> "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""));
-        final Translation exprBody = toParagraphTranslation(
-                lambdaLastLine(toPrintf, exprTranslation.body()))
+        final Translation exprBody = toParagraphTranslation(lambdaLastLine(exprTranslation.body(), toPrintf))
                 .appendPreamble(exprTranslation.preamble());
         return comment.add(exprBody.mergePreamble());
     }
@@ -440,7 +435,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
-        final boolean topLevelStatement = isTopLevel();
+        final boolean topLevelStatement = isTopLevelShell();
         if (topLevelStatement) {
             return new Translation(preambles.preamble(), id + argText + " >/dev/null", retType, NORMAL);
         } // else return an inline (command substitution)
@@ -620,7 +615,7 @@ public class BashTranslationEngine implements TranslationEngine {
         return tr.appendPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
     }
 
-    private static boolean isTopLevel() {
+    private static boolean isTopLevelShell() {
         return !in(CALC_LABEL) && !in(PRINT_LABEL);
     }
 
