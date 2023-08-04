@@ -11,7 +11,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// TODO add assertCorrectFormatting to this suite
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
  */
@@ -23,6 +22,7 @@ class LexerBashpileTest extends BashpileTest {
     @Order(10)
     public void printWorks() {
         final ExecutionResults results = runText("print()");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("\n", results.stdout());
     }
@@ -33,6 +33,7 @@ class LexerBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 print()
                 print()""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("\n\n", results.stdout());
     }
@@ -43,6 +44,7 @@ class LexerBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 var: bool = false
                 print(var)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -51,6 +53,7 @@ class LexerBashpileTest extends BashpileTest {
     @Order(40)
     public void intWorks() {
         final ExecutionResults results = runText("print(1701)");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("1701\n", results.stdout());
     }
@@ -59,6 +62,7 @@ class LexerBashpileTest extends BashpileTest {
     @Order(50)
     public void parenIntWorks() {
         final ExecutionResults results = runText("print(((1701)))");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("1701\n", results.stdout());
     }
@@ -68,6 +72,7 @@ class LexerBashpileTest extends BashpileTest {
     public void stringWorks() {
         final ExecutionResults results = runText("""
                 print("NCC-1701")""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("NCC-1701\n", results.stdout());
     }
@@ -77,6 +82,7 @@ class LexerBashpileTest extends BashpileTest {
     public void parenStringWorks() {
         final ExecutionResults results = runText("""
                 print(((("hello"))))""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello\n", results.stdout());
     }
@@ -85,6 +91,7 @@ class LexerBashpileTest extends BashpileTest {
     @Order(80)
     public void escapedStringWorks() {
         final ExecutionResults results = runPath(Path.of("escapedString.bashpile"));
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("\"hello\"\n", results.stdout());
     }
@@ -95,6 +102,7 @@ class LexerBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 print(.5)
                 print(0.7)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of(".5", "0.7");
@@ -111,6 +119,7 @@ class LexerBashpileTest extends BashpileTest {
                                 
                 // leading whole number
                 print(1.7)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of(".5", "1.7");
@@ -137,6 +146,7 @@ class LexerBashpileTest extends BashpileTest {
                 x: float = 7.7
                 print(x - 0.7)
                 """);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> stdoutLines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "11.0", "7.0");
@@ -168,6 +178,7 @@ class LexerBashpileTest extends BashpileTest {
                 // leading whole number
                 print(1.7)
                 """);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> stdoutLines = results.stdoutLines();
         final List<String> expected = List.of(".5", "1.7");
