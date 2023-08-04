@@ -1,15 +1,16 @@
 package com.bashpile.engine;
 
+import com.bashpile.StringUtils;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.exceptions.BashpileUncheckedException;
 
 import javax.annotation.Nonnull;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.*;
-import static com.bashpile.StringUtils.unescape;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 /**
@@ -118,19 +119,23 @@ public record Translation(
     }
 
     public Translation unescapeBody() {
-        return new Translation(preamble, unescape(body), type, typeMetadata);
+        return lambdaBody(StringUtils::unescape);
     }
 
     public Translation quoteBody() {
-        return new Translation(preamble, "\"" + body + "\"", type, typeMetadata);
+        return lambdaBody(body -> "\"" + body + "\"");
     }
 
     public Translation unquoteBody() {
-        return new Translation(preamble, STRING_QUOTES.matcher(body).replaceAll(""), type, typeMetadata);
+        return lambdaBody(body -> STRING_QUOTES.matcher(body).replaceAll(""));
     }
 
     public Translation parenthesizeBody() {
-        return new Translation(preamble, "(" + body + ")", type, typeMetadata);
+        return lambdaBody(body -> "(" + body + ")");
+    }
+
+    public Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
+        return new Translation(preamble, lambda.apply(body), type, typeMetadata);
     }
 
     public Translation assertParagraphBody() {

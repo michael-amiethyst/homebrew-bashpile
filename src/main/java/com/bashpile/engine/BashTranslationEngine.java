@@ -187,7 +187,8 @@ public class BashTranslationEngine implements TranslationEngine {
         try (var ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
             // create translations
             final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
-            final Translation hoistedFunction = toParagraphTranslation(visitor.visit(functionDeclCtx).body());
+            // remove trailing newline
+            final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
             // register that this forward declaration has been handled
             foundForwardDeclarations.add(ctx.typedId().Id().getText());
             // add translations
