@@ -7,14 +7,15 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
-// TODO split bpr from bpc
-// TODO bpc.bps use creates for output.txt
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BashpileMainIntegrationTest extends BashpileTest {
 
@@ -25,15 +26,21 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("In noSubCommandTest");
 
         final String command = "bin/bpc.bps.bpt src/test/resources/testrigData.bps";
-        final ExecutionResults results = runAndJoin(command);
-        log.debug("Output text:\n{}", results.stdout());
+        final String translatedFilename = "src/test/resources/testrigData.bps.bpt";
+        try {
+            final ExecutionResults results = runAndJoin(command);
+            log.debug("Output text:\n{}", results.stdout());
 
-        assertSuccessfulExitCode(results);
-        final List<String> lines = results.stdoutLines();
-        final List<String> lastLines = lines.subList(lines.size() - 3 , lines.size());
-        assertEquals("src/test/resources/testrigData.bps.bpt", lastLines.get(0));
-        assertEquals("Start of src/test/resources/testrigData.bps.bpt", lastLines.get(1));
-        assertEquals("test", lastLines.get(2));
+            assertSuccessfulExitCode(results);
+            final List<String> lines = results.stdoutLines();
+            final List<String> lastLines = lines.subList(lines.size() - 3 , lines.size());
+            assertEquals(translatedFilename, lastLines.get(0));
+            assertEquals("Start of %s".formatted(translatedFilename), lastLines.get(1));
+            assertEquals("test", lastLines.get(2));
+            assertFalse(Files.exists(Path.of("output.txt")));
+        } finally {
+            Files.deleteIfExists(Path.of(translatedFilename));
+        }
     }
 
     @Test @Timeout(5) @Order(20)
@@ -41,15 +48,21 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("In noSubCommandWithNoExtensionTranspiles");
 
         final String command = "bin/bpc.bps.bpt src/test/resources/testrigData";
+        final String translatedFilename = "src/test/resources/testrigData.bpt";
         final ExecutionResults results = runAndJoin(command);
-        log.debug("Output text:\n{}", results.stdout());
+        try {
+            log.debug("Output text:\n{}", results.stdout());
 
-        assertSuccessfulExitCode(results);
-        final List<String> lines = results.stdoutLines();
-        final List<String> lastLines = lines.subList(lines.size() - 3 , lines.size());
-        assertEquals("src/test/resources/testrigData.bpt", lastLines.get(0));
-        assertEquals("Start of src/test/resources/testrigData.bpt", lastLines.get(1));
-        assertEquals("test", lastLines.get(2));
+            assertSuccessfulExitCode(results);
+            final List<String> lines = results.stdoutLines();
+            final List<String> lastLines = lines.subList(lines.size() - 3 , lines.size());
+            assertEquals(translatedFilename, lastLines.get(0));
+            assertEquals("Start of %s".formatted(translatedFilename), lastLines.get(1));
+            assertEquals("test", lastLines.get(2));
+            assertFalse(Files.exists(Path.of("output.txt")));
+        } finally {
+            Files.deleteIfExists(Path.of(translatedFilename));
+        }
     }
 
     @Test @Timeout(5) @Order(30)
@@ -61,5 +74,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("Output text:\n{}", results.stdout());
 
         assertFailedExitCode(results);
+        assertFalse(Files.exists(Path.of("output.txt")));
     }
 }

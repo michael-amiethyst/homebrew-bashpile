@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
+// TODO create bpr.bps
+// TODO change readme.md to almost all multiline script and have automated test for the included script
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

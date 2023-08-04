@@ -298,6 +298,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
             final Translation subcomment =
                     subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
+            // TODO break up this mega text block into smaller translations, maybe TranslationBuilder class?
             // set noclobber avoids some race conditions
             // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
             // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
@@ -311,17 +312,27 @@ public class BashTranslationEngine implements TranslationEngine {
                         rm -f %s
                         trap - INT TERM EXIT
                     else
-                        printf "Failed to create %s."
-                        return 1
+                        printf "Failed to create %s properly."
+                        rm -f %s
+                        %s 1
                     fi
                     __bp_exitCode=$?
                     if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
                     """.formatted(
+                            // in subshell
                             shellString.body(),
+                            // in trap
                             String.join(" ", createFilenames),
+                            // wrapped body
                             statements.body(),
+                            // rm in happy path
                             filename,
-                            filename);
+                            // else block - printf
+                            filename,
+                            // else block - rm
+                            filename,
+                            // else block - exit 1 or return 1
+                            isTopLevel() ? "exit" : "return");
             final Translation bodyTranslation = toParagraphTranslation(body);
 
             // merge translations and preambles
@@ -429,7 +440,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
-        final boolean topLevelStatement = !in(CALC_LABEL) && !in(PRINT_LABEL);
+        final boolean topLevelStatement = isTopLevel();
         if (topLevelStatement) {
             return new Translation(preambles.preamble(), id + argText + " >/dev/null", retType, NORMAL);
         } // else return an inline (command substitution)
@@ -607,6 +618,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // add the preambles and swap the body
         return tr.appendPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
+    }
+
+    private static boolean isTopLevel() {
+        return !in(CALC_LABEL) && !in(PRINT_LABEL);
     }
 
     // typecast helpers
