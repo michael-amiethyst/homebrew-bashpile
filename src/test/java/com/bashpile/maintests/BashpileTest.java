@@ -83,11 +83,17 @@ abstract public class BashpileTest {
             } // else
 
             // check for decrements
-            if (List.of("fi", "}", "};").contains(firstToken) || firstToken.startsWith("fi")) {
+            if (List.of("fi", "}", "};").contains(firstToken) || firstToken.startsWith("fi)")) {
                 indentLevel.getAndDecrement();
                 if (tabs != indentLevel.get()) {
                     erroredLines.get().add(i);
                 }
+                return line;
+            }
+
+            // check for 'regular' lines
+            if (tabs != indentLevel.get()) {
+                erroredLines.get().add(i);
             }
             return line;
         }).toList();
