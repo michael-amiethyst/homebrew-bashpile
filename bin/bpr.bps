@@ -1,0 +1,12 @@
+// get script directory
+SOURCE: str = #(${BASH_SOURCE[0]})
+DIR: str    = $(dirname "$SOURCE")
+
+PROJECT_PATH: str = "$DIR/.."
+JAR_PATH: str     = "${PROJECT_PATH}/target/bashpile-jar-with-dependencies.jar"
+JAR_LOG: str      = "output" + #(printf "%d" $$):str + ".txt"
+#(java -jar "$JAR_PATH" "$1" | tee "$JAR_LOG") creates JAR_LOG:
+    TRANSLATED_FILENAME: str = $(tail --lines 1 < "$JAR_LOG")
+    #(shift)
+    print("Start of $TRANSLATED_FILENAME")
+    #(./"$TRANSLATED_FILENAME" "$@")

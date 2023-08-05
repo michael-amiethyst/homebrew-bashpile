@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+# strict mode header
+set -euo pipefail -o posix
+export IFS=$'\n\t'
+# assign statement, Bashpile line 2
+export SOURCE
+SOURCE=${BASH_SOURCE[0]}
+# assign statement, Bashpile line 3
+export DIR
+DIR=$(dirname "$SOURCE")
+# assign statement, Bashpile line 5
+export PROJECT_PATH
+PROJECT_PATH="$DIR/.."
+# assign statement, Bashpile line 6
+export JAR_PATH
+JAR_PATH="${PROJECT_PATH}/target/bashpile-jar-with-dependencies.jar"
+# assign statement, Bashpile line 7
+## unnest for $(printf "%d" $$)
+export __bp_subshellReturn0
+__bp_subshellReturn0=$(printf "%d" $$)
+__bp_exitCode0=$?
+if [ "$__bp_exitCode0" -ne 0 ]; then exit "$__bp_exitCode0"; fi
+## assign statement body
+export JAR_LOG
+JAR_LOG=output${__bp_subshellReturn0}.txt
+# creates statement, Bashpile line 8
+if (set -o noclobber; java -jar "$JAR_PATH" "$1" | tee "$JAR_LOG") 2> /dev/null; then
+    trap 'rm -f "$JAR_LOG"; exit 10' INT TERM EXIT
+    ## wrapped body of creates statement
+    # assign statement, Bashpile line 9
+    export TRANSLATED_FILENAME
+    TRANSLATED_FILENAME=$(tail --lines 1 < "$JAR_LOG")
+    # expression statement, Bashpile line 10
+    shift
+    # print statement, Bashpile line 11
+    printf "Start of $TRANSLATED_FILENAME\n"
+    # expression statement, Bashpile line 12
+    ./"$TRANSLATED_FILENAME" "$@"
+    ## end of wrapped body of creates statement
+    rm -f "$JAR_LOG"
+    trap - INT TERM EXIT
+else
+    printf "Failed to create $JAR_LOG properly."
+    rm -f "$JAR_LOG"
+    exit 1
+fi
+__bp_exitCode=$?
+if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi

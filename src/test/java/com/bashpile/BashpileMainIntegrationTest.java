@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,7 +26,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void noSubCommandTranspiles() throws IOException {
         log.debug("In noSubCommandTest");
 
-        final String command = "bin/bpc.bps.bpt src/test/resources/testrigData.bps";
+        final String command = "bin/bpc src/test/resources/testrigData.bps";
         final String translatedFilename = "src/test/resources/testrigData.bps.bpt";
         try {
             final ExecutionResults results = runAndJoin(command);
@@ -33,11 +34,11 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            final List<String> lastLines = lines.subList(lines.size() - 3 , lines.size());
-            assertEquals(translatedFilename, lastLines.get(0));
-            assertEquals("Start of %s".formatted(translatedFilename), lastLines.get(1));
-            assertEquals("test", lastLines.get(2));
-            assertFalse(Files.exists(Path.of("output.txt")));
+            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
+                    .filter(path -> path.getFileName().toString().startsWith("output"))) {
+                assertEquals(0, outputFiles.count());
+            }
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -47,7 +48,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
         log.debug("In noSubCommandWithNoExtensionTranspiles");
 
-        final String command = "bin/bpc.bps.bpt src/test/resources/testrigData";
+        final String command = "bin/bpc src/test/resources/testrigData";
         final String translatedFilename = "src/test/resources/testrigData.bpt";
         final ExecutionResults results = runAndJoin(command);
         try {
@@ -55,11 +56,11 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            final List<String> lastLines = lines.subList(lines.size() - 3 , lines.size());
-            assertEquals(translatedFilename, lastLines.get(0));
-            assertEquals("Start of %s".formatted(translatedFilename), lastLines.get(1));
-            assertEquals("test", lastLines.get(2));
-            assertFalse(Files.exists(Path.of("output.txt")));
+            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
+                    .filter(path -> path.getFileName().toString().startsWith("output"))) {
+                assertEquals(0, outputFiles.count());
+            }
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -69,7 +70,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void noSubCommandWithMissingFileFails() throws IOException {
         log.debug("In noSubCommandWithMissingFileFails");
 
-        final String command = "bin/bpc.bps.bpt src/test/resources/testrigData.fileDoesNotExist";
+        final String command = "bin/bpc src/test/resources/testrigData.fileDoesNotExist";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 

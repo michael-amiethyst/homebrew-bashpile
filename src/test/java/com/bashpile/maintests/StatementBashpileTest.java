@@ -21,8 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileTest extends BashpileTest {
 
-    @Test
-    @Order(10)
+    @Test @Order(10)
     public void assignBoolWorks() {
         final ExecutionResults results = runText("""
                 var: bool = false
@@ -32,8 +31,7 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("false\n", results.stdout());
     }
 
-    @Test
-    @Order(20)
+    @Test @Order(20)
     public void assignIntWorks() {
         final ExecutionResults results = runText("""
                 var: int = 42
@@ -43,8 +41,7 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("42\n", results.stdout());
     }
 
-    @Test
-    @Order(30)
+    @Test @Order(30)
     public void assignIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 someVar: int = 1 + 1
@@ -57,8 +54,7 @@ class StatementBashpileTest extends BashpileTest {
     /**
      * References an undeclared variable.
      */
-    @Test
-    @Order(40)
+    @Test @Order(40)
     public void duplicateIntAssignmentThrows() {
         assertThrows(UserError.class, () -> runText("""
                 someVar: int = 1 + 1
@@ -66,24 +62,21 @@ class StatementBashpileTest extends BashpileTest {
                 """));
     }
 
-    @Test
-    @Order(41)
+    @Test @Order(41)
     public void assignFloatToIntThrows() {
         assertThrows(TypeError.class, () -> runText("""
                 someVar: int = 2.2
                 print(someVar + 2)"""));
     }
 
-    @Test
-    @Order(50)
+    @Test @Order(50)
     public void unassignedIntExpressionThrows() {
         assertThrows(UserError.class, () -> runText("""
                 someVar: int = 1 + 1
                 someOtherVar + 2"""));
     }
 
-    @Test
-    @Order(60)
+    @Test @Order(60)
     public void reassignIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 someVar: int = 1 + 1
@@ -94,8 +87,7 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("5\n", results.stdout());
     }
 
-    @Test
-    @Order(70)
+    @Test @Order(70)
     public void floatWorks() {
         final ExecutionResults results = runText("""
                 var: float = 4000000.999
@@ -105,8 +97,7 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("4000000.999\n", results.stdout());
     }
 
-    @Test
-    @Order(80)
+    @Test @Order(80)
     public void stringWorks() {
         final ExecutionResults results = runText("""
                 world:str="world"
@@ -116,8 +107,7 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("world\n", results.stdout());
     }
 
-    @Test
-    @Order(81)
+    @Test @Order(81)
     public void stringConcatWorks() {
         final ExecutionResults results = runText("""
                 world:str="world"
@@ -127,16 +117,14 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("hello world\n", results.stdout());
     }
 
-    @Test
-    @Order(82)
+    @Test @Order(82)
     public void stringBadOperatorWorks() {
         assertThrows(AssertionError.class, () -> runText("""
                 worldStr:str="world"
                 print("hello " * worldStr)"""));
     }
 
-    @Test
-    @Order(90)
+    @Test @Order(90)
     public void blockWorks() {
         final ExecutionResults results = runText("""
                 print((3 + 5) * 3)
@@ -152,8 +140,7 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals(expected, lines);
     }
 
-    @Test
-    @Order(100)
+    @Test @Order(100)
     public void lexicalScopingWorks() {
         assertThrows(UserError.class, () -> runText("""
                 print((38 + 5) * 3)
@@ -164,8 +151,7 @@ class StatementBashpileTest extends BashpileTest {
                 print(x * x)"""));
     }
 
-    @Test
-    @Order(110)
+    @Test @Order(110)
     public void commentsWork() {
         final ExecutionResults results = runText("""
                 print((38. + 4) * .5)
@@ -241,8 +227,7 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals(expected, stdoutLines);
     }
 
-    @Test
-    @Order(140)
+    @Test @Order(140)
     public void createStatementsWork() {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)
@@ -256,8 +241,7 @@ class StatementBashpileTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
     }
 
-    @Test
-    @Order(150)
+    @Test @Order(150)
     public void createStatementsCanFail() throws IOException {
         try {
             final ExecutionResults results = runText("""
@@ -273,8 +257,7 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    @Test
-    @Order(160)
+    @Test @Order(160)
     public void createStatementTrapsWorks() throws IOException {
         final String bashpileScript = """
                 #(rm -f captainsLog.txt || true)
@@ -293,8 +276,7 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    @Test
-    @Order(170)
+    @Test @Order(170)
     public void createStatementsWithNestedInlinesWork() {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)
@@ -308,8 +290,7 @@ class StatementBashpileTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
     }
 
-    @Test
-    @Order(180)
+    @Test @Order(180)
     public void nestedCreateStatementsWithNestedInlinesWork() {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)
@@ -330,8 +311,7 @@ class StatementBashpileTest extends BashpileTest {
         assertFalse(results.stdinLines().stream().anyMatch(str -> END_OF_LINE_COMMENT.matcher(str).matches()));
     }
 
-    @Test
-    @Order(190)
+    @Test @Order(190)
     public void nestedCreateStatementTrapsWorks() throws IOException, InterruptedException {
         final String bashpileScript = """
                 #(rm -f captainsLog.txt || true)
@@ -361,6 +341,29 @@ class StatementBashpileTest extends BashpileTest {
         } finally {
             Files.deleteIfExists(innerFile);
             Files.deleteIfExists(outerFile);
+        }
+    }
+
+    @Test @Order(200)
+    public void createStatementWithIdWorks() throws IOException {
+        final String bashpileScript = """
+                JAR_LOG: str      = "output" + #(printf "%d" $$):str + ".txt"
+                print(JAR_LOG)
+                #(printf "test" > "$JAR_LOG") creates JAR_LOG:
+                    #(cat "$JAR_LOG")
+                """;
+        Path jarLog = null;
+        try {
+            final ExecutionResults results = runText(bashpileScript);
+            assertCorrectFormatting(results);
+            assertSuccessfulExitCode(results);
+            // TERM signals wipe STDOUT -- unknown why
+            jarLog = Path.of(results.stdoutLines().get(0));
+            assertFalse(Files.exists(jarLog), "trap file not deleted");
+        } finally {
+            if (jarLog != null) {
+                Files.deleteIfExists(jarLog);
+            }
         }
     }
 }

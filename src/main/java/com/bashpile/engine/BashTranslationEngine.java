@@ -9,6 +9,7 @@ import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
@@ -276,7 +277,11 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
         // create child translations and other variables
         final Translation shellString = visitor.visit(ctx.shellString());
-        final String filename = visitor.visit(ctx.String()).unquoteBody().body();
+        boolean fileNameWasId = ctx.String() == null;
+        final TerminalNode filenameNode = fileNameWasId ? ctx.Id() : ctx.String();
+        String filename =  visitor.visit(filenameNode).unquoteBody().body();
+        // convert Id to "$Id"
+        filename = fileNameWasId ? "\"$%s\"".formatted(filename) : filename;
         createFilenames.push(filename);
         try {
             final Translation statements = ctx.statement().stream()
@@ -310,7 +315,7 @@ public class BashTranslationEngine implements TranslationEngine {
             String elseBody = """
                     printf "Failed to create %s properly."
                     rm -f %s
-                    %s 1""".formatted(filename, filename, exitOrReturn);
+                    %s 1""".formatted(STRING_QUOTES.matcher(filename).replaceAll(""), filename, exitOrReturn);
             elseBody = StringUtils.lambdaAllLines(elseBody, str -> TAB + str);
             elseBody = StringUtils.lambdaFirstLine(elseBody, String::stripLeading);
             // set noclobber avoids some race conditions
