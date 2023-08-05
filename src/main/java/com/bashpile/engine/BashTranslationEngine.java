@@ -29,6 +29,7 @@ import static com.bashpile.engine.strongtypes.Type.*;
 import static com.bashpile.engine.strongtypes.TypeMetadata.INLINE;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.google.common.collect.Iterables.getLast;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Translates to Bash5 with four spaces as a tab.
@@ -278,14 +279,6 @@ public class BashTranslationEngine implements TranslationEngine {
         final String filename = visitor.visit(ctx.String()).unquoteBody().body();
         createFilenames.push(filename);
         try {
-            final Function<Translation, Translation> prependTabsToBodyLines = tr -> {
-                final String[] lines = tr.body().split("\n");
-                final String tabbedBody = Arrays.stream(lines)
-                        .filter(StringUtils::isNotBlank)
-                        .map(str -> TAB + str)
-                        .collect(Collectors.joining("\n"));
-                return tr.body(StringUtils.appendIfMissing(tabbedBody, "\n"));
-            };
             final Translation statements = ctx.statement().stream()
                     .map(visitor::visit)
                     .reduce(Translation::add)
@@ -505,7 +498,23 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         // get the contents -- ditches the #() syntax
         final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
-        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL);
+        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL)
+                .lambdaBody(body -> {
+                    // find leading whitespace of first non-blank line.  Strip that many chars from each line
+                    final String[] lines = body.split("\n");
+                    int i = 0;
+                    while(isBlank(lines[i])) {
+                        i++;
+                    }
+                    final String line = lines[i];
+                    final int spaces = line.length() - line.stripLeading().length();
+                    final String trailingNewline = body.endsWith("\n") ? "\n" : "";
+                    return Arrays.stream(lines)
+                            .filter(str -> !StringUtils.isBlank(str))
+                            .map(str -> str.substring(spaces))
+                            .collect(Collectors.joining("\n"))
+                            + trailingNewline;
+                });
         if (LevelCounter.inCommandSubstitution()) {
             // then wrap in command substitution and unnest as needed
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));

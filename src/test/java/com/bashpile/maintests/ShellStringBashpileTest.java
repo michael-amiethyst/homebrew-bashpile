@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO add assertCorrectFormatting to this suite
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ShellStringBashpileTest extends BashpileTest {
@@ -20,6 +19,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test @Order(10)
     public void runLsWorks() {
         final ExecutionResults results = runText("#(ls)");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertTrue(results.stdout().contains("pom.xml\n"));
     }
@@ -28,6 +28,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test @Order(20)
     public void runEchoWorks() {
         final ExecutionResults results = runText("#(echo hello command object)");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello command object\n", results.stdout());
     }
@@ -36,6 +37,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     public void runInvalidCommandHadBadExitCode() {
         final ExecutionResults results = runText("#(invalid_command_example_for_testing)");
         assertFailedExitCode(results);
+        assertCorrectFormatting(results);
     }
 
     @Test @Order(31)
@@ -52,12 +54,14 @@ public class ShellStringBashpileTest extends BashpileTest {
                     if [ "$exitCode" -ne 0 ]; then exit "$exitCode"; fi
                     echo ${contents}
                 )""");
+        assertCorrectFormatting(results);
         assertFailedExitCode(results);
     }
 
     @Test @Order(40)
     public void runEchoParenthesisWorks() {
         final ExecutionResults results = runPath(Path.of("runEchoParenthesis.bashpile"));
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("()\n", results.stdout());
     }
@@ -65,6 +69,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test @Order(50)
     public void nestedShellStringsWork() {
         final ExecutionResults results = runText("#(cat #(src/test/resources/testdata.txt))");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());
     }
@@ -72,6 +77,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test @Order(60)
     public void shellStringsWithHashWork() {
         final ExecutionResults results = runText("#(echo '#')");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("#\n", results.stdout());
     }
@@ -81,7 +87,10 @@ public class ShellStringBashpileTest extends BashpileTest {
         final String bashpile = """
                 print(1 + #(expr 1 + 1):int)
                 """;
-        assertEquals("3\n", runText(bashpile).stdout());
+        final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("3\n", results.stdout());
     }
 
     @Test @Order(80)
@@ -89,7 +98,10 @@ public class ShellStringBashpileTest extends BashpileTest {
         final String bashpile = """
                 print(#(printf "NCC-1701") + "\\n" + "\\n")
                 """;
-        assertEquals("NCC-1701\n\n\n", runText(bashpile).stdout());
+        final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("NCC-1701\n\n\n", results.stdout());
     }
 
     @Test @Order(90)
@@ -98,6 +110,9 @@ public class ShellStringBashpileTest extends BashpileTest {
                 #(export IFS=$'\t')
                 print(#(printf "NCC\\n1701"))
                 """;
-        assertEquals("NCC\n1701\n", runText(bashpile).stdout());
+        final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("NCC\n1701\n", results.stdout());
     }
 }
