@@ -4,45 +4,31 @@
 set -euo pipefail -o posix
 export IFS=$'\n\t'
 # assign statement, Bashpile line 2
-export SOURCE
-SOURCE=${BASH_SOURCE[0]}
-# assign statement, Bashpile line 3
-export DIR
-DIR=$(dirname "$SOURCE")
+export dir
+dir=$(dirname "${BASH_SOURCE[0]}")
+# assign statement, Bashpile line 4
+export projectPath
+projectPath="$dir/.."
 # assign statement, Bashpile line 5
-export PROJECT_PATH
-PROJECT_PATH="$DIR/.."
-# assign statement, Bashpile line 6
-export JAR_PATH
-JAR_PATH="${PROJECT_PATH}/target/bashpile-jar-with-dependencies.jar"
-# assign statement, Bashpile line 7
-## unnest for $(printf "%d" $$)
-export __bp_subshellReturn0
-__bp_subshellReturn0=$(printf "%d" $$)
-__bp_exitCode0=$?
-if [ "$__bp_exitCode0" -ne 0 ]; then exit "$__bp_exitCode0"; fi
-## assign statement body
-export JAR_LOG
-JAR_LOG=output${__bp_subshellReturn0}.txt
-# creates statement, Bashpile line 8
-if (set -o noclobber; java -jar "$JAR_PATH" "$1" | tee "$JAR_LOG") 2> /dev/null; then
-    trap 'rm -f "$JAR_LOG"; exit 10' INT TERM EXIT
+export jarPath
+jarPath="${projectPath}/target/bashpile-jar-with-dependencies.jar"
+# creates statement, Bashpile line 7
+export  translatedFilename
+if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
+    trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
     ## wrapped body of creates statement
-    # assign statement, Bashpile line 9
-    export TRANSLATED_FILENAME
-    TRANSLATED_FILENAME=$(tail --lines 1 < "$JAR_LOG")
     # expression statement, Bashpile line 10
     shift
     # print statement, Bashpile line 11
-    printf "Start of $TRANSLATED_FILENAME\n"
+    printf "Start of $translatedFilename\n"
     # expression statement, Bashpile line 12
-    ./"$TRANSLATED_FILENAME" "$@"
+    ./"$translatedFilename" "$@"
     ## end of wrapped body of creates statement
-    rm -f "$JAR_LOG"
+    rm -f "$translatedFilename"
     trap - INT TERM EXIT
 else
-    printf "Failed to create $JAR_LOG properly."
-    rm -f "$JAR_LOG"
+    printf "Failed to create $translatedFilename properly."
+    rm -f "$translatedFilename"
     exit 1
 fi
 __bp_exitCode=$?

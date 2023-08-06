@@ -12,7 +12,7 @@ statement
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon INDENT statement+
                                    DEDENT # anonymousBlockStatement
-    | shellString Creates (String|Id)
+    | (typedId Equals)? shellString Creates (String|Id)
            Colon INDENT statement+ DEDENT # createsStatement
     | expression Newline                  # expressionStatement
     | Newline                             # blankStmt

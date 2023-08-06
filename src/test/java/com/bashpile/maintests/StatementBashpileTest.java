@@ -347,22 +347,46 @@ class StatementBashpileTest extends BashpileTest {
     @Test @Order(200)
     public void createStatementWithIdWorks() throws IOException {
         final String bashpileScript = """
-                JAR_LOG: str      = "output" + #(printf "%d" $$):str + ".txt"
-                print(JAR_LOG)
-                #(printf "test" > "$JAR_LOG") creates JAR_LOG:
-                    #(cat "$JAR_LOG")
+                log: str = "output" + #(printf "%d" $$):str + ".txt"
+                print(log)
+                #(printf "test" > "$log") creates log:
+                    #(cat "$log")
                 """;
         Path jarLog = null;
         try {
             final ExecutionResults results = runText(bashpileScript);
             assertCorrectFormatting(results);
             assertSuccessfulExitCode(results);
-            // TERM signals wipe STDOUT -- unknown why
             jarLog = Path.of(results.stdoutLines().get(0));
             assertFalse(Files.exists(jarLog), "trap file not deleted");
         } finally {
             if (jarLog != null) {
                 Files.deleteIfExists(jarLog);
+            }
+        }
+    }
+
+    @Test @Order(210)
+    public void multilineCreateStatementWorks() throws IOException {
+        final String bashpileScript = """
+                log: str = #(
+                    filename=$(printf "%d.txt" $$)
+                    printf "%s" "$filename" > "$filename"
+                    printf "%s" "$filename"
+                ) creates log:
+                    #(cat "$log")
+                """;
+        Path log = null;
+        try {
+            final ExecutionResults results = runText(bashpileScript);
+            assertCorrectFormatting(results);
+            assertSuccessfulExitCode(results);
+            assertTrue(results.stdoutLines().get(0).matches("\\d+\\.txt"));
+            log = Path.of(results.stdoutLines().get(0));
+            assertFalse(Files.exists(log), "trap file not deleted");
+        } finally {
+            if (log != null) {
+                Files.deleteIfExists(log);
             }
         }
     }

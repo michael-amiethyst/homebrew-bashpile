@@ -60,7 +60,7 @@ public class BashTranslationEngine implements TranslationEngine {
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
     /** The current create statement filenames for using in a trap command */
-    private final Stack<String> createFilenames = new Stack<>();
+    private final Stack<String> createFilenamesStack = new Stack<>();
 
     // instance methods
 
@@ -275,15 +275,32 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     @Override
     public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
+        boolean fileNameIsId = ctx.String() == null;
+
+        // handle the initial variable declaration and type, if applicable
+        String variableName;
+        if (ctx.typedId() != null) {
+            variableName = ctx.typedId().Id().getText();
+            if (fileNameIsId) {
+                Asserts.assertEquals(variableName, ctx.Id().getText(),
+                        "Create Statements must have matching Ids at the start and end.");
+            }
+            // add this variable to the type map
+            final Type type = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
+            typeStack.putVariableType(variableName, type, lineNumber(ctx));
+        }
+
         // create child translations and other variables
         final Translation shellString = visitor.visit(ctx.shellString());
-        boolean fileNameWasId = ctx.String() == null;
-        final TerminalNode filenameNode = fileNameWasId ? ctx.Id() : ctx.String();
+        final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
         String filename =  visitor.visit(filenameNode).unquoteBody().body();
-        // convert Id to "$Id"
-        filename = fileNameWasId ? "\"$%s\"".formatted(filename) : filename;
-        createFilenames.push(filename);
+        // convert ID to "$ID"
+        filename = fileNameIsId ? "\"$%s\"".formatted(filename) : filename;
+
+        // create our final translation and pop the stack
+        createFilenamesStack.push(filename);
         try {
+            // create our statements translation
             final Translation statements = ctx.statement().stream()
                     .map(visitor::visit)
                     .reduce(Translation::add)
@@ -292,42 +309,12 @@ public class BashTranslationEngine implements TranslationEngine {
                     .assertNoBlankLinesInBody();
 
             // create other translations
-
             final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
             final Translation subcomment =
                     subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
 
-            // create an ifBody to put into the bodyTranslation
-            // only one trap can be in effect at a time, so we keep a stack of all current filenames to delete
-            String ifBody = """
-                    trap 'rm -f %s; exit 10' INT TERM EXIT
-                    ## wrapped body of creates statement
-                    %s
-                    ## end of wrapped body of creates statement
-                    rm -f %s
-                    trap - INT TERM EXIT""".formatted(
-                    String.join(" ", createFilenames), statements.body(), filename);
-            ifBody = StringUtils.lambdaAllLines(ifBody, str -> TAB + str);
-            ifBody = StringUtils.lambdaFirstLine(ifBody, String::stripLeading);
-
-            // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
-            final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
-            String elseBody = """
-                    printf "Failed to create %s properly."
-                    rm -f %s
-                    %s 1""".formatted(STRING_QUOTES.matcher(filename).replaceAll(""), filename, exitOrReturn);
-            elseBody = StringUtils.lambdaAllLines(elseBody, str -> TAB + str);
-            elseBody = StringUtils.lambdaFirstLine(elseBody, String::stripLeading);
-            // set noclobber avoids some race conditions
-            final String body = """
-                    if (set -o noclobber; %s) 2> /dev/null; then
-                        %s
-                    else
-                        %s
-                    fi
-                    __bp_exitCode=$?
-                    if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                    """.formatted(shellString.body(), ifBody, elseBody);
+            // create a large if-else block with traps
+            final String body = getBodyString(ctx, shellString, filename, statements);
             final Translation bodyTranslation = toParagraphTranslation(body);
 
             // merge translations and preambles
@@ -336,8 +323,53 @@ public class BashTranslationEngine implements TranslationEngine {
                     .appendPreamble(shellString.preamble())
                     .mergePreamble());
         } finally {
-            createFilenames.pop();
+            createFilenamesStack.pop();
         }
+    }
+
+    /** Helper to {@link #createsStatement(BashpileParser.CreatesStatementContext)} */
+    private String getBodyString(BashpileParser.CreatesStatementContext ctx, Translation shellString, String filename, Translation statements) {
+        final String check = String.join("; ", shellString.body().trim().split("\n"));
+
+        // set noclobber avoids some race conditions
+        String ifGuard;
+        if (ctx.typedId() != null) {
+            final String variableName = ctx.typedId().Id().getText();
+            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s) 2> /dev/null; then".formatted(
+                    getLocalText(), variableName, variableName, check);
+        } else {
+            ifGuard = "if (set -o noclobber; %s) 2> /dev/null; then".formatted(check);
+        }
+        // create an ifBody to put into the bodyTranslation
+        // only one trap can be in effect at a time, so we keep a stack of all current filenames to delete
+        String ifBody = """
+                trap 'rm -f %s; exit 10' INT TERM EXIT
+                ## wrapped body of creates statement
+                %s
+                ## end of wrapped body of creates statement
+                rm -f %s
+                trap - INT TERM EXIT""".formatted(
+                String.join(" ", createFilenamesStack), statements.body(), filename);
+        ifBody = StringUtils.lambdaAllLines(ifBody, str -> TAB + str);
+        ifBody = StringUtils.lambdaFirstLine(ifBody, String::stripLeading);
+
+        // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
+        final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
+        String elseBody = """
+                printf "Failed to create %%s properly." "%s"
+                rm -f %s
+                %s 1""".formatted(STRING_QUOTES.matcher(filename).replaceAll(""), filename, exitOrReturn);
+        elseBody = StringUtils.lambdaAllLines(elseBody, str -> TAB + str);
+        elseBody = StringUtils.lambdaFirstLine(elseBody, String::stripLeading);
+        return """
+                %s
+                    %s
+                else
+                    %s
+                fi
+                __bp_exitCode=$?
+                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                """.formatted(ifGuard, ifBody, elseBody);
     }
 
     @Override
