@@ -20,8 +20,6 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO bpr needs to delete .bpt files
-// TODO change readme.md to almost all multiline script and have automated test for the included script
 // TODO verify translations with ShellCheck
 /** Entry point into the program */
 @CommandLine.Command(

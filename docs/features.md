@@ -155,6 +155,15 @@ Similar to Java's try-with-resources you can declare a block like:
 #(command) creates "filename":
     slurpString: str = #(cat $filename)
 // filename will be deleted from the filesystem here
+
+// if you figure out the filename from the command you can assign the result and use it immediately
+// as an example
+log: str = #(
+    filename=$(printf "%d.txt" $$)
+    printf "%s" "$filename" > "$filename"
+    printf "%s" "$filename"
+) creates log:
+    #(cat "$log")
 ```
 
 ## Easy Running
