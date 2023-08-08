@@ -26,7 +26,7 @@ public class InlineBashpileTest extends BashpileTest {
     @Test @Order(20)
     public void shellStringInlineWorks() {
         final ExecutionResults results = runText("""
-                #(echo $(cat src/test/resources/testdata.txt))""");
+                #(echo "$(cat src/test/resources/testdata.txt)")""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());

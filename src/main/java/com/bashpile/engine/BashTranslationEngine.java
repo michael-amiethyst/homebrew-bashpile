@@ -457,7 +457,9 @@ public class BashTranslationEngine implements TranslationEngine {
         String argText = "";
         if (hasArgs) {
             argText = " " + argumentTranslations.stream()
-                    .map(Translation::body).collect(Collectors.joining(" "));
+                    .map(Translation::body)
+                    .map("\"%s\""::formatted)
+                    .collect(Collectors.joining(" "));
         }
         final Translation preambles = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
 

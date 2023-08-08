@@ -4,7 +4,6 @@ import com.bashpile.BashpileMain;
 import com.bashpile.StringUtils;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
-import com.bashpile.exceptions.ThrowingSupplier;
 import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.BashShell;
 import com.bashpile.shell.ExecutionResults;
@@ -13,8 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,32 +101,6 @@ abstract public class BashpileTest {
             throw new BashpileUncheckedAssertionException("Bad formatting on lines " + erroredLines.get().stream()
                     .map(Object::toString)
                     .collect(Collectors.joining(", ")));
-        }
-    }
-
-    protected static void assertNoShellcheckWarnings(@Nonnull final ExecutionResults results) {
-        final Path tempFile = Path.of("temp.bps");
-        try {
-            Files.writeString(tempFile, results.stdin());
-            final ExecutionResults shellcheckResults =
-                    BashShell.runAndJoin("shellcheck --shell=bash --severity=warning " + tempFile);
-            if (shellcheckResults.exitCode() != 0) {
-                throw new BashpileUncheckedAssertionException(shellcheckResults.stdout());
-            }
-        } catch (IOException e) {
-            throw new BashpileUncheckedException(e);
-        } finally {
-            asUnchecked(() -> Files.deleteIfExists(tempFile));
-        }
-    }
-
-    static protected <T> void asUnchecked(final @Nonnull ThrowingSupplier<T, Exception> throwingSupplier) {
-        try {
-            throwingSupplier.get();
-        } catch (BashpileUncheckedAssertionException e) {
-            throw e;
-        } catch (Exception ex) {
-            throw new BashpileUncheckedException(ex);
         }
     }
 

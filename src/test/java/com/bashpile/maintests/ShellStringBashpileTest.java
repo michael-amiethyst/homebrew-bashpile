@@ -52,7 +52,6 @@ public class ShellStringBashpileTest extends BashpileTest {
                     fi
                     exitCode=$?
                     if [ "$exitCode" -ne 0 ]; then exit "$exitCode"; fi
-                    echo ${contents}
                 )""");
         assertCorrectFormatting(results);
         assertFailedExitCode(results);

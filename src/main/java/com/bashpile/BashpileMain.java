@@ -67,7 +67,7 @@ public class BashpileMain implements Callable<Integer> {
         this.picocliCommandLine = picocliCommandLine;
     }
 
-    /** Saves transpiled input file to basename of input file */
+    /** Saves transpiled input file to inputFile.bpt */
     @Override
     public @Nonnull Integer call() throws IOException {
         final String filename = inputFile != null ? inputFile.toString() : "";
@@ -97,7 +97,7 @@ public class BashpileMain implements Callable<Integer> {
     @VisibleForTesting
     public @Nonnull String transpile() throws IOException {
         try (InputStream inputStream = getInputStream()) {
-            return parse(inputStream);
+            return Asserts.assertNoShellcheckWarnings(parse(inputStream));
         }
     }
 

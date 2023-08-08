@@ -281,7 +281,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)
                 contents: str
-                #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog.txt) creates "captainsLog.txt":
+                #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt) creates "captainsLog.txt":
                     contents = $(cat $(echo captainsLog.txt))
                 print(contents)""");
         assertCorrectFormatting(results);
@@ -297,9 +297,9 @@ class StatementBashpileTest extends BashpileTest {
                 #(rm -f captainsLog2.txt || true)
                 contents: str
                 contents2: str
-                #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog.txt) creates "captainsLog.txt":
+                #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt) creates "captainsLog.txt":
                     contents = $(cat $(echo captainsLog.txt))
-                    #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog2.txt) creates "captainsLog2.txt":
+                    #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog2.txt) creates "captainsLog2.txt":
                         contents2 = $(cat $(echo captainsLog2.txt))
                 print(contents)
                 print(contents2)""");
@@ -318,9 +318,9 @@ class StatementBashpileTest extends BashpileTest {
                 #(rm -f captainsLog2.txt || true)
                 contents: str
                 contents2: str
-                #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog.txt) creates "captainsLog.txt":
+                #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt) creates "captainsLog.txt":
                     contents = $(cat $(echo captainsLog.txt))
-                    #(echo $(echo $(echo "Captain's log, stardate...")) > captainsLog2.txt) creates "captainsLog2.txt":
+                    #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog2.txt) creates "captainsLog2.txt":
                         contents2 = $(cat $(echo captainsLog2.txt))
                         #(sleep 3)
                     #(sleep 3)

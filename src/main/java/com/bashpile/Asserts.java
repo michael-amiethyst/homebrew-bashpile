@@ -3,10 +3,16 @@ package com.bashpile;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
+import com.bashpile.exceptions.ThrowingSupplier;
 import com.bashpile.exceptions.TypeError;
+import com.bashpile.shell.BashShell;
+import com.bashpile.shell.ExecutionResults;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -55,8 +61,8 @@ public class Asserts {
         }
     }
 
-    public static String assertNoBlankLines(@Nonnull final String str) {
-        return assertNoMatch(str, BLANK_LINE);
+    public static void assertNoBlankLines(@Nonnull final String str) {
+        assertNoMatch(str, BLANK_LINE);
     }
 
     /** Checks for a complete match (i.e. whole string must match) */
@@ -69,14 +75,15 @@ public class Asserts {
         return str;
     }
 
-    /** Checks for a complete match (i.e. whole string must match) */
-    public static String assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
+    /**
+     * Checks for a complete match (i.e. whole string must match)
+     */
+    public static void assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (matchResults.matches()) {
             throw new BashpileUncheckedAssertionException(
                     "Str [%s] matched regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
         }
-        return str;
     }
 
     public static void assertTypesCoerce(
@@ -137,6 +144,36 @@ public class Asserts {
                 throw uncheckedException;
             }
             throw new AssertionError("Found key %s in map %s".formatted(key, map));
+        }
+    }
+
+
+    protected static String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
+        final Path tempFile = Path.of("temp.bps");
+        try {
+            Files.writeString(tempFile, translatedShellScript);
+            final ExecutionResults shellcheckResults =
+                    BashShell.runAndJoin("shellcheck --shell=bash --severity=warning " + tempFile);
+            if (shellcheckResults.exitCode() != 0) {
+                throw new BashpileUncheckedAssertionException(shellcheckResults.stdout());
+            }
+            return translatedShellScript;
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        } finally {
+            asUnchecked(() -> Files.deleteIfExists(tempFile));
+        }
+    }
+
+    // helpers
+
+    static protected <T> void asUnchecked(final @Nonnull ThrowingSupplier<T, Exception> throwingSupplier) {
+        try {
+            throwingSupplier.get();
+        } catch (BashpileUncheckedAssertionException e) {
+            throw e;
+        } catch (Exception ex) {
+            throw new BashpileUncheckedException(ex);
         }
     }
 }
