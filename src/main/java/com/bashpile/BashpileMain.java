@@ -20,7 +20,6 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO verify translations with ShellCheck
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
