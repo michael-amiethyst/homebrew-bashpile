@@ -1,5 +1,6 @@
 package com.bashpile.shell;
 
+import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.stream.Streams;
 
@@ -28,6 +29,12 @@ import java.io.InputStreamReader;
     @Override
     public void run() {
         final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        Streams.stream(bufferedReader.lines()).forEach(consumer);
+        try {
+            Streams.stream(bufferedReader.lines()).forEach(consumer);
+        } catch (Exception e) {
+            if (!e.getMessage().toLowerCase().contains("stream closed")) {
+                throw new BashpileUncheckedException(e);
+            }
+        }
     }
 }

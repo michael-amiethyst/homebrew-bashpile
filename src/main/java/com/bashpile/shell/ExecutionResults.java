@@ -10,6 +10,8 @@ public record ExecutionResults(@Nonnull String stdin, int exitCode, @Nonnull Str
 
     public static final int SUCCESS = 0;
 
+    public static final int COMMAND_NOT_FOUND = 127;
+
     private static final Pattern WINDOWS_LINE_ENDINGS = Pattern.compile("\r\n");
 
     public ExecutionResults(@Nonnull final String stdin, final int exitCode, @Nonnull final String stdout) {
