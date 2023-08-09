@@ -20,6 +20,10 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
+// TODO write tests for bpc, bpr
+// TODO document how to update bpc, bpr
+// TODO have bashpiledocs go into final translated file
+// TODO remove bin/*.bash files
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -29,7 +33,7 @@ public class BashpileMain implements Callable<Integer> {
 
     // statics
 
-    private static final Pattern SHE_BANG = Pattern.compile("^#!.*$");
+    private static final Pattern SHEBANG = Pattern.compile("^#!.*$");
 
     private static final Logger LOG = LogManager.getLogger(BashpileMain.class);
 
@@ -103,7 +107,7 @@ public class BashpileMain implements Callable<Integer> {
     private @Nonnull InputStream getInputStream() throws IOException {
         if (inputFile != null) {
             final List<String> lines = Files.readAllLines(findFile(inputFile));
-            if (SHE_BANG.matcher(lines.get(0)).matches()) {
+            if (SHEBANG.matcher(lines.get(0)).matches()) {
                 final String removedShebang = String.join("\n", lines.subList(1, lines.size()));
                 LOG.debug("Removed shebang to get:\n" + removedShebang);
                 return IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
