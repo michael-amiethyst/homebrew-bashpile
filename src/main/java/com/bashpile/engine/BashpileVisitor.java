@@ -18,7 +18,7 @@ import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 /**
  * Antlr4 calls these methods.
  * 
- * @see com.bashpile.AntlrUtils#parse(InputStream)
+ * @see com.bashpile.AntlrUtils#parse(String, InputStream) 
  */
 public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
@@ -57,7 +57,10 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
                 .orElseThrow();
 
         // add header, libs and statements
-        return translator.strictModeHeader().add(translator.importsHeaders()).add(statementTranslation);
+        return translator.originHeader()
+                .add(translator.strictModeHeader())
+                .add(translator.importsHeaders())
+                .add(statementTranslation);
     }
 
     // visit statements

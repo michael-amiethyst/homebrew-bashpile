@@ -1,7 +1,7 @@
 #!/mnt/c/Users/desig/win-dev/bashpile/bin/bpr
 
 /**
- * Deploy with `bin/bpc.bps --outputFile=bin/bpr bin/bpr.bps`
+ * Deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
  */
 
 // get script directory

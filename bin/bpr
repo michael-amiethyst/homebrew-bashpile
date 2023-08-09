@@ -1,33 +1,36 @@
 #!/usr/bin/env bash
 
+#
+# Generated from bin/bpr.bps on 2023-08-09T12:54:12.718620240-07:00[America/Los_Angeles] (timestamp 1691610852718)
+#
 # strict mode header
 set -euo pipefail -o posix
 export IFS=$'\n\t'
-# assign statement, Bashpile line 2
+# assign statement, Bashpile line 7
 export dir
 dir=$(dirname "${BASH_SOURCE[0]}")
-# assign statement, Bashpile line 4
+# assign statement, Bashpile line 9
 export projectPath
 projectPath="$dir/.."
-# assign statement, Bashpile line 5
+# assign statement, Bashpile line 10
 export jarPath
 jarPath="${projectPath}/target/bashpile-jar-with-dependencies.jar"
-# creates statement, Bashpile line 7
+# creates statement, Bashpile line 12
 export  translatedFilename
 if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
     trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
     ## wrapped body of creates statement
-    # expression statement, Bashpile line 10
+    # expression statement, Bashpile line 15
     shift
-    # print statement, Bashpile line 11
+    # print statement, Bashpile line 16
     printf "Start of $translatedFilename\n"
-    # expression statement, Bashpile line 12
+    # expression statement, Bashpile line 17
     ./"$translatedFilename" "$@"
     ## end of wrapped body of creates statement
     rm -f "$translatedFilename"
     trap - INT TERM EXIT
 else
-    printf "Failed to create $translatedFilename properly."
+    printf "Failed to create %s properly." "$translatedFilename"
     rm -f "$translatedFilename"
     exit 1
 fi

@@ -16,6 +16,8 @@ public interface TranslationEngine {
 
     // headers
 
+    Translation originHeader();
+
     Translation strictModeHeader();
 
     /** To source our bundled libraries */

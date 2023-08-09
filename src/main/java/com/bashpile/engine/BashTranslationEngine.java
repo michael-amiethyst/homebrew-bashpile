@@ -10,10 +10,12 @@ import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -48,7 +50,11 @@ public class BashTranslationEngine implements TranslationEngine {
     /** This is how we enforce type checking at compile time.  Mutable. */
     private final TypeStack typeStack = new TypeStack();
 
+    /** Should be set immediately after creation with {@link #setVisitor(BashpileVisitor)} */
     private BashpileVisitor visitor;
+
+    @Nonnull
+    private final String origin;
 
     /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
     private int anonBlockCounter = 0;
@@ -64,12 +70,27 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // instance methods
 
+    public BashTranslationEngine(@Nonnull final String origin) {
+        // escape newlines -- origin may be multi-line script
+        this.origin = StringEscapeUtils.escapeJava(origin);
+    }
+
     @Override
     public void setVisitor(@Nonnull final BashpileVisitor visitor) {
         this.visitor = visitor;
     }
 
     // header translations
+
+    @Override
+    public Translation originHeader() {
+        final ZonedDateTime now = ZonedDateTime.now();
+        return toParagraphTranslation("""
+                #
+                # Generated from %s on %s (timestamp %d)
+                #
+                """.formatted(origin, now, now.toInstant().toEpochMilli()));
+    }
 
     /**
      * Set Bash options for scripts.

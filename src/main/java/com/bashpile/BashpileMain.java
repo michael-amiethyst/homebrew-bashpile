@@ -3,6 +3,7 @@ package com.bashpile;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
@@ -20,7 +21,6 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO emit script origin and time into translated script
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -48,7 +48,7 @@ public class BashpileMain implements Callable<Integer> {
 
     @CommandLine.Option(names = {"-o", "--outputFile"}, arity = "0..1",
             description = "Save the transpiled shell script to this filename.  Will overwrite if filename exists.")
-    @Nullable
+    @Nullable @SuppressWarnings("UnusedDeclaration")
     private Path outputFile;
 
     @CommandLine.Parameters(arity = "1..1",
@@ -105,22 +105,26 @@ public class BashpileMain implements Callable<Integer> {
 
     @VisibleForTesting
     public @Nonnull String transpile() throws IOException {
-        try (InputStream inputStream = getInputStream()) {
-            return Asserts.assertNoShellcheckWarnings(parse(inputStream));
+        final Pair<String, InputStream> namedInputStream = getNameAndInputStream();
+        try (final InputStream inputStream = namedInputStream.getRight()) {
+            return Asserts.assertNoShellcheckWarnings(parse(namedInputStream.getLeft(), inputStream));
         }
     }
 
-    private @Nonnull InputStream getInputStream() throws IOException {
+    private @Nonnull Pair<String, InputStream> getNameAndInputStream() throws IOException {
         if (inputFile != null) {
             final List<String> lines = Files.readAllLines(findFile(inputFile));
+            InputStream is;
             if (SHEBANG.matcher(lines.get(0)).matches()) {
                 final String removedShebang = String.join("\n", lines.subList(1, lines.size()));
                 LOG.debug("Removed shebang to get:\n" + removedShebang);
-                return IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
+                is = IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
+            } else {
+                is = Files.newInputStream(inputFile);
             }
-            return Files.newInputStream(inputFile);
+            return Pair.of(inputFile.toString(), is);
         } else if (bashpileScript != null) {
-            return IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
+            return Pair.of(bashpileScript, IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8));
         } else {
             throw new BashpileUncheckedException("Neither inputFile nor bashpileScript supplied.");
         }

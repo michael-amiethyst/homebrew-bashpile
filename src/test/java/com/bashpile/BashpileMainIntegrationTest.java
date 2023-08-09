@@ -22,9 +22,31 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
-    @Test @Timeout(8) @Order(10)
+    private static boolean bprDeployed = false;
+
+    @Test @Timeout(10) @Order(5)
+    public void bprDeploysSuccessfully() throws IOException {
+        log.debug("In bprDeploysSuccessfully");
+
+        final String translatedFilename = "bin/bpr";
+        final String command = "bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
+        bprDeployed = true;
+        final List<String> lines = results.stdoutLines();
+        assertEquals(translatedFilename, lines.get(lines.size() - 1));
+        try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
+                .filter(path -> path.getFileName().toString().startsWith("output"))) {
+            assertEquals(0, outputFiles.count());
+        }
+    }
+
+    @Test @Timeout(10) @Order(10)
     public void noSubCommandTranspiles() throws IOException {
         log.debug("In noSubCommandTest");
+        Assumptions.assumeTrue(bprDeployed);
 
         final String command = "bin/bpc src/test/resources/testrigData.bps";
         final String translatedFilename = "src/test/resources/testrigData.bps.bpt";
@@ -44,9 +66,10 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
     }
 
-    @Test @Timeout(5) @Order(20)
+    @Test @Timeout(8) @Order(20)
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
         log.debug("In noSubCommandWithNoExtensionTranspiles");
+        Assumptions.assumeTrue(bprDeployed);
 
         final String command = "bin/bpc src/test/resources/testrigData";
         final String translatedFilename = "src/test/resources/testrigData.bpt";
@@ -66,9 +89,10 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
     }
 
-    @Test @Timeout(5) @Order(30)
+    @Test @Timeout(8) @Order(30)
     public void noSubCommandWithMissingFileFails() throws IOException {
         log.debug("In noSubCommandWithMissingFileFails");
+        Assumptions.assumeTrue(bprDeployed);
 
         final String command = "bin/bpc src/test/resources/testrigData.fileDoesNotExist";
         final ExecutionResults results = runAndJoin(command);
@@ -78,9 +102,10 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("output.txt")));
     }
 
-    @Test @Timeout(10) @Order(20)
+    @Test @Timeout(15) @Order(40)
     public void noSubCommandWithOutputSpecifiedTranspiles() throws IOException {
         log.debug("In noSubCommandWithNoExtensionTranspiles");
+        Assumptions.assumeTrue(bprDeployed);
 
         final String translatedFilename = "src/test/resources/testrigData.example.bps";
         final String command = "bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
@@ -91,7 +116,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             assertSuccessfulExitCode(results);
             List<String> lines = results.stdoutLines();
             assertEquals(translatedFilename, lines.get(lines.size() - 1));
-            try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
+            final Path cwd = Path.of(".");
+            try (final Stream<Path> outputFiles = Files.walk(cwd)
                     .filter(path -> path.getFileName().toString().startsWith("output"))) {
                 assertEquals(0, outputFiles.count());
             }
@@ -101,7 +127,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             assertSuccessfulExitCode(results);
             lines = results.stdoutLines();
             assertEquals(translatedFilename, lines.get(lines.size() - 1));
-            try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
+            try (final Stream<Path> outputFiles = Files.walk(cwd)
                     .filter(path -> path.getFileName().toString().startsWith("output"))) {
                 assertEquals(0, outputFiles.count());
             }

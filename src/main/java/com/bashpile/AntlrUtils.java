@@ -31,7 +31,8 @@ public class AntlrUtils {
     private static final Logger LOG = LogManager.getLogger(AntlrUtils.class);
 
     /** antlr calls */
-    public static @Nonnull String parse(@Nonnull final InputStream is) throws IOException {
+    public static @Nonnull String parse(
+            @Nonnull final String origin, @Nonnull final InputStream is) throws IOException {
         LOG.trace("Starting parse");
         // lexer
         final CharStream input = CharStreams.fromStream(is);
@@ -42,13 +43,13 @@ public class AntlrUtils {
         final BashpileParser parser = new BashpileParser(tokens);
         final ParseTree tree = parser.program();
 
-        return transpile(tree);
+        return transpile(origin, tree);
     }
 
     /** Returns bash text block */
-    private static @Nonnull String transpile(@Nonnull final ParseTree tree) {
+    private static @Nonnull String transpile(@Nonnull final String origin, @Nonnull final ParseTree tree) {
         // visitor and engine linked in visitor constructor
-        final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
+        final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine(origin));
         return bashpileLogic.visit(tree).body();
     }
 
