@@ -1,3 +1,9 @@
+#!/mnt/c/Users/desig/win-dev/bashpile/bin/bpr
+
+/**
+ * Deploy with `bin/bpc.bps --outputFile=bin/bpr bin/bpr.bps`
+ */
+
 // get script directory
 dir: str         = $(dirname "${BASH_SOURCE[0]}")
 

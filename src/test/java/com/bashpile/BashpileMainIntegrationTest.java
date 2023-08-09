@@ -77,4 +77,36 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFailedExitCode(results);
         assertFalse(Files.exists(Path.of("output.txt")));
     }
+
+    @Test @Timeout(10) @Order(20)
+    public void noSubCommandWithOutputSpecifiedTranspiles() throws IOException {
+        log.debug("In noSubCommandWithNoExtensionTranspiles");
+
+        final String translatedFilename = "src/test/resources/testrigData.example.bps";
+        final String command = "bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
+        ExecutionResults results = runAndJoin(command);
+        try {
+            log.debug("Output text:\n{}", results.stdout());
+
+            assertSuccessfulExitCode(results);
+            List<String> lines = results.stdoutLines();
+            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
+                    .filter(path -> path.getFileName().toString().startsWith("output"))) {
+                assertEquals(0, outputFiles.count());
+            }
+
+            // 2nd run to verify overwrites OK
+            results = runAndJoin(command);
+            assertSuccessfulExitCode(results);
+            lines = results.stdoutLines();
+            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
+                    .filter(path -> path.getFileName().toString().startsWith("output"))) {
+                assertEquals(0, outputFiles.count());
+            }
+        } finally {
+            Files.deleteIfExists(Path.of(translatedFilename));
+        }
+    }
 }

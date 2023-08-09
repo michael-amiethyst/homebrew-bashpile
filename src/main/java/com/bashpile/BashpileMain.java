@@ -20,10 +20,7 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO write tests for bpc, bpr
-// TODO document how to update bpc, bpr
-// TODO have bashpiledocs go into final translated file
-// TODO remove bin/*.bash files
+// TODO emit script origin and time into translated script
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -48,6 +45,11 @@ public class BashpileMain implements Callable<Integer> {
 
     @Nullable
     private String bashpileScript;
+
+    @CommandLine.Option(names = {"-o", "--outputFile"}, arity = "0..1",
+            description = "Save the transpiled shell script to this filename.  Will overwrite if filename exists.")
+    @Nullable
+    private Path outputFile;
 
     @CommandLine.Parameters(arity = "1..1",
             description = "Use the specified bashpile file.")
@@ -80,15 +82,19 @@ public class BashpileMain implements Callable<Integer> {
             return 1;
         }
 
-        final String transpiledFilename = filename + ".bpt";
-        final Path outputFile = Path.of(transpiledFilename);
-        if (Files.exists(outputFile)) {
-            System.out.println(transpiledFilename + " already exists.  Will not overwrite.");
-            return 2;
+        Path transpiledFilename;
+        if (outputFile != null) {
+            transpiledFilename = outputFile;
+        } else {
+            transpiledFilename = Path.of(filename + ".bpt");
+            if (Files.exists(transpiledFilename)) {
+                System.out.println(transpiledFilename + " already exists.  Will not overwrite.");
+                return 2;
+            }
         }
         LOG.info("Transpiling {} to {}", filename, transpiledFilename);
         final String bashScript = "#!/usr/bin/env bash\n\n" + transpile();
-        Files.writeString(outputFile, bashScript);
+        Files.writeString(transpiledFilename, bashScript);
         // last line must be the filename we created
         LOG.info("Created file is:");
         System.out.println(transpiledFilename);

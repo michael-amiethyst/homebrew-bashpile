@@ -1,19 +1,13 @@
-#!/usr/bin/env bash
+#!/mnt/c/Users/desig/win-dev/bashpile/bin/bpr
 
-# strict mode header
-set -euo pipefail -o posix
-export IFS=$'\n\t'
-# assign statement, Bashpile line 2
-export SOURCE
-SOURCE=${BASH_SOURCE[0]}
-# assign statement, Bashpile line 3
-export DIR
-DIR=$(dirname "$SOURCE")
-# assign statement, Bashpile line 5
-export PROJECT_PATH
-PROJECT_PATH="$DIR/.."
-# assign statement, Bashpile line 6
-export JAR_PATH
-JAR_PATH="${PROJECT_PATH}/target/bashpile-jar-with-dependencies.jar"
-# expression statement, Bashpile line 7
-java -jar "$JAR_PATH" "$1"
+/**
+ * Deploy with `bin/bpc.bps --outputFile=bin/bpc bin/bpc.bps`
+ */
+
+// get script directory
+SOURCE: str = #(${BASH_SOURCE[0]})
+DIR: str    = $(dirname "$SOURCE")
+
+PROJECT_PATH: str = "$DIR/.."
+JAR_PATH: str     = "${PROJECT_PATH}/target/bashpile-jar-with-dependencies.jar"
+#(java -jar "$JAR_PATH" "$@")
