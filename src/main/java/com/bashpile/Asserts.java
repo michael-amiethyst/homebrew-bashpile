@@ -3,7 +3,6 @@ package com.bashpile;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
-import com.bashpile.exceptions.ThrowingSupplier;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.shell.BashShell;
 import com.bashpile.shell.ExecutionResults;
@@ -18,6 +17,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.bashpile.exceptions.Exceptions.asUnchecked;
 import static java.util.Objects.requireNonNullElse;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 
@@ -147,7 +147,6 @@ public class Asserts {
         }
     }
 
-
     protected static String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
         final Path tempFile = Path.of("temp.bps");
         try {
@@ -162,18 +161,6 @@ public class Asserts {
             throw new BashpileUncheckedException(e);
         } finally {
             asUnchecked(() -> Files.deleteIfExists(tempFile));
-        }
-    }
-
-    // helpers
-
-    static protected <T> void asUnchecked(final @Nonnull ThrowingSupplier<T, Exception> throwingSupplier) {
-        try {
-            throwingSupplier.get();
-        } catch (BashpileUncheckedAssertionException e) {
-            throw e;
-        } catch (Exception ex) {
-            throw new BashpileUncheckedException(ex);
         }
     }
 }

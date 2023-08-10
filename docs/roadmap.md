@@ -1,11 +1,11 @@
 # MVP features / drink my own champaign
 
-# Implement testrig.bp
+# Prepare for initial deployment
 1. Create brew deployment
 2. Add options to adjust the shellcheck level
 3. Update wiki and docs for end-users and contributing
 
-# Enhance testrig.bp
+# Additional features
 1. String interpolation with $[]
     1. include special __OPTIONS[] array for $@, $1, etc.
 2. conditionals (if-elseif-else), comparison operators (<, =>, etc) and boolean logic
