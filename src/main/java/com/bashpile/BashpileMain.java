@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
+// TODO ensure all public and protected methods are JavaDoc'd
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

@@ -30,7 +30,12 @@ public class AntlrUtils {
 
     private static final Logger LOG = LogManager.getLogger(AntlrUtils.class);
 
-    /** antlr calls */
+    /**
+     * These are the core antlr calls to run the lexer, parser, visitor and translation engine.
+     *
+     * @param origin The filename (if a file) or text (if just script lines) of the <code>is</code>.
+     * @param is The input stream holding the Bashpile that we parse.
+     */
     public static @Nonnull String parse(
             @Nonnull final String origin, @Nonnull final InputStream is) throws IOException {
         LOG.trace("Starting parse");

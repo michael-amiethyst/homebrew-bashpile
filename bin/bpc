@@ -1,13 +1,9 @@
 #!/mnt/c/Users/desig/win-dev/bashpile/bin/bpr
 
-/**
- * Deploy with `bin/bpc.bps --outputFile=bin/bpc bin/bpc.bps`
- */
-
 // get script directory
-SOURCE: str = #(${BASH_SOURCE[0]})
-DIR: str    = $(dirname "$SOURCE")
+source: str = #(${BASH_SOURCE[0]})
+scriptDir: str    = $(dirname "$source")
 
-PROJECT_PATH: str = "$DIR/.."
-JAR_PATH: str     = "${PROJECT_PATH}/target/bashpile-jar-with-dependencies.jar"
-#(java -jar "$JAR_PATH" "$@")
+projectDir: str = "$scriptDir/.."
+jarPath: str     = "${projectDir}/target/bashpile-jar-with-dependencies.jar"
+#(java -jar "$jarPath" "$@")

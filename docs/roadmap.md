@@ -2,8 +2,8 @@
 
 # Implement testrig.bp
 1. Create brew deployment
-2. Add options for final filename, adjust shellcheck level, overwrite final filename
-3. Update wiki, docs (and maybe create videos) for end-users
+2. Add options to adjust the shellcheck level
+3. Update wiki and docs for end-users and contributing
 
 # Enhance testrig.bp
 1. String interpolation with $[]

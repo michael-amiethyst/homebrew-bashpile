@@ -344,6 +344,55 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
+    @Test @Order(191)
+    public void nestedCreateStatementTrapsInAnonymousBlockWorks() throws IOException, InterruptedException {
+        final String bashpileScript = """
+                #(rm -f captainsLog.txt || true)
+                #(rm -f captainsLog2.txt || true)
+                block:
+                    contents: str
+                    contents2: str
+                    #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt) creates "captainsLog.txt":
+                        contents = $(cat $(echo captainsLog.txt))
+                        #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog2.txt) creates "captainsLog2.txt":
+                            contents2 = $(cat $(echo captainsLog2.txt))
+                            #(sleep 3)
+                        #(sleep 3)
+                    print(contents)
+                    print(contents2)""";
+        final Path innerFile = Path.of("captainsLog2.txt");
+        final Path outerFile = Path.of("captainsLog.txt");
+        try(final BashShell shell = runTextAsync(bashpileScript)) {
+            Thread.sleep(Duration.ofMillis(100));
+            shell.sendTerminationSignal();
+            final ExecutionResults results = shell.join();
+            assertCorrectFormatting(results);
+            assertFailedExitCode(results);
+            // TERM signals wipe STDOUT -- unknown why
+            assertEquals("", results.stdout());
+
+            // it can take a while for the deletes in the script percolate (at least with WSL)
+            boolean innerFileExists = Files.exists(innerFile);
+            int i = 0;
+            while (innerFileExists && i++ < 10) {
+                Thread.sleep(500);
+                innerFileExists = Files.exists(innerFile);
+            }
+            assertFalse(innerFileExists, "inner trap file not deleted");
+
+            boolean outerFileExists = true;
+            i = 0;
+            while (outerFileExists && i++ < 10) {
+                Thread.sleep(500);
+                outerFileExists = Files.exists(outerFile);
+            }
+            assertFalse(outerFileExists, "outer trap file not deleted");
+        } finally {
+            Files.deleteIfExists(innerFile);
+            Files.deleteIfExists(outerFile);
+        }
+    }
+
     @Test @Order(200)
     public void createStatementWithIdWorks() throws IOException {
         final String bashpileScript = """

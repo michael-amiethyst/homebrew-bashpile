@@ -168,4 +168,9 @@ log: str = #(
 
 ## Easy Running
 
-You can either use Bashpile from the Shebang line or run `bashpile -inputFile=FILE transpile > BASH_SCRIPT`.
+You can use the Bashpile Runner at `bin/bpr` from the shebang line to run a Bashpile script 
+(the standard suffix, if your script has one, is ".bps").
+
+You can also run the Bashpile Compiler at `bin/bpc`.  The syntax is 
+`bin/bpc --outputFile=bin/bpr SCRIPT_PATH`.  If outputFile is not specified the default is to
+name the Bashpile translation as `SCRIPT_PATH.bpt`.

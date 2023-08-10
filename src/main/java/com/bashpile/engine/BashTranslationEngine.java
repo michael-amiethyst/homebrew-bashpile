@@ -296,7 +296,7 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     @Override
     public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
-        boolean fileNameIsId = ctx.String() == null;
+        final boolean fileNameIsId = ctx.String() == null;
 
         // handle the initial variable declaration and type, if applicable
         String variableName;
