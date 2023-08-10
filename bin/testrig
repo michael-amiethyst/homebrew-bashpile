@@ -1,10 +1,11 @@
 #!/mnt/c/Users/desig/win-dev/bashpile/bin/bpr
 
-// Usage: testrig src/test/resources/testrigData.bps
+/**
+ * Usage: testrig src/test/resources/testrigData.bps
+*/
 
-classPath: str
 #(mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt) creates "cpath.txt":
-    classPath = $(cat cpath.txt)
+    classPath: str = $(cat cpath.txt)
     #(java -cp target/classes:$classPath org.antlr.v4.gui.TestRig com.bashpile.Bashpile program -gui "$@")
 
 // enhanced syntax

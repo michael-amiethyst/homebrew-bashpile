@@ -1,9 +1,7 @@
 #!/mnt/c/Users/desig/win-dev/bashpile/bin/bpr
 
 // get script directory
-source: str = #(${BASH_SOURCE[0]})
-scriptDir: str    = $(dirname "$source")
+scriptDir: str = $(dirname "${BASH_SOURCE[0]}")
 
-projectDir: str = "$scriptDir/.."
-jarPath: str     = "${projectDir}/target/bashpile-jar-with-dependencies.jar"
+jarPath  : str = scriptDir + "/../target/bashpile-jar-with-dependencies.jar"
 #(java -jar "$jarPath" "$@")
