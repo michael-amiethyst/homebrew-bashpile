@@ -154,7 +154,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get name and type
         final String variableName = ctx.Id().getText();
         final Type expectedType = typeStack.getVariableType(variableName);
-        if (expectedType.isNotFound()) {
+        if (expectedType.equals(NOT_FOUND)) {
             throw new TypeError(variableName + " has not been declared", lineNumber(ctx));
         }
 
