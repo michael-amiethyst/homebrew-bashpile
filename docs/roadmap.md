@@ -1,9 +1,7 @@
 # MVP features / drink my own champaign
 
 # Prepare for initial deployment
-1. Create brew deployment
-2. Add options to adjust the shellcheck level
-3. Update wiki and docs for end-users and contributing
+1. Update wiki and docs for end-users and contributing
 
 # Additional features
 1. String interpolation with $[]
