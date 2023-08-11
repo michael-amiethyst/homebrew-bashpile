@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+#
+# Generated from bin/bpr.bps on 2023-08-10T22:05:42.941763234-07:00[America/Los_Angeles] (timestamp 1691730342941)
+#
+# strict mode header
+set -eEuo pipefail -o posix
+export IFS=$'\n\t'
+declare s
+trap 's=$?; echo "$0: Error on line $LINENO: $BASH_COMMAND"; exit $s' ERR
+# assign statement, Bashpile line 7
+export dir
+dir=$(dirname "${BASH_SOURCE[0]}")
+# assign statement, Bashpile line 8
+export jarPath
+jarPath=${dir}/../target/bashpile-jar-with-dependencies.jar
+# creates statement, Bashpile line 11
+export  translatedFilename
+if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
+    trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
+    ## wrapped body of creates statement
+    # expression statement, Bashpile line 14
+    shift
+    # print statement, Bashpile line 15
+    printf "Start of ${translatedFilename}\n"
+    # expression statement, Bashpile line 16
+    ./"$translatedFilename" "$@"
+    ## end of wrapped body of creates statement
+    rm -f "$translatedFilename"
+    trap - INT TERM EXIT
+else
+    printf "Failed to create %s properly." "$translatedFilename"
+    rm -f "$translatedFilename"
+    exit 1
+fi
+__bp_exitCode=$?
+if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi

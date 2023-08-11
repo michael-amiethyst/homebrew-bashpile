@@ -6,3 +6,4 @@
 * 0.6.0 - Single line comments, Multiline Comments, BashpileDocs (like JavaDocs)
 * 0.7.0 - Shell Strings, Inlines (Bash Command Substitutions)
 * 0.8.0 - Create statement
+* 0.9.0 - Easy running from the command line ("Drink your own champaign"/dogfooding)

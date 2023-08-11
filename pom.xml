@@ -6,7 +6,7 @@
 
     <groupId>com.bashpile</groupId>
     <artifactId>bashpile</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -99,6 +99,7 @@
     </dependencies>
 
     <build>
+        <finalName>bashpile</finalName>
         <plugins>
             <plugin>
                 <groupId>org.antlr</groupId>
@@ -120,6 +121,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
+                <configuration>
+                    <compilerVersion>20</compilerVersion>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

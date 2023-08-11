@@ -1,5 +1,7 @@
 package com.bashpile.engine.strongtypes;
 
+import com.bashpile.BashpileParser;
+import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.exceptions.UserError;
 
 import javax.annotation.Nonnull;
@@ -12,7 +14,7 @@ import static com.bashpile.Asserts.assertMapDoesNotContainKey;
 /**
  * A call stack but just for Type information to implement strong typing.
  *
- * @see <a href="https://en.wikipedia.org/wiki/Call_stack">Wikipedio - Call Stack</a>
+ * @see <a href="https://en.wikipedia.org/wiki/Call_stack">Wikipedia - Call Stack</a>
  */
 public class TypeStack {
     private final Stack<TypeStackframe> frames;
@@ -22,6 +24,7 @@ public class TypeStack {
         frames.push(TypeStackframe.of());
     }
 
+    /** Puts the variable's type into the current stackframe.  lineNumber is needed for error information */
     public void putVariableType(
             @Nonnull final String variableName, @Nonnull final Type type, final int lineNumber) {
         final Map<String, Type> typeMap = frames.peek().variables();
@@ -30,6 +33,7 @@ public class TypeStack {
         typeMap.put(variableName, type);
     }
 
+    /** Gets the type of the variable, or NOT_FOUND */
     public @Nonnull Type getVariableType(@Nonnull final String variableName) {
 
         // foreach stack frame search for variableName in the variableMap
@@ -45,15 +49,18 @@ public class TypeStack {
         return Type.NOT_FOUND;
     }
 
+    /** Checks if the variable is defined */
     public boolean containsVariable(@Nonnull final String variableName) {
         final Type foundType = getVariableType(variableName);
         return foundType != Type.NOT_FOUND;
     }
 
+    /** Puts the function's type information into the current stackframe */
     public void putFunctionTypes(@Nonnull final String functionName, @Nonnull final FunctionTypeInfo functionTypeInfo) {
         frames.peek().functions().put(functionName, functionTypeInfo);
     }
 
+    /** Gets the type information for the function, or {@link FunctionTypeInfo#EMPTY}. */
     public @Nonnull FunctionTypeInfo getFunctionTypes(@Nonnull final String functionName) {
 
         // foreach stack frame search for variableName in the variableMap
@@ -69,12 +76,22 @@ public class TypeStack {
         return FunctionTypeInfo.EMPTY;
     }
 
+    /** Checks if the function is defined */
     public boolean containsFunction(@Nonnull final String functionName) {
         final FunctionTypeInfo foundFunction = getFunctionTypes(functionName);
         return foundFunction != FunctionTypeInfo.EMPTY;
     }
 
-    public TypeStackClosable closable() {
+    /**
+     * Push a new stack frame.
+     * <br>
+     * See {@link BashTranslationEngine#functionDeclarationStatement(BashpileParser.FunctionDeclarationStatementContext)}
+     * for example usage.
+     *
+     * @return a type to pop the frame after it is out of scope with a try-with-resources statement.
+     * @see <a href=https://www.techopedia.com/definition/22304/stack-frame>Stack Frame definition</a>
+     */
+    public TypeStackClosable pushFrame() {
         return new TypeStackClosable(this);
     }
 

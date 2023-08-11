@@ -2,17 +2,20 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
-import com.bashpile.StringUtils;
+import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -22,13 +25,14 @@ import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
-import static com.bashpile.StringUtils.lambdaLastLine;
+import static com.bashpile.Strings.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static com.bashpile.engine.strongtypes.TypeMetadata.INLINE;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 import static com.google.common.collect.Iterables.getLast;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Translates to Bash5 with four spaces as a tab.
@@ -46,7 +50,11 @@ public class BashTranslationEngine implements TranslationEngine {
     /** This is how we enforce type checking at compile time.  Mutable. */
     private final TypeStack typeStack = new TypeStack();
 
+    /** Should be set immediately after creation with {@link #setVisitor(BashpileVisitor)} */
     private BashpileVisitor visitor;
+
+    @Nonnull
+    private final String origin;
 
     /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
     private int anonBlockCounter = 0;
@@ -58,9 +66,14 @@ public class BashTranslationEngine implements TranslationEngine {
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
     /** The current create statement filenames for using in a trap command */
-    private final Stack<String> createFilenames = new Stack<>();
+    private final Stack<String> createFilenamesStack = new Stack<>();
 
     // instance methods
+
+    public BashTranslationEngine(@Nonnull final String origin) {
+        // escape newlines -- origin may be multi-line script
+        this.origin = StringEscapeUtils.escapeJava(origin);
+    }
 
     @Override
     public void setVisitor(@Nonnull final BashpileVisitor visitor) {
@@ -69,23 +82,39 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // header translations
 
+    @Override
+    public Translation originHeader() {
+        final ZonedDateTime now = ZonedDateTime.now();
+        return toParagraphTranslation("""
+                #
+                # Generated from %s on %s (timestamp %d)
+                #
+                """.formatted(origin, now, now.toInstant().toEpochMilli()));
+    }
+
     /**
      * Set Bash options for scripts.
      * <br>
      * <ul><li>set -e: exit on failed command</li>
+     * <li>set -E: subshells and command substitutions inherit our ERR trap</li>
      * <li>set -u: exit on undefined variable --
      *  we don't need this for Bashpile generated code but there may be `source`d code.</li>
      * <li>set -o pipefail: exit immediately when a command in a pipeline fails.</li>
      * <li>set -o posix: Posix mode -- we need this so that all subshells inherit the -eu options.</li></ul>
      *
-     * @see <a href=https://unix.stackexchange.com/a/23099">Q & A </a>
+     * @see <a href=https://unix.stackexchange.com/a/23099>Q & A</a>
+     * @see <a href=http://redsymbol.net/articles/unofficial-bash-strict-mode/>Unofficial Bash Strict Mode</a>
+     * @see <a href=https://disconnected.systems/blog/another-bash-strict-mode/>Another Bash Strict Mode</a>
      * @return The Strict Mode header
      */
     @Override
     public @Nonnull Translation strictModeHeader() {
-        String strictMode = """
-                set -euo pipefail -o posix
+        // we need to declare s to avoid a false positive for a shellcheck warning
+        final String strictMode = """
+                set -eEuo pipefail -o posix
                 export IFS=$'\\n\\t'
+                declare s
+                trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
                 """;
         return toParagraphTranslation("# strict mode header\n%s".formatted(strictMode));
     }
@@ -119,7 +148,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
         final Translation assignment =
-                toParagraphTranslation(assignmentBody).appendPreamble(exprTranslation.preamble());
+                toParagraphTranslation(assignmentBody).addPreamble(exprTranslation.preamble());
 
         // order is comment, preamble, subcomment, variable declaration, assignment
         final Translation subcommentToAssignment = subcomment.add(variableDeclaration).add(assignment);
@@ -131,7 +160,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get name and type
         final String variableName = ctx.Id().getText();
         final Type expectedType = typeStack.getVariableType(variableName);
-        if (expectedType.isNotFound()) {
+        if (expectedType.equals(NOT_FOUND)) {
             throw new TypeError(variableName + " has not been declared", lineNumber(ctx));
         }
 
@@ -148,7 +177,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String reassignmentBody = "%s%s=%s\n".formatted(
                 getLocalText(true), variableName, exprTranslation.body());
         final Translation reassignment =
-                toLineTranslation(reassignmentBody).appendPreamble(exprTranslation.preamble());
+                toLineTranslation(reassignmentBody).addPreamble(exprTranslation.preamble());
 
         // order is: comment, preamble, subcomment, reassignment
         final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
@@ -187,7 +216,8 @@ public class BashTranslationEngine implements TranslationEngine {
         try (var ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
             // create translations
             final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
-            final Translation hoistedFunction = toParagraphTranslation(visitor.visit(functionDeclCtx).body());
+            // remove trailing newline
+            final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
             // register that this forward declaration has been handled
             foundForwardDeclarations.add(ctx.typedId().Id().getText());
             // add translations
@@ -218,7 +248,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
-        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.closable()) {
+        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
 
             // register local variable types
             ctx.paramaters().typedId().forEach(
@@ -252,7 +282,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
-        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.closable()) {
+        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
             final Translation comment = createHoistedCommentTranslation("anonymous block", lineNumber(ctx));
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
@@ -272,66 +302,101 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     @Override
     public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
+        final boolean fileNameIsId = ctx.String() == null;
+
+        // handle the initial variable declaration and type, if applicable
+        String variableName;
+        if (ctx.typedId() != null) {
+            variableName = ctx.typedId().Id().getText();
+            if (fileNameIsId) {
+                Asserts.assertEquals(variableName, ctx.Id().getText(),
+                        "Create Statements must have matching Ids at the start and end.");
+            }
+            // add this variable to the type map
+            final Type type = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
+            typeStack.putVariableType(variableName, type, lineNumber(ctx));
+        }
+
         // create child translations and other variables
         final Translation shellString = visitor.visit(ctx.shellString());
-        final String filename = visitor.visit(ctx.String()).unquoteBody().body();
-        createFilenames.push(filename);
+        final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
+        String filename =  visitor.visit(filenameNode).unquoteBody().body();
+        // convert ID to "$ID"
+        filename = fileNameIsId ? "\"$%s\"".formatted(filename) : filename;
+
+        // create our final translation and pop the stack
+        createFilenamesStack.push(filename);
         try {
-            final Function<Translation, Translation> prependTabsToBodyLines = tr -> {
-                final String[] lines = tr.body().split("\n");
-                final String tabbedBody = Arrays.stream(lines)
-                        .filter(StringUtils::isNotBlank)
-                        .map(str -> TAB + str)
-                        .collect(Collectors.joining("\n"));
-                return tr.body(StringUtils.appendIfMissing(tabbedBody, "\n"));
-            };
+            // create our statements translation
             final Translation statements = ctx.statement().stream()
                     .map(visitor::visit)
-                    .map(prependTabsToBodyLines)
                     .reduce(Translation::add)
                     .orElseThrow()
                     .assertParagraphBody()
                     .assertNoBlankLinesInBody();
 
             // create other translations
-
             final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
             final Translation subcomment =
                     subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
-            // set noclobber avoids some race conditions
-            // first trap deletes the file if it finds a matching Linux signal, it is in effect until the second trap
-            // the signals are for CTRL-C (INT), if the process is killed (TERM) or an exit from the script
-            // also `exit` in an if statement doesn't work, so we need to `return` and bubble up a failing exit code
-            final String body = """
-                    if (set -o noclobber; %s) 2> /dev/null; then
-                        trap 'rm -f %s; exit $?' INT TERM EXIT
-                        ## wrapped body of creates statement
-                    %s
-                        ## end of wrapped body of creates statement
-                        rm -f %s
-                        trap - INT TERM EXIT
-                    else
-                        printf "Failed to create %s."
-                        return 1
-                    fi
-                    __bp_exitCode=$?
-                    if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                    """.formatted(
-                            shellString.body(),
-                            String.join(" ", createFilenames),
-                            statements.body(),
-                            filename,
-                            filename);
+
+            // create a large if-else block with traps
+            final String body = getBodyString(ctx, shellString, filename, statements);
             final Translation bodyTranslation = toParagraphTranslation(body);
 
             // merge translations and preambles
             return comment.add(
                     subcomment.add(bodyTranslation)
-                    .appendPreamble(shellString.preamble())
+                    .addPreamble(shellString.preamble())
                     .mergePreamble());
         } finally {
-            createFilenames.pop();
+            createFilenamesStack.pop();
         }
+    }
+
+    /** Helper to {@link #createsStatement(BashpileParser.CreatesStatementContext)} */
+    private String getBodyString(BashpileParser.CreatesStatementContext ctx, Translation shellString, String filename, Translation statements) {
+        final String check = String.join("; ", shellString.body().trim().split("\n"));
+
+        // set noclobber avoids some race conditions
+        String ifGuard;
+        if (ctx.typedId() != null) {
+            final String variableName = ctx.typedId().Id().getText();
+            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s) 2> /dev/null; then".formatted(
+                    getLocalText(), variableName, variableName, check);
+        } else {
+            ifGuard = "if (set -o noclobber; %s) 2> /dev/null; then".formatted(check);
+        }
+        // create an ifBody to put into the bodyTranslation
+        // only one trap can be in effect at a time, so we keep a stack of all current filenames to delete
+        String ifBody = """
+                trap 'rm -f %s; exit 10' INT TERM EXIT
+                ## wrapped body of creates statement
+                %s
+                ## end of wrapped body of creates statement
+                rm -f %s
+                trap - INT TERM EXIT""".formatted(
+                String.join(" ", createFilenamesStack), statements.body(), filename);
+        ifBody = lambdaAllLines(ifBody, str -> TAB + str);
+        ifBody = lambdaFirstLine(ifBody, String::stripLeading);
+
+        // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
+        final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
+        String elseBody = """
+                printf "Failed to create %%s properly." "%s"
+                rm -f %s
+                %s 1""".formatted(STRING_QUOTES.matcher(filename).replaceAll(""), filename, exitOrReturn);
+        elseBody = lambdaAllLines(elseBody, str -> TAB + str);
+        elseBody = lambdaFirstLine(elseBody, String::stripLeading);
+        return """
+                %s
+                    %s
+                else
+                    %s
+                fi
+                __bp_exitCode=$?
+                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                """.formatted(ifGuard, ifBody, elseBody);
     }
 
     @Override
@@ -365,9 +430,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = createHoistedCommentTranslation("return statement", lineNumber(ctx));
         final Function<String, String> toPrintf =
                 str -> "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""));
-        final Translation exprBody = toParagraphTranslation(
-                lambdaLastLine(toPrintf, exprTranslation.body()))
-                .appendPreamble(exprTranslation.preamble());
+        final Translation exprBody = toParagraphTranslation(lambdaLastLine(exprTranslation.body(), toPrintf))
+                .addPreamble(exprTranslation.preamble());
         return comment.add(exprBody.mergePreamble());
     }
 
@@ -420,7 +484,9 @@ public class BashTranslationEngine implements TranslationEngine {
         String argText = "";
         if (hasArgs) {
             argText = " " + argumentTranslations.stream()
-                    .map(Translation::body).collect(Collectors.joining(" "));
+                    .map(Translation::body)
+                    .map("\"%s\""::formatted)
+                    .collect(Collectors.joining(" "));
         }
         final Translation preambles = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
 
@@ -429,7 +495,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // suppress output if we are a top-level statement
         // this covers the case of calling a str function without using the string
-        final boolean topLevelStatement = !in(CALC_LABEL) && !in(PRINT_LABEL);
+        final boolean topLevelStatement = isTopLevelShell();
         if (topLevelStatement) {
             return new Translation(preambles.preamble(), id + argText + " >/dev/null", retType, NORMAL);
         } // else return an inline (command substitution)
@@ -461,14 +527,14 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation first = childTranslations.get(0);
         final Translation second = getLast(childTranslations);
         // check for nested calc call
-        if (LevelCounter.in(CALC_LABEL) && areNumberExpressions(first, second)) {
+        if (LevelCounter.in(CALC_LABEL) && maybeNumericExpressions(first, second)) {
             return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
             // types section
-        } else if (areStringExpressions(first, second)) {
+        } else if (maybeStringExpressions(first, second)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
             return toTranslation(Stream.of(first.unquoteBody(), second.unquoteBody()), STR, NORMAL);
-        } else if (areNumberExpressions(first, second)) {
+        } else if (maybeNumericExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
             return toTranslation(childTranslations.stream(), Type.NUMBER, INLINE)
@@ -498,7 +564,23 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         // get the contents -- ditches the #() syntax
         final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
-        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL);
+        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL)
+                .lambdaBody(body -> {
+                    // find leading whitespace of first non-blank line.  Strip that many chars from each line
+                    final String[] lines = body.split("\n");
+                    int i = 0;
+                    while(isBlank(lines[i])) {
+                        i++;
+                    }
+                    final String line = lines[i];
+                    final int spaces = line.length() - line.stripLeading().length();
+                    final String trailingNewline = body.endsWith("\n") ? "\n" : "";
+                    return Arrays.stream(lines)
+                            .filter(str -> !Strings.isBlank(str))
+                            .map(str -> str.substring(spaces))
+                            .collect(Collectors.joining("\n"))
+                            + trailingNewline;
+                });
         if (LevelCounter.inCommandSubstitution()) {
             // then wrap in command substitution and unnest as needed
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
@@ -606,7 +688,11 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation preambles = subcomment.add(export).add(assign).add(exitCode).add(check);
 
         // add the preambles and swap the body
-        return tr.appendPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
+        return tr.addPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
+    }
+
+    private static boolean isTopLevelShell() {
+        return !in(CALC_LABEL) && !in(PRINT_LABEL);
     }
 
     // typecast helpers

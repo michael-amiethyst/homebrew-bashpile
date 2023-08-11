@@ -2,14 +2,15 @@ package com.bashpile.shell;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.io.Closeable;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.Properties;
 import java.util.regex.Pattern;
 
 /**
@@ -36,17 +37,29 @@ public class BashShell implements Closeable {
      * @throws IOException and {@link BashpileUncheckedException} wrapping
      *  ExecutionException, InterruptedException or TimeoutException.
      */
-    public static @Nonnull ExecutionResults runAndJoin(@Nonnull final String bashString) throws IOException {
+    public static @Nonnull ExecutionResults runAndJoin(@Nonnull String bashString) throws IOException {
         try(final BashShell shell = runAsync(bashString)) {
             return shell.join();
         }
     }
 
-    public static @Nonnull BashShell runAsync(@Nonnull final String bashString) throws IOException {
+    /**
+     * Runs bashString and supporting worker threads in the background
+     *
+     * @param bashString The Bash script to run
+     * @return A BashShell holding the running threads.
+     * @throws IOException on error.
+     *
+     * @see #sendTerminationSignal()
+     * @see #join()
+     */
+    public static @Nonnull BashShell runAsync(@Nonnull String bashString) throws IOException {
+        bashString = prependAdditionalPath(bashString);
+
         LOG.info("Executing bash text:\n" + bashString);
 
         // run our CommandLine process in background threads
-        final IoManager commandLine = IoManager.spawnConsumer(spawnLinuxProcess());
+        final IoManager commandLine = IoManager.of(spawnLinuxProcess());
         final BashShell processes = new BashShell(commandLine, bashString);
 
         // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
@@ -68,24 +81,28 @@ public class BashShell implements Closeable {
         this.bashScript = bashScript;
     }
 
-    /** This is the same as running `kill` on the async process */
+    /**
+     * This is the same as running `kill` on the async process.  You still need to call {@link #join()}
+     */
     public void sendTerminationSignal() {
         ioManager.sigterm();
     }
 
-    public @Nonnull ExecutionResults join() throws IOException {
-        try {
-            // wait for background threads to complete
-            final int exitCode = ioManager.join();
+    /**
+     * Shuts down the background threads gracefully
+     *
+     * @return The ExecutionResults.
+     */
+    public @Nonnull ExecutionResults join() {
+        // wait for background threads to complete
+        final Pair<Integer, String> ret = ioManager.join();
 
-            // munge stdout -- strip out inappropriate error lines
-            String stdoutString = ioManager.getStdOut();
-            LOG.trace("Shell output before processing: [{}]", stdoutString);
-            stdoutString = BOGUS_SCREEN_LINE.matcher(stdoutString).replaceAll("");
-            return new ExecutionResults(bashScript, exitCode, stdoutString);
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-            throw new BashpileUncheckedException(e);
-        }
+        // munge stdout -- strip out inappropriate error lines
+        String stdout = ret.getValue();
+        LOG.trace("Shell output before processing: [{}]", stdout);
+        stdout = BOGUS_SCREEN_LINE.matcher(stdout).replaceAll("");
+
+        return new ExecutionResults(bashScript, ret.getKey(), stdout);
     }
 
     @Override
@@ -118,5 +135,15 @@ public class BashShell implements Closeable {
     private static boolean isWindows() {
         return System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
+    }
+
+    private static String prependAdditionalPath(@Nonnull final String bashString) throws IOException {
+        final Properties prop = new Properties();
+        final String fileName = "src/main/resources/config.properties";
+        try (FileInputStream fis = new FileInputStream(fileName)) {
+            prop.load(fis);
+        }
+        Object additionalPath = prop.get("additionalPath");
+        return additionalPath != null ? "export PATH=$PATH:%s\n%s".formatted(additionalPath, bashString) : bashString;
     }
 }

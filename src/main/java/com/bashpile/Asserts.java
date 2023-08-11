@@ -2,15 +2,22 @@ package com.bashpile;
 
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
+import com.bashpile.shell.BashShell;
+import com.bashpile.shell.ExecutionResults;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.bashpile.exceptions.Exceptions.asUnchecked;
 import static java.util.Objects.requireNonNullElse;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 
@@ -23,7 +30,7 @@ public class Asserts {
     /** Match a line of text with a Linux line ending at the end OR the empty string */
     private static final Pattern TEXT_LINE = Pattern.compile("^[^\n]*$\n|^$");
 
-    private static final Pattern BLANK_LINE = Pattern.compile("\n *\n");
+    private static final Pattern BLANK_LINE = Pattern.compile("(?m)^ *$");
 
     /**
      * A text block is a group of text lines.  Each line ends with a newline.
@@ -31,8 +38,12 @@ public class Asserts {
      * @see #assertIsLine(String)
      */
     public static String assertIsParagraph(@Nonnull final String str) {
-        assertMatches(str, TEXT_BLOCK);
-        return str;
+        try {
+            return assertMatches(str, TEXT_BLOCK);
+        } catch (BashpileUncheckedAssertionException e) {
+            throw new BashpileUncheckedException(
+                    "Expected String [%s] to be a paragraph and have every line end in a '\\n'.".formatted(str));
+        }
     }
 
     /**
@@ -41,24 +52,33 @@ public class Asserts {
      * @param str the string to check.
      */
     public static String assertIsLine(@Nonnull final String str) {
-        assertMatches(str, TEXT_LINE);
-        return str;
+        try {
+            return assertMatches(str, TEXT_LINE);
+        } catch (BashpileUncheckedAssertionException e) {
+            throw new BashpileUncheckedException(
+                    "Expected String [%s] to be a single line.  It should have a single '\\n', at the end.".formatted(
+                            str));
+        }
     }
 
+    /** Ensures that there are no blank lines */
     public static void assertNoBlankLines(@Nonnull final String str) {
         assertNoMatch(str, BLANK_LINE);
     }
 
     /** Checks for a complete match (i.e. whole string must match) */
-    public static void assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
+    public static String assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
             throw new BashpileUncheckedAssertionException(
                     "Str [%s] didn't match regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
         }
+        return str;
     }
 
-    /** Checks for a complete match (i.e. whole string must match) */
+    /**
+     * Checks for a complete match (i.e. whole string must match)
+     */
     public static void assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (matchResults.matches()) {
@@ -106,10 +126,19 @@ public class Asserts {
         }
     }
 
+    /**
+     * Checks that expected {@link #equals(Object)} actual.
+     * Throws {@link BashpileUncheckedAssertionException} on failed assert.
+     *
+     * @param expected The expected String.
+     * @param actual The actually found String.
+     * @param message The optional message for a failed assert.
+     */
     public static void assertEquals(
             @Nonnull final String expected, @Nullable final String actual, @Nullable final String message) {
         if (!expected.equals(actual)) {
-            throw new AssertionError(requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
+            throw new BashpileUncheckedAssertionException(
+                    requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
         }
     }
 
@@ -124,7 +153,30 @@ public class Asserts {
             if (uncheckedException != null) {
                 throw uncheckedException;
             }
-            throw new AssertionError("Found key %s in map %s".formatted(key, map));
+            throw new BashpileUncheckedAssertionException("Found key %s in map %s".formatted(key, map));
+        }
+    }
+
+    /**
+     * Ensures that the shellcheck program can find no warnings.
+     *
+     * @param translatedShellScript The Bash script
+     * @return The translatedShellScript for chaining.
+     */
+    public static String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
+        final Path tempFile = Path.of("temp.bps");
+        try {
+            Files.writeString(tempFile, translatedShellScript);
+            final ExecutionResults shellcheckResults =
+                    BashShell.runAndJoin("shellcheck --shell=bash --severity=warning " + tempFile);
+            if (shellcheckResults.exitCode() != 0) {
+                throw new BashpileUncheckedAssertionException(shellcheckResults.stdout());
+            }
+            return translatedShellScript;
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        } finally {
+            asUnchecked(() -> Files.deleteIfExists(tempFile));
         }
     }
 }

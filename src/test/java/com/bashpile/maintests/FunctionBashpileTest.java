@@ -10,7 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.List;
 
-import static com.bashpile.StringUtils.join;
+import static com.bashpile.Strings.join;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Order(40)
@@ -28,6 +28,7 @@ class FunctionBashpileTest extends BashpileTest {
                 x: float = 7.7
                 print(x * x)
                 """);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size(),
@@ -46,6 +47,7 @@ class FunctionBashpileTest extends BashpileTest {
                 x:float = 7.7
                 print(x * x)
                 """);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size(),
@@ -88,6 +90,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size());
@@ -103,6 +106,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return w * l
                 print(rectArea(3, 4))
                 """);
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("12\n", results.stdout());
     }
@@ -114,6 +118,7 @@ class FunctionBashpileTest extends BashpileTest {
                 function world: str ():
                     return "hello world"
                 print(world())""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world\n", results.stdout());
     }
@@ -125,6 +130,7 @@ class FunctionBashpileTest extends BashpileTest {
                 function world: str ():
                     return "hello world"
                 world()""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("", results.stdout());
     }
@@ -137,6 +143,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("3.14\n3.14\n", results.stdout());
     }
@@ -172,6 +179,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                                 
                 print(twoCircleArea(1, -1))""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size()
                 , "Wrong length, was: " + join(results.stdoutLines()));
@@ -188,6 +196,7 @@ class FunctionBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 born: str = "to be wild"
                 print(born)""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size(),
                 "Wrong length, was: " + join(results.stdoutLines()));
@@ -202,6 +211,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size());
@@ -226,6 +236,7 @@ class FunctionBashpileTest extends BashpileTest {
                 function circleArea: float(r: float) ["need to remove the quotes"]:
                     return 3.14 * r * r
                 print(circleArea(.5 + .5))""");
+        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("3.14\n", results.stdout());
     }

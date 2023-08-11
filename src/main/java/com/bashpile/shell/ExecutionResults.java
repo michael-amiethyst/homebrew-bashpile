@@ -8,8 +8,10 @@ import java.util.regex.Pattern;
 /** Holds STDIN, the Linux exit code and STDOUT */
 public record ExecutionResults(@Nonnull String stdin, int exitCode, @Nonnull String stdout) {
 
+    /** The Linux exit code indicating success -- 0 */
     public static final int SUCCESS = 0;
 
+    /** The Linux errored exit code indicating a command not found -- 127 */
     public static final int COMMAND_NOT_FOUND = 127;
 
     private static final Pattern WINDOWS_LINE_ENDINGS = Pattern.compile("\r\n");
@@ -21,15 +23,21 @@ public record ExecutionResults(@Nonnull String stdin, int exitCode, @Nonnull Str
         this.stdout = WINDOWS_LINE_ENDINGS.matcher(stdout).replaceAll("\n");
     }
 
+    /**
+     * Return stdin as a list of lines (not ending with '\n').
+     * <br>
+     * Ending blank lines are not preserved. As a workaround check {@link #stdin()} instead.
+     *
+     * @return A list of lines.  The end elements of the list may not be the empty String.
+     */
     public @Nonnull List<String> stdinLines() {
         return Arrays.asList(stdin.split("\n"));
     }
 
     /**
-     * Gets the stdout split by newlines.
+     * Return stdout as a list of lines (not ending with '\n').
      * <br>
-     * Ending blank lines may not be preserved correctly due to a Java bug (on OpenJDK v20).
-     * As a workaround check stdinLines instead (e.g. verify that the script executed ends with two echo commands).
+     * Ending blank lines are not preserved. As a workaround check {@link #stdout()} instead.
      *
      * @return A list of lines.  The end elements of the list may not be the empty String.
      */

@@ -2,44 +2,50 @@ package com.bashpile.shell;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.concurrent.*;
 
-import static com.bashpile.StringUtils.appendIfMissing;
+import static com.bashpile.Strings.appendIfMissing;
 
 /**
  * Handles I/O and closing resources on a running child {@link Process}.<br>
  * Spawns an additional thread to consume (read) the child process's STDOUT.<br>
  * <br>
- * Call order should be: {@link #spawnConsumer(Process)}, one or many calls to {@link #writeLn(String)}, {@link #join()}, {@link #getStdOut()}.
+ * Create with {@link #of(Process)}.  Write to the process's STDIN with {@link #writeLn(String)} and get results with
+ * {@link #join()}.
  */
 /* package */ class IoManager implements Closeable {
 
+    private final static Logger LOG = LogManager.getLogger(IoManager.class);
+
     /** The wrapped child process */
-    final private Process childProcess;
+    private final Process childProcess;
 
     /** This runs our child process's STDOUT stream reader */
-    final private ExecutorService executorService;
+    private final ExecutorService executorService;
 
     /**
      * This pipes output from the parent process to the input of the child process.
      *
      * @see #writeLn(String)
      */
-    final private BufferedWriter childStdInWriter;
+    private final BufferedWriter childStdInWriter;
 
     /** We need this reference to the buffer to get the final stdout contents */
-    final private ByteArrayOutputStream childStdOutBuffer;
+    private final ByteArrayOutputStream childStdOutBuffer;
 
     /** This is a writer to the {@link #childStdOutBuffer} */
-    final private PrintStream childStdOutWriter;
+    private final PrintStream childStdOutWriter;
 
     /** We just need this to close down the STDOUT stream reader */
-    final private Future<?> childStdOutReaderFuture;
+    private final Future<?> childStdOutReaderFuture;
 
-    public static @Nonnull IoManager spawnConsumer(@Nonnull final Process childProcess) {
+    public static @Nonnull IoManager of(@Nonnull final Process childProcess) {
         final ByteArrayOutputStream childStdOutBuffer = new ByteArrayOutputStream();
         // childProcess.outputWriter() is confusing -- it returns a writer for the child process's STDIN
         return new IoManager(childProcess, Executors.newSingleThreadExecutor(), childProcess.outputWriter(),
@@ -74,49 +80,67 @@ import static com.bashpile.StringUtils.appendIfMissing;
     }
 
     /** Joins to both background threads (process and STDOUT stream reader) */
-    public int join() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+    public Pair<Integer, String> join() {
         flush();
-        final int ret = childProcess.waitFor();
-        childStdOutReaderFuture.get(10, TimeUnit.SECONDS);
-        return ret;
-    }
 
-    private void flush() throws IOException {
-        childStdInWriter.flush();
-        childStdOutBuffer.flush();
-        childStdOutWriter.flush();
-    }
+        try {
+            // join to threads
+            final int exitCode = childProcess.waitFor();
+            childStdOutReaderFuture.get(10, TimeUnit.SECONDS);
 
-    public @Nonnull String getStdOut() {
-        if (childProcess.isAlive()) {
-            try {
-                join();
-            } catch (InterruptedException | ExecutionException | TimeoutException | IOException e) {
-                throw new BashpileUncheckedException(e);
-            }
+            return Pair.of(exitCode, childStdOutBuffer.toString());
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new BashpileUncheckedException(e);
         }
-        return childStdOutBuffer.toString();
+    }
+
+    private void flush() {
+        try {
+            childStdInWriter.flush();
+        } catch (IOException e) {
+            // ignore
+        }
+
+        try {
+            childStdOutBuffer.flush();
+        } catch (IOException e) {
+            // ignore
+        }
+
+        childStdOutWriter.flush();
     }
 
     @Override
     public void close() {
+        // shut down the background threads
+        if (childProcess.isAlive()) {
+            try {
+                join();
+            } catch (Exception e) {
+                LOG.warn(e);
+            }
+        }
+
+        // close stdin writer
         try {
             childStdInWriter.flush();
             childStdInWriter.close();
-        } catch (IOException e) {
-            // swallow
+        } catch (Exception e) {
+            LOG.warn(e);
         } finally {
             IOUtils.closeQuietly(childStdInWriter);
         }
+
+        // close everything else
         try {
             // so many resources to deal with
-            executorService.close();
             childStdOutBuffer.flush();
-            childStdOutBuffer.close();
             childStdOutWriter.flush();
+            executorService.close();
+            childStdOutBuffer.close();
             childStdOutWriter.close();
-        } catch (IOException e) {
-            throw new BashpileUncheckedException(e);
+        } catch (Exception e) {
+            LOG.warn(e);
         } finally {
             IOUtils.closeQuietly(childStdOutBuffer, childStdOutWriter);
             executorService.close();  // executorService didn't qualify for closeQuietly

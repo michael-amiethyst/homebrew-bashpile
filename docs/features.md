@@ -155,4 +155,22 @@ Similar to Java's try-with-resources you can declare a block like:
 #(command) creates "filename":
     slurpString: str = #(cat $filename)
 // filename will be deleted from the filesystem here
+
+// if you figure out the filename from the command you can assign the result and use it immediately
+// as an example
+log: str = #(
+    filename=$(printf "%d.txt" $$)
+    printf "%s" "$filename" > "$filename"
+    printf "%s" "$filename"
+) creates log:
+    #(cat "$log")
 ```
+
+## Easy Running
+
+You can use the Bashpile Runner at `bin/bpr` from the shebang line to run a Bashpile script 
+(the standard suffix, if your script has one, is ".bps").
+
+You can also run the Bashpile Compiler at `bin/bpc`.  The syntax is 
+`bin/bpc --outputFile=bin/bpr SCRIPT_PATH`.  If outputFile is not specified the default is to
+name the Bashpile translation as `SCRIPT_PATH.bpt`.

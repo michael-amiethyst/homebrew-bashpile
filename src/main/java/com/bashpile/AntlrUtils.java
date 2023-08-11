@@ -30,8 +30,14 @@ public class AntlrUtils {
 
     private static final Logger LOG = LogManager.getLogger(AntlrUtils.class);
 
-    /** antlr calls */
-    public static @Nonnull String parse(@Nonnull final InputStream is) throws IOException {
+    /**
+     * These are the core antlr calls to run the lexer, parser, visitor and translation engine.
+     *
+     * @param origin The filename (if a file) or text (if just script lines) of the <code>is</code>.
+     * @param is The input stream holding the Bashpile that we parse.
+     */
+    public static @Nonnull String parse(
+            @Nonnull final String origin, @Nonnull final InputStream is) throws IOException {
         LOG.trace("Starting parse");
         // lexer
         final CharStream input = CharStreams.fromStream(is);
@@ -42,13 +48,13 @@ public class AntlrUtils {
         final BashpileParser parser = new BashpileParser(tokens);
         final ParseTree tree = parser.program();
 
-        return transpile(tree);
+        return transpile(origin, tree);
     }
 
     /** Returns bash text block */
-    private static @Nonnull String transpile(@Nonnull final ParseTree tree) {
+    private static @Nonnull String transpile(@Nonnull final String origin, @Nonnull final ParseTree tree) {
         // visitor and engine linked in visitor constructor
-        final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine());
+        final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine(origin));
         return bashpileLogic.visit(tree).body();
     }
 
@@ -114,16 +120,16 @@ public class AntlrUtils {
         }
     }
 
+    /** Visits all statements and indents the results */
     public static @Nonnull Translation visitBlock(
             @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> statementStream) {
         final String translationText = statementStream.map(visitor::visit)
                 .map(Translation::assertEmptyPreamble)
                 .map(Translation::body)
-                // visit results may be multiline strings, convert to array of single lines
-                .map(str -> str.split("\n"))
-                // stream the lines, indent each line, then flatten
-                .flatMap(lines -> Arrays.stream(lines).sequential())
-                .map(str -> TAB + str + "\n")
+                // bodies may be multiline strings, convert to single lines
+                .flatMap(str -> Arrays.stream(str.split("\n")))
+                // indent each line
+                .map(str -> "%s%s\n".formatted(TAB, str))
                 .collect(Collectors.joining());
         return toParagraphTranslation(translationText);
     }

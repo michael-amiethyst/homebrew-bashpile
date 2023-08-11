@@ -1,0 +1,17 @@
+#!/mnt/c/Users/desig/win-dev/bashpile/bin/bpr
+
+/**
+ * Deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
+ */
+
+// get script directory and jar location
+dir    : str = $(dirname "${BASH_SOURCE[0]}")
+jarPath: str = dir + "/../target/bashpile-jar-with-dependencies.jar"
+
+// last line of the jar's output is the generated Bash script
+translatedFilename: str = #(
+    java -jar "$jarPath" "$1" | tail --lines 1
+) creates translatedFilename:
+    #(shift)
+    print("Start of " + translatedFilename)
+    #(./"$translatedFilename" "$@")
