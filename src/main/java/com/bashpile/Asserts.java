@@ -41,7 +41,7 @@ public class Asserts {
         try {
             return assertMatches(str, TEXT_BLOCK);
         } catch (BashpileUncheckedAssertionException e) {
-            throw new BashpileUncheckedException(
+            throw new BashpileUncheckedAssertionException(
                     "Expected String [%s] to be a paragraph and have every line end in a '\\n'.".formatted(str));
         }
     }
@@ -55,7 +55,7 @@ public class Asserts {
         try {
             return assertMatches(str, TEXT_LINE);
         } catch (BashpileUncheckedAssertionException e) {
-            throw new BashpileUncheckedException(
+            throw new BashpileUncheckedAssertionException(
                     "Expected String [%s] to be a single line.  It should have a single '\\n', at the end.".formatted(
                             str));
         }

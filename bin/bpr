@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-08-10T22:05:42.941763234-07:00[America/Los_Angeles] (timestamp 1691730342941)
+# Generated from bin/bpr.bps on 2023-08-10T22:13:07.536585115-07:00[America/Los_Angeles] (timestamp 1691730787536)
 #
 # strict mode header
 set -eEuo pipefail -o posix
 export IFS=$'\n\t'
 declare s
-trap 's=$?; echo "$0: Error on line $LINENO: $BASH_COMMAND"; exit $s' ERR
+trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
 # assign statement, Bashpile line 7
 export dir
 dir=$(dirname "${BASH_SOURCE[0]}")
