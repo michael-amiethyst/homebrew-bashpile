@@ -258,7 +258,7 @@ class StatementBashpileTest extends BashpileTest {
     }
 
     @Test @Order(160)
-    public void createStatementTrapsWorks() throws IOException {
+    public void createStatementTrapsWorks() {
         final String bashpileScript = """
                 #(rm -f captainsLog.txt || true)
                 contents: str

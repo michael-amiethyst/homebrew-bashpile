@@ -2,6 +2,7 @@ package com.bashpile.shell;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -10,8 +11,6 @@ import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 /**
@@ -79,7 +78,6 @@ public class BashShell implements Closeable {
 
     public BashShell(@Nonnull final IoManager ioManager, @Nonnull final String bashScript) {
         this.ioManager = ioManager;
-        // TODO get rid of bashScript
         this.bashScript = bashScript;
     }
 
@@ -94,21 +92,17 @@ public class BashShell implements Closeable {
      * Shuts down the background threads gracefully
      *
      * @return The ExecutionResults.
-     * @throws IOException on error.
      */
-    public @Nonnull ExecutionResults join() throws IOException {
-        try {
-            // wait for background threads to complete
-            final int exitCode = ioManager.join();
+    public @Nonnull ExecutionResults join() {
+        // wait for background threads to complete
+        final Pair<Integer, String> ret = ioManager.join();
 
-            // munge stdout -- strip out inappropriate error lines
-            String stdoutString = ioManager.getStdOut();
-            LOG.trace("Shell output before processing: [{}]", stdoutString);
-            stdoutString = BOGUS_SCREEN_LINE.matcher(stdoutString).replaceAll("");
-            return new ExecutionResults(bashScript, exitCode, stdoutString);
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-            throw new BashpileUncheckedException(e);
-        }
+        // munge stdout -- strip out inappropriate error lines
+        String stdout = ret.getValue();
+        LOG.trace("Shell output before processing: [{}]", stdout);
+        stdout = BOGUS_SCREEN_LINE.matcher(stdout).replaceAll("");
+
+        return new ExecutionResults(bashScript, ret.getKey(), stdout);
     }
 
     @Override

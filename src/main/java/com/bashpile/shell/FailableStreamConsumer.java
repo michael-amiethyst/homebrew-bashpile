@@ -32,9 +32,7 @@ import java.io.InputStreamReader;
         try {
             Streams.stream(bufferedReader.lines()).forEach(consumer);
         } catch (Exception e) {
-            if (!e.getMessage().toLowerCase().contains("stream closed")) {
-                throw new BashpileUncheckedException(e);
-            }
+            throw new BashpileUncheckedException(e);
         }
     }
 }
