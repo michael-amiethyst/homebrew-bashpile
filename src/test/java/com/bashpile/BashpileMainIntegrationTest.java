@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,10 +36,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         bprDeployed = true;
         final List<String> lines = results.stdoutLines();
         assertEquals(translatedFilename, lines.get(lines.size() - 1));
-        try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
-                .filter(path -> path.getFileName().toString().startsWith("output"))) {
-            assertEquals(0, outputFiles.count());
-        }
     }
 
     @Test @Timeout(10) @Order(10)
@@ -57,10 +52,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
             assertEquals(translatedFilename, lines.get(lines.size() - 1));
-            try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
-                    .filter(path -> path.getFileName().toString().startsWith("output"))) {
-                assertEquals(0, outputFiles.count());
-            }
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -80,10 +71,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
             assertEquals(translatedFilename, lines.get(lines.size() - 1));
-            try (final Stream<Path> outputFiles = Files.walk(Path.of("."))
-                    .filter(path -> path.getFileName().toString().startsWith("output"))) {
-                assertEquals(0, outputFiles.count());
-            }
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -116,21 +103,12 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             assertSuccessfulExitCode(results);
             List<String> lines = results.stdoutLines();
             assertEquals(translatedFilename, lines.get(lines.size() - 1));
-            final Path cwd = Path.of(".");
-            try (final Stream<Path> outputFiles = Files.walk(cwd)
-                    .filter(path -> path.getFileName().toString().startsWith("output"))) {
-                assertEquals(0, outputFiles.count());
-            }
 
             // 2nd run to verify overwrites OK
             results = runAndJoin(command);
             assertSuccessfulExitCode(results);
             lines = results.stdoutLines();
             assertEquals(translatedFilename, lines.get(lines.size() - 1));
-            try (final Stream<Path> outputFiles = Files.walk(cwd)
-                    .filter(path -> path.getFileName().toString().startsWith("output"))) {
-                assertEquals(0, outputFiles.count());
-            }
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }

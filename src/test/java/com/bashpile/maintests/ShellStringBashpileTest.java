@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -113,5 +114,16 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("NCC\n1701\n", results.stdout());
+    }
+
+    @Test @Order(100)
+    public void shellStringErrorExitCodesTriggerStrictModeTrap() {
+        final ExecutionResults results = runText("""
+                #(pwd)
+                #(ls non_existent_file)""");
+        assertFailedExitCode(results);
+        assertCorrectFormatting(results);
+        final List<String> lines = results.stdoutLines();
+        assertTrue(lines.get(lines.size() - 1).contains("ls non_existent_file"));
     }
 }

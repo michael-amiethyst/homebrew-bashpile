@@ -19,10 +19,8 @@ public interface TranslationEngine {
     /** For emitting where the translated script comes from and when it was generated */
     Translation originHeader();
 
-    // TODO https://disconnected.systems/blog/another-bash-strict-mode/ with set -E
     /**
      * For using the equivalent of strict mode
-     * @see <a href=http://redsymbol.net/articles/unofficial-bash-strict-mode/>Unofficial Bash Strict Mode</a>
      */
     Translation strictModeHeader();
 

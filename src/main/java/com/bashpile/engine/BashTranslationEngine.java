@@ -96,19 +96,25 @@ public class BashTranslationEngine implements TranslationEngine {
      * Set Bash options for scripts.
      * <br>
      * <ul><li>set -e: exit on failed command</li>
+     * <li>set -E: subshells and command substitutions inherit our ERR trap</li>
      * <li>set -u: exit on undefined variable --
      *  we don't need this for Bashpile generated code but there may be `source`d code.</li>
      * <li>set -o pipefail: exit immediately when a command in a pipeline fails.</li>
      * <li>set -o posix: Posix mode -- we need this so that all subshells inherit the -eu options.</li></ul>
      *
      * @see <a href=https://unix.stackexchange.com/a/23099>Q & A</a>
+     * @see <a href=http://redsymbol.net/articles/unofficial-bash-strict-mode/>Unofficial Bash Strict Mode</a>
+     * @see <a href=https://disconnected.systems/blog/another-bash-strict-mode/>Another Bash Strict Mode</a>
      * @return The Strict Mode header
      */
     @Override
     public @Nonnull Translation strictModeHeader() {
-        String strictMode = """
-                set -euo pipefail -o posix
+        // we need to declare s to avoid a false positive for a shellcheck warning
+        final String strictMode = """
+                set -eEuo pipefail -o posix
                 export IFS=$'\\n\\t'
+                declare s
+                trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
                 """;
         return toParagraphTranslation("# strict mode header\n%s".formatted(strictMode));
     }
