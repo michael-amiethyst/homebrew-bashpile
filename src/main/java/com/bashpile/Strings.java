@@ -1,5 +1,6 @@
 package com.bashpile;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
@@ -7,12 +8,15 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class StringUtils extends org.apache.commons.lang3.StringUtils {
+/** Our String utilities class */
+public class Strings extends StringUtils {
 
+    /** @see StringEscapeUtils#unescapeJava(String) */
     public static String unescape(@Nonnull final String text) {
         return StringEscapeUtils.unescapeJava(text);
     }
 
+    /** Applies a function to the first line only */
     public static String lambdaFirstLine(
             @Nonnull final String text, @Nonnull final Function<String, String> lambda) {
         final String[] retLines = text.split("\n");
@@ -37,10 +41,11 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
         return String.join("\n", retLines) + append;
     }
 
+    /** Applies a function to the last line only */
     public static String lambdaAllLines(@Nonnull final String text, @Nonnull final Function<String, String> lambda) {
         final String[] lines = text.split("\n");
         final String tabbedBody = Arrays.stream(lines)
-                .filter(StringUtils::isNotBlank)
+                .filter(Strings::isNotBlank)
                 .map(lambda)
                 .collect(Collectors.joining("\n"));
         final String append = text.endsWith("\n") ? "\n" : "";

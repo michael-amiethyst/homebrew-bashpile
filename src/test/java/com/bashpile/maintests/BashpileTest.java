@@ -1,7 +1,7 @@
 package com.bashpile.maintests;
 
 import com.bashpile.BashpileMain;
-import com.bashpile.StringUtils;
+import com.bashpile.Strings;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
@@ -50,7 +50,7 @@ abstract public class BashpileTest {
         final AtomicLong indentLevel = new AtomicLong(0);
         final List<String> ignored = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
             final int spaces = line.length() - line.stripLeading().length();
-            if (spaces % 4 != 0 || StringUtils.isBlank(line)) {
+            if (spaces % 4 != 0 || Strings.isBlank(line)) {
                 erroredLines.get().add(i);
                 return line;
             }

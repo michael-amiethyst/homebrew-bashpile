@@ -10,7 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.List;
 
-import static com.bashpile.StringUtils.join;
+import static com.bashpile.Strings.join;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Order(40)

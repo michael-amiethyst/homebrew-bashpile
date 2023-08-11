@@ -2,7 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
-import com.bashpile.StringUtils;
+import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 import static com.bashpile.AntlrUtils.*;
 import static com.bashpile.Asserts.*;
-import static com.bashpile.StringUtils.lambdaLastLine;
+import static com.bashpile.Strings.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
@@ -371,8 +371,8 @@ public class BashTranslationEngine implements TranslationEngine {
                 rm -f %s
                 trap - INT TERM EXIT""".formatted(
                 String.join(" ", createFilenamesStack), statements.body(), filename);
-        ifBody = StringUtils.lambdaAllLines(ifBody, str -> TAB + str);
-        ifBody = StringUtils.lambdaFirstLine(ifBody, String::stripLeading);
+        ifBody = lambdaAllLines(ifBody, str -> TAB + str);
+        ifBody = lambdaFirstLine(ifBody, String::stripLeading);
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
         final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
@@ -380,8 +380,8 @@ public class BashTranslationEngine implements TranslationEngine {
                 printf "Failed to create %%s properly." "%s"
                 rm -f %s
                 %s 1""".formatted(STRING_QUOTES.matcher(filename).replaceAll(""), filename, exitOrReturn);
-        elseBody = StringUtils.lambdaAllLines(elseBody, str -> TAB + str);
-        elseBody = StringUtils.lambdaFirstLine(elseBody, String::stripLeading);
+        elseBody = lambdaAllLines(elseBody, str -> TAB + str);
+        elseBody = lambdaFirstLine(elseBody, String::stripLeading);
         return """
                 %s
                     %s
@@ -570,7 +570,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     final int spaces = line.length() - line.stripLeading().length();
                     final String trailingNewline = body.endsWith("\n") ? "\n" : "";
                     return Arrays.stream(lines)
-                            .filter(str -> !StringUtils.isBlank(str))
+                            .filter(str -> !Strings.isBlank(str))
                             .map(str -> str.substring(spaces))
                             .collect(Collectors.joining("\n"))
                             + trailingNewline;

@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO ensure all public and protected methods are JavaDoc'd
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -35,6 +34,7 @@ public class BashpileMain implements Callable<Integer> {
 
     private static final Logger LOG = LogManager.getLogger(BashpileMain.class);
 
+    /** Our main */
     public static void main(final String[] args) {
         final BashpileMain bashpile = new BashpileMain();
         final CommandLine argProcessor = new CommandLine(bashpile);
@@ -69,6 +69,7 @@ public class BashpileMain implements Callable<Integer> {
         this.bashpileScript = bashpileScript;
     }
 
+    /** Sets the Pico Cli processor */
     public void setPicocliCommandLine(@Nonnull final CommandLine picocliCommandLine) {
         this.picocliCommandLine = picocliCommandLine;
     }
@@ -77,7 +78,7 @@ public class BashpileMain implements Callable<Integer> {
     @Override
     public @Nonnull Integer call() throws IOException {
         final String filename = inputFile != null ? inputFile.toString() : "";
-        if (StringUtils.isEmpty(filename)) {
+        if (Strings.isEmpty(filename)) {
             System.out.println("Input file must be specified.");
             picocliCommandLine.usage(System.out);
             return 1;

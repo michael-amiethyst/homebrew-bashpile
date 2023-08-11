@@ -1,7 +1,7 @@
 package com.bashpile.engine.strongtypes;
 
 import com.bashpile.BashpileParser;
-import com.bashpile.StringUtils;
+import com.bashpile.Strings;
 import com.bashpile.exceptions.TypeError;
 
 import javax.annotation.Nonnull;
@@ -39,7 +39,7 @@ public enum Type {
 
     /** Gets the type specified in <code>ctx</code>. */
     public static @Nonnull Type valueOf(@Nonnull final BashpileParser.TypedIdContext ctx) {
-        final boolean hasTypeInfo = ctx.Type() != null && StringUtils.isNotBlank(ctx.Type().getText());
+        final boolean hasTypeInfo = ctx.Type() != null && Strings.isNotBlank(ctx.Type().getText());
         if (hasTypeInfo) {
             return valueOf(ctx.Type().getText().toUpperCase());
         }

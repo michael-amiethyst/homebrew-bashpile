@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.concurrent.*;
 
-import static com.bashpile.StringUtils.appendIfMissing;
+import static com.bashpile.Strings.appendIfMissing;
 
 /**
  * Handles I/O and closing resources on a running child {@link Process}.<br>

@@ -1,6 +1,6 @@
 package com.bashpile.engine;
 
-import com.bashpile.StringUtils;
+import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
@@ -133,9 +133,9 @@ public record Translation(
         return new Translation(preamble, nextBody, type, typeMetadata);
     }
 
-    /** See {@link com.bashpile.StringUtils#unescape(java.lang.String)} */
+    /** See {@link Strings#unescape(java.lang.String)} */
     public Translation unescapeBody() {
-        return lambdaBody(StringUtils::unescape);
+        return lambdaBody(Strings::unescape);
     }
 
     /** Put quotes around body */

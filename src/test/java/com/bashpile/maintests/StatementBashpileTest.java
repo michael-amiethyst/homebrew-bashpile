@@ -392,7 +392,7 @@ class StatementBashpileTest extends BashpileTest {
             boolean innerFileExists = Files.exists(innerFile);
             int i = 0;
             while (innerFileExists && i++ < 10) {
-                Thread.sleep(500);
+                Thread.sleep(Duration.ofSeconds(1));
                 innerFileExists = Files.exists(innerFile);
             }
             assertFalse(innerFileExists, "inner trap file not deleted");
@@ -400,7 +400,7 @@ class StatementBashpileTest extends BashpileTest {
             boolean outerFileExists = true;
             i = 0;
             while (outerFileExists && i++ < 10) {
-                Thread.sleep(500);
+                Thread.sleep(Duration.ofSeconds(1));
                 outerFileExists = Files.exists(outerFile);
             }
             assertFalse(outerFileExists, "outer trap file not deleted");
