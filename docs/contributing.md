@@ -1,2 +1,13 @@
 # Temporary notes - to go to wiki
 Pull the code with HTTPS and commit with GitHub Desktop or personal token
+
+Created with 
+`brew create --HEAD --set-version 0.10.0 --tap michael-amiethyst/bashpile https://github.com/michael-amiethyst/homebrew-bashpile`
+so
+`brew test --HEAD --set-version 0.10.0 --tap michael-amiethyst/bashpile`
+to test and
+`brew install --HEAD Formula/homebrew-bashpile.rb`
+to install.
+
+Interactive: `HOMEBREW_NO_INSTALL_FROM_API=1 brew install --interactive --HEAD Formula/homebrew-bashpile.rb`
+Debug: `HOMEBREW_NO_INSTALL_FROM_API=1 brew install --build-from-source --verbose --debug --HEAD Formula/homebrew-bashpile.rb`

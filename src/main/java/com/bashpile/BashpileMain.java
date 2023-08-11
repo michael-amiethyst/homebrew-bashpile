@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
+// TODO finish homebrew-bashpile.rb, try with packaged jar
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
