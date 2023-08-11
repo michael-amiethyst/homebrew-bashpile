@@ -1,5 +1,6 @@
 package com.bashpile.maintests;
 
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.BashShell;
@@ -119,7 +120,7 @@ class StatementBashpileTest extends BashpileTest {
 
     @Test @Order(82)
     public void stringBadOperatorWorks() {
-        assertThrows(AssertionError.class, () -> runText("""
+        assertThrows(BashpileUncheckedException.class, () -> runText("""
                 worldStr:str="world"
                 print("hello " * worldStr)"""));
     }
@@ -136,6 +137,22 @@ class StatementBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("24", "64000", "128");
+        assertEquals(3, lines.size());
+        assertEquals(expected, lines);
+    }
+
+    @Test @Order(91)
+    public void blockWithNestedInlinesWork() {
+        final ExecutionResults results = runText("""
+                print((3 + 5) * 3)
+                block:
+                    print($(echo "$(echo "Captain's log, stardate...")"))
+                    block:
+                        print(64 + 64)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        final List<String> expected = List.of("24", "Captain's log, stardate...", "128");
         assertEquals(3, lines.size());
         assertEquals(expected, lines);
     }

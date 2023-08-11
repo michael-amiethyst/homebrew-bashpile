@@ -61,6 +61,7 @@ public class Asserts {
         }
     }
 
+    /** Ensures that there are no blank lines */
     public static void assertNoBlankLines(@Nonnull final String str) {
         assertNoMatch(str, BLANK_LINE);
     }
@@ -125,10 +126,19 @@ public class Asserts {
         }
     }
 
+    /**
+     * Checks that expected {@link #equals(Object)} actual.
+     * Throws {@link BashpileUncheckedAssertionException} on failed assert.
+     *
+     * @param expected The expected String.
+     * @param actual The actually found String.
+     * @param message The optional message for a failed assert.
+     */
     public static void assertEquals(
             @Nonnull final String expected, @Nullable final String actual, @Nullable final String message) {
         if (!expected.equals(actual)) {
-            throw new AssertionError(requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
+            throw new BashpileUncheckedAssertionException(
+                    requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
         }
     }
 
@@ -143,11 +153,17 @@ public class Asserts {
             if (uncheckedException != null) {
                 throw uncheckedException;
             }
-            throw new AssertionError("Found key %s in map %s".formatted(key, map));
+            throw new BashpileUncheckedAssertionException("Found key %s in map %s".formatted(key, map));
         }
     }
 
-    protected static String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
+    /**
+     * Ensures that the shellcheck program can find no warnings.
+     *
+     * @param translatedShellScript The Bash script
+     * @return The translatedShellScript for chaining.
+     */
+    public static String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
         final Path tempFile = Path.of("temp.bps");
         try {
             Files.writeString(tempFile, translatedShellScript);

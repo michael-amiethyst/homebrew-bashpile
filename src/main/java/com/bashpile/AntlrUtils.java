@@ -120,16 +120,16 @@ public class AntlrUtils {
         }
     }
 
+    /** Visits all statements and indents the results */
     public static @Nonnull Translation visitBlock(
             @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> statementStream) {
         final String translationText = statementStream.map(visitor::visit)
                 .map(Translation::assertEmptyPreamble)
                 .map(Translation::body)
-                // visit results may be multiline strings, convert to array of single lines
-                .map(str -> str.split("\n"))
-                // stream the lines, indent each line, then flatten
-                .flatMap(lines -> Arrays.stream(lines).sequential())
-                .map(str -> TAB + str + "\n")
+                // bodies may be multiline strings, convert to single lines
+                .flatMap(str -> Arrays.stream(str.split("\n")))
+                // indent each line
+                .map(str -> "%s%s\n".formatted(TAB, str))
                 .collect(Collectors.joining());
         return toParagraphTranslation(translationText);
     }

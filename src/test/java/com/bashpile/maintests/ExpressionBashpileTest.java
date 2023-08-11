@@ -1,5 +1,6 @@
 package com.bashpile.maintests;
 
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
@@ -60,7 +61,7 @@ class ExpressionBashpileTest extends BashpileTest {
 
     @Test @Order(40)
     public void stringBadOperatorThrows() {
-        assertThrows(AssertionError.class, () -> runText("""
+        assertThrows(BashpileUncheckedException.class, () -> runText("""
                 print("hello " * "world")"""));
     }
 
