@@ -5,8 +5,8 @@
  */
 
 // get script directory and jar location
-dir: str         = $(dirname "${BASH_SOURCE[0]}")
-jarPath: str     = dir + "/../target/bashpile-jar-with-dependencies.jar"
+dir    : str = $(dirname "${BASH_SOURCE[0]}")
+jarPath: str = dir + "/../target/bashpile-jar-with-dependencies.jar"
 
 // last line of the jar's output is the generated Bash script
 translatedFilename: str = #(
