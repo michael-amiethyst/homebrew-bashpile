@@ -13,7 +13,8 @@ import static com.bashpile.StringUtils.appendIfMissing;
  * Handles I/O and closing resources on a running child {@link Process}.<br>
  * Spawns an additional thread to consume (read) the child process's STDOUT.<br>
  * <br>
- * Call order should be: {@link #spawnConsumer(Process)}, one or many calls to {@link #writeLn(String)}, {@link #join()}, {@link #getStdOut()}.
+ * Call order should be: {@link #of(Process)}, one or many calls to {@link #writeLn(String)},
+ * {@link #join()}, {@link #getStdOut()}.
  */
 /* package */ class IoManager implements Closeable {
 
@@ -39,7 +40,7 @@ import static com.bashpile.StringUtils.appendIfMissing;
     /** We just need this to close down the STDOUT stream reader */
     final private Future<?> childStdOutReaderFuture;
 
-    public static @Nonnull IoManager spawnConsumer(@Nonnull final Process childProcess) {
+    public static @Nonnull IoManager of(@Nonnull final Process childProcess) {
         final ByteArrayOutputStream childStdOutBuffer = new ByteArrayOutputStream();
         // childProcess.outputWriter() is confusing -- it returns a writer for the child process's STDIN
         return new IoManager(childProcess, Executors.newSingleThreadExecutor(), childProcess.outputWriter(),
@@ -73,6 +74,7 @@ import static com.bashpile.StringUtils.appendIfMissing;
         childProcess.destroy();
     }
 
+    // TODO merge with getStdOut, return ExecutionResults
     /** Joins to both background threads (process and STDOUT stream reader) */
     public int join() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         flush();

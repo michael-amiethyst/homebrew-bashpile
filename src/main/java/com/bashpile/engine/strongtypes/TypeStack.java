@@ -1,5 +1,7 @@
 package com.bashpile.engine.strongtypes;
 
+import com.bashpile.BashpileParser;
+import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.exceptions.UserError;
 
 import javax.annotation.Nonnull;
@@ -12,7 +14,7 @@ import static com.bashpile.Asserts.assertMapDoesNotContainKey;
 /**
  * A call stack but just for Type information to implement strong typing.
  *
- * @see <a href="https://en.wikipedia.org/wiki/Call_stack">Wikipedio - Call Stack</a>
+ * @see <a href="https://en.wikipedia.org/wiki/Call_stack">Wikipedia - Call Stack</a>
  */
 public class TypeStack {
     private final Stack<TypeStackframe> frames;
@@ -80,7 +82,16 @@ public class TypeStack {
         return foundFunction != FunctionTypeInfo.EMPTY;
     }
 
-    public TypeStackClosable closable() {
+    /**
+     * Push a new stack frame.
+     * <br>
+     * See {@link BashTranslationEngine#functionDeclarationStatement(BashpileParser.FunctionDeclarationStatementContext)}
+     * for example usage.
+     *
+     * @return a type to pop the frame after it is out of scope with a try-with-resources statement.
+     * @see <a href=https://www.techopedia.com/definition/22304/stack-frame>Stack Frame definition</a>
+     */
+    public TypeStackClosable pushFrame() {
         return new TypeStackClosable(this);
     }
 

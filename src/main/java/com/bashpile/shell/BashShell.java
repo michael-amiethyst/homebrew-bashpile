@@ -44,13 +44,23 @@ public class BashShell implements Closeable {
         }
     }
 
+    /**
+     * Runs bashString and supporting worker threads in the background
+     *
+     * @param bashString The Bash script to run
+     * @return A BashShell holding the running threads.
+     * @throws IOException on error.
+     *
+     * @see #sendTerminationSignal()
+     * @see #join()
+     */
     public static @Nonnull BashShell runAsync(@Nonnull String bashString) throws IOException {
         bashString = prependAdditionalPath(bashString);
 
         LOG.info("Executing bash text:\n" + bashString);
 
         // run our CommandLine process in background threads
-        final IoManager commandLine = IoManager.spawnConsumer(spawnLinuxProcess());
+        final IoManager commandLine = IoManager.of(spawnLinuxProcess());
         final BashShell processes = new BashShell(commandLine, bashString);
 
         // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
@@ -69,14 +79,23 @@ public class BashShell implements Closeable {
 
     public BashShell(@Nonnull final IoManager ioManager, @Nonnull final String bashScript) {
         this.ioManager = ioManager;
+        // TODO get rid of bashScript
         this.bashScript = bashScript;
     }
 
-    /** This is the same as running `kill` on the async process */
+    /**
+     * This is the same as running `kill` on the async process.  You still need to call {@link #join()}
+     */
     public void sendTerminationSignal() {
         ioManager.sigterm();
     }
 
+    /**
+     * Shuts down the background threads gracefully
+     *
+     * @return The ExecutionResults.
+     * @throws IOException on error.
+     */
     public @Nonnull ExecutionResults join() throws IOException {
         try {
             // wait for background threads to complete

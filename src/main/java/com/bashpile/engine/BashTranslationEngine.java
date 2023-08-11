@@ -101,7 +101,7 @@ public class BashTranslationEngine implements TranslationEngine {
      * <li>set -o pipefail: exit immediately when a command in a pipeline fails.</li>
      * <li>set -o posix: Posix mode -- we need this so that all subshells inherit the -eu options.</li></ul>
      *
-     * @see <a href=https://unix.stackexchange.com/a/23099">Q & A </a>
+     * @see <a href=https://unix.stackexchange.com/a/23099>Q & A</a>
      * @return The Strict Mode header
      */
     @Override
@@ -142,7 +142,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
         final Translation assignment =
-                toParagraphTranslation(assignmentBody).appendPreamble(exprTranslation.preamble());
+                toParagraphTranslation(assignmentBody).addPreamble(exprTranslation.preamble());
 
         // order is comment, preamble, subcomment, variable declaration, assignment
         final Translation subcommentToAssignment = subcomment.add(variableDeclaration).add(assignment);
@@ -171,7 +171,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String reassignmentBody = "%s%s=%s\n".formatted(
                 getLocalText(true), variableName, exprTranslation.body());
         final Translation reassignment =
-                toLineTranslation(reassignmentBody).appendPreamble(exprTranslation.preamble());
+                toLineTranslation(reassignmentBody).addPreamble(exprTranslation.preamble());
 
         // order is: comment, preamble, subcomment, reassignment
         final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
@@ -242,7 +242,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
-        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.closable()) {
+        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
 
             // register local variable types
             ctx.paramaters().typedId().forEach(
@@ -276,7 +276,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
-        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.closable()) {
+        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
             final Translation comment = createHoistedCommentTranslation("anonymous block", lineNumber(ctx));
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
@@ -341,7 +341,7 @@ public class BashTranslationEngine implements TranslationEngine {
             // merge translations and preambles
             return comment.add(
                     subcomment.add(bodyTranslation)
-                    .appendPreamble(shellString.preamble())
+                    .addPreamble(shellString.preamble())
                     .mergePreamble());
         } finally {
             createFilenamesStack.pop();
@@ -425,7 +425,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Function<String, String> toPrintf =
                 str -> "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""));
         final Translation exprBody = toParagraphTranslation(lambdaLastLine(exprTranslation.body(), toPrintf))
-                .appendPreamble(exprTranslation.preamble());
+                .addPreamble(exprTranslation.preamble());
         return comment.add(exprBody.mergePreamble());
     }
 
@@ -521,14 +521,14 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation first = childTranslations.get(0);
         final Translation second = getLast(childTranslations);
         // check for nested calc call
-        if (LevelCounter.in(CALC_LABEL) && areNumberExpressions(first, second)) {
+        if (LevelCounter.in(CALC_LABEL) && maybeNumericExpressions(first, second)) {
             return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
             // types section
-        } else if (areStringExpressions(first, second)) {
+        } else if (maybeStringExpressions(first, second)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
             return toTranslation(Stream.of(first.unquoteBody(), second.unquoteBody()), STR, NORMAL);
-        } else if (areNumberExpressions(first, second)) {
+        } else if (maybeNumericExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
             return toTranslation(childTranslations.stream(), Type.NUMBER, INLINE)
@@ -682,7 +682,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation preambles = subcomment.add(export).add(assign).add(exitCode).add(check);
 
         // add the preambles and swap the body
-        return tr.appendPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
+        return tr.addPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
     }
 
     private static boolean isTopLevelShell() {

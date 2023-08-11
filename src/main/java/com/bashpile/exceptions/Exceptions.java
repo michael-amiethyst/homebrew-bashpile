@@ -2,6 +2,7 @@ package com.bashpile.exceptions;
 
 import javax.annotation.Nonnull;
 
+/** Utility class related to Exceptions and Throwables */
 public class Exceptions {
 
     /**

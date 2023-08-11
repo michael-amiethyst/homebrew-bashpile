@@ -30,7 +30,7 @@ public class Asserts {
     /** Match a line of text with a Linux line ending at the end OR the empty string */
     private static final Pattern TEXT_LINE = Pattern.compile("^[^\n]*$\n|^$");
 
-    private static final Pattern BLANK_LINE = Pattern.compile("\n *\n");
+    private static final Pattern BLANK_LINE = Pattern.compile("(?m)^ *$");
 
     /**
      * A text block is a group of text lines.  Each line ends with a newline.

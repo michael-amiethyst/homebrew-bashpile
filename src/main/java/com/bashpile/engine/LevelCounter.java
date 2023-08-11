@@ -38,12 +38,14 @@ public class LevelCounter implements Closeable {
         return in(CALC_LABEL) || in(INLINE_LABEL) || in(FORWARD_DECL_LABEL);
     }
 
+    /** How many levels are we in any label implemented with a Bash command line substitution? */
     public static int getCommandSubstitution() {
         return get(CALC_LABEL) + get(INLINE_LABEL) + get(FORWARD_DECL_LABEL);
     }
 
-    public static int get(@Nonnull final String name) {
-        return counters.getOrDefault(name, 0);
+    /** How many levels are we in for label? */
+    public static int get(@Nonnull final String label) {
+        return counters.getOrDefault(label, 0);
     }
 
     // class fields, constructors and methods
