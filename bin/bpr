@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-08-11T11:23:46.051162715-07:00[America/Los_Angeles] (timestamp 1691778226051)
+# Generated from bin/bpr.bps on 2023-08-12T10:00:53.124122239-07:00[America/Los_Angeles] (timestamp 1691859653124)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -13,7 +13,7 @@ export dir
 dir=$(dirname "${BASH_SOURCE[0]}")
 # assign statement, Bashpile line 8
 export jarPath
-jarPath=${dir}/../target/bashpile-jar-with-dependencies.jar
+jarPath=${dir}/../target/bashpile.jar
 # creates statement, Bashpile line 11
 export  translatedFilename
 if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
@@ -29,9 +29,9 @@ if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lin
     rm -f "$translatedFilename"
     trap - INT TERM EXIT
 else
-    printf "Failed to create %s properly." "$translatedFilename"
+    printf "Failed to create translatedFilename correctly."
     rm -f "$translatedFilename"
     exit 1
 fi
-__bp_exitCode=$?
+declare -i __bp_exitCode=$?
 if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi

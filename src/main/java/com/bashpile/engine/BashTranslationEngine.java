@@ -382,10 +382,11 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
         final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
+        final String plainFilename = STRING_QUOTES.matcher(filename).replaceAll("").substring(1);
         String elseBody = """
-                printf "Failed to create %%s properly." "%s"
+                printf "Failed to create %s correctly."
                 rm -f %s
-                %s 1""".formatted(STRING_QUOTES.matcher(filename).replaceAll(""), filename, exitOrReturn);
+                %s 1""".formatted(plainFilename, filename, exitOrReturn);
         elseBody = lambdaAllLines(elseBody, str -> TAB + str);
         elseBody = lambdaFirstLine(elseBody, String::stripLeading);
         return """
@@ -394,7 +395,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 else
                     %s
                 fi
-                __bp_exitCode=$?
+                declare -i __bp_exitCode=$?
                 if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
                 """.formatted(ifGuard, ifBody, elseBody);
     }

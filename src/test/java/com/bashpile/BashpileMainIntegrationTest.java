@@ -39,7 +39,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     }
 
     @Test @Timeout(10) @Order(10)
-    public void noSubCommandTranspiles() throws IOException {
+    public void bpcTranspiles() throws IOException {
         log.debug("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
@@ -55,6 +55,19 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
+    }
+
+    @Test @Timeout(11) @Order(10)
+    public void bprWorks() throws IOException {
+        log.debug("In noSubCommandTest");
+        Assumptions.assumeTrue(bprDeployed);
+
+        // testrigTree has bpr in shebang line
+        final String command = "bin/testrigTree src/test/resources/testrigData.bps";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
     }
 
     @Test @Timeout(8) @Order(20)

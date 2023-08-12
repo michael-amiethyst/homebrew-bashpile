@@ -1,7 +1,22 @@
 # Temporary notes - to go to wiki
+
+## Getting Started
 Pull the code with HTTPS and commit with GitHub Desktop or personal token
 
-Created with 
+## Setup FileTypes
+Python syntax highlighting for now?
+
+## Register bps, bpr with /usr/bin/env
+TODO
+
+## Setup Run Configuration
+`clean verify -f pom.xml` on WSL
+Maven Home on WSL
+Java JRE on WSL, Modify Settings to get Environment variables, set JAVA_HOME=Linux style
+
+## Deploy with Brew
+
+Created with
 `brew create --HEAD --set-version 0.10.0 --tap michael-amiethyst/bashpile https://github.com/michael-amiethyst/homebrew-bashpile`
 so
 `brew test --HEAD --set-version 0.10.0 --tap michael-amiethyst/bashpile`

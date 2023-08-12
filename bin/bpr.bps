@@ -1,4 +1,4 @@
-#!/mnt/c/Users/desig/win-dev/bashpile/bin/bpr
+#!/mnt/c/Users/desig/win-dev/homebrew-bashpile/bin/bpr
 
 /**
  * Deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
@@ -6,7 +6,7 @@
 
 // get script directory and jar location
 dir    : str = $(dirname "${BASH_SOURCE[0]}")
-jarPath: str = dir + "/../target/bashpile-jar-with-dependencies.jar"
+jarPath: str = dir + "/../target/bashpile.jar"
 
 // last line of the jar's output is the generated Bash script
 translatedFilename: str = #(

@@ -21,7 +21,9 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO finish homebrew-bashpile.rb, try with packaged jar
+// TODO finish homebrew-bashpile.rb, try with source tarball (try with Bottle as backup)
+// TODO have maven deploy do a brew deploy
+// TODO minimize source tarball
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
