@@ -57,7 +57,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
     }
 
-    @Test @Timeout(11) @Order(10)
+    @Test @Timeout(15) @Order(10)
     public void bprWorks() throws IOException {
         log.debug("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);

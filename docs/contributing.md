@@ -17,7 +17,7 @@ Java JRE on WSL, Modify Settings to get Environment variables, set JAVA_HOME=Lin
 ## Deploy with Brew
 
 Created with
-`brew create --HEAD --set-version 0.10.0 --tap michael-amiethyst/bashpile https://github.com/michael-amiethyst/homebrew-bashpile`
+`brew create --set-version 0.10.0 --tap michael-amiethyst/bashpile target/bashpile.jar`
 so
 `brew test --HEAD --set-version 0.10.0 --tap michael-amiethyst/bashpile`
 to test and

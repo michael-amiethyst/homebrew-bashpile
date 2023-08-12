@@ -170,9 +170,10 @@
                     <formats>
                         <format>tar.gz</format>
                     </formats>
-                    <descriptorRefs>
-                        <descriptorRef>project</descriptorRef>
-                    </descriptorRefs>
+                    <descriptors>
+                        <descriptor>src/main/assembly/project-deploy-descriptorRef.xml</descriptor>
+                    </descriptors>
+                    <outputDirectory>${project.basedir}/deploy</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>
