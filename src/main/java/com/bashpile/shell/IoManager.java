@@ -1,6 +1,5 @@
 package com.bashpile.shell;
 
-import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -8,9 +7,14 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.io.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static com.bashpile.Strings.appendIfMissing;
+import static com.bashpile.exceptions.Exceptions.asUnchecked;
+import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
 
 /**
  * Handles I/O and closing resources on a running child {@link Process}.<br>
@@ -83,15 +87,11 @@ import static com.bashpile.Strings.appendIfMissing;
     public Pair<Integer, String> join() {
         flush();
 
-        try {
-            // join to threads
-            final int exitCode = childProcess.waitFor();
-            childStdOutReaderFuture.get(10, TimeUnit.SECONDS);
+        // join to threads
+        final int exitCode = asUnchecked(childProcess::waitFor);
+        asUncheckedIgnoreClosedStreams(() -> childStdOutReaderFuture.get(10, TimeUnit.SECONDS));
 
-            return Pair.of(exitCode, childStdOutBuffer.toString());
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new BashpileUncheckedException(e);
-        }
+        return Pair.of(exitCode, childStdOutBuffer.toString());
     }
 
     private void flush() {

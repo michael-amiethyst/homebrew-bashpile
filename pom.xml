@@ -170,10 +170,9 @@
                     <formats>
                         <format>tar.gz</format>
                     </formats>
-                    <descriptors>
-                        <descriptor>src/main/assembly/project-deploy-descriptorRef.xml</descriptor>
-                    </descriptors>
-                    <outputDirectory>${project.basedir}/deploy</outputDirectory>
+                    <descriptorRefs>
+                        <descriptorRef>project</descriptorRef>
+                    </descriptorRefs>
                 </configuration>
                 <executions>
                     <execution>
@@ -182,6 +181,25 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.coderplus.maven.plugins</groupId>
+                <artifactId>copy-rename-maven-plugin</artifactId>
+                <version>1.0</version>
+                <executions>
+                    <execution>
+                        <id>move-file</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>rename</goal>
+                        </goals>
+                        <configuration>
+                            <sourceFile>target/bashpile-project.tar.gz</sourceFile>
+                            <destinationFile>deploy/bashpile.tar.gz</destinationFile>
+                            <!-- Place config here -->
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -2,11 +2,13 @@
 #                https://rubydoc.brew.sh/Formula
 # PLEASE REMOVE ALL GENERATED COMMENTS BEFORE SUBMITTING YOUR PULL REQUEST!
 
-class HomebrewBashpile < Formula
+class Bashpile < Formula
   desc "Bashpile: The Bash Transpiler - Write in a modern language and run in a Bash5 shell!"
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
+  url "https://github.com/michael-amiethyst/homebrew-bashpile/raw/feature/brew/deploy/bashpile.tar.gz"
+  version "0.10.0"
+  sha256 "d8323d8f69d9a85055c8604fda22ab0649c444b9acadef7f9ba2d67dd011443e"
   license "MIT"
-  head "https://github.com/michael-amiethyst/homebrew-bashpile"
 
   # depends_on "cmake" => :build
 
@@ -18,8 +20,8 @@ class HomebrewBashpile < Formula
     # system "cmake", "-S", ".", "-B", "build", *std_cmake_args
 
     # inreplace "brew/srcclr", "##PREFIX##", "#{prefix}"
-    system "mvn", "clean", "verify"
-    prefix.install "target/bashpile-jar-with-dependencies.jar"
+    system "cd bashpile && mvn clean verify"
+    prefix.install "target/bashpile.jar"
     # todo register shell
     bin.install "bin/bpc"
     bin.install "bin/bpr"
