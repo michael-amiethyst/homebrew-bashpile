@@ -7,10 +7,10 @@ class Bashpile < Formula
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   url "https://github.com/michael-amiethyst/homebrew-bashpile/raw/feature/brew/deploy/bashpile.tar.gz"
   version "0.10.0"
-  sha256 "d8323d8f69d9a85055c8604fda22ab0649c444b9acadef7f9ba2d67dd011443e"
+#   sha256 "d8323d8f69d9a85055c8604fda22ab0649c444b9acadef7f9ba2d67dd011443e"
   license "MIT"
 
-  # depends_on "cmake" => :build
+  depends_on "mvn" => :build
 
   def install
     # ENV.deparallelize  # if your formula fails when building in parallel
@@ -20,7 +20,7 @@ class Bashpile < Formula
     # system "cmake", "-S", ".", "-B", "build", *std_cmake_args
 
     # inreplace "brew/srcclr", "##PREFIX##", "#{prefix}"
-    system "cd bashpile && mvn clean verify"
+    system "mvn clean verify"
     prefix.install "target/bashpile.jar"
     # todo register shell
     bin.install "bin/bpc"

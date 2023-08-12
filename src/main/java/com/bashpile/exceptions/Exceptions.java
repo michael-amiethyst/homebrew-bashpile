@@ -28,7 +28,7 @@ public class Exceptions {
         try {
             return throwingSupplier.get();
         } catch (Exception ex) {
-            if (!(ex instanceof IOException) || !ex.getMessage().equalsIgnoreCase("stream closed")) {
+            if (!ex.getMessage().contains("Stream closed")) {
                 throw new BashpileUncheckedException(ex);
             } // else ignore
             return null;
