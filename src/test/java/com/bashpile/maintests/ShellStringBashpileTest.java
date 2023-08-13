@@ -60,7 +60,7 @@ public class ShellStringBashpileTest extends BashpileTest {
 
     @Test @Order(40)
     public void runEchoParenthesisWorks() {
-        final ExecutionResults results = runPath(Path.of("runEchoParenthesis.bashpile"));
+        final ExecutionResults results = runPath(Path.of("runEchoParenthesis.bps"));
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("()\n", results.stdout());

@@ -90,7 +90,7 @@ class LexerBashpileTest extends BashpileTest {
     @Test
     @Order(80)
     public void escapedStringWorks() {
-        final ExecutionResults results = runPath(Path.of("escapedString.bashpile"));
+        final ExecutionResults results = runPath(Path.of("escapedString.bps"));
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("\"hello\"\n", results.stdout());

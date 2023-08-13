@@ -7,3 +7,4 @@
 * 0.7.0 - Shell Strings, Inlines (Bash Command Substitutions)
 * 0.8.0 - Create statement
 * 0.9.0 - Easy running from the command line ("Drink your own champaign"/dogfooding)
+* 0.10.0 - Support deployment with brew

@@ -1,0 +1,5 @@
+#!/mnt/c/Users/desig/win-dev/homebrew-bashpile/bin/bpr
+
+#(export filename=src/test/resources/testdata.txt)
+contents: str = $(cat $(echo $filename))
+print(contents)
