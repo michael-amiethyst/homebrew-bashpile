@@ -3,5 +3,5 @@
 // get script directory
 scriptDir: str = $(dirname "${BASH_SOURCE[0]}")
 
-jarPath  : str = scriptDir + "/../target/bashpile.jar"
+jarPath  : str = scriptDir + "/bashpile.jar"
 #(java -jar "$jarPath" "$@")

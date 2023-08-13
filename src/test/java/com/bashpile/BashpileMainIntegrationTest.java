@@ -63,7 +63,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         Assumptions.assumeTrue(bprDeployed);
 
         // testrigTree has bpr in shebang line
-        final String command = "bin/testrigTree src/test/resources/testrigData.bps";
+        final String command = "src/test/resources/scripts/bprShebang.bps";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 

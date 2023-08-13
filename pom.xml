@@ -102,6 +102,39 @@
         <finalName>bashpile</finalName>
         <plugins>
             <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>auto-clean</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>bin</directory>
+                                    <followSymlinks>false</followSymlinks>
+                                    <useDefaultExcludes>true</useDefaultExcludes>
+                                    <includes>
+                                        <include>*.jar</include>
+                                    </includes>
+                                </fileset>
+                                <fileset>
+                                    <directory>deploy</directory>
+                                    <followSymlinks>false</followSymlinks>
+                                    <useDefaultExcludes>true</useDefaultExcludes>
+                                    <includes>
+                                        <include>*.tar.gz</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-maven-plugin</artifactId>
                 <version>${antlr.version}</version>
@@ -158,6 +191,7 @@
                                     <mainClass>com.bashpile.BashpileMain</mainClass>
                                 </transformer>
                             </transformers>
+                            <outputFile>bin/bashpile.jar</outputFile>
                         </configuration>
                     </execution>
                 </executions>
@@ -170,9 +204,11 @@
                     <formats>
                         <format>tar.gz</format>
                     </formats>
-                    <descriptorRefs>
-                        <descriptorRef>project</descriptorRef>
-                    </descriptorRefs>
+                    <descriptors>
+                        <descriptor>src/main/assembly/project-with-excludes.xml</descriptor>
+                    </descriptors>
+                    <outputDirectory>deploy</outputDirectory>
+                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
                 <executions>
                     <execution>
@@ -181,25 +217,6 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.coderplus.maven.plugins</groupId>
-                <artifactId>copy-rename-maven-plugin</artifactId>
-                <version>1.0</version>
-                <executions>
-                    <execution>
-                        <id>move-file</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>rename</goal>
-                        </goals>
-                        <configuration>
-                            <sourceFile>target/bashpile-project.tar.gz</sourceFile>
-                            <destinationFile>deploy/bashpile.tar.gz</destinationFile>
-                            <!-- Place config here -->
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-08-12T10:00:53.124122239-07:00[America/Los_Angeles] (timestamp 1691859653124)
+# Generated from bin/bpr.bps on 2023-08-12T17:47:23.610312053-07:00[America/Los_Angeles] (timestamp 1691887643610)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -13,7 +13,7 @@ export dir
 dir=$(dirname "${BASH_SOURCE[0]}")
 # assign statement, Bashpile line 8
 export jarPath
-jarPath=${dir}/../target/bashpile.jar
+jarPath=${dir}/bashpile.jar
 # creates statement, Bashpile line 11
 export  translatedFilename
 if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
