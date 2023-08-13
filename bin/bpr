@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-08-12T17:47:23.610312053-07:00[America/Los_Angeles] (timestamp 1691887643610)
+# Generated from bin/bpr.bps on 2023-08-12T22:15:44.397962314-07:00[America/Los_Angeles] (timestamp 1691903744397)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -24,7 +24,7 @@ if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lin
     # print statement, Bashpile line 15
     printf "Start of ${translatedFilename}\n"
     # expression statement, Bashpile line 16
-    ./"$translatedFilename" "$@"
+    "$translatedFilename" "$@"
     ## end of wrapped body of creates statement
     rm -f "$translatedFilename"
     trap - INT TERM EXIT

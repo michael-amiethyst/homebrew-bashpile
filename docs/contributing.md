@@ -24,5 +24,7 @@ to test and
 `brew install Formula/homebrew-bashpile.rb`
 to install.
 
+Fresh pull: `brew cleanup --prune=all && brew reinstall Formula/bashpile.rb`
+
 Interactive: `brew install --interactive Formula/homebrew-bashpile.rb`
 Debug: `HOMEBREW_NO_INSTALL_FROM_API=1 brew install --build-from-source --verbose --debug --HEAD Formula/homebrew-bashpile.rb`

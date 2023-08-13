@@ -14,4 +14,4 @@ translatedFilename: str = #(
 ) creates translatedFilename:
     #(shift)
     print("Start of " + translatedFilename)
-    #(./"$translatedFilename" "$@")
+    #("$translatedFilename" "$@")
