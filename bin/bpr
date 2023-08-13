@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-08-12T22:15:44.397962314-07:00[America/Los_Angeles] (timestamp 1691903744397)
+# Generated from bin/bpr.bps on 2023-08-13T10:04:29.087942243-07:00[America/Los_Angeles] (timestamp 1691946269087)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -9,21 +9,18 @@ export IFS=$'\n\t'
 declare s
 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
 # assign statement, Bashpile line 7
-export dir
-dir=$(dirname "${BASH_SOURCE[0]}")
-# assign statement, Bashpile line 8
 export jarPath
-jarPath=${dir}/bashpile.jar
-# creates statement, Bashpile line 11
+jarPath=$(dirname "${BASH_SOURCE[0]}")/bashpile.jar
+# creates statement, Bashpile line 10
 export  translatedFilename
 if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
     trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
     ## wrapped body of creates statement
-    # expression statement, Bashpile line 14
+    # expression statement, Bashpile line 13
     shift
-    # print statement, Bashpile line 15
+    # print statement, Bashpile line 14
     printf "Start of ${translatedFilename}\n"
-    # expression statement, Bashpile line 16
+    # expression statement, Bashpile line 15
     "$translatedFilename" "$@"
     ## end of wrapped body of creates statement
     rm -f "$translatedFilename"
