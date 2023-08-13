@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO finish homebrew-bashpile.rb, try with Bottle (just the uber-jar)
 // TODO have maven deploy do a brew deploy
 // TODO minimize source tarball
 // TODO sha256 in bashpile.rb

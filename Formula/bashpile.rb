@@ -6,7 +6,7 @@ class Bashpile < Formula
 #   sha256 "76a3423b1f2ba4dabcbf7f0aef7b54dd678e187faa9f7c2d011202ba8e13ff7d"
   license "MIT"
 
-  depends_on "java" "20"
+  depends_on "openjdk"
   depends_on "bc"
   depends_on "shellcheck"
 
