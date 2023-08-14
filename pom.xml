@@ -221,6 +221,32 @@
                 </executions>
             </plugin>
             <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>Update Formula</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Kicks off WSL in Windows -->
+                            <executable>bash</executable>
+                            <arguments>
+                                <!-- Shebang line ignored in updateFormula so need to specify bpr manually -->
+                                <argument>${basedir}/bin/bpr</argument>
+                                <argument>${basedir}/bin/updateFormula</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <PATH>/usr/bin:/home/linuxbrew/.linuxbrew/bin</PATH>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.1.2</version>
                 <executions>

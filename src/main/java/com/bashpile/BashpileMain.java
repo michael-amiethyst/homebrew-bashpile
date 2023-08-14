@@ -21,9 +21,8 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO have maven deploy do a brew deploy
-// TODO sha256 in bashpile.rb
 // TODO have head entry/option as well
+// TODO test for `sha256sum  : str = #(sha256sum $tarballPath)`
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

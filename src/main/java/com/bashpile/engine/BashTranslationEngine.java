@@ -355,7 +355,11 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     /** Helper to {@link #createsStatement(BashpileParser.CreatesStatementContext)} */
-    private String getBodyString(BashpileParser.CreatesStatementContext ctx, Translation shellString, String filename, Translation statements) {
+    private String getBodyString(
+            final @Nonnull BashpileParser.CreatesStatementContext ctx,
+            final @Nonnull Translation shellString,
+            final @Nonnull String filename,
+            final @Nonnull Translation statements) {
         final String check = String.join("; ", shellString.body().trim().split("\n"));
 
         // set noclobber avoids some race conditions
@@ -383,6 +387,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
         final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
         final String plainFilename = STRING_QUOTES.matcher(filename).replaceAll("").substring(1);
+        // TODO output shell string results on error
         String elseBody = """
                 printf "Failed to create %s correctly."
                 rm -f %s

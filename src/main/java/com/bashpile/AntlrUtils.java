@@ -35,6 +35,7 @@ public class AntlrUtils {
      *
      * @param origin The filename (if a file) or text (if just script lines) of the <code>is</code>.
      * @param is The input stream holding the Bashpile that we parse.
+     * @return The generated shell script.
      */
     public static @Nonnull String parse(
             @Nonnull final String origin, @Nonnull final InputStream is) throws IOException {

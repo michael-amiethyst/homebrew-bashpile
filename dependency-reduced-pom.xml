@@ -121,6 +121,30 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>Update Formula</id>
+            <phase>package</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>bash</executable>
+              <arguments>
+                <argument>${basedir}/bin/bpr</argument>
+                <argument>${basedir}/bin/updateFormula</argument>
+              </arguments>
+              <environmentVariables>
+                <PATH>/usr/bin:/home/linuxbrew/.linuxbrew/bin</PATH>
+              </environmentVariables>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.1.2</version>
         <executions>

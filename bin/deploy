@@ -1,0 +1,12 @@
+#!/mnt/c/Users/desig/win-dev/homebrew-bashpile/bin/bpr
+
+// untap/tap
+#(brew uninstall bashpile || true)
+#(brew untap michael-amiethyst/bashpile)
+#(brew tap michael-amiethyst/bashpile)
+
+// audit
+#(brew audit --new bashpile)
+
+// install
+#(brew install bashpile)
