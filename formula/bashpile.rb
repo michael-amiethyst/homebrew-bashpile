@@ -3,7 +3,7 @@ class Bashpile < Formula
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   url "https://github.com/michael-amiethyst/homebrew-bashpile/raw/feature/brew/deploy/bashpile.tar.gz"
   version "0.10.0"
-  sha256 "2d99036ef73aa7ad11d208db6938692176986fa90dfc08fd475f6bac59371809"
+  sha256 "7166133db2795ce2933861f3deca41e0fdb45119c36a103b1037449b67ade150"
   license "MIT"
 
   depends_on "bc"
@@ -14,7 +14,6 @@ class Bashpile < Formula
 
   def install
     bin.install "bin/bashpile.jar"
-    # TODO: register shell
     bin.install "bin/bpc"
     bin.install "bin/bpr"
   end

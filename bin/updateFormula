@@ -1,5 +1,4 @@
-#!/mnt/c/Users/desig/win-dev/homebrew-bashpile/bin/bpr
-
+#!/usr/bin/env bpr
 
 // replace sha
 scriptDir  : str = $(dirname "${BASH_SOURCE[0]}")

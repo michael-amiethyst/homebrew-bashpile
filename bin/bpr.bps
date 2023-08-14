@@ -1,4 +1,4 @@
-#!/mnt/c/Users/desig/win-dev/homebrew-bashpile/bin/bpr
+#!/usr/bin/env bpr
 
 /**
  * Deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
