@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 import static com.bashpile.AntlrUtils.parse;
 
 // TODO have head entry/option as well
-// TODO test for `sha256sum  : str = #(sha256sum $tarballPath)`
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

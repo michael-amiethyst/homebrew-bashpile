@@ -137,7 +137,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
-        final Translation exprTranslation = exprExists ? visitor.visit(ctx.expression()) : EMPTY_TRANSLATION;
+        Translation exprTranslation;
+        try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
+            exprTranslation = exprExists ? visitor.visit(ctx.expression()) : EMPTY_TRANSLATION;
+        }
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
@@ -165,7 +168,10 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // get expression and it's type
-        final Translation exprTranslation = visitor.visit(ctx.expression());
+        Translation exprTranslation;
+        try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
+            exprTranslation = visitor.visit(ctx.expression());
+        }
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
 
@@ -593,7 +599,7 @@ public class BashTranslationEngine implements TranslationEngine {
             for (int i = 0; i < LevelCounter.getCommandSubstitution(); i++) {
                 contentsTranslation = unnest(contentsTranslation);
             }
-        } else if (LevelCounter.in(PRINT_LABEL)) {
+        } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
         } // else top level -- no additional processing needed
         return contentsTranslation.unescapeBody();

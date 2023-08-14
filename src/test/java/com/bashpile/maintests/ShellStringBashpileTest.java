@@ -82,6 +82,14 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertEquals("#\n", results.stdout());
     }
 
+    @Test @Order(61)
+    public void shellStringsInAssignWorks() {
+        final ExecutionResults results = runText("sha256sum  : str = #(echo sha256sumValue)\nprint(sha256sum)");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("sha256sumValue\n", results.stdout());
+    }
+
     @Test @Order(70)
     public void shellStringInCalcWorks() {
         final String bashpile = """

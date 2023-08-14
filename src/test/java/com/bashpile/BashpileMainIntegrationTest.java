@@ -57,13 +57,13 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
     }
 
-    @Test @Timeout(20) @Order(10)
+    @Test @Timeout(20) @Order(11)
     public void bprWorks() throws IOException {
         log.debug("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
         // testrigTree has bpr in shebang line
-        final String command = "src/test/resources/scripts/bprShebang.bps";
+        final String command = "bin/bpr src/test/resources/scripts/bprShebang.bps";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 

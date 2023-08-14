@@ -3,7 +3,7 @@ class Bashpile < Formula
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   url "https://github.com/michael-amiethyst/homebrew-bashpile/raw/feature/brew/deploy/bashpile.tar.gz"
   version "0.10.0"
-  sha256 "7166133db2795ce2933861f3deca41e0fdb45119c36a103b1037449b67ade150"
+  sha256 "67f8f915b377237169624473e9051303e97bbc028c48833ce4a84068542ca314"
   license "MIT"
 
   depends_on "bc"
