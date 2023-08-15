@@ -61,7 +61,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
-        // testrigTree has bpr in shebang line
+        // run with our local (not installed) bpr
         final String command = "bin/bpr src/test/resources/scripts/bprShebang.bps";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());

@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO strip out unneeded maven plugins, scripts
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

@@ -98,54 +98,6 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.6.0</version>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <formats>
-            <format>tar.gz</format>
-          </formats>
-          <descriptors>
-            <descriptor>src/main/assembly/project-with-excludes.xml</descriptor>
-          </descriptors>
-          <outputDirectory>deploy</outputDirectory>
-          <appendAssemblyId>false</appendAssemblyId>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.1.0</version>
-        <executions>
-          <execution>
-            <id>Update Formula</id>
-            <phase>package</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <executable>bash</executable>
-              <arguments>
-                <argument>${basedir}/bin/bpr</argument>
-                <argument>${basedir}/bin/updateFormula</argument>
-              </arguments>
-              <environmentVariables>
-                <PATH>/usr/bin:/home/linuxbrew/.linuxbrew/bin</PATH>
-              </environmentVariables>
-              <skip>${skip.update.formula}</skip>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.1.2</version>
         <executions>
