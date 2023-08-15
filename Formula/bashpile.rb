@@ -12,10 +12,12 @@ class Bashpile < Formula
   depends_on "shellcheck"
 
   def install
-    system "mvn", "clean", "verify", "-Dskip.update.formula=true", "-Dskip.failsafe.tests=true"
+    system "mvn", "clean", "verify", "-Dskip.failsafe.tests=true"
     bin.install "bin/bashpile.jar"
-    bin.install "bin/bpc" => ["bpc", "bashpilec"]
-    bin.install "bin/bpr" => ["bpr", "bashpile"]
+    bin.install "bin/bpc"
+    system "cp", "#{bin}/bpc", "#{bin}/bashpilec"
+    bin.install "bin/bpr"
+    system "cp", "#{bin}/bpr", "#{bin}/bashpile"
   end
 
   test do

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-08-14T18:16:50.707615047-07:00[America/Los_Angeles] (timestamp 1692062210707)
+# Generated from bin/bpr.bps on 2023-08-14T22:56:08.673146923-07:00[America/Los_Angeles] (timestamp 1692078968673)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -11,18 +11,25 @@ trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BAS
 # assign statement, Bashpile line 7
 export jarPath
 jarPath=$(dirname "${BASH_SOURCE[0]}")/bashpile.jar
-# creates statement, Bashpile line 10
+# expression statement, Bashpile line 10
+if [ -z "${1:-}" ]; then
+    trap - ERR
+    java -jar "$jarPath"
+    exit $?
+fi
+
+# creates statement, Bashpile line 19
 export  translatedFilename
 if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
     trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
     ## wrapped body of creates statement
-    # expression statement, Bashpile line 13
+    # expression statement, Bashpile line 22
     shift
-    # print statement, Bashpile line 14
+    # print statement, Bashpile line 23
     printf "Start of ${translatedFilename}\n"
-    # expression statement, Bashpile line 15
+    # expression statement, Bashpile line 24
     chmod 755 $translatedFilename
-    # expression statement, Bashpile line 16
+    # expression statement, Bashpile line 25
     "$translatedFilename" "$@"
     ## end of wrapped body of creates statement
     rm -f "$translatedFilename"
