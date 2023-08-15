@@ -12,8 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static com.bashpile.shell.BashShell.runAndJoin;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -124,6 +123,27 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             assertEquals(translatedFilename, lines.get(lines.size() - 1));
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
+        }
+    }
+
+    @Test @Timeout(20) @Order(50)
+    public void bprCreateErrorMessagesPropagate() throws IOException {
+        log.debug("In noSubCommandTest");
+        Assumptions.assumeTrue(bprDeployed);
+
+        final String bashpileFilename = "src/test/resources/scripts/bprShebang.bps";
+        final Path generatedFile = Path.of(bashpileFilename + ".bpt");
+        Files.writeString(generatedFile, "Captain James Kirk");
+        try {
+            final String command = "bin/bpr " + bashpileFilename;
+            final ExecutionResults results = runAndJoin(command);
+            log.debug("Output text:\n{}", results.stdout());
+
+            assertFailedExitCode(results);
+            final List<String> lines = results.stdoutLines();
+            assertTrue(lines.size() >= 2);
+        } finally {
+            Files.deleteIfExists(generatedFile);
         }
     }
 }
