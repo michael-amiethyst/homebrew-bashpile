@@ -24,6 +24,9 @@ public class LevelCounter implements Closeable {
     /** LevelCounter label */
     public static final String PRINT_LABEL = "print";
 
+    /** For assign and reassign */
+    public static final String ASSIGNMENT_LABEL = "(re)assign";
+
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
 
     // static methods

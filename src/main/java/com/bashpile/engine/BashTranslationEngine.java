@@ -137,7 +137,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
-        final Translation exprTranslation = exprExists ? visitor.visit(ctx.expression()) : EMPTY_TRANSLATION;
+        Translation exprTranslation;
+        try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
+            exprTranslation = exprExists ? visitor.visit(ctx.expression()) : EMPTY_TRANSLATION;
+        }
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
@@ -165,7 +168,10 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // get expression and it's type
-        final Translation exprTranslation = visitor.visit(ctx.expression());
+        Translation exprTranslation;
+        try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
+            exprTranslation = visitor.visit(ctx.expression());
+        }
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
 
@@ -327,13 +333,6 @@ public class BashTranslationEngine implements TranslationEngine {
         // create our final translation and pop the stack
         createFilenamesStack.push(filename);
         try {
-            // create our statements translation
-            final Translation statements = ctx.statement().stream()
-                    .map(visitor::visit)
-                    .reduce(Translation::add)
-                    .orElseThrow()
-                    .assertParagraphBody()
-                    .assertNoBlankLinesInBody();
 
             // create other translations
             final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
@@ -341,7 +340,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
 
             // create a large if-else block with traps
-            final String body = getBodyString(ctx, shellString, filename, statements);
+            final String body = getBodyString(ctx, shellString, filename);
             final Translation bodyTranslation = toParagraphTranslation(body);
 
             // merge translations and preambles
@@ -355,18 +354,30 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     /** Helper to {@link #createsStatement(BashpileParser.CreatesStatementContext)} */
-    private String getBodyString(BashpileParser.CreatesStatementContext ctx, Translation shellString, String filename, Translation statements) {
+    private String getBodyString(
+            final @Nonnull BashpileParser.CreatesStatementContext ctx,
+            final @Nonnull Translation shellString,
+            final @Nonnull String filename) {
         final String check = String.join("; ", shellString.body().trim().split("\n"));
 
         // set noclobber avoids some race conditions
         String ifGuard;
+        String variableName = null;
         if (ctx.typedId() != null) {
-            final String variableName = ctx.typedId().Id().getText();
+            variableName = ctx.typedId().Id().getText();
             ifGuard = "%s %s\nif %s=$(set -o noclobber; %s) 2> /dev/null; then".formatted(
                     getLocalText(), variableName, variableName, check);
         } else {
             ifGuard = "if (set -o noclobber; %s) 2> /dev/null; then".formatted(check);
         }
+
+        // create our statements translation
+        final Translation statements = ctx.statement().stream()
+                .map(visitor::visit)
+                .reduce(Translation::add)
+                .orElseThrow()
+                .assertParagraphBody()
+                .assertNoBlankLinesInBody();
         // create an ifBody to put into the bodyTranslation
         // only one trap can be in effect at a time, so we keep a stack of all current filenames to delete
         String ifBody = """
@@ -383,10 +394,11 @@ public class BashTranslationEngine implements TranslationEngine {
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
         final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
         final String plainFilename = STRING_QUOTES.matcher(filename).replaceAll("").substring(1);
+        final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
         String elseBody = """
-                printf "Failed to create %s correctly."
+                printf "Failed to create %s correctly.%s"
                 rm -f %s
-                %s 1""".formatted(plainFilename, filename, exitOrReturn);
+                %s 1""".formatted(plainFilename, errorDetails, filename, exitOrReturn);
         elseBody = lambdaAllLines(elseBody, str -> TAB + str);
         elseBody = lambdaFirstLine(elseBody, String::stripLeading);
         return """
@@ -588,7 +600,7 @@ public class BashTranslationEngine implements TranslationEngine {
             for (int i = 0; i < LevelCounter.getCommandSubstitution(); i++) {
                 contentsTranslation = unnest(contentsTranslation);
             }
-        } else if (LevelCounter.in(PRINT_LABEL)) {
+        } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
             contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
         } // else top level -- no additional processing needed
         return contentsTranslation.unescapeBody();

@@ -47,7 +47,7 @@ public class InlineBashpileTest extends BashpileTest {
     public void nestedInlineInShellScriptWorks() {
         final ExecutionResults results = runText("""
                 #(export filename=src/test/resources/testdata.txt)
-                contents: str = #($(cat $(echo $filename)))
+                contents: str = #(cat "$(echo $filename)")
                 print(contents)""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
@@ -59,7 +59,7 @@ public class InlineBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 #(export filename=src/test/resources/testdata.txt)
                 contents: str = "Stub contents"
-                contents = #($(cat $(echo $filename)))
+                contents = #(cat "$(echo $filename)")
                 print(contents)""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);

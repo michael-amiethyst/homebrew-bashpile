@@ -11,6 +11,7 @@
 
 # Later
 (Not ordered)
+* Regexes for Strings, files
 * remaining types (array, map, ref)
 * imports
 * subshells, Bash `()`, Bashpile `&()`?

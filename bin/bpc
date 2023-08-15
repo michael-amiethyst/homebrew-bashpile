@@ -1,7 +1,4 @@
-#!/mnt/c/Users/desig/win-dev/homebrew-bashpile/bin/bpr
+#!/usr/bin/env bpr
 
-// get script directory
-scriptDir: str = $(dirname "${BASH_SOURCE[0]}")
-
-jarPath  : str = scriptDir + "/bashpile.jar"
+jarPath: str = $(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 #(java -jar "$jarPath" "$@")

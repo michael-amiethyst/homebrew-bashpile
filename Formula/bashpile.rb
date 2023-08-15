@@ -1,18 +1,20 @@
 class Bashpile < Formula
-  desc "Bashpile: The Bash Transpiler - Write in a modern language and run in a Bash5 shell!"
+  desc "The Bash Transpiler - Write in a modern language and run in a Bash5 shell!"
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
-  url "https://github.com/michael-amiethyst/homebrew-bashpile/raw/feature/brew/deploy/bashpile.tar.gz"
+  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.10.0"
+  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "feature/brew"
   version "0.10.0"
-#   sha256 "76a3423b1f2ba4dabcbf7f0aef7b54dd678e187faa9f7c2d011202ba8e13ff7d"
   license "MIT"
 
-  depends_on "openjdk"
+  depends_on "gnu-sed" => :build
+  depends_on "maven" => :build
   depends_on "bc"
+  depends_on "openjdk"
   depends_on "shellcheck"
 
   def install
+    system "mvn", "clean", "verify", "-Dskip.update.formula=true", "-Dskip.failsafe.tests=true"
     bin.install "bin/bashpile.jar"
-    # todo register shell
     bin.install "bin/bpc"
     bin.install "bin/bpr"
   end

@@ -21,9 +21,7 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO have maven deploy do a brew deploy
-// TODO minimize source tarball
-// TODO sha256 in bashpile.rb
+// TODO strip out unneeded maven plugins, scripts
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

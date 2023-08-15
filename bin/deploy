@@ -1,0 +1,15 @@
+#!/usr/bin/env bpr
+
+/**
+ * Run after a PR is merged to main.  brew audit command reads from the main/formula/bashpile.rb file.
+ */
+// untap/tap
+#(brew uninstall bashpile || true)
+#(brew untap michael-amiethyst/bashpile)
+#(brew tap michael-amiethyst/bashpile)
+
+// audit
+//#(brew audit --new bashpile)
+
+// install
+#(brew install bashpile)

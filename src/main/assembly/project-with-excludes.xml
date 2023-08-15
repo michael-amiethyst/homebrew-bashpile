@@ -9,12 +9,12 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.basedir}</directory>
+            <directory>${project.basedir}/bin</directory>
             <useDefaultExcludes>true</useDefaultExcludes>
             <excludes>
-                <exclude>**/*.log</exclude>
-                <exclude>**/${project.build.directory}/**</exclude>
-                <exclude>**/deploy/**</exclude>
+                <exclude>**/*.bps</exclude>
+                <exclude>**/*.md</exclude>
+                <exclude>**/*testrig*</exclude>
             </excludes>
         </fileSet>
     </fileSets>

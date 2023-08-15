@@ -1,0 +1,8 @@
+#!/usr/bin/env bpr
+
+// replace sha
+scriptDir  : str = $(dirname "${BASH_SOURCE[0]}")
+formulaPath: str = scriptDir + "/../formula/bashpile.rb"
+tarballPath: str = scriptDir + "/../deploy/bashpile.tar.gz"
+sha256sum  : str = $(sha256sum $tarballPath | awk '{print $1}')
+#(sed -i "s/sha256 \\".\\+\\?\\"/sha256 \\"$sha256sum\\"/" $formulaPath)
