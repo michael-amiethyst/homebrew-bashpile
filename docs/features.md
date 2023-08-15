@@ -123,6 +123,8 @@ This helps let the code flow more naturally from top to bottom.
 Use `#(command)` syntax to pass the command directly to the shell.  
 This is similar to how in C/C++ you can "drop into" assembly.  E.g. `#(pwd)`.
 
+`sed` commands need to be double escaped, as in `#(sed -i "s/sha256 \\".\\+\\?\\"/sha256 \\"$sha256sum\\"/" $formulaPath)`
+
 ## Inlines (Command Substitutions)
 
 A `$(command)` syntax works just as you would expect in Bash and also has you drop into Bash directly.

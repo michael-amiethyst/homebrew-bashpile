@@ -1,4 +1,4 @@
-#!/mnt/c/Users/desig/win-dev/homebrew-bashpile/bin/bpr
+#!/usr/bin/env bpr
 
 #(export filename=src/test/resources/testdata.txt)
 contents: str = $(cat $(echo $filename))

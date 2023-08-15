@@ -7,6 +7,15 @@
 // get script directory and jar location
 jarPath: str = $(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 
+// if $1 is the default blank value then unset the ERR trap and trigger an error with help text from the jar
+#(
+    if [ -z "${1:-}" ]; then
+        trap - ERR
+        java -jar "$jarPath"
+        exit $?
+    fi
+)
+
 // last line of the jar's output is the generated Bash script
 translatedFilename: str = #(
     java -jar "$jarPath" "$1" | tail --lines 1
