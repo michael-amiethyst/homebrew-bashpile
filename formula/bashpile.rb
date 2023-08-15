@@ -17,7 +17,7 @@ class Bashpile < Formula
 
   def install
     if build.head?
-      system "mvn", "clean", "verify", "-Dskip.update.formula=true"
+      system "mvn", "clean", "verify", "-Dskip.update.formula=true", "-Dskip.failsafe.tests=true"
     end
     bin.install "bin/bashpile.jar"
     bin.install "bin/bpc"

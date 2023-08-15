@@ -260,6 +260,7 @@
                             <includes>
                                 <include>**/*IntegrationTest</include>
                             </includes>
+                            <skip>${skip.failsafe.tests}</skip>
                         </configuration>
                     </execution>
                 </executions>
