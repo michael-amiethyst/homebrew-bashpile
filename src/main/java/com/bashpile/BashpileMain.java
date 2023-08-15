@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO have head entry/option as well
+// TODO strip out unneeded maven plugins, scripts
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
