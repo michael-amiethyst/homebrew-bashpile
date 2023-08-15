@@ -8,9 +8,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.io.Closeable;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Properties;
 import java.util.regex.Pattern;
 
 /**
@@ -54,8 +52,6 @@ public class BashShell implements Closeable {
      * @see #join()
      */
     public static @Nonnull BashShell runAsync(@Nonnull String bashString) throws IOException {
-        bashString = prependAdditionalPath(bashString);
-
         LOG.info("Executing bash text:\n" + bashString);
 
         // run our CommandLine process in background threads
@@ -64,7 +60,7 @@ public class BashShell implements Closeable {
 
         // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
         // also the Linux process starts in the user's shell, which may not be Bash (e.g. zsh)
-        commandLine.writeLn("bash");
+        commandLine.writeLn("bash --login");
 
         // this is the core of the method
         commandLine.writeLn(bashString);
@@ -135,15 +131,5 @@ public class BashShell implements Closeable {
     private static boolean isWindows() {
         return System.getProperty("os.name")
                 .toLowerCase().startsWith("windows");
-    }
-
-    private static String prependAdditionalPath(@Nonnull final String bashString) throws IOException {
-        final Properties prop = new Properties();
-        final String fileName = "src/main/resources/config.properties";
-        try (FileInputStream fis = new FileInputStream(fileName)) {
-            prop.load(fis);
-        }
-        Object additionalPath = prop.get("additionalPath");
-        return additionalPath != null ? "export PATH=$PATH:%s\n%s".formatted(additionalPath, bashString) : bashString;
     }
 }

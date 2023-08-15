@@ -14,7 +14,10 @@ import java.util.List;
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.*;
 
-
+/**
+ * If we invoke bpc directly it uses the shebang to find the brew installed bpr and the installed jar.
+ * However, we want the local bpr and the local jar so we call `bin/bpr bin/bpc ...`.
+ */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BashpileMainIntegrationTest extends BashpileTest {
 
@@ -27,7 +30,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("In bprDeploysSuccessfully");
 
         final String translatedFilename = "bin/bpr";
-        final String command = "bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
+        final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -42,7 +45,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String command = "bin/bpc src/test/resources/testrigData.bps";
+        final String command = "bin/bpr bin/bpc src/test/resources/testrigData.bps";
         final String translatedFilename = "src/test/resources/testrigData.bps.bpt";
         try {
             final ExecutionResults results = runAndJoin(command);
@@ -74,7 +77,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String command = "bin/bpc src/test/resources/testrigData";
+        final String command = "bin/bpr bin/bpc src/test/resources/testrigData";
         final String translatedFilename = "src/test/resources/testrigData.bpt";
         final ExecutionResults results = runAndJoin(command);
         try {
@@ -93,7 +96,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("In noSubCommandWithMissingFileFails");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String command = "bin/bpc src/test/resources/testrigData.fileDoesNotExist";
+        final String command = "bin/bpr bin/bpc src/test/resources/testrigData.fileDoesNotExist";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -107,7 +110,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         Assumptions.assumeTrue(bprDeployed);
 
         final String translatedFilename = "src/test/resources/testrigData.example.bps";
-        final String command = "bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
+        final String command = "bin/bpr bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
         ExecutionResults results = runAndJoin(command);
         try {
             log.debug("Output text:\n{}", results.stdout());
