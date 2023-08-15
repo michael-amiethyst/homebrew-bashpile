@@ -242,6 +242,7 @@
                             <environmentVariables>
                                 <PATH>/usr/bin:/home/linuxbrew/.linuxbrew/bin</PATH>
                             </environmentVariables>
+                            <skip>${skip.update.formula}</skip>
                         </configuration>
                     </execution>
                 </executions>

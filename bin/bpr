@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-08-13T10:04:29.087942243-07:00[America/Los_Angeles] (timestamp 1691946269087)
+# Generated from bin/bpr.bps on 2023-08-14T17:04:11.715942206-07:00[America/Los_Angeles] (timestamp 1692057851715)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -26,7 +26,7 @@ if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lin
     rm -f "$translatedFilename"
     trap - INT TERM EXIT
 else
-    printf "Failed to create translatedFilename correctly."
+    printf "Failed to create translatedFilename correctly.  Output from attempted creation:\n$translatedFilename"
     rm -f "$translatedFilename"
     exit 1
 fi
