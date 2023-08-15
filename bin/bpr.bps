@@ -13,4 +13,5 @@ translatedFilename: str = #(
 ) creates translatedFilename:
     #(shift)
     print("Start of " + translatedFilename)
+    #(chmod 755 $translatedFilename)
     #("$translatedFilename" "$@")

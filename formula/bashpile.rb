@@ -8,7 +8,7 @@ class Bashpile < Formula
     depends_on "maven" => :build
   end
   version "0.10.0"
-  sha256 "fe007a1a96f59a82b0c261c0eaeee0b1fd489de8ea93f69186818eef40760e2f"
+  sha256 "4da06d4f6b01fe331d1d78ce0f224022f0275bd637b86180ecbaa93e378c7c8f"
   license "MIT"
 
   depends_on "bc"
