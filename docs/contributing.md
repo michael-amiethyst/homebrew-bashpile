@@ -4,7 +4,7 @@
 Pull the code with HTTPS and commit with GitHub Desktop or personal token
 
 ## Setup FileTypes
-Python syntax highlighting for now?
+Java syntax highlighting for now?
 
 ## Register bps, bpr with /usr/bin/env
 TODO

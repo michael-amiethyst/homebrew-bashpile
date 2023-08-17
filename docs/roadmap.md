@@ -1,19 +1,15 @@
-# MVP features / drink my own champaign
-
-# Prepare for initial deployment
-1. Update wiki and docs for end-users and contributing
-
-# Additional features
-1. String interpolation with $[]
+# 1.0 features
+1. Change bpt output from `export` to `declare -x` (and type)
+2. Arrays, Hashes, Refs
+3. Loops
+4. String interpolation with $[]
     1. include special __OPTIONS[] array for $@, $1, etc.
-2. conditionals (if-elseif-else), comparison operators (<, =>, etc) and boolean logic
-3. Change bpt output from `export` to `declare -x` (and type)
-4. Factor out text for future localization and consistent end-user feel.
+5. OOP?
 
 # Later
 (Not ordered)
+* Factor out text for future localization and consistent end-user feel.
 * Regexes for Strings, files
-* remaining types (array, map, ref)
 * imports
 * subshells, Bash `()`, Bashpile `&()`?
 * default values for functions
@@ -21,13 +17,10 @@
 * exponents, other operators
 * commas in large values (e.g. 1,001)
 * Script super-blocks / sections
-* Caching generated Bash
-  * check generated Bash with ShellCheck (https://www.shellcheck.net/)
 * Scriptinos and easy testing
 * `until`
 * `unless`
 * `expr AND expr` like Bash's `(expr;expr)` without the subshell (maybe)
-* loops
 
 # much later
 * tooling (IDE integrations, code highlighting)
