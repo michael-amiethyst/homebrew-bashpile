@@ -150,7 +150,7 @@ abstract public class BashpileTest {
     }
 
     private static BashpileUncheckedException createExecutionException(Throwable e, String bashScript) {
-        if (e.getMessage().contains("shellcheck") && e.getMessage().contains("not found")) {
+        if (e.getMessage() != null && e.getMessage().contains("shellcheck") && e.getMessage().contains("not found")) {
             return new BashpileUncheckedException("Please install shellcheck (e.g. via `brew install shellcheck`)");
         }
         String msg = bashScript != null ? "\nCouldn't run `%s`".formatted(bashScript) : "\nCouldn't parse input";

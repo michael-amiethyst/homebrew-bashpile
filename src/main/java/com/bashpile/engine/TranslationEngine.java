@@ -29,14 +29,8 @@ public interface TranslationEngine {
 
     // statement translations
 
-    /** Translates an assignment */
-    Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
-
-    /** Translates a reassignment */
-    Translation reassignmentStatement(final BashpileParser.ReassignmentStatementContext ctx);
-
-    /** Translates a print */
-    Translation printStatement(final BashpileParser.PrintStatementContext ctx);
+    /** Translates a creates statement, similar to a try-with-resources block in Java */
+    Translation createsStatement(final BashpileParser.CreatesStatementContext ctx);
 
     /** Translates a forward declaration */
     Translation functionForwardDeclarationStatement(final BashpileParser.FunctionForwardDeclarationStatementContext ctx);
@@ -47,8 +41,17 @@ public interface TranslationEngine {
     /** Translates an anonymous block */
     Translation anonymousBlockStatement(final BashpileParser.AnonymousBlockStatementContext ctx);
 
-    /** Translates a creates statement, similar to a try-with-resources block in Java */
-    Translation createsStatement(final BashpileParser.CreatesStatementContext ctx);
+    /** Translates a conditional (if, else if, else block) */
+    Translation conditionalStatement(final BashpileParser.ConditionalStatementContext ctx);
+
+    /** Translates an assignment */
+    Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
+
+    /** Translates a reassignment */
+    Translation reassignmentStatement(final BashpileParser.ReassignmentStatementContext ctx);
+
+    /** Translates a print */
+    Translation printStatement(final BashpileParser.PrintStatementContext ctx);
 
     /** Translates an expression */
     Translation expressionStatement(final BashpileParser.ExpressionStatementContext ctx);

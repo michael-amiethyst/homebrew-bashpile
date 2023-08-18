@@ -25,8 +25,29 @@ Function: 'function';
 Block   : 'block';
 Return  : 'return';
 Print   : 'print';
-Bool    : 'true' | 'false';
 Creates : 'creates';
+Bool    : 'true' | 'false';
+If      : 'if';
+ElseIf  : 'else if';
+Else    : 'else';
+Pass    : 'pass';
+
+// operators, in precidence order
+// opening parenthesis
+OParen  : '(';
+// closing parenthesis
+CParen  : ')';
+// unary minus (minus defiend below)
+Not     : 'not';
+// cast in parser
+Multiply: '*';
+Divide  : '/';
+Add     : '+';
+Minus   : '-';
+// TODO relationals and unset
+// TODO equality with == and ===
+And     : 'and';
+Or      : 'or';
 
 // ID and Numbers
 
@@ -46,17 +67,10 @@ BashpileDoc  : '/**' .*? '*/' -> skip;
 Comment      : '//' ~[\r\n\f]* -> skip;
 BlockComment : '/*' ( BlockComment | . )*? '*/' -> skip;
 
-// single char tokens
+// small tokens
 
-// opening parenthesis
-OParen  : '(';
-// closing parenthesis
-CParen  : ')';
+
 Equals  : '=';
-Multiply: '*';
-Divide  : '/';
-Add     : '+';
-Minus   : '-';
 Colon   : ':';
 Comma   : ',';
 // opening square bracket

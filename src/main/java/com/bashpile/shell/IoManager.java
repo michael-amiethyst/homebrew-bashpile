@@ -13,8 +13,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static com.bashpile.Strings.appendIfMissing;
-import static com.bashpile.exceptions.Exceptions.asUnchecked;
-import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
+import static com.bashpile.exceptions.Exceptions.*;
 
 /**
  * Handles I/O and closing resources on a running child {@link Process}.<br>
@@ -89,7 +88,7 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
 
         // join to threads
         final int exitCode = asUnchecked(childProcess::waitFor);
-        asUncheckedIgnoreClosedStreams(() -> childStdOutReaderFuture.get(10, TimeUnit.SECONDS));
+        var ignored = asUncheckedIgnoreClosedStreams(() -> childStdOutReaderFuture.get(10, TimeUnit.SECONDS));
 
         return Pair.of(exitCode, childStdOutBuffer.toString());
     }
@@ -115,7 +114,7 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
         // shut down the background threads
         if (childProcess.isAlive()) {
             try {
-                join();
+                var ignored = ignoreClosedStreams(this::join);
             } catch (Exception e) {
                 LOG.warn(e);
             }
@@ -123,8 +122,8 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
 
         // close stdin writer
         try {
-            childStdInWriter.flush();
-            childStdInWriter.close();
+            ignoreClosedStreams(() -> { childStdInWriter.flush(); return ""; });
+            ignoreClosedStreams(() -> { childStdInWriter.close(); return ""; });
         } catch (Exception e) {
             LOG.warn(e);
         } finally {
@@ -134,11 +133,12 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
         // close everything else
         try {
             // so many resources to deal with
-            childStdOutBuffer.flush();
-            childStdOutWriter.flush();
-            executorService.close();
-            childStdOutBuffer.close();
-            childStdOutWriter.close();
+            ignoreClosedStreams(() -> { childStdOutBuffer.flush(); return ""; });
+            ignoreClosedStreams(() -> { childStdOutWriter.flush(); return ""; });
+
+            ignoreClosedStreams(() -> { executorService.close(); return ""; });
+            ignoreClosedStreams(() -> { childStdOutBuffer.close(); return ""; });
+            ignoreClosedStreams(() -> { childStdOutWriter.close(); return ""; });
         } catch (Exception e) {
             LOG.warn(e);
         } finally {

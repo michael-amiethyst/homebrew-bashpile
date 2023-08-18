@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.*;
+import static com.bashpile.Strings.lambdaAllLines;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 /**
@@ -156,6 +157,11 @@ public record Translation(
     /** Apply arbitrary function to body.  E.g. `str -> str`. */
     public Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
         return new Translation(preamble, lambda.apply(body), type, typeMetadata);
+    }
+
+    /** Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax. */
+    public Translation lambdaBodyLines(@Nonnull final Function<String, String> lambda) {
+        return this.body(lambdaAllLines(body, lambda));
     }
 
     /** Ensures body is a paragraph */

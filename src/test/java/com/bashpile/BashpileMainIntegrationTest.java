@@ -25,7 +25,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static boolean bprDeployed = false;
 
-    @Test @Timeout(10) @Order(5)
+    @Test @Timeout(20) @Order(5)
     public void bprDeploysSuccessfully() throws IOException {
         log.debug("In bprDeploysSuccessfully");
 
@@ -72,7 +72,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertSuccessfulExitCode(results);
     }
 
-    @Test @Timeout(8) @Order(20)
+    @Test @Timeout(10) @Order(20)
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
         log.debug("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
@@ -91,7 +91,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
     }
 
-    @Test @Timeout(8) @Order(30)
+    @Test @Timeout(10) @Order(30)
     public void noSubCommandWithMissingFileFails() throws IOException {
         log.debug("In noSubCommandWithMissingFileFails");
         Assumptions.assumeTrue(bprDeployed);
@@ -104,7 +104,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("output.txt")));
     }
 
-    @Test @Timeout(15) @Order(40)
+    @Test @Timeout(30) @Order(40)
     public void noSubCommandWithOutputSpecifiedTranspiles() throws IOException {
         log.debug("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);

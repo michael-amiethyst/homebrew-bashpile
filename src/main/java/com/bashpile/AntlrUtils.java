@@ -2,7 +2,6 @@ package com.bashpile;
 
 import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.engine.BashpileVisitor;
-import com.bashpile.engine.Translation;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -15,15 +14,10 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.Translation.toParagraphTranslation;
 
 /** Has the Antlr parser and a lot of helper methods to BashTranslationEngine */
 public class AntlrUtils {
@@ -121,22 +115,8 @@ public class AntlrUtils {
         }
     }
 
-    /** Visits all statements and indents the results */
-    public static @Nonnull Translation visitBlock(
-            @Nonnull final BashpileVisitor visitor, @Nonnull final Stream<ParserRuleContext> statementStream) {
-        final String translationText = statementStream.map(visitor::visit)
-                .map(Translation::assertEmptyPreamble)
-                .map(Translation::body)
-                // bodies may be multiline strings, convert to single lines
-                .flatMap(str -> Arrays.stream(str.split("\n")))
-                // indent each line
-                .map(str -> "%s%s\n".formatted(TAB, str))
-                .collect(Collectors.joining());
-        return toParagraphTranslation(translationText);
-    }
-
     /** Concatenates inputs into stream */
-    public static @Nonnull Stream<ParserRuleContext> addContexts(
+    public static @Nonnull Stream<ParserRuleContext> streamContexts(
             @Nonnull final List<BashpileParser.StatementContext> statements,
             @Nonnull final BashpileParser.ReturnPsudoStatementContext returnPsudoStatementContext) {
         // map of x to x needed for upcasting to parent type

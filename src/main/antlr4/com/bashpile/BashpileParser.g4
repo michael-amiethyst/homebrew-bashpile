@@ -2,18 +2,22 @@ parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
 program: statement+;
+
+// statements, in descending order of complexity
 statement
-    : typedId (Equals expression)? Newline# assignmentStatement
-    | Id Equals expression Newline        # reassignmentStatement
-    | Print OParen argumentList? CParen
-                                  Newline # printStatement
+    : (typedId Equals)? shellString Creates (String|Id)
+           Colon INDENT statement+ DEDENT # createsStatement
     | Function typedId paramaters         # functionForwardDeclarationStatement
     | Function typedId paramaters tags?
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon INDENT statement+
                                    DEDENT # anonymousBlockStatement
-    | (typedId Equals)? shellString Creates (String|Id)
-           Colon INDENT statement+ DEDENT # createsStatement
+    | If expression Colon INDENT
+                        statement+ DEDENT # conditionalStatement
+    | typedId (Equals expression)? Newline# assignmentStatement
+    | Id Equals expression Newline        # reassignmentStatement
+    | Print OParen argumentList? CParen
+                                  Newline # printStatement
     | expression Newline                  # expressionStatement
     | Newline                             # blankStmt
     ;
@@ -31,6 +35,7 @@ argumentList: expression (Comma expression)*;
 functionBlock       : INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: Return expression? Newline;
 
+// in operator precedence order?
 expression
     : expression Colon Type             # typecastExpression
     | shellString                       # shellStringExpression

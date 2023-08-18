@@ -66,18 +66,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit statements
 
     @Override
-    public @Nonnull Translation visitAssignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
-        return translator.assignmentStatement(ctx);
-    }
-
-    @Override
-    public @Nonnull Translation visitReassignmentStatement(@Nonnull BashpileParser.ReassignmentStatementContext ctx) {
-        return translator.reassignmentStatement(ctx);
-    }
-
-    @Override
-    public @Nonnull Translation visitPrintStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
-        return translator.printStatement(ctx);
+    public Translation visitCreatesStatement(BashpileParser.CreatesStatementContext ctx) {
+        return translator.createsStatement(ctx);
     }
 
     @Override
@@ -99,8 +89,23 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public Translation visitCreatesStatement(BashpileParser.CreatesStatementContext ctx) {
-        return translator.createsStatement(ctx);
+    public Translation visitConditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
+        return translator.conditionalStatement(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitAssignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
+        return translator.assignmentStatement(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitReassignmentStatement(@Nonnull BashpileParser.ReassignmentStatementContext ctx) {
+        return translator.reassignmentStatement(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitPrintStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
+        return translator.printStatement(ctx);
     }
 
     @Override

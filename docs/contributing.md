@@ -1,30 +1,18 @@
 # Temporary notes - to go to wiki
 
-## Getting Started
-Pull the code with HTTPS and commit with GitHub Desktop or personal token
-
-## Setup FileTypes
+## Setup FileTypes - Intellij
 Java syntax highlighting for now?
 
-## Register bps, bpr with /usr/bin/env
-TODO
-
-## Setup Run Configuration
+## Setup Run Configuration - Intellij
 `clean verify -f pom.xml` on WSL
 Maven Home on WSL
 Java JRE on WSL, Modify Settings to get Environment variables, set JAVA_HOME=Linux style
 
 ## Deploy with Brew
 
-Just run bin/deploy
+Just run bin/deploy to redeploy from the release.
 
-Created with
-`brew create --set-version 0.10.0 --tap michael-amiethyst/bashpile https://github.com/michael-amiethyst/homebrew-bashpile/raw/feature/brew/deploy/bashpile-project.tar.gz`
-so
-`brew test --set-version 0.10.0 --tap michael-amiethyst/bashpile`
-to test and
-`brew install Formula/homebrew-bashpile.rb`
-to install.
+Install with local formula with `brew install Formula/homebrew-bashpile.rb`.
 
 Fresh pull: `brew cleanup --prune=all && brew reinstall Formula/bashpile.rb`
 Audit: `brew audit --new bashpile`

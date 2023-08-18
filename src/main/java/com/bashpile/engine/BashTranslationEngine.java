@@ -128,6 +128,227 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // statement translations
 
+    /**
+     * See "Setting Traps" and "Race Conditions" at
+     * <a href="https://www.davidpashley.com/articles/writing-robust-shell-scripts/">Writing Robust Shell Scripts</a>
+     */
+    @Override
+    public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
+        final boolean fileNameIsId = ctx.String() == null;
+
+        // handle the initial variable declaration and type, if applicable
+        String variableName;
+        if (ctx.typedId() != null) {
+            variableName = ctx.typedId().Id().getText();
+            if (fileNameIsId) {
+                Asserts.assertEquals(variableName, ctx.Id().getText(),
+                        "Create Statements must have matching Ids at the start and end.");
+            }
+            // add this variable to the type map
+            final Type type = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
+            typeStack.putVariableType(variableName, type, lineNumber(ctx));
+        }
+
+        // create child translations and other variables
+        final Translation shellString = visitor.visit(ctx.shellString());
+        final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
+        String filename =  visitor.visit(filenameNode).unquoteBody().body();
+        // convert ID to "$ID"
+        filename = fileNameIsId ? "\"$%s\"".formatted(filename) : filename;
+
+        // create our final translation and pop the stack
+        createFilenamesStack.push(filename);
+        try {
+
+            // create other translations
+            final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
+            final Translation subcomment =
+                    subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
+
+            // create a large if-else block with traps
+            final String body = getBodyString(ctx, shellString, filename);
+            final Translation bodyTranslation = toParagraphTranslation(body);
+
+            // merge translations and preambles
+            return comment.add(
+                    subcomment.add(bodyTranslation)
+                            .addPreamble(shellString.preamble())
+                            .mergePreamble());
+        } finally {
+            createFilenamesStack.pop();
+        }
+    }
+
+    /** Helper to {@link #createsStatement(BashpileParser.CreatesStatementContext)} */
+    private String getBodyString(
+            final @Nonnull BashpileParser.CreatesStatementContext ctx,
+            final @Nonnull Translation shellString,
+            final @Nonnull String filename) {
+        final String check = String.join("; ", shellString.body().trim().split("\n"));
+
+        // set noclobber avoids some race conditions
+        String ifGuard;
+        String variableName = null;
+        if (ctx.typedId() != null) {
+            variableName = ctx.typedId().Id().getText();
+            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s) 2> /dev/null; then".formatted(
+                    getLocalText(), variableName, variableName, check);
+        } else {
+            ifGuard = "if (set -o noclobber; %s) 2> /dev/null; then".formatted(check);
+        }
+
+        // create our statements translation
+        final Translation statements = ctx.statement().stream()
+                .map(visitor::visit)
+                .reduce(Translation::add)
+                .orElseThrow()
+                .assertParagraphBody()
+                .assertNoBlankLinesInBody();
+        // create an ifBody to put into the bodyTranslation
+        // only one trap can be in effect at a time, so we keep a stack of all current filenames to delete
+        String ifBody = """
+                trap 'rm -f %s; exit 10' INT TERM EXIT
+                ## wrapped body of creates statement
+                %s
+                ## end of wrapped body of creates statement
+                rm -f %s
+                trap - INT TERM EXIT""".formatted(
+                String.join(" ", createFilenamesStack), statements.body(), filename);
+        ifBody = lambdaAllLines(ifBody, str -> TAB + str);
+        ifBody = lambdaFirstLine(ifBody, String::stripLeading);
+
+        // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
+        final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
+        final String plainFilename = STRING_QUOTES.matcher(filename).replaceAll("").substring(1);
+        final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
+        String elseBody = """
+                printf "Failed to create %s correctly.%s"
+                rm -f %s
+                %s 1""".formatted(plainFilename, errorDetails, filename, exitOrReturn);
+        elseBody = lambdaAllLines(elseBody, str -> TAB + str);
+        elseBody = lambdaFirstLine(elseBody, String::stripLeading);
+        return """
+                %s
+                    %s
+                else
+                    %s
+                fi
+                declare -i __bp_exitCode=$?
+                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+                """.formatted(ifGuard, ifBody, elseBody);
+    }
+
+    @Override
+    public @Nonnull Translation functionForwardDeclarationStatement(
+            @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
+        final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
+        try (var ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
+            // create translations
+            final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
+            // remove trailing newline
+            final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
+            // register that this forward declaration has been handled
+            foundForwardDeclarations.add(ctx.typedId().Id().getText());
+            // add translations
+            return comment.add(hoistedFunction.assertEmptyPreamble());
+        }
+    }
+
+    @Override
+    public @Nonnull Translation functionDeclarationStatement(
+            @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
+        // avoid translating twice if was part of a forward declaration
+        final String functionName = ctx.typedId().Id().getText();
+        if (foundForwardDeclarations.contains(functionName)) {
+            return EMPTY_TRANSLATION;
+        }
+
+        // check for double declaration
+        if (typeStack.containsFunction(functionName)) {
+            throw new UserError(
+                    functionName + " was declared twice (function overloading is not supported)", lineNumber(ctx));
+        }
+
+        // regular processing -- no forward declaration
+
+        // register function param types and return type
+        final List<Type> typeList = ctx.paramaters().typedId()
+                .stream().map(Type::valueOf).collect(Collectors.toList());
+        final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
+        typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
+
+        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
+
+            // register local variable types
+            ctx.paramaters().typedId().forEach(
+                    x -> typeStack.putVariableType(
+                            x.Id().getText(), Type.valueOf(x.Type().getText().toUpperCase()), lineNumber(ctx)));
+
+            // create Translations
+            final Translation comment = createHoistedCommentTranslation("function declaration", lineNumber(ctx));
+            final AtomicInteger i = new AtomicInteger(1);
+            // the empty string or ...
+            String namedParams = "";
+            if (!ctx.paramaters().typedId().isEmpty()) {
+                // local var1=$1; local var2=$2; etc
+                final String paramDeclarations = ctx.paramaters().typedId().stream()
+                        .map(BashpileParser.TypedIdContext::Id)
+                        .map(visitor::visit)
+                        .map(Translation::body)
+                        .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
+                        .collect(Collectors.joining(" "));
+                namedParams = TAB + paramDeclarations + "\n";
+            }
+            final Translation blockStatements = streamContexts(
+                    ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement())
+                    .map(visitor::visit)
+                    .map(tr -> tr.lambdaBodyLines(str -> TAB + str))
+                    .reduce(Translation::add)
+                    .orElseThrow()
+                    .assertEmptyPreamble();
+            final Translation functionDeclaration = toParagraphTranslation("%s () {\n%s%s}\n"
+                    .formatted(functionName, assertIsLine(namedParams), assertIsParagraph(blockStatements.body())));
+            return comment.add(functionDeclaration);
+        }
+    }
+
+    @Override
+    public @Nonnull Translation anonymousBlockStatement(
+            @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
+        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
+            final Translation comment = createHoistedCommentTranslation("anonymous block", lineNumber(ctx));
+            // behind the scenes we need to name the anonymous function
+            final String anonymousFunctionName = "anon" + anonBlockCounter++;
+            // map of x to x needed for upcasting to parent type
+            final Translation blockStatements = ctx.statement().stream()
+                    .map(visitor::visit)
+                    .map(tr -> tr.lambdaBodyLines(str -> TAB + str))
+                    .reduce(Translation::add)
+                    .orElseThrow()
+                    .assertEmptyPreamble();
+            // define function and then call immediately with no arguments
+            final Translation selfCallingAnonymousFunction = toParagraphTranslation("%s () {\n%s}; %s\n"
+                    .formatted(anonymousFunctionName, blockStatements.body(), anonymousFunctionName));
+            return comment.add(selfCallingAnonymousFunction);
+        }
+    }
+
+    @Override
+    public Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
+        final Translation predicate = visitor.visit(ctx.expression());
+        final Translation ifBlockStatements = ctx.statement().stream()
+                .map(visitor::visit)
+                .map(tr -> tr.lambdaBodyLines(str -> TAB + str))
+                .reduce(Translation::add)
+                .orElseThrow();
+        final String conditional = """
+                if [ %s ]; then
+                %s
+                fi
+                """.formatted(predicate.body(), ifBlockStatements.mergePreamble().body().stripTrailing());
+        return toParagraphTranslation(predicate.preamble() + conditional);
+    }
+
     @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         // add this variable to the type map
@@ -213,203 +434,6 @@ public class BashTranslationEngine implements TranslationEngine {
                     subcommentTranslationOrDefault(arguments.hasPreamble(), "print statement body");
             return comment.add(subcomment.add(arguments).mergePreamble());
         }
-    }
-
-    @Override
-    public @Nonnull Translation functionForwardDeclarationStatement(
-            @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
-        final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
-        try (var ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
-            // create translations
-            final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
-            // remove trailing newline
-            final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
-            // register that this forward declaration has been handled
-            foundForwardDeclarations.add(ctx.typedId().Id().getText());
-            // add translations
-            return comment.add(hoistedFunction.assertEmptyPreamble());
-        }
-    }
-
-    @Override
-    public @Nonnull Translation functionDeclarationStatement(
-            @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
-        // avoid translating twice if was part of a forward declaration
-        final String functionName = ctx.typedId().Id().getText();
-        if (foundForwardDeclarations.contains(functionName)) {
-            return EMPTY_TRANSLATION;
-        }
-
-        // check for double declaration
-        if (typeStack.containsFunction(functionName)) {
-            throw new UserError(
-                    functionName + " was declared twice (function overloading is not supported)", lineNumber(ctx));
-        }
-
-        // regular processing -- no forward declaration
-
-        // register function param types and return type
-        final List<Type> typeList = ctx.paramaters().typedId()
-                .stream().map(Type::valueOf).collect(Collectors.toList());
-        final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
-        typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
-
-        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
-
-            // register local variable types
-            ctx.paramaters().typedId().forEach(
-                    x -> typeStack.putVariableType(
-                            x.Id().getText(), Type.valueOf(x.Type().getText().toUpperCase()), lineNumber(ctx)));
-
-            // create Translations
-            final Translation comment = createHoistedCommentTranslation("function declaration", lineNumber(ctx));
-            final AtomicInteger i = new AtomicInteger(1);
-            // the empty string or ...
-            String namedParams = "";
-            if (!ctx.paramaters().typedId().isEmpty()) {
-                // local var1=$1; local var2=$2; etc
-                final String paramDeclarations = ctx.paramaters().typedId().stream()
-                        .map(BashpileParser.TypedIdContext::Id)
-                        .map(visitor::visit)
-                        .map(Translation::body)
-                        .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
-                        .collect(Collectors.joining(" "));
-                namedParams = TAB + paramDeclarations + "\n";
-            }
-            final Stream<ParserRuleContext> contextStream =
-                    addContexts(ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement());
-            final String blockBody = visitBlock(visitor, contextStream).assertEmptyPreamble().body();
-            final Translation functionDeclaration = toParagraphTranslation("%s () {\n%s%s}\n"
-                    .formatted(functionName, assertIsLine(namedParams), assertIsParagraph(blockBody)));
-            return comment.add(functionDeclaration);
-        }
-    }
-
-    @Override
-    public @Nonnull Translation anonymousBlockStatement(
-            @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
-        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
-            final Translation comment = createHoistedCommentTranslation("anonymous block", lineNumber(ctx));
-            // behind the scenes we need to name the anonymous function
-            final String anonymousFunctionName = "anon" + anonBlockCounter++;
-            // map of x to x needed for upcasting to parent type
-            final Stream<ParserRuleContext> stmtStream = ctx.statement().stream().map(x -> x);
-            final String blockBody = visitBlock(visitor, stmtStream).body();
-            // define function and then call immediately with no arguments
-            final Translation selfCallingAnonymousFunction = toParagraphTranslation("%s () {\n%s}; %s\n"
-                    .formatted(anonymousFunctionName, assertIsParagraph(blockBody), anonymousFunctionName));
-            return comment.add(selfCallingAnonymousFunction);
-        }
-    }
-
-    /**
-     * See "Setting Traps" and "Race Conditions" at
-     * <a href="https://www.davidpashley.com/articles/writing-robust-shell-scripts/">Writing Robust Shell Scripts</a>
-     */
-    @Override
-    public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
-        final boolean fileNameIsId = ctx.String() == null;
-
-        // handle the initial variable declaration and type, if applicable
-        String variableName;
-        if (ctx.typedId() != null) {
-            variableName = ctx.typedId().Id().getText();
-            if (fileNameIsId) {
-                Asserts.assertEquals(variableName, ctx.Id().getText(),
-                        "Create Statements must have matching Ids at the start and end.");
-            }
-            // add this variable to the type map
-            final Type type = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
-            typeStack.putVariableType(variableName, type, lineNumber(ctx));
-        }
-
-        // create child translations and other variables
-        final Translation shellString = visitor.visit(ctx.shellString());
-        final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
-        String filename =  visitor.visit(filenameNode).unquoteBody().body();
-        // convert ID to "$ID"
-        filename = fileNameIsId ? "\"$%s\"".formatted(filename) : filename;
-
-        // create our final translation and pop the stack
-        createFilenamesStack.push(filename);
-        try {
-
-            // create other translations
-            final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
-            final Translation subcomment =
-                    subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
-
-            // create a large if-else block with traps
-            final String body = getBodyString(ctx, shellString, filename);
-            final Translation bodyTranslation = toParagraphTranslation(body);
-
-            // merge translations and preambles
-            return comment.add(
-                    subcomment.add(bodyTranslation)
-                    .addPreamble(shellString.preamble())
-                    .mergePreamble());
-        } finally {
-            createFilenamesStack.pop();
-        }
-    }
-
-    /** Helper to {@link #createsStatement(BashpileParser.CreatesStatementContext)} */
-    private String getBodyString(
-            final @Nonnull BashpileParser.CreatesStatementContext ctx,
-            final @Nonnull Translation shellString,
-            final @Nonnull String filename) {
-        final String check = String.join("; ", shellString.body().trim().split("\n"));
-
-        // set noclobber avoids some race conditions
-        String ifGuard;
-        String variableName = null;
-        if (ctx.typedId() != null) {
-            variableName = ctx.typedId().Id().getText();
-            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s) 2> /dev/null; then".formatted(
-                    getLocalText(), variableName, variableName, check);
-        } else {
-            ifGuard = "if (set -o noclobber; %s) 2> /dev/null; then".formatted(check);
-        }
-
-        // create our statements translation
-        final Translation statements = ctx.statement().stream()
-                .map(visitor::visit)
-                .reduce(Translation::add)
-                .orElseThrow()
-                .assertParagraphBody()
-                .assertNoBlankLinesInBody();
-        // create an ifBody to put into the bodyTranslation
-        // only one trap can be in effect at a time, so we keep a stack of all current filenames to delete
-        String ifBody = """
-                trap 'rm -f %s; exit 10' INT TERM EXIT
-                ## wrapped body of creates statement
-                %s
-                ## end of wrapped body of creates statement
-                rm -f %s
-                trap - INT TERM EXIT""".formatted(
-                String.join(" ", createFilenamesStack), statements.body(), filename);
-        ifBody = lambdaAllLines(ifBody, str -> TAB + str);
-        ifBody = lambdaFirstLine(ifBody, String::stripLeading);
-
-        // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
-        final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
-        final String plainFilename = STRING_QUOTES.matcher(filename).replaceAll("").substring(1);
-        final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
-        String elseBody = """
-                printf "Failed to create %s correctly.%s"
-                rm -f %s
-                %s 1""".formatted(plainFilename, errorDetails, filename, exitOrReturn);
-        elseBody = lambdaAllLines(elseBody, str -> TAB + str);
-        elseBody = lambdaFirstLine(elseBody, String::stripLeading);
-        return """
-                %s
-                    %s
-                else
-                    %s
-                fi
-                declare -i __bp_exitCode=$?
-                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                """.formatted(ifGuard, ifBody, elseBody);
     }
 
     @Override
