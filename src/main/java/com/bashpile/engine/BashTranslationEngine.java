@@ -345,7 +345,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     %s""".formatted(elseBlockStatements).stripTrailing();
         }
         final String conditional = """
-                if [ %s ]; then
+                if %s; then
                 %s%s
                 fi
                 """.formatted(predicate.body(), ifBlockStatements.mergePreamble().body().stripTrailing(), elseBlock);
@@ -615,7 +615,7 @@ public class BashTranslationEngine implements TranslationEngine {
         } else {
             throw new BashpileUncheckedException("Neither String, nor Id nor arguments provided to primary expression");
         }
-        final String body = "%s %s".formatted(primaryTranslations.get(primary), valueBeingTested);
+        final String body = "[ %s %s ]".formatted(primaryTranslations.get(primary), valueBeingTested);
         return new Translation(body, STR, NORMAL);
     }
 

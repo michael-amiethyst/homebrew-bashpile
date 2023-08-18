@@ -110,4 +110,28 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
+
+    @Test
+    @Order(90)
+    public void ifCommandWorks() {
+        final ExecutionResults results = runText("""
+                if #((which ls 1>/dev/null)):
+                    print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(100)
+    public void ifCommandCanFail() {
+        final ExecutionResults results = runText("""
+                if #((which not_real_command)):
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
 }
