@@ -45,6 +45,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private static final Pattern GENERATED_VARIABLE_NAME = Pattern.compile("^\\$\\{__bp.*");
 
+    private static final Map<String, String> primaryTranslations = Map.of("unset", "-z");
+
     // instance variables
 
     /** This is how we enforce type checking at compile time.  Mutable. */
@@ -588,6 +590,18 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
+    public Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
+        final String primary = ctx.primary().getText();
+        // TODO handle string and id
+        // TODO handle 'all'
+        // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
+        final String parameterExpansion = primary.equals("unset") ? "+default" : "";
+        final String string = "\"${%s%s}\"".formatted(ctx.argumentsBuiltin().Number().getText(), parameterExpansion);
+        final String body = "%s %s".formatted(primaryTranslations.get(primary), string);
+        return new Translation(body, STR, NORMAL);
+    }
+
+    @Override
     public Translation idExpression(BashpileParser.IdExpressionContext ctx) {
         final String variableName = ctx.Id().getText();
         final Type type = typeStack.getVariableType(variableName);
@@ -702,6 +716,7 @@ public class BashTranslationEngine implements TranslationEngine {
      * The body is a Command Substitution of a created variable
      * that holds the results of executing <code>tr</code>'s body.
      */
+    // TODO add checks to call it willy-nilly
     private Translation unnest(@Nonnull final Translation tr) {
         // guard to check if unnest not needed
         if (GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {

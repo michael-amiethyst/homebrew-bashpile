@@ -153,6 +153,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         return translator.calculationExpression(ctx);
     }
 
+    @Override
+    public Translation visitPrimaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
+        return translator.primaryExpression(ctx);
+    }
+
     // visit type expressions
 
     @Override

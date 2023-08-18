@@ -79,6 +79,12 @@ public interface TranslationEngine {
     /** Translates a calculation, including adding strings */
     Translation calculationExpression(final BashpileParser.CalculationExpressionContext ctx);
 
+    /**
+     * Translates a relational or equality, called a primary in Bash
+     * @see <a href=https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html>Primaries</a>
+     */
+    Translation primaryExpression(final BashpileParser.PrimaryExpressionContext ctx);
+
     /** Translates IDs */
     Translation idExpression(final BashpileParser.IdExpressionContext ctx);
 

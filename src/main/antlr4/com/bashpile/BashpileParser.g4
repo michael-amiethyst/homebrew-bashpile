@@ -46,6 +46,8 @@ expression
     | expression
          op=(Multiply|Divide|Add|Minus)
                              expression # calculationExpression
+    | primary
+           (String|Id|argumentsBuiltin) # primaryExpression
     // type expressions
     | Bool                              # boolExpression
     | <assoc=right> Minus? Number       # numberExpression
@@ -61,3 +63,8 @@ inlineContents: InlineText
               | InlineEscapeSequence
               | shellString
               | inline;
+
+// full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
+primary: Unset;
+
+argumentsBuiltin: Arguments OBracket Number CBracket;

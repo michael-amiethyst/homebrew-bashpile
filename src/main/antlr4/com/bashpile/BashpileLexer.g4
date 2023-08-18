@@ -20,17 +20,19 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
-Type    : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
-Function: 'function';
-Block   : 'block';
-Return  : 'return';
-Print   : 'print';
-Creates : 'creates';
-Bool    : 'true' | 'false';
-If      : 'if';
-ElseIf  : 'else if';
-Else    : 'else';
-Pass    : 'pass';
+Type     : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
+Function : 'function';
+Block    : 'block';
+Return   : 'return';
+Print    : 'print';
+Creates  : 'creates';
+Bool     : 'true' | 'false';
+If       : 'if';
+ElseIf   : 'else if';
+Else     : 'else';
+Pass     : 'pass';
+Arguments: 'arguments';
+All      : 'all';
 
 // operators, in precidence order
 // opening parenthesis
@@ -39,13 +41,14 @@ OParen  : '(';
 CParen  : ')';
 // unary minus (minus defiend below)
 Not     : 'not';
+Unset   : 'unset';
 // cast in parser
 Multiply: '*';
 Divide  : '/';
 Add     : '+';
 Minus   : '-';
-// TODO relationals and unset
-// TODO equality with == and ===
+// TODO relationals here
+// TODO equality here with == and ===
 And     : 'and';
 Or      : 'or';
 
