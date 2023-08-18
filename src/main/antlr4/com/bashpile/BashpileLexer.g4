@@ -41,13 +41,15 @@ OParen  : '(';
 CParen  : ')';
 // unary minus (minus defiend below)
 Not     : 'not';
-Unset   : 'unset';
 // cast in parser
 Multiply: '*';
 Divide  : '/';
 Add     : '+';
 Minus   : '-';
 // TODO relationals here
+Unset   : 'unset';
+Empty   : 'isEmpty';
+NotEmpty: 'isNotEmpty';
 // TODO equality here with == and ===
 And     : 'and';
 Or      : 'or';

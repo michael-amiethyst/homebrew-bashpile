@@ -12,8 +12,8 @@ statement
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon INDENT statement+
                                    DEDENT # anonymousBlockStatement
-    | If expression Colon INDENT
-                        statement+ DEDENT # conditionalStatement
+    | If expression Colon INDENT statement+
+            DEDENT (Else Colon elseBody)? # conditionalStatement
     | typedId (Equals expression)? Newline# assignmentStatement
     | Id Equals expression Newline        # reassignmentStatement
     | Print OParen argumentList? CParen
@@ -27,6 +27,7 @@ tags        : OBracket (String*) CBracket;
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
 typedId     : Id Colon Type;
 argumentList: expression (Comma expression)*;
+elseBody    : INDENT statement+ DEDENT;
 
 // Force the final statement to be a return.
 // This is a work around for Bash not allawing the return keyword with a string.
@@ -65,6 +66,6 @@ inlineContents: InlineText
               | inline;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-primary: Unset;
+primary: Unset | Empty | NotEmpty;
 
 argumentsBuiltin: Arguments OBracket Number CBracket;

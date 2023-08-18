@@ -167,8 +167,10 @@ public class Asserts {
         final Path tempFile = Path.of("temp.bps");
         try {
             Files.writeString(tempFile, translatedShellScript);
+            // ignore 'Argument to -z is always false due to literal strings.'
             final ExecutionResults shellcheckResults =
-                    BashShell.runAndJoin("shellcheck --shell=bash --severity=warning " + tempFile);
+                    BashShell.runAndJoin(
+                            "shellcheck --shell=bash --severity=warning --exclude=SC2157 " + tempFile);
             if (shellcheckResults.exitCode() != 0) {
                 throw new BashpileUncheckedAssertionException(shellcheckResults.stdout());
             }

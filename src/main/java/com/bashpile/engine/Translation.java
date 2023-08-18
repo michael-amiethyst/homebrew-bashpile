@@ -192,4 +192,9 @@ public record Translation(
     public boolean isInlineOrSubshell() {
         return typeMetadata.equals(TypeMetadata.SUBSHELL) || typeMetadata.equals(TypeMetadata.INLINE);
     }
+
+    @Override
+    public String toString() {
+        return assertEmptyPreamble().body;
+    }
 }

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// TODO test with function calls, other expressions
+// TODO test with function calls, other expressions.  parens, nested inlines
 @Order(70)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ConditionalsBashpileTest extends BashpileTest {
@@ -33,5 +33,81 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(30)
+    public void ifIsEmptyWorks() {
+        final ExecutionResults results = runText("""
+                test: str = ""
+                if isEmpty test:
+                    print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(40)
+    public void ifIsEmptyCanFail() {
+        final ExecutionResults results = runText("""
+                test: str = "notEmpty"
+                if isEmpty test:
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(50)
+    public void ifIsNotEmptyWorks() {
+        final ExecutionResults results = runText("""
+                test: str = "notEmpty"
+                if isNotEmpty test:
+                    print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(60)
+    public void ifIsNotEmptyCanFail() {
+        final ExecutionResults results = runText("""
+                test: str = ""
+                if isNotEmpty test:
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(70)
+    public void ifIsEmptyOnStringWorks() {
+        final ExecutionResults results = runText("""
+                if isEmpty "":
+                    print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(80)
+    public void ifIsEmptyOnStringCanFail() {
+        final ExecutionResults results = runText("""
+                if isEmpty "test":
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
     }
 }

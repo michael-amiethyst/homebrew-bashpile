@@ -6,6 +6,7 @@ import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -45,7 +46,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private static final Pattern GENERATED_VARIABLE_NAME = Pattern.compile("^\\$\\{__bp.*");
 
-    private static final Map<String, String> primaryTranslations = Map.of("unset", "-z");
+    private static final Map<String, String> primaryTranslations = Map.of("unset", "-z", "isEmpty", "-z",
+            "isNotEmpty", "-n");
 
     // instance variables
 
@@ -322,12 +324,7 @@ public class BashTranslationEngine implements TranslationEngine {
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
             // map of x to x needed for upcasting to parent type
-            final Translation blockStatements = ctx.statement().stream()
-                    .map(visitor::visit)
-                    .map(tr -> tr.lambdaBodyLines(str -> TAB + str))
-                    .reduce(Translation::add)
-                    .orElseThrow()
-                    .assertEmptyPreamble();
+            final Translation blockStatements = visitBodyStatements(ctx.statement());
             // define function and then call immediately with no arguments
             final Translation selfCallingAnonymousFunction = toParagraphTranslation("%s () {\n%s}; %s\n"
                     .formatted(anonymousFunctionName, blockStatements.body(), anonymousFunctionName));
@@ -338,17 +335,29 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         final Translation predicate = visitor.visit(ctx.expression());
-        final Translation ifBlockStatements = ctx.statement().stream()
+        final Translation ifBlockStatements = visitBodyStatements(ctx.statement());
+        String elseBlock = "";
+        if (ctx.elseBody() != null) {
+            final Translation elseBlockStatements = visitBodyStatements(ctx.elseBody().statement());
+            elseBlock = """
+                    
+                    else
+                    %s""".formatted(elseBlockStatements).stripTrailing();
+        }
+        final String conditional = """
+                if [ %s ]; then
+                %s%s
+                fi
+                """.formatted(predicate.body(), ifBlockStatements.mergePreamble().body().stripTrailing(), elseBlock);
+        return toParagraphTranslation(predicate.preamble() + conditional);
+    }
+
+    private @Nonnull Translation visitBodyStatements(@Nonnull final List<BashpileParser.StatementContext> statements) {
+        return statements.stream()
                 .map(visitor::visit)
                 .map(tr -> tr.lambdaBodyLines(str -> TAB + str))
                 .reduce(Translation::add)
                 .orElseThrow();
-        final String conditional = """
-                if [ %s ]; then
-                %s
-                fi
-                """.formatted(predicate.body(), ifBlockStatements.mergePreamble().body().stripTrailing());
-        return toParagraphTranslation(predicate.preamble() + conditional);
     }
 
     @Override
@@ -592,12 +601,21 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
         final String primary = ctx.primary().getText();
-        // TODO handle string and id
         // TODO handle 'all'
-        // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
-        final String parameterExpansion = primary.equals("unset") ? "+default" : "";
-        final String string = "\"${%s%s}\"".formatted(ctx.argumentsBuiltin().Number().getText(), parameterExpansion);
-        final String body = "%s %s".formatted(primaryTranslations.get(primary), string);
+        String valueBeingTested;
+        if (ctx.String() != null) {
+            valueBeingTested = ctx.String().getText();
+        } else if (ctx.Id() != null) {
+            valueBeingTested = "\"$%s\"".formatted(ctx.Id().getText());
+        } else if (ctx.argumentsBuiltin() != null) {
+            // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
+            // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
+            final String parameterExpansion = primary.equals("unset") ? "+default" : "";
+            valueBeingTested = "\"${%s%s}\"".formatted(ctx.argumentsBuiltin().Number().getText(), parameterExpansion);
+        } else {
+            throw new BashpileUncheckedException("Neither String, nor Id nor arguments provided to primary expression");
+        }
+        final String body = "%s %s".formatted(primaryTranslations.get(primary), valueBeingTested);
         return new Translation(body, STR, NORMAL);
     }
 
@@ -716,10 +734,10 @@ public class BashTranslationEngine implements TranslationEngine {
      * The body is a Command Substitution of a created variable
      * that holds the results of executing <code>tr</code>'s body.
      */
-    // TODO add checks to call it willy-nilly
+    // TODO test checks to call it willy-nilly
     private Translation unnest(@Nonnull final Translation tr) {
         // guard to check if unnest not needed
-        if (GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
+        if (!LevelCounter.inCommandSubstitution() || GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
             return tr;
         }
 
