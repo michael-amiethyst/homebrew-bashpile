@@ -66,3 +66,6 @@ Many tests have `@Test @Order(num)` on one line.
 ## NonNull, Nullable and final
 All fields and params will be annotated with `@NonNull` or `@Nullable` and marked as final as appropriate.
 Final object references should not be mutated.
+
+## JavaDocs
+`pubilc` methods, fields and constants will be JavaDoced.

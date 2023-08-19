@@ -66,7 +66,7 @@ public record Translation(
      * Asserts text is a collection of lines, with each ending with '\n', or the empty string.
      * @return A NORMAL STR Translation.
      */
-    public static Translation toParagraphTranslation(@Nonnull final String text) {
+    public static @Nonnull Translation toParagraphTranslation(@Nonnull final String text) {
         return new Translation(assertIsParagraph(text), Type.STR, TypeMetadata.NORMAL);
     }
 
@@ -74,7 +74,7 @@ public record Translation(
      * Asserts text is a single line ending with '\n', or the empty string.
      * @return A NORMAL STR Translation.
      */
-    public static Translation toLineTranslation(@Nonnull final String text) {
+    public static @Nonnull Translation toLineTranslation(@Nonnull final String text) {
         return new Translation(assertIsLine(text), Type.STR, TypeMetadata.NORMAL);
     }
 
@@ -87,7 +87,7 @@ public record Translation(
     }
 
     /** Accumulates all the stream translations' preambles and bodies into the result */
-    public static Translation toTranslation(
+    public static @Nonnull Translation toTranslation(
             @Nonnull final Stream<Translation> stream,
             @Nonnull final Type type,
             @Nonnull final TypeMetadata typeMetadata) {
@@ -98,19 +98,19 @@ public record Translation(
     // instance methods
 
     /** Concatenates other's preamble and body to this preamble and body */
-    public Translation add(@Nonnull final Translation other) {
+    public @Nonnull Translation add(@Nonnull final Translation other) {
         return new Translation(preamble + other.preamble, body + other.body, type, typeMetadata);
     }
 
     // preamble instance methods
 
     /** Appends additionalPreamble to this object's preamble */
-    public Translation addPreamble(@Nonnull final String additionalPreamble) {
+    public @Nonnull Translation addPreamble(@Nonnull final String additionalPreamble) {
         return new Translation(preamble + additionalPreamble, body, type, typeMetadata);
     }
 
     /** Ensures this translation has no preamble */
-    public Translation assertEmptyPreamble() {
+    public @Nonnull Translation assertEmptyPreamble() {
         if (hasPreamble()) {
             throw new BashpileUncheckedAssertionException("Found preamble in translation: " + this);
         }
@@ -123,55 +123,55 @@ public record Translation(
     }
 
     /** Prepends the preamble to the body */
-    public Translation mergePreamble() {
+    public @Nonnull Translation mergePreamble() {
         return new Translation(preamble + body, type, typeMetadata);
     }
 
     // body instance methods
 
     /** Replaces the body */
-    public Translation body(@Nonnull final String nextBody) {
+    public @Nonnull Translation body(@Nonnull final String nextBody) {
         return new Translation(preamble, nextBody, type, typeMetadata);
     }
 
     /** See {@link Strings#unescape(java.lang.String)} */
-    public Translation unescapeBody() {
+    public @Nonnull Translation unescapeBody() {
         return lambdaBody(Strings::unescape);
     }
 
     /** Put quotes around body */
-    public Translation quoteBody() {
+    public @Nonnull Translation quoteBody() {
         return lambdaBody("\"%s\""::formatted);
     }
 
     /** Remove quotes around body */
-    public Translation unquoteBody() {
+    public @Nonnull Translation unquoteBody() {
         return lambdaBody(body -> STRING_QUOTES.matcher(body).replaceAll(""));
     }
 
     /** Put parenthesis around body */
-    public Translation parenthesizeBody() {
+    public @Nonnull Translation parenthesizeBody() {
         return lambdaBody("(%s)"::formatted);
     }
 
     /** Apply arbitrary function to body.  E.g. `str -> str`. */
-    public Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
+    public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
         return new Translation(preamble, lambda.apply(body), type, typeMetadata);
     }
 
     /** Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax. */
-    public Translation lambdaBodyLines(@Nonnull final Function<String, String> lambda) {
+    public @Nonnull Translation lambdaBodyLines(@Nonnull final Function<String, String> lambda) {
         return this.body(lambdaAllLines(body, lambda));
     }
 
     /** Ensures body is a paragraph */
-    public Translation assertParagraphBody() {
+    public @Nonnull Translation assertParagraphBody() {
         assertIsParagraph(body);
         return this;
     }
 
     /** Ensures body has no empty or blank lines and is not the empty string */
-    public Translation assertNoBlankLinesInBody() {
+    public @Nonnull Translation assertNoBlankLinesInBody() {
         assertNoBlankLines(body);
         return this;
     }
@@ -179,18 +179,23 @@ public record Translation(
     // type and typeMetadata instance methods
 
     /** Replaces the type */
-    public Translation type(@Nonnull final Type typecastType) {
+    public @Nonnull Translation type(@Nonnull final Type typecastType) {
         return new Translation(preamble, body, typecastType, typeMetadata);
     }
 
     /** Replaces the type metadata */
-    public Translation typeMetadata(@Nonnull final TypeMetadata meta) {
+    public @Nonnull Translation typeMetadata(@Nonnull final TypeMetadata meta) {
         return new Translation(preamble, body, type, meta);
     }
 
-    /** Checks if this is a subshell or an inline (command substitution in Bash parlance) */
-    public boolean isInlineOrSubshell() {
-        return typeMetadata.equals(TypeMetadata.SUBSHELL) || typeMetadata.equals(TypeMetadata.INLINE);
+    /**
+     * Create an inline Translation if this is a {@link TypeMetadata#NEEDS_INLINING_OFTEN} translation.
+     * @return Converts body to an inline and change the type metadata to {@link TypeMetadata#INLINE}.
+     */
+    public @Nonnull Translation inlineAsNeeded() {
+        return typeMetadata.equals(TypeMetadata.NEEDS_INLINING_OFTEN)
+                ? new Translation(preamble, "$(%s)".formatted(body), type, TypeMetadata.INLINE)
+                : this;
     }
 
     @Override

@@ -30,8 +30,7 @@ import static com.bashpile.Strings.*;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
-import static com.bashpile.engine.strongtypes.TypeMetadata.INLINE;
-import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
+import static com.bashpile.engine.strongtypes.TypeMetadata.*;
 import static com.google.common.collect.Iterables.getLast;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -371,7 +370,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean exprExists = ctx.expression() != null;
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = exprExists ? visitor.visit(ctx.expression()) : EMPTY_TRANSLATION;
+            exprTranslation = exprExists ? visitor.visit(ctx.expression()).inlineAsNeeded() : EMPTY_TRANSLATION;
         }
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
@@ -402,7 +401,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get expression and it's type
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = visitor.visit(ctx.expression());
+            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded();
         }
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
@@ -435,7 +434,8 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
-                    .map(tr -> tr.isInlineOrSubshell() && inCommandSubstitution() ? unnest(tr) : tr)
+                    .map(Translation::inlineAsNeeded)
+                    .map(tr -> tr.typeMetadata().equals(INLINE) && inCommandSubstitution() ? unnest(tr) : tr)
                     .map(tr -> tr.body("""
                             printf "%s\\n"
                             """.formatted(tr.unquoteBody().body())))
@@ -476,9 +476,10 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         final Translation comment = createHoistedCommentTranslation("return statement", lineNumber(ctx));
-        final Function<String, String> toPrintf =
-                str -> "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""));
-        final Translation exprBody = toParagraphTranslation(lambdaLastLine(exprTranslation.body(), toPrintf))
+        final Function<String, String> strToPrintf = str -> functionTypes.returnType().equals(STR)
+                ? "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""))
+                : str + "\n";
+        final Translation exprBody = toParagraphTranslation(lambdaLastLine(exprTranslation.body(), strToPrintf))
                 .addPreamble(exprTranslation.preamble());
         return comment.add(exprBody.mergePreamble());
     }
@@ -519,7 +520,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String functionName = ctx.Id().getText();
         final boolean hasArgs = ctx.argumentList() != null;
         final List<Translation> argumentTranslations = hasArgs
-                ? ctx.argumentList().expression().stream().map(visitor::visit).toList()
+                ? ctx.argumentList().expression().stream().map(visitor::visit).map(Translation::inlineAsNeeded).toList()
                 : List.of();
 
         // check types
@@ -585,8 +586,8 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (maybeNumericExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
-            return toTranslation(childTranslations.stream(), Type.NUMBER, INLINE)
-                    .body("$(bc <<< \"%s\")".formatted(translationsString));
+            return toTranslation(childTranslations.stream(), Type.NUMBER, NEEDS_INLINING_OFTEN)
+                    .body("bc <<< \"%s\"".formatted(translationsString));
             // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(

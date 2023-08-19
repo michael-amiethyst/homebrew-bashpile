@@ -134,4 +134,32 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
+
+    @Test
+    @Order(110)
+    public void ifFunctionWorks() {
+        final ExecutionResults results = runText("""
+                function retT: bool():
+                    return true
+                if retT():
+                    print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(120)
+    public void ifFunctionCanFail() {
+        final ExecutionResults results = runText("""
+                function retF: bool():
+                    return false
+                if retF():
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
 }
