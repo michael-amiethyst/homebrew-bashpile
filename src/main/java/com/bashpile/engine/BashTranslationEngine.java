@@ -6,7 +6,6 @@ import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
-import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -24,7 +23,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.bashpile.AntlrUtils.*;
+import static com.bashpile.AntlrUtils.getFunctionDeclCtx;
+import static com.bashpile.AntlrUtils.streamContexts;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.*;
 import static com.bashpile.engine.LevelCounter.*;
@@ -153,7 +153,14 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // create child translations and other variables
-        final Translation shellString = visitor.visit(ctx.shellString());
+        Translation shellString;
+        if (ctx.shellString() != null) {
+            shellString = visitor.visit(ctx.shellString());
+        } else {
+            // inline
+            shellString = visitor.visit(ctx.inline());
+            shellString = shellString.uninlineBody();
+        }
         final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
         String filename =  visitor.visit(filenameNode).unquoteBody().body();
         // convert ID to "$ID"
@@ -603,20 +610,15 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
         final String primary = ctx.primary().getText();
         // TODO handle 'all'
-        String valueBeingTested;
-        if (ctx.String() != null) {
-            valueBeingTested = ctx.String().getText();
-        } else if (ctx.Id() != null) {
-            valueBeingTested = "\"$%s\"".formatted(ctx.Id().getText());
-        } else if (ctx.argumentsBuiltin() != null) {
+        Translation valueBeingTested = visitor.visit(ctx.expression());
+        if (ctx.expression() instanceof BashpileParser.ArgumentsBuiltinExpressionContext argumentsCtx) {
             // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
             // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
             final String parameterExpansion = primary.equals("unset") ? "+default" : "";
-            valueBeingTested = "\"${%s%s}\"".formatted(ctx.argumentsBuiltin().Number().getText(), parameterExpansion);
-        } else {
-            throw new BashpileUncheckedException("Neither String, nor Id nor arguments provided to primary expression");
+            valueBeingTested = valueBeingTested.body("${%s%s}".formatted(
+                    argumentsCtx.argumentsBuiltin().Number().getText(), parameterExpansion));
         }
-        final String body = "[ %s %s ]".formatted(primaryTranslations.get(primary), valueBeingTested);
+        final String body = "[ %s \"%s\" ]".formatted(primaryTranslations.get(primary), valueBeingTested.unquoteBody());
         return new Translation(body, STR, NORMAL);
     }
 

@@ -5,7 +5,7 @@ program: statement+;
 
 // statements, in descending order of complexity
 statement
-    : (typedId Equals)? shellString Creates (String|Id)
+    : (typedId Equals)? (shellString|inline) Creates (String|Id)
            Colon INDENT statement+ DEDENT # createsStatement
     | Function typedId paramaters         # functionForwardDeclarationStatement
     | Function typedId paramaters tags?
@@ -47,8 +47,8 @@ expression
     | expression
          op=(Multiply|Divide|Add|Minus)
                              expression # calculationExpression
-    | primary
-           (String|Id|argumentsBuiltin) # primaryExpression
+    | primary expression                # primaryExpression
+    | argumentsBuiltin                  # argumentsBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
     | <assoc=right> Minus? Number       # numberExpression

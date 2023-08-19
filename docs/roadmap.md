@@ -1,13 +1,14 @@
 # 1.0 features
 1. Change bpt output from `export` to `declare -x` (and type)
-2. Arrays, Hashes, Refs
-3. Loops
-4. String interpolation with $[]
-    1. include special __OPTIONS[] array for $@, $1, etc.
-5. OOP?
+2. Get rid of inlines, shell strings only
+3. Arrays, Hashes, Refs
+4. Loops
+5. String interpolation with $[]
+6. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
 
 # Later
 (Not ordered)
+* OOP
 * Factor out text for future localization and consistent end-user feel.
 * Regexes for Strings, files
 * imports

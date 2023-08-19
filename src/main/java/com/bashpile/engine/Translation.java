@@ -46,6 +46,9 @@ public record Translation(
     /** A pattern of starting and ending double quotes */
     public static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
 
+    /** A pattern of $() */
+    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("^\\$\\(|\\)$");
+
     // static methods
 
     /** Are ony translations Strings (STR) or UNKNOWN? */
@@ -147,6 +150,11 @@ public record Translation(
     /** Remove quotes around body */
     public @Nonnull Translation unquoteBody() {
         return lambdaBody(body -> STRING_QUOTES.matcher(body).replaceAll(""));
+    }
+
+    /** Remove quotes around body */
+    public @Nonnull Translation uninlineBody() {
+        return lambdaBody(body -> COMMAND_SUBSTITUTION.matcher(body).replaceAll(""));
     }
 
     /** Put parenthesis around body */
