@@ -305,10 +305,10 @@ class StatementBashpileTest extends BashpileTest {
         [@5,17:49='echo "Captain's log, stardate..."',<InlineText>,1:17]
         [@6,50:50=')',<CParen>,1:50]
         [@7,51:51=')',<CParen>,1:51]
-        [@8,52:70='" > captainsLog.txt',<ShellStringText>,1:52]
-        [@9,71:71=')',<CParen>,1:71]
-        [@10,72:71='newline',<Newline>,1:72]
-        [@11,72:71='<EOF>',<EOF>,1:72]
+        [@8,52:52='"',<ShellStringText>,1:52]
+        [@9,53:53=')',<CParen>,1:53]
+        [@10,54:53='newline',<Newline>,1:54]
+        [@11,54:53='<EOF>',<EOF>,1:54]
          */
         final ExecutionResults results = runText("""
                 #(echo "$(echo $(echo "Captain's log, stardate..."))")""");
