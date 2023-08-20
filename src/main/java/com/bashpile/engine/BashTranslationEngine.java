@@ -153,14 +153,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // create child translations and other variables
-        Translation shellString;
-        if (ctx.shellString() != null) {
-            shellString = visitor.visit(ctx.shellString());
-        } else {
-            // inline
-            shellString = visitor.visit(ctx.inline());
-            shellString = shellString.uninlineBody();
-        }
+        Translation shellString = visitor.visit(ctx.shellString());
         final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
         String filename =  visitor.visit(filenameNode).unquoteBody().body();
         // convert ID to "$ID"
@@ -634,8 +627,11 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
-        // get the contents -- ditches the #() syntax
-        final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
+        // ditches the #() syntax, keep the $() syntax
+        final boolean trueShellString = ctx.HashOParen() != null;
+        final Stream<Translation> contentsStream = trueShellString
+                ? ctx.shellStringContents().stream().map(visitor::visit)
+                : ctx.children.stream().map(visitor::visit);
         Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL)
                 .lambdaBody(body -> {
                     // find leading whitespace of first non-blank line.  Strip that many chars from each line
@@ -655,36 +651,19 @@ public class BashTranslationEngine implements TranslationEngine {
                 });
         if (LevelCounter.inCommandSubstitution()) {
             // then wrap in command substitution and unnest as needed
-            contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
-            for (int i = 0; i < LevelCounter.getCommandSubstitution(); i++) {
+            contentsTranslation = trueShellString
+                    ? contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()))
+                    : contentsTranslation;
+            // leave 1 level of command substitution
+            for (int i = 0; i < LevelCounter.getCommandSubstitution() - 1; i++) {
                 contentsTranslation = unnest(contentsTranslation);
             }
         } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
-            contentsTranslation = contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()));
+            contentsTranslation = trueShellString
+                    ? contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()))
+                    : contentsTranslation;
         } // else top level -- no additional processing needed
         return contentsTranslation.unescapeBody();
-    }
-
-    /**
-     * Unnests inlines (Bashpile command substitutions) as needed.
-     *
-     * @see Translation
-     * @see #printStatement(BashpileParser.PrintStatementContext)
-     * @param ctx the context.
-     * @return A translation, possibly with the {@link Translation#preamble()} set.
-     */
-    @Override
-    public Translation inline(BashpileParser.InlineContext ctx) {
-        // get the inline nesting level before our try-with-resources statement
-        final int inlineNestingDepth = LevelCounter.get(LevelCounter.INLINE_LABEL);
-        try (var ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
-            final Stream<Translation> children = ctx.children.stream().map(visitor::visit);
-            Translation childrenTranslation = toTranslation(children, Type.UNKNOWN, NORMAL).unescapeBody();
-            for (int i = 0; i < inlineNestingDepth; i++) {
-                childrenTranslation = unnest(childrenTranslation);
-            }
-            return childrenTranslation;
-        }
     }
 
     // helpers

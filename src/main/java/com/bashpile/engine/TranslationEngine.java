@@ -92,7 +92,4 @@ public interface TranslationEngine {
 
     /** Translates shell strings */
     Translation shellString(final BashpileParser.ShellStringContext ctx);
-
-    /** Translates inlines */
-    Translation inline(final BashpileParser.InlineContext ctx);
 }

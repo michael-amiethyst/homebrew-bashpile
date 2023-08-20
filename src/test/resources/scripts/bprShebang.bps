@@ -1,5 +1,5 @@
 #!/usr/bin/env bpr
 
 #(export filename=src/test/resources/testdata.txt)
-contents: str = $(cat $(echo $filename))
+contents: str = #(cat "$(echo $filename)")
 print(contents)

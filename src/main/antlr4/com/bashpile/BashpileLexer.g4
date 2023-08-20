@@ -95,15 +95,15 @@ StringEscapeSequence: '\\' . | '\\' Newline;
 // tokens for modes
 
 HashOParen  : '#(' -> pushMode(SHELL_STRING);
-DollarOParen: '$(' -> pushMode(INLINE);
+DollarOParen: '$(' -> pushMode(SHELL_STRING);
 
 // modes
 
 /** See https://github.com/sepp2k/antlr4-string-interpolation-examples/blob/master/with-duplication/StringLexer.g4 */
 mode SHELL_STRING;
-
+// TODO improve matching parenthesis handling
 ShellStringHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
-ShellStringDollarOParen  : '$(' -> type(DollarOParen), pushMode(INLINE);
+ShellStringDollarOParen  : '$(' -> type(DollarOParen), pushMode(SHELL_STRING);
 ShellStringText          : '(' ShellStringText ')'
                          | (~[\\\f)#$]
                             // LookAhead 1 - don't match '#(' but match other '#' characters
@@ -112,18 +112,6 @@ ShellStringText          : '(' ShellStringText ')'
                             )+;
 ShellStringEscapeSequence: '\\' . | '\\' Newline;
 ShellStringCParen        : ')' -> type(CParen), popMode;
-
-mode INLINE;
-
-InlineHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
-InlineDollarOParen  : '$(' -> type(DollarOParen), pushMode(INLINE);
-InlineText          : (~[\\\r\n\f)$#]
-                       // LookAhead 1 - don't match '$(' but match other '$' characters
-                       | '$' {_input.LA(1) != '('}?
-                       | '#' {_input.LA(1) != '('}?
-                      )+;
-InlineEscapeSequence: '\\' . | '\\' Newline;
-InlineCParen        : ')' -> type(CParen), popMode;
 
 // fragments
 

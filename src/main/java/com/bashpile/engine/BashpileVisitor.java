@@ -191,9 +191,4 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     public Translation visitShellString(BashpileParser.ShellStringContext ctx) {
         return translator.shellString(ctx);
     }
-
-    @Override
-    public Translation visitInline(BashpileParser.InlineContext ctx) {
-        return translator.inline(ctx);
-    }
 }

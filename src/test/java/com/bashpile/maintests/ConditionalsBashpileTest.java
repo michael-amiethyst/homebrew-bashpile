@@ -9,7 +9,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // TODO test with function calls, other expressions.  parens, nested inlines
-@Order(70)
+@Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ConditionalsBashpileTest extends BashpileTest {
 
@@ -207,7 +207,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 #(rm -f error.log)
                 #(trap 'cat error.log; exit 1' INT)
-                ret: str = $(printf "errorLog" > error.log; kill -INT $$) creates "error.log":
+                ret: str = #(printf "errorLog" > error.log; kill -INT $$) creates "error.log":
                     if isEmpty ret:
                         print("true")
                     else:

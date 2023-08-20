@@ -5,7 +5,7 @@ program: statement+;
 
 // statements, in descending order of complexity
 statement
-    : (typedId Equals)? (shellString|inline) Creates (String|Id)
+    : (typedId Equals)? shellString Creates (String|Id)
            Colon INDENT statement+ DEDENT # createsStatement
     | Function typedId paramaters         # functionForwardDeclarationStatement
     | Function typedId paramaters tags?
@@ -40,7 +40,6 @@ returnPsudoStatement: Return expression? Newline;
 expression
     : expression Colon Type             # typecastExpression
     | shellString                       # shellStringExpression
-    | inline                            # inlineExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
     | OParen expression CParen          # parenthesisExpression
@@ -56,14 +55,8 @@ expression
     | Id                                # idExpression
     ;
 
-shellString        : HashOParen shellStringContents* CParen;
-shellStringContents: ShellStringText | ShellStringEscapeSequence | inline | shellString;
-
-inline        : DollarOParen inlineContents* CParen;
-inlineContents: InlineText
-              | InlineEscapeSequence
-              | shellString
-              | inline;
+shellString        : HashOParen shellStringContents* CParen | DollarOParen shellStringContents* CParen;
+shellStringContents: ShellStringText | ShellStringEscapeSequence | shellString;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
 primary: Unset | Empty | NotEmpty;

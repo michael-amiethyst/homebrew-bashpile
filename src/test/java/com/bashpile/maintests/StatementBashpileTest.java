@@ -146,7 +146,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 print((3 + 5) * 3)
                 block:
-                    print($(echo "$(echo "Captain's log, stardate...")"))
+                    print(#(echo "$(echo "Captain's log, stardate...")"))
                     block:
                         print(64 + 64)""");
         assertCorrectFormatting(results);
@@ -250,7 +250,7 @@ class StatementBashpileTest extends BashpileTest {
                 #(rm -f captainsLog.txt || true)
                 contents: str
                 #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
-                    contents = $(cat captainsLog.txt)
+                    contents = #(cat captainsLog.txt)
                 print(contents)""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
@@ -311,7 +311,7 @@ class StatementBashpileTest extends BashpileTest {
         [@11,54:53='<EOF>',<EOF>,1:54]
          */
         final ExecutionResults results = runText("""
-                #(echo "$(echo $(echo "Captain's log, stardate..."))")""");
+                #(echo "$(echo "$(echo "Captain's log, stardate...")")")""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\n", results.stdout());
@@ -323,8 +323,8 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)
                 contents: str
-                #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt) creates "captainsLog.txt":
-                    contents = $(cat $(echo captainsLog.txt))
+                #(echo "$(echo "$(echo "Captain's log, stardate...")")" > captainsLog.txt) creates "captainsLog.txt":
+                    contents = #(cat "$(echo captainsLog.txt)")
                 print(contents)""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
@@ -339,10 +339,10 @@ class StatementBashpileTest extends BashpileTest {
                 #(rm -f captainsLog2.txt || true)
                 contents: str
                 contents2: str
-                #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt) creates "captainsLog.txt":
-                    contents = $(cat $(echo captainsLog.txt))
-                    #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog2.txt) creates "captainsLog2.txt":
-                        contents2 = $(cat $(echo captainsLog2.txt))
+                #(echo "$(echo "$(echo "Captain's log, stardate...")")" > captainsLog.txt) creates "captainsLog.txt":
+                    contents = #(cat "$(echo captainsLog.txt)")
+                    #(echo "$(echo "$(echo "Captain's log, stardate...")")" > captainsLog2.txt) creates "captainsLog2.txt":
+                        contents2 = #(cat "$(echo captainsLog2.txt)")
                 print(contents)
                 print(contents2)""");
         assertCorrectFormatting(results);
@@ -360,10 +360,10 @@ class StatementBashpileTest extends BashpileTest {
                 #(rm -f captainsLog2.txt || true)
                 contents: str
                 contents2: str
-                #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt) creates "captainsLog.txt":
-                    contents = $(cat $(echo captainsLog.txt))
-                    #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog2.txt) creates "captainsLog2.txt":
-                        contents2 = $(cat $(echo captainsLog2.txt))
+                #(echo "$(echo "$(echo "Captain's log, stardate...")")" > captainsLog.txt) creates "captainsLog.txt":
+                    contents = #(cat "$(echo captainsLog.txt)")
+                    #(echo "$(echo "$(echo "Captain's log, stardate...")")" > captainsLog2.txt) creates "captainsLog2.txt":
+                        contents2 = #(cat "$(echo captainsLog2.txt)")
                         #(sleep 3)
                     #(sleep 3)
                 print(contents)
@@ -394,10 +394,10 @@ class StatementBashpileTest extends BashpileTest {
                 block:
                     contents: str
                     contents2: str
-                    #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt) creates "captainsLog.txt":
-                        contents = $(cat $(echo captainsLog.txt))
-                        #(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog2.txt) creates "captainsLog2.txt":
-                            contents2 = $(cat $(echo captainsLog2.txt))
+                    #(echo "$(echo "$(echo "Captain's log, stardate...")")" > captainsLog.txt) creates "captainsLog.txt":
+                        contents = #(cat "$(echo captainsLog.txt)")
+                        #(echo "$(echo "$(echo "Captain's log, stardate...")")" > captainsLog2.txt) creates "captainsLog2.txt":
+                            contents2 = #(cat "$(echo captainsLog2.txt)")
                             #(sleep 3)
                         #(sleep 3)
                     print(contents)
