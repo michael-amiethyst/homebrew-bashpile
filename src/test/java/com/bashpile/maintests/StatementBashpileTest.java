@@ -294,6 +294,31 @@ class StatementBashpileTest extends BashpileTest {
     }
 
     @Test @Order(170)
+    public void createStatementsWithSimpleNestedInlinesWork() {
+        /*
+        With inlines this tokenized as
+        [@0,0:1='#(',<'#('>,1:0]
+        [@1,2:7='echo "',<ShellStringText>,1:2]
+        [@2,8:9='$(',<'$('>,1:8]
+        [@3,10:14='echo ',<InlineText>,1:10]
+        [@4,15:16='$(',<'$('>,1:15]
+        [@5,17:49='echo "Captain's log, stardate..."',<InlineText>,1:17]
+        [@6,50:50=')',<CParen>,1:50]
+        [@7,51:51=')',<CParen>,1:51]
+        [@8,52:70='" > captainsLog.txt',<ShellStringText>,1:52]
+        [@9,71:71=')',<CParen>,1:71]
+        [@10,72:71='newline',<Newline>,1:72]
+        [@11,72:71='<EOF>',<EOF>,1:72]
+         */
+        final ExecutionResults results = runText("""
+                #(echo "$(echo $(echo "Captain's log, stardate..."))")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("Captain's log, stardate...\n", results.stdout());
+        assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
+    }
+
+    @Test @Order(171)
     public void createStatementsWithNestedInlinesWork() {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)

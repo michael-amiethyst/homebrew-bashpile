@@ -1,2 +1,1 @@
-if #((which ls)):
-    print("true")
+#(echo "$(echo $(echo "Captain's log, stardate..."))" > captainsLog.txt)
