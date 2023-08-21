@@ -112,7 +112,7 @@ public record Translation(
     /** Ensures this translation has no preamble */
     public @Nonnull Translation assertEmptyPreamble() {
         if (hasPreamble()) {
-            throw new BashpileUncheckedAssertionException("Found preamble in translation: " + this);
+            throw new BashpileUncheckedAssertionException("Found preamble in translation: " + this.body);
         }
         return this;
     }

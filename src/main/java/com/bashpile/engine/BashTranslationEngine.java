@@ -519,25 +519,32 @@ public class BashTranslationEngine implements TranslationEngine {
         // get functionName and the argumentTranslations
         final String functionName = ctx.Id().getText();
         final boolean hasArgs = ctx.argumentList() != null;
-        final List<Translation> argumentTranslations = hasArgs
-                ? ctx.argumentList().expression().stream().map(visitor::visit).map(Translation::inlineAsNeeded).toList()
+        final List<Translation> argumentTranslationsList = hasArgs
+                ? ctx.argumentList().expression().stream()
+                        .map(visitor::visit)
+                        .map(Translation::inlineAsNeeded)
+                        .map(this::unnest)
+                        .toList()
                 : List.of();
 
         // check types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
-        final List<Type> actualTypes = argumentTranslations.stream().map(Translation::type).toList();
+        final List<Type> actualTypes = argumentTranslationsList.stream().map(Translation::type).toList();
         Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, functionName, lineNumber(ctx));
 
         // extract argText and preambles from argumentTranslations
         // empty list or ' arg1Text arg2Text etc.'
-        String argText = "";
+        Translation argumentTranslations = EMPTY_TRANSLATION;
         if (hasArgs) {
-            argText = " " + argumentTranslations.stream()
-                    .map(Translation::body)
-                    .map("\"%s\""::formatted)
-                    .collect(Collectors.joining(" "));
+            argumentTranslations = new Translation(" ", STR, NORMAL).add(argumentTranslationsList.stream()
+                    .map(Translation::quoteBody)
+                    .reduce((left, right) -> new Translation(
+                            left.preamble() + right.preamble(),
+                            left.body() + " " + right.body(),
+                            right.type(),
+                            right.typeMetadata()))
+                    .orElseThrow());
         }
-        final Translation preambles = argumentTranslations.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
 
         // lookup return type of this function
         final Type retType = typeStack.getFunctionTypes(id).returnType();
@@ -546,10 +553,13 @@ public class BashTranslationEngine implements TranslationEngine {
         // this covers the case of calling a str function without using the string
         final boolean topLevelStatement = isTopLevelShell();
         if (topLevelStatement) {
-            return new Translation(preambles.preamble(), id + argText + " >/dev/null", retType, NORMAL);
+            return new Translation(argumentTranslations.preamble(),
+                    id + argumentTranslations.body() + " >/dev/null",
+                    retType,
+                    NORMAL).mergePreamble();
         } // else return an inline (command substitution)
-        final String text = "$(%s%s)".formatted(id, argText);
-        return new Translation(preambles.preamble(), text, retType, INLINE);
+        final String text = "$(%s%s)".formatted(id, argumentTranslations.body());
+        return new Translation(argumentTranslations.preamble(), text, retType, INLINE);
     }
 
     @Override
@@ -611,8 +621,9 @@ public class BashTranslationEngine implements TranslationEngine {
             valueBeingTested = valueBeingTested.body("${%s%s}".formatted(
                     argumentsCtx.argumentsBuiltin().Number().getText(), parameterExpansion));
         }
-        final String body = "[ %s \"%s\" ]".formatted(primaryTranslations.get(primary), valueBeingTested.unquoteBody());
-        return new Translation(body, STR, NORMAL);
+        final String body = "[ %s \"%s\" ]".formatted(
+                primaryTranslations.get(primary), valueBeingTested.unquoteBody().body());
+        return new Translation(valueBeingTested.preamble(), body, STR, NORMAL);
     }
 
     @Override
@@ -627,42 +638,46 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
-        // ditches the #() syntax, keep the $() syntax
-        final boolean trueShellString = ctx.HashOParen() != null;
-        final Stream<Translation> contentsStream = trueShellString
-                ? ctx.shellStringContents().stream().map(visitor::visit)
-                : ctx.children.stream().map(visitor::visit);
-        Translation contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL)
-                .lambdaBody(body -> {
-                    // find leading whitespace of first non-blank line.  Strip that many chars from each line
-                    final String[] lines = body.split("\n");
-                    int i = 0;
-                    while(isBlank(lines[i])) {
-                        i++;
-                    }
-                    final String line = lines[i];
-                    final int spaces = line.length() - line.stripLeading().length();
-                    final String trailingNewline = body.endsWith("\n") ? "\n" : "";
-                    return Arrays.stream(lines)
-                            .filter(str -> !Strings.isBlank(str))
-                            .map(str -> str.substring(spaces))
-                            .collect(Collectors.joining("\n"))
-                            + trailingNewline;
-                });
-        if (LevelCounter.inCommandSubstitution()) {
-            // then wrap in command substitution and unnest as needed
-            contentsTranslation = trueShellString
-                    ? contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()))
-                    : contentsTranslation;
-            // leave 1 level of command substitution
-            for (int i = 0; i < LevelCounter.getCommandSubstitution() - 1; i++) {
-                contentsTranslation = unnest(contentsTranslation);
-            }
-        } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
-            contentsTranslation = trueShellString
-                    ? contentsTranslation.body("$(%s)".formatted(contentsTranslation.body()))
-                    : contentsTranslation;
-        } // else top level -- no additional processing needed
+        final int commandSubstitutionDepth = LevelCounter.getCommandSubstitution();
+        Translation contentsTranslation;
+        try (var ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
+            // ditches the #() syntax, keep the $() syntax
+            final boolean trueShellString = ctx.HashOParen() != null;
+            final Stream<Translation> contentsStream = trueShellString
+                    ? ctx.shellStringContents().stream().map(visitor::visit)
+                    : ctx.children.stream().map(visitor::visit);
+            contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL)
+                    .lambdaBody(body -> {
+                        // find leading whitespace of first non-blank line.  Strip that many chars from each line
+                        final String[] lines = body.split("\n");
+                        int i = 0;
+                        while (isBlank(lines[i])) {
+                            i++;
+                        }
+                        final String line = lines[i];
+                        final int spaces = line.length() - line.stripLeading().length();
+                        final String trailingNewline = body.endsWith("\n") ? "\n" : "";
+                        return Arrays.stream(lines)
+                                .filter(str -> !Strings.isBlank(str))
+                                .map(str -> str.substring(spaces))
+                                .collect(Collectors.joining("\n"))
+                                + trailingNewline;
+                    });
+            if (commandSubstitutionDepth > 0) {
+                // then wrap in command substitution and unnest as needed
+                contentsTranslation = trueShellString
+                        ? contentsTranslation.body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE)
+                        : contentsTranslation;
+                // leave 1 level of command substitution
+                for (int i = 0; i < commandSubstitutionDepth; i++) {
+                    contentsTranslation = unnest(contentsTranslation);
+                }
+            } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
+                contentsTranslation = trueShellString
+                        ? contentsTranslation.body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE)
+                        : contentsTranslation;
+            } // else top level -- no additional processing needed
+        }
         return contentsTranslation.unescapeBody();
     }
 
@@ -716,10 +731,11 @@ public class BashTranslationEngine implements TranslationEngine {
      * The body is a Command Substitution of a created variable
      * that holds the results of executing <code>tr</code>'s body.
      */
-    // TODO test checks to call it willy-nilly
     private Translation unnest(@Nonnull final Translation tr) {
         // guard to check if unnest not needed
-        if (!LevelCounter.inCommandSubstitution() || GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
+        if (/*!LevelCounter.inCommandSubstitution()
+                || !tr.typeMetadata().equals(INLINE)
+                || */GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
             return tr;
         }
 

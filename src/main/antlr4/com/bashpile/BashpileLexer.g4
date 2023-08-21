@@ -102,11 +102,13 @@ DollarOParen: '$(' -> pushMode(SHELL_STRING);
 /** See https://github.com/sepp2k/antlr4-string-interpolation-examples/blob/master/with-duplication/StringLexer.g4 */
 mode SHELL_STRING;
 ShellStringHashOParen    : '#(' -> type(HashOParen), pushMode(SHELL_STRING);
-ShellStringText          : ('(' ShellStringText ')'
-                            | ~[\\\f()#]
+ShellStringDollarOParen  : '$(' -> type(DollarOParen), pushMode(SHELL_STRING);
+ShellStringText          : '(' ShellStringText ')'
+                         | (~[\\\f)#$]
                             // LookAhead 1 - don't match '#(' but match other '#' characters
                             | '#' {_input.LA(1) != '('}?
-                           )+;
+                            | '$' {_input.LA(1) != '('}?
+                            )+;
 ShellStringEscapeSequence: '\\' . | '\\' Newline;
 ShellStringCParen        : ')' -> type(CParen), popMode;
 

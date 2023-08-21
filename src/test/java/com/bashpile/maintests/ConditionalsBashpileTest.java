@@ -216,4 +216,15 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertFailedExitCode(results);
         assertEquals("errorLog\n", results.stdout());
     }
+
+    @Test
+    @Order(170)
+    public void ifWithNestedInlineWorks() {
+        final ExecutionResults results = runText("""
+                if isNotEmpty $(printf "$(printf "$(printf "notEmpty")")"):
+                    print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
 }

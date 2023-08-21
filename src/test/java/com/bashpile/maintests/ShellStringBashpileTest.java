@@ -68,7 +68,7 @@ public class ShellStringBashpileTest extends BashpileTest {
 
     @Test @Order(50)
     public void nestedShellStringsWork() {
-        final ExecutionResults results = runText("#(cat #(src/test/resources/testdata.txt))");
+        final ExecutionResults results = runText("#(cat \"#(printf \"src/test/resources/testdata.txt\")\")");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());

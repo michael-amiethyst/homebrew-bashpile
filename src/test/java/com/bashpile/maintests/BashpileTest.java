@@ -48,7 +48,9 @@ abstract public class BashpileTest {
         // track if, else, fi for now
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
         final AtomicLong indentLevel = new AtomicLong(0);
-        final List<String> ignored = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+
+        // check for correct indents
+        var ignored = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
             final int spaces = line.length() - line.stripLeading().length();
             if (spaces % 4 != 0 || Strings.isBlank(line)) {
                 erroredLines.get().add(i);
@@ -93,6 +95,15 @@ abstract public class BashpileTest {
 
             // check for 'regular' lines
             if (tabs != indentLevel.get()) {
+                erroredLines.get().add(i);
+            }
+            return line;
+        }).toList();
+
+        // check for nested command substitutions
+        var ignored2 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+            final Pattern nested = Pattern.compile("\\$\\(.*?\\$\\(.*?\\).*?\\)");
+            if (line.charAt(0) != '#' && nested.matcher(line).find()) {
                 erroredLines.get().add(i);
             }
             return line;
