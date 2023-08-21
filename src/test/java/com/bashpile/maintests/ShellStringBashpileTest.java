@@ -74,6 +74,14 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertEquals("test\n", results.stdout());
     }
 
+    @Test @Order(51)
+    public void nestedShellStringAndCommandSubstitutionWorks() {
+        final ExecutionResults results = runText("#(cat \"$(printf \"src/test/resources/testdata.txt\")\")");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("test\n", results.stdout());
+    }
+
     @Test @Order(60)
     public void shellStringsWithHashWork() {
         final ExecutionResults results = runText("#(echo '#')");
@@ -129,9 +137,17 @@ public class ShellStringBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 #(pwd)
                 #(ls non_existent_file)""");
-        assertFailedExitCode(results);
         assertCorrectFormatting(results);
+        assertFailedExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertTrue(lines.get(lines.size() - 1).contains("ls non_existent_file"));
+    }
+
+    @Test @Order(110)
+    public void shellStringWithSubshellWorks() {
+        final ExecutionResults results = runText("""
+                #((which ls 1>/dev/null))""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
     }
 }

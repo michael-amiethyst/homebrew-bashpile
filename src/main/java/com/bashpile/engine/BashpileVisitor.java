@@ -4,6 +4,8 @@ import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
 import com.bashpile.engine.strongtypes.Type;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStream;
+import java.util.stream.IntStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
@@ -44,6 +47,25 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     // visitors
+
+    /**
+     * This is the default visitor.
+     * <br>
+     * {@inheritDoc}
+     *
+     * @param node The {@link RuleNode} whose children should be visited.
+     * @return A Translation aggregating all visited children.
+     */
+     // TODO uncomment
+//    @Override
+//    public Translation visitChildren(RuleNode node) {
+//        final RuleContext ctx = node.getRuleContext();
+//        return IntStream.range(0, ctx.getChildCount())
+//                .mapToObj(ctx::getChild)
+//                .map(this::visit)
+//                .reduce(Translation::add)
+//                .orElseThrow();
+//    }
 
     @Override
     public @Nonnull Translation visitProgram(@Nonnull final BashpileParser.ProgramContext ctx) {

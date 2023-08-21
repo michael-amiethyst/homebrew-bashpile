@@ -101,13 +101,24 @@ abstract public class BashpileTest {
         }).toList();
 
         // check for nested command substitutions
+        // TODO move to static
+        final Pattern nested = Pattern.compile("\\$\\(.*?\\$\\(.*?\\).*?\\)");
         var ignored2 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
-            final Pattern nested = Pattern.compile("\\$\\(.*?\\$\\(.*?\\).*?\\)");
             if (line.charAt(0) != '#' && nested.matcher(line).find()) {
                 erroredLines.get().add(i);
             }
             return line;
         }).toList();
+
+        // check for unnecessary unnested command substitutions
+        var ignored3 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+            if (line.startsWith("##") && !nested.matcher(line).find()) {
+                // TODO change erroredLines to Pair with string reason for error
+                erroredLines.get().add(i);
+            }
+            return line;
+        }).toList();
+
         if (!erroredLines.get().isEmpty()) {
             throw new BashpileUncheckedAssertionException("Bad formatting on lines " + erroredLines.get().stream()
                     .map(Object::toString)
