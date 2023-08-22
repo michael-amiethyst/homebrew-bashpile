@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.bashpile.engine.BashTranslationEngine.COMMAND_SUBSTITUTION;
 import static com.bashpile.engine.BashTranslationEngine.NESTED_COMMAND_SUBSTITUTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -27,8 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 abstract public class BashpileTest {
 
     protected static final Pattern END_OF_LINE_COMMENT = Pattern.compile("^[^ #]+#.*$");
-
-    private static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("\\$\\(.*?\\)");
 
     private static final Logger LOG = LogManager.getLogger(BashpileTest.class);
 

@@ -47,7 +47,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     public static final String TAB = "    ";
 
-    private static final Pattern GENERATED_VARIABLE_NAME = Pattern.compile("^\\$\\{__bp.*");
+    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("\\$\\(.*?\\)");
 
     public static final Pattern NESTED_COMMAND_SUBSTITUTION = Pattern.compile("(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
 
@@ -459,7 +459,8 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
                     .map(tr -> tr.inlineAsNeeded(unnestLambda))
-                    // TODO move this check into unnest, remove CTX param
+                    // TODO remove CTX param
+                    // TODO should this be a while instead?
                     .map(tr -> NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find() ? unnest(ctx, tr) : tr)
                     .map(tr -> tr.body("""
                             printf "%s\\n"
@@ -548,8 +549,8 @@ public class BashTranslationEngine implements TranslationEngine {
                 ? ctx.argumentList().expression().stream()
                         .map(visitor::visit)
                         .map(tr -> tr.inlineAsNeeded(unnestLambda))
-                // TODO move inline check into unnest?
-                        .map(tr -> tr.typeMetadata().equals(INLINE) ? unnest(ctx, tr) : tr)
+                        // TODO while NESTED_COMMAND_SUBSTITUTION unnest?
+                        .map(tr -> unnest(ctx, tr))
                         .toList()
                 : List.of();
 
@@ -668,7 +669,7 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation contentsTranslation;
         try (var ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
             // ditches the #() syntax, keep the $() syntax
-            final boolean trueShellString = ctx.HashOParen() != null;
+            final boolean trueShellString = ctx.DollarOParen() == null;
             final Stream<Translation> contentsStream = trueShellString
                     ? ctx.shellStringContents().stream().map(visitor::visit)
                     : ctx.children.stream().map(visitor::visit);
@@ -759,8 +760,8 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     private Translation unnest(@Nullable final ParserRuleContext ctx, @Nonnull final Translation tr) {
         // guard to check if unnest not needed
-        if (GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
-            LOG.trace("Skipped unnest for " + tr.body());
+        if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
+            LOG.debug("Skipped unnest for " + tr.body());
             return tr;
         }
 
@@ -770,7 +771,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create 5 lines of translations
         final Translation subcomment = toLineTranslation(
-                "## unnest for %s\n".formatted(ctx != null ? ctx.getText() : tr.body()));
+                "## unnest for %s\n".formatted(ctx != null ? ctx.getText().trim() : tr.body()));
         final Translation export     = toLineTranslation("export %s\n".formatted(subshellReturn));
         final Translation assign     = toLineTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
         final Translation exitCode   = toLineTranslation("%s=$?\n".formatted(exitCodeName));

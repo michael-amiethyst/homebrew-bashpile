@@ -56,16 +56,15 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
      * @param node The {@link RuleNode} whose children should be visited.
      * @return A Translation aggregating all visited children.
      */
-     // TODO uncomment
-//    @Override
-//    public Translation visitChildren(RuleNode node) {
-//        final RuleContext ctx = node.getRuleContext();
-//        return IntStream.range(0, ctx.getChildCount())
-//                .mapToObj(ctx::getChild)
-//                .map(this::visit)
-//                .reduce(Translation::add)
-//                .orElseThrow();
-//    }
+    @Override
+    public Translation visitChildren(RuleNode node) {
+        final RuleContext ctx = node.getRuleContext();
+        return IntStream.range(0, ctx.getChildCount())
+                .mapToObj(ctx::getChild)
+                .map(this::visit)
+                .reduce(Translation::add)
+                .orElseThrow();
+    }
 
     @Override
     public @Nonnull Translation visitProgram(@Nonnull final BashpileParser.ProgramContext ctx) {
