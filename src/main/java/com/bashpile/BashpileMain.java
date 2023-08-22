@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import static com.bashpile.AntlrUtils.parse;
 
 // TODO have bpr/bpc source stuff until `which brew` succeeds
+// TODO check for @Nonnull/@Nullable for method returns
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

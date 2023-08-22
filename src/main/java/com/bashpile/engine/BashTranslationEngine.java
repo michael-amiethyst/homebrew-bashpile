@@ -44,11 +44,24 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // static variables
 
+    /** Four spaces */
     public static final String TAB = "    ";
 
-    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("\\$\\(.*?\\)");
+    /**
+     * This Pattern has three matching groups.
+     * They are everything before the command substitution, the command substitution, and everything after.
+     */
+    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(.*)(\\$\\(.*?\\))(.*)");
 
-    public static final Pattern NESTED_COMMAND_SUBSTITUTION = Pattern.compile("(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
+    /**
+     * This single-line Pattern has three matching groups.
+     * They are the start of the outer command substitution, the inner command substitution and the remainder of
+     * the outer command substitution.
+     * <br>
+     * WARNING: bug on two different, non-nesting command substitutions
+     */
+    public static final Pattern NESTED_COMMAND_SUBSTITUTION =
+            Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
 
     private static final Map<String, String> primaryTranslations = Map.of("unset", "-z", "isEmpty", "-z",
             "isNotEmpty", "-n");
@@ -79,19 +92,12 @@ public class BashTranslationEngine implements TranslationEngine {
     private final Stack<String> createFilenamesStack = new Stack<>();
 
     // TODO factor out a unnest or BashTranslationHelper class?
-    private final Function<Translation, Translation> innerUnnestLambda = (tr) -> {
-        // extract inner command substitution
-        final Matcher bodyMatcher = NESTED_COMMAND_SUBSTITUTION.matcher(tr.body());
-        if (!bodyMatcher.find()) {
-            return tr;
-        }
-        final Translation unnested = unnest(new Translation(bodyMatcher.group(2), STR, NORMAL));
-        // replace group
-        final String unnestedBody = Matcher.quoteReplacement(unnested.body());
-        LOG.debug("Replacing with {}", unnestedBody);
-        tr = tr.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
-        return tr.addPreamble(unnested.preamble());
-    };
+
+    private final Function<Translation, Translation> unnestLambda = (tr) -> unnestOnMatch(tr, COMMAND_SUBSTITUTION);
+
+    private final Function<Translation, Translation> innerUnnestLambda =
+            (tr) -> unnestOnMatch(tr, NESTED_COMMAND_SUBSTITUTION);
+
 
     // instance methods
 
@@ -175,7 +181,15 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // create child translations and other variables
-        Translation shellString = visitor.visit(ctx.shellString());
+        Translation shellString;
+        final boolean addingCommandSubstitution = ctx.typedId() != null;
+        if (addingCommandSubstitution) {
+            try (var ignored = new LevelCounter(CREATE_LABEL)) {
+                shellString = visitor.visit(ctx.shellString());
+            }
+        } else {
+            shellString = visitor.visit(ctx.shellString());
+        }
         final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
         String filename =  visitor.visit(filenameNode).unquoteBody().body();
         // convert ID to "$ID"
@@ -184,7 +198,6 @@ public class BashTranslationEngine implements TranslationEngine {
         // create our final translation and pop the stack
         createFilenamesStack.push(filename);
         try {
-
             // create other translations
             final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
             final Translation subcomment =
@@ -197,7 +210,6 @@ public class BashTranslationEngine implements TranslationEngine {
             // merge translations and preambles
             return comment.add(
                     subcomment.add(bodyTranslation)
-                            .addPreamble(shellString.preamble())
                             .mergePreamble());
         } finally {
             createFilenamesStack.pop();
@@ -209,17 +221,32 @@ public class BashTranslationEngine implements TranslationEngine {
             final @Nonnull BashpileParser.CreatesStatementContext ctx,
             final @Nonnull Translation shellString,
             final @Nonnull String filename) {
-        final String check = String.join("; ", shellString.body().trim().split("\n"));
+        String preamble, check;
+        boolean briefGuard = !shellString.hasPreamble();
+        if (briefGuard) {
+            // collapse with semicolons to one line
+            preamble = Arrays.stream(shellString.preamble().trim().split("\n"))
+                    .filter(str -> !str.trim().startsWith("#"))
+                    .collect(Collectors.joining("; "));
+            check = String.join("; ", shellString.body().trim().split("\n"));
+            if (Strings.isNotEmpty(preamble)) {
+                preamble += "; ";
+            }
+        } else {
+            // preserve whitespace
+            preamble = "\n    ## end of unnest\n" + shellString.lambdaPreambleLines(str -> TAB + str).preamble();
+            check = shellString.lambdaBodyLines(str -> TAB + str).body();
+        }
 
         // set noclobber avoids some race conditions
         String ifGuard;
         String variableName = null;
         if (ctx.typedId() != null) {
             variableName = ctx.typedId().Id().getText();
-            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s) 2> /dev/null; then".formatted(
-                    getLocalText(), variableName, variableName, check);
+            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null; then".formatted(
+                    getLocalText(), variableName, variableName, preamble, check);
         } else {
-            ifGuard = "if (set -o noclobber; %s) 2> /dev/null; then".formatted(check);
+            ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null; then".formatted(preamble, check);
         }
 
         // create our statements translation
@@ -697,11 +724,17 @@ public class BashTranslationEngine implements TranslationEngine {
                 // leave 1 level of command substitution
                 // TODO change from selectively calling unnest to uses unnest/unnestAsNeeded instead
                 for (int i = 0; i < commandSubstitutionDepth; i++) {
-                    contentsTranslation = unnest(contentsTranslation);
+                    contentsTranslation = NESTED_COMMAND_SUBSTITUTION.matcher(contentsTranslation.body()).find()
+                            ? innerUnnestLambda.apply(contentsTranslation)
+                            : unnest(contentsTranslation);
                 }
             } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
                 contentsTranslation = contentsTranslation
                         .body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE);
+            } else if (LevelCounter.in(CREATE_LABEL)) {
+                while(COMMAND_SUBSTITUTION.matcher(contentsTranslation.body()).find()) {
+                    contentsTranslation = unnestLambda.apply(contentsTranslation);
+                }
             } else {
                 // top level
                 contentsTranslation = unnestAsNeeded(contentsTranslation);
@@ -748,6 +781,21 @@ public class BashTranslationEngine implements TranslationEngine {
         } else { // reassignment
             return "";
         }
+    }
+
+    private @Nonnull Translation unnestOnMatch(@Nonnull Translation tr, @Nonnull final Pattern pattern) {
+        Translation ret = tr;
+        // extract inner command substitution
+        final Matcher bodyMatcher = pattern.matcher(ret.body());
+        if (!bodyMatcher.find()) {
+            return ret;
+        }
+        final Translation unnested = unnest(new Translation(bodyMatcher.group(2), STR, NORMAL));
+        // replace group
+        final String unnestedBody = Matcher.quoteReplacement(unnested.body());
+        LOG.debug("Replacing with {}", unnestedBody);
+        ret = ret.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
+        return ret.addPreamble(unnested.preamble());
     }
 
     private @Nonnull Translation unnestAsNeeded(@Nonnull final Translation tr) {

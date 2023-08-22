@@ -461,7 +461,7 @@ class StatementBashpileTest extends BashpileTest {
     public void multilineCreateStatementWorks() throws IOException {
         final String bashpileScript = """
                 log: str = #(
-                    filename=$(printf "%d.txt" $$)
+                    filename="$(printf "%d.txt" $$)"
                     printf "%s" "$filename" > "$filename"
                     printf "%s" "$filename"
                 ) creates log:
@@ -471,6 +471,7 @@ class StatementBashpileTest extends BashpileTest {
         try {
             final ExecutionResults results = runText(bashpileScript);
             assertCorrectFormatting(results);
+            assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
             assertSuccessfulExitCode(results);
             assertTrue(results.stdoutLines().get(0).matches("\\d+\\.txt"));
             log = Path.of(results.stdoutLines().get(0));

@@ -122,6 +122,11 @@ public record Translation(
         return !isEmpty(preamble);
     }
 
+    /** Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax. */
+    public @Nonnull Translation lambdaPreambleLines(@Nonnull final Function<String, String> lambda) {
+        return new Translation(lambdaAllLines(preamble, lambda), body, type, typeMetadata);
+    }
+
     /** Prepends the preamble to the body */
     public @Nonnull Translation mergePreamble() {
         return new Translation(preamble + body, type, typeMetadata);

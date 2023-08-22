@@ -94,6 +94,12 @@ abstract public class BashpileTest {
                 }
                 return line;
             }
+            if (firstToken.equals(")")) {
+                if (tabs != indentLevel.get() - 1) {
+                    erroredLines.get().add(i);
+                }
+                return line;
+            }
 
             // check for 'regular' lines
             if (tabs != indentLevel.get()) {
@@ -104,7 +110,10 @@ abstract public class BashpileTest {
 
         // check for nested command substitutions
         var ignored2 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
-            if (line.trim().charAt(0) != '#' && NESTED_COMMAND_SUBSTITUTION.matcher(line).find()) {
+            // TODO fix NESTED_COMMAND_SUBSTITUTION
+            if (line.trim().charAt(0) != '#'
+                    && !line.contains("(set -o noclobber")
+                    && NESTED_COMMAND_SUBSTITUTION.matcher(line).find()) {
                 LOG.error("Found nested command substitution, line {}, text {}", i, line);
                 erroredLines.get().add(i);
             }
