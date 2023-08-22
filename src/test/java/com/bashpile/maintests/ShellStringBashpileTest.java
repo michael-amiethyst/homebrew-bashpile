@@ -1,5 +1,6 @@
 package com.bashpile.maintests;
 
+import com.bashpile.Strings;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -9,8 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -64,6 +64,18 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("()\n", results.stdout());
+    }
+
+    @Test @Order(41)
+    public void shellStringInAssignmentWorksWithoutUnnesting() {
+        final ExecutionResults results = runText("""
+                jarPath: str = #(dirname "${BASH_SOURCE:-}") + "/bashpile.jar"
+                print(jarPath)
+                """);
+        assertCorrectFormatting(results);
+        assertFalse(results.stdin().contains("__bp"));
+        assertSuccessfulExitCode(results);
+        assertTrue(Strings.isNotEmpty(results.stdoutLines().get(0)));
     }
 
     @Test @Order(50)

@@ -11,14 +11,18 @@ import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,8 +49,12 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private static final Pattern GENERATED_VARIABLE_NAME = Pattern.compile("^\\$\\{__bp.*");
 
+    public static final Pattern NESTED_COMMAND_SUBSTITUTION = Pattern.compile("(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
+
     private static final Map<String, String> primaryTranslations = Map.of("unset", "-z", "isEmpty", "-z",
             "isNotEmpty", "-n");
+
+    private static final Logger LOG = LogManager.getLogger(BashTranslationEngine.class);
 
     // instance variables
 
@@ -70,6 +78,20 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** The current create statement filenames for using in a trap command */
     private final Stack<String> createFilenamesStack = new Stack<>();
+
+    private final Function<Translation, Translation> unnestLambda = (tr) -> {
+        // extract inner command substitution
+        final Matcher bodyMatcher = NESTED_COMMAND_SUBSTITUTION.matcher(tr.assertEmptyPreamble().body());
+        if (!bodyMatcher.matches()) {
+            return tr;
+        }
+        final Translation unnested = unnest(null, new Translation(bodyMatcher.group(2), STR, NORMAL));
+        // replace group
+        final String unnestedBody = Matcher.quoteReplacement(unnested.body());
+        LOG.debug("Replacing with {}", unnestedBody);
+        tr = tr.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
+        return tr.addPreamble(unnested.preamble());
+    };
 
     // instance methods
 
@@ -370,7 +392,9 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean exprExists = ctx.expression() != null;
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = exprExists ? visitor.visit(ctx.expression()).inlineAsNeeded() : EMPTY_TRANSLATION;
+            exprTranslation = exprExists
+                    ? visitor.visit(ctx.expression()).inlineAsNeeded(unnestLambda)
+                    : EMPTY_TRANSLATION;
         }
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
@@ -401,7 +425,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get expression and it's type
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded();
+            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(unnestLambda);
         }
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
@@ -434,8 +458,9 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
-                    .map(Translation::inlineAsNeeded)
-                    .map(tr -> tr.typeMetadata().equals(INLINE) && inCommandSubstitution() ? unnest(tr) : tr)
+                    .map(tr -> tr.inlineAsNeeded(unnestLambda))
+                    // TODO move this check into unnest, remove CTX param
+                    .map(tr -> NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find() ? unnest(ctx, tr) : tr)
                     .map(tr -> tr.body("""
                             printf "%s\\n"
                             """.formatted(tr.unquoteBody().body())))
@@ -522,8 +547,9 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
                         .map(visitor::visit)
-                        .map(Translation::inlineAsNeeded)
-                        .map(this::unnest)
+                        .map(tr -> tr.inlineAsNeeded(unnestLambda))
+                // TODO move inline check into unnest?
+                        .map(tr -> tr.typeMetadata().equals(INLINE) ? unnest(ctx, tr) : tr)
                         .toList()
                 : List.of();
 
@@ -670,7 +696,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         : contentsTranslation;
                 // leave 1 level of command substitution
                 for (int i = 0; i < commandSubstitutionDepth; i++) {
-                    contentsTranslation = unnest(contentsTranslation);
+                    contentsTranslation = unnest(ctx, contentsTranslation);
                 }
             } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
                 contentsTranslation = trueShellString
@@ -731,11 +757,10 @@ public class BashTranslationEngine implements TranslationEngine {
      * The body is a Command Substitution of a created variable
      * that holds the results of executing <code>tr</code>'s body.
      */
-    private Translation unnest(@Nonnull final Translation tr) {
+    private Translation unnest(@Nullable final ParserRuleContext ctx, @Nonnull final Translation tr) {
         // guard to check if unnest not needed
-        if (/*!LevelCounter.inCommandSubstitution()
-                || !tr.typeMetadata().equals(INLINE)
-                || */GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
+        if (GENERATED_VARIABLE_NAME.matcher(tr.body()).matches()) {
+            LOG.trace("Skipped unnest for " + tr.body());
             return tr;
         }
 
@@ -744,7 +769,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
 
         // create 5 lines of translations
-        final Translation subcomment = toLineTranslation("## unnest for %s\n".formatted(tr.body()));
+        final Translation subcomment = toLineTranslation(
+                "## unnest for %s\n".formatted(ctx != null ? ctx.getText() : tr.body()));
         final Translation export     = toLineTranslation("export %s\n".formatted(subshellReturn));
         final Translation assign     = toLineTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
         final Translation exitCode   = toLineTranslation("%s=$?\n".formatted(exitCodeName));

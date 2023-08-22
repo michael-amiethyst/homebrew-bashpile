@@ -110,7 +110,9 @@ public class BashpileMain implements Callable<Integer> {
     public @Nonnull String transpile() throws IOException {
         final Pair<String, InputStream> namedInputStream = getNameAndInputStream();
         try (final InputStream inputStream = namedInputStream.getRight()) {
-            return Asserts.assertNoShellcheckWarnings(parse(namedInputStream.getLeft(), inputStream));
+            final String parsed = parse(namedInputStream.getLeft(), inputStream);
+            LOG.debug("Generated Bash script:\n" + parsed);
+            return Asserts.assertNoShellcheckWarnings(parsed);
         }
     }
 

@@ -20,12 +20,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.bashpile.engine.BashTranslationEngine.NESTED_COMMAND_SUBSTITUTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 abstract public class BashpileTest {
 
     protected static final Pattern END_OF_LINE_COMMENT = Pattern.compile("^[^ #]+#.*$");
+
+    private static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("\\$\\(.*?\\)");
 
     private static final Logger LOG = LogManager.getLogger(BashpileTest.class);
 
@@ -101,10 +104,9 @@ abstract public class BashpileTest {
         }).toList();
 
         // check for nested command substitutions
-        // TODO move to static
-        final Pattern nested = Pattern.compile("\\$\\(.*?\\$\\(.*?\\).*?\\)");
         var ignored2 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
-            if (line.charAt(0) != '#' && nested.matcher(line).find()) {
+            if (line.trim().charAt(0) != '#' && NESTED_COMMAND_SUBSTITUTION.matcher(line).find()) {
+                LOG.error("Found nested command substitution, line {}, text {}", i, line);
                 erroredLines.get().add(i);
             }
             return line;
@@ -112,8 +114,8 @@ abstract public class BashpileTest {
 
         // check for unnecessary unnested command substitutions
         var ignored3 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
-            if (line.startsWith("##") && !nested.matcher(line).find()) {
-                // TODO change erroredLines to Pair with string reason for error
+            if (line.trim().startsWith("__bp_subshellReturn") && !COMMAND_SUBSTITUTION.matcher(line).find()) {
+                LOG.error("Unneeded unnest, line {}, text {}", i, line);
                 erroredLines.get().add(i);
             }
             return line;

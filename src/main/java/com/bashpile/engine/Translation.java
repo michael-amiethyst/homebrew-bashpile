@@ -192,10 +192,12 @@ public record Translation(
      * Create an inline Translation if this is a {@link TypeMetadata#NEEDS_INLINING_OFTEN} translation.
      * @return Converts body to an inline and change the type metadata to {@link TypeMetadata#INLINE}.
      */
-    public @Nonnull Translation inlineAsNeeded() {
-        return typeMetadata.equals(TypeMetadata.NEEDS_INLINING_OFTEN)
-                ? new Translation(preamble, "$(%s)".formatted(body), type, TypeMetadata.INLINE)
-                : this;
+    public @Nonnull Translation inlineAsNeeded(
+            @Nonnull final Function<Translation, Translation> bodyLambda) {
+        if (typeMetadata.equals(TypeMetadata.NEEDS_INLINING_OFTEN)) {
+            return bodyLambda.apply(new Translation(preamble, "$(%s)".formatted(body), type, TypeMetadata.INLINE));
+        } // else
+        return this;
     }
 
     @Override
