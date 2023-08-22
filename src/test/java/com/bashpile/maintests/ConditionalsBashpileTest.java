@@ -167,7 +167,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(130)
     public void ifWithInlineWorks() {
         final ExecutionResults results = runText("""
-                if isNotEmpty $(printf "notEmpty"):
+                if isNotEmpty #(printf "notEmpty"):
                     print("true")""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
@@ -178,7 +178,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(140)
     public void ifWithInlineCanFail() {
         final ExecutionResults results = runText("""
-                if isNotEmpty $(printf ""):
+                if isNotEmpty #(printf ""):
                     print("true")
                 else:
                     print("false")""");
@@ -191,14 +191,13 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(150)
     public void ifWithInlineCanNotErrorOut() {
         final ExecutionResults results = runText("""
-                // $(printf "";exit 1) evaluates to the literal string "1", which is not empty
-                if isEmpty $(printf "";exit 1):
+                // #(printf "";exit 1) evaluates to the literal string "1", which is not empty
+                if isEmpty #(printf "";exit 1):
                     print("true")
                 else:
                     print("false")""");
         assertCorrectFormatting(results);
-        assertSuccessfulExitCode(results);
-        assertEquals("true\n", results.stdout());
+        assertFailedExitCode(results);
     }
 
     @Test
@@ -221,7 +220,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(170)
     public void ifWithNestedInlineWorks() {
         final ExecutionResults results = runText("""
-                if isNotEmpty $(printf "$(printf "$(printf "notEmpty")")"):
+                if isNotEmpty #(printf "$(printf "$(printf "notEmpty")")"):
                     print("true")""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);

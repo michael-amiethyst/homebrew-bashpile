@@ -78,10 +78,11 @@ public class BashTranslationEngine implements TranslationEngine {
     /** The current create statement filenames for using in a trap command */
     private final Stack<String> createFilenamesStack = new Stack<>();
 
-    private final Function<Translation, Translation> unnestLambda = (tr) -> {
+    // TODO factor out a unnest or BashTranslationHelper class?
+    private final Function<Translation, Translation> innerUnnestLambda = (tr) -> {
         // extract inner command substitution
-        final Matcher bodyMatcher = NESTED_COMMAND_SUBSTITUTION.matcher(tr.assertEmptyPreamble().body());
-        if (!bodyMatcher.matches()) {
+        final Matcher bodyMatcher = NESTED_COMMAND_SUBSTITUTION.matcher(tr.body());
+        if (!bodyMatcher.find()) {
             return tr;
         }
         final Translation unnested = unnest(new Translation(bodyMatcher.group(2), STR, NORMAL));
@@ -392,8 +393,9 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
             exprTranslation = exprExists
-                    ? visitor.visit(ctx.expression()).inlineAsNeeded(unnestLambda)
+                    ? visitor.visit(ctx.expression()).inlineAsNeeded(innerUnnestLambda)
                     : EMPTY_TRANSLATION;
+            exprTranslation = unnestAsNeeded(exprTranslation);
         }
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
@@ -424,7 +426,8 @@ public class BashTranslationEngine implements TranslationEngine {
         // get expression and it's type
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(unnestLambda);
+            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(innerUnnestLambda);
+            exprTranslation = unnestAsNeeded(exprTranslation);
         }
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
@@ -457,7 +460,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
-                    .map(tr -> tr.inlineAsNeeded(unnestLambda))
+                    .map(tr -> tr.inlineAsNeeded(innerUnnestLambda))
                     // TODO should this be a while instead?
                     .map(tr -> NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find() ? unnest(tr) : tr)
                     .map(tr -> tr.body("""
@@ -546,7 +549,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
                         .map(visitor::visit)
-                        .map(tr -> tr.inlineAsNeeded(unnestLambda))
+                        .map(tr -> tr.inlineAsNeeded(innerUnnestLambda))
                         // TODO while NESTED_COMMAND_SUBSTITUTION unnest?
                         .map(this::unnest)
                         .toList()
@@ -638,7 +641,10 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
         final String primary = ctx.primary().getText();
         // TODO handle 'all'
-        Translation valueBeingTested = visitor.visit(ctx.expression());
+        Translation valueBeingTested;
+        try (var ignored = new LevelCounter(INLINE_LABEL)) {
+            valueBeingTested = visitor.visit(ctx.expression());
+        }
         if (ctx.expression() instanceof BashpileParser.ArgumentsBuiltinExpressionContext argumentsCtx) {
             // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
             // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
@@ -666,11 +672,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final int commandSubstitutionDepth = LevelCounter.getCommandSubstitution();
         Translation contentsTranslation;
         try (var ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
-            // ditches the #() syntax, keep the $() syntax
-            final boolean trueShellString = ctx.DollarOParen() == null;
-            final Stream<Translation> contentsStream = trueShellString
-                    ? ctx.shellStringContents().stream().map(visitor::visit)
-                    : ctx.children.stream().map(visitor::visit);
+            final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
             contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL)
                     .lambdaBody(body -> {
                         // find leading whitespace of first non-blank line.  Strip that many chars from each line
@@ -690,20 +692,22 @@ public class BashTranslationEngine implements TranslationEngine {
                     });
             if (commandSubstitutionDepth > 0) {
                 // then wrap in command substitution and unnest as needed
-                contentsTranslation = trueShellString
-                        ? contentsTranslation.body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE)
-                        : contentsTranslation;
+                contentsTranslation = contentsTranslation
+                        .body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE);
                 // leave 1 level of command substitution
+                // TODO change from selectively calling unnest to uses unnest/unnestAsNeeded instead
                 for (int i = 0; i < commandSubstitutionDepth; i++) {
                     contentsTranslation = unnest(contentsTranslation);
                 }
             } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
-                contentsTranslation = trueShellString
-                        ? contentsTranslation.body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE)
-                        : contentsTranslation;
-            } // else top level -- no additional processing needed
+                contentsTranslation = contentsTranslation
+                        .body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE);
+            } else {
+                // top level
+                contentsTranslation = unnestAsNeeded(contentsTranslation);
+            }
         }
-        return contentsTranslation.unescapeBody();
+        return unnestAsNeeded(contentsTranslation).unescapeBody();
     }
 
     // helpers
@@ -746,6 +750,14 @@ public class BashTranslationEngine implements TranslationEngine {
         }
     }
 
+    private @Nonnull Translation unnestAsNeeded(@Nonnull final Translation tr) {
+        Translation ret = tr;
+        while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
+            ret = innerUnnestLambda.apply(ret);
+        }
+        return ret;
+    }
+
     /**
      * Subshell and inline errored exit codes are ignored in Bash despite all configurations.
      * This workaround explicitly propagates errored exit codes.
@@ -761,6 +773,11 @@ public class BashTranslationEngine implements TranslationEngine {
         if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
             LOG.debug("Skipped unnest for " + tr.body());
             return tr;
+        }
+
+        if (NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
+            LOG.debug("Found nested command substitution in unnest: {}", tr.body());
+            return unnestAsNeeded(tr);
         }
 
         // assign Strings to use in translations

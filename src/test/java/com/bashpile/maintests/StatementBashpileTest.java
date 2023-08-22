@@ -265,7 +265,7 @@ class StatementBashpileTest extends BashpileTest {
                     #(touch captainsLog.txt || true)
                     contents: str
                     #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
-                        contents = $(cat captainsLog.txt)
+                        contents = #(cat captainsLog.txt)
                     print(contents)""");
             assertCorrectFormatting(results);
             assertFailedExitCode(results);
@@ -281,7 +281,7 @@ class StatementBashpileTest extends BashpileTest {
                 contents: str
                 #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
                     #(sleep 1)
-                    contents = $(cat captainsLog.txt)
+                    contents = #(cat captainsLog.txt)
                 print(contents)""";
         try(final BashShell shell = runTextAsync(bashpileScript)) {
             shell.sendTerminationSignal();

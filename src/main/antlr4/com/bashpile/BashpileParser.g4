@@ -56,8 +56,12 @@ expression
     ;
 
 // TODO move DollarOParen into shellStringContents
-shellString        : HashOParen shellStringContents* CParen | DollarOParen shellStringContents* CParen;
-shellStringContents: shellString | OParen shellStringContents* CParen | ShellStringText | ShellStringEscapeSequence;
+shellString        : HashOParen shellStringContents* CParen;
+shellStringContents: shellString
+                   | DollarOParen shellStringContents* CParen
+                   | OParen shellStringContents* CParen
+                   | ShellStringText
+                   | ShellStringEscapeSequence;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
 primary: Unset | Empty | NotEmpty;
