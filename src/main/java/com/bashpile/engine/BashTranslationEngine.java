@@ -15,7 +15,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.ZonedDateTime;
@@ -85,7 +84,7 @@ public class BashTranslationEngine implements TranslationEngine {
         if (!bodyMatcher.matches()) {
             return tr;
         }
-        final Translation unnested = unnest(null, new Translation(bodyMatcher.group(2), STR, NORMAL));
+        final Translation unnested = unnest(new Translation(bodyMatcher.group(2), STR, NORMAL));
         // replace group
         final String unnestedBody = Matcher.quoteReplacement(unnested.body());
         LOG.debug("Replacing with {}", unnestedBody);
@@ -459,9 +458,8 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
                     .map(tr -> tr.inlineAsNeeded(unnestLambda))
-                    // TODO remove CTX param
                     // TODO should this be a while instead?
-                    .map(tr -> NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find() ? unnest(ctx, tr) : tr)
+                    .map(tr -> NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find() ? unnest(tr) : tr)
                     .map(tr -> tr.body("""
                             printf "%s\\n"
                             """.formatted(tr.unquoteBody().body())))
@@ -550,7 +548,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         .map(visitor::visit)
                         .map(tr -> tr.inlineAsNeeded(unnestLambda))
                         // TODO while NESTED_COMMAND_SUBSTITUTION unnest?
-                        .map(tr -> unnest(ctx, tr))
+                        .map(this::unnest)
                         .toList()
                 : List.of();
 
@@ -697,7 +695,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         : contentsTranslation;
                 // leave 1 level of command substitution
                 for (int i = 0; i < commandSubstitutionDepth; i++) {
-                    contentsTranslation = unnest(ctx, contentsTranslation);
+                    contentsTranslation = unnest(contentsTranslation);
                 }
             } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
                 contentsTranslation = trueShellString
@@ -758,7 +756,7 @@ public class BashTranslationEngine implements TranslationEngine {
      * The body is a Command Substitution of a created variable
      * that holds the results of executing <code>tr</code>'s body.
      */
-    private Translation unnest(@Nullable final ParserRuleContext ctx, @Nonnull final Translation tr) {
+    private Translation unnest(@Nonnull final Translation tr) {
         // guard to check if unnest not needed
         if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
             LOG.debug("Skipped unnest for " + tr.body());
@@ -770,8 +768,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
 
         // create 5 lines of translations
-        final Translation subcomment = toLineTranslation(
-                "## unnest for %s\n".formatted(ctx != null ? ctx.getText().trim() : tr.body()));
+        final Translation subcomment = toLineTranslation("## unnest for %s\n".formatted(tr.body()));
         final Translation export     = toLineTranslation("export %s\n".formatted(subshellReturn));
         final Translation assign     = toLineTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
         final Translation exitCode   = toLineTranslation("%s=$?\n".formatted(exitCodeName));
