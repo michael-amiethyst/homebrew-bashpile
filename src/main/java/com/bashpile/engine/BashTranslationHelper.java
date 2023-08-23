@@ -65,7 +65,7 @@ public class BashTranslationHelper {
 
     // static methods
 
-    /* package */ static String getBodyString(
+    /* package */ static @Nonnull String getBodyString(
             @Nonnull final BashpileParser.CreatesStatementContext ctx,
             @Nonnull final Translation shellString,
             @Nonnull final String filename,
@@ -196,7 +196,7 @@ public class BashTranslationHelper {
 
     // unwind static methods
 
-    /* package */ static Translation unwindAll(Translation tr) {
+    /* package */ static @Nonnull Translation unwindAll(@Nonnull final Translation tr) {
         Translation ret = tr;
         while (COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
             ret = unwindOnMatch(ret, COMMAND_SUBSTITUTION);
@@ -212,7 +212,7 @@ public class BashTranslationHelper {
         return ret;
     }
 
-    private static @Nonnull Translation unwindOnMatch(@Nonnull Translation tr, @Nonnull final Pattern pattern) {
+    private static @Nonnull Translation unwindOnMatch(@Nonnull final Translation tr, @Nonnull final Pattern pattern) {
         Translation ret = tr;
         // extract inner command substitution
         final Matcher bodyMatcher = pattern.matcher(ret.body());
@@ -237,7 +237,7 @@ public class BashTranslationHelper {
      * The body is a Command Substitution of a created variable
      * that holds the results of executing <code>tr</code>'s body.
      */
-    private static Translation unwindBody(@Nonnull final Translation tr) {
+    private static @Nonnull Translation unwindBody(@Nonnull final Translation tr) {
         // guard to check if unnest not needed
         if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
             LOG.debug("Skipped unnest for " + tr.body());
@@ -271,7 +271,7 @@ public class BashTranslationHelper {
 
     // typecast static methods
 
-    /* package */ static Translation typecastBool(
+    /* package */ static @Nonnull Translation typecastBool(
             @Nonnull final Type castTo,
             @Nonnull Translation expression,
             @Nonnull final TypeError typecastError) {
@@ -287,8 +287,7 @@ public class BashTranslationHelper {
         return expression;
     }
 
-    @Nonnull
-    /* package */ static Translation typecastInt(
+    /* package */ static @Nonnull Translation typecastInt(
             @Nonnull final Type castTo,
             @Nonnull Translation expression,
             final int lineNumber,
@@ -313,8 +312,7 @@ public class BashTranslationHelper {
         return expression;
     }
 
-    @Nonnull
-    /* package */ static Translation typecastFloat(
+    /* package */ static @Nonnull Translation typecastFloat(
             @Nonnull final Type castTo,
             @Nonnull Translation expression,
             final int lineNumber,
@@ -339,7 +337,7 @@ public class BashTranslationHelper {
         return expression;
     }
 
-    /* package */ static Translation typecastStr(
+    /* package */ static @Nonnull Translation typecastStr(
             @Nonnull final Type castTo,
             @Nonnull Translation expression,
             final int lineNumber,

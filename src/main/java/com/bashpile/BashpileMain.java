@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 import static com.bashpile.AntlrUtils.parse;
 
 // TODO have bpr/bpc source stuff until `which brew` succeeds
-// TODO check for @Nonnull/@Nullable for method returns
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -136,8 +135,8 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
-    private @Nonnull Path findFile(@Nonnull Path path) {
-        path = path.normalize().toAbsolutePath();
+    private @Nonnull Path findFile(@Nonnull final Path find) {
+        Path path = find.normalize().toAbsolutePath();
         final Path filename = path.getFileName();
         while(!Files.exists(path) && path.getParent() != null && path.getParent().getParent() != null) {
             path = path.getParent().getParent().resolve(filename);

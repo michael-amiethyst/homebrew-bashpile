@@ -25,6 +25,7 @@ import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
  */
 public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
+    @Nonnull
     private final TranslationEngine translator;
 
     private final Logger log = LogManager.getLogger(BashpileVisitor.class);
@@ -57,7 +58,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
      * @return A Translation aggregating all visited children.
      */
     @Override
-    public Translation visitChildren(RuleNode node) {
+    public @Nonnull Translation visitChildren(RuleNode node) {
         final RuleContext ctx = node.getRuleContext();
         return IntStream.range(0, ctx.getChildCount())
                 .mapToObj(ctx::getChild)
@@ -87,7 +88,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit statements
 
     @Override
-    public Translation visitCreatesStatement(BashpileParser.CreatesStatementContext ctx) {
+    public @Nonnull Translation visitCreatesStatement(BashpileParser.CreatesStatementContext ctx) {
         return translator.createsStatement(ctx);
     }
 
@@ -110,7 +111,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public Translation visitConditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
+    public @Nonnull Translation visitConditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         return translator.conditionalStatement(ctx);
     }
 
@@ -149,7 +150,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit expressions
 
     @Override
-    public Translation visitTypecastExpression(BashpileParser.TypecastExpressionContext ctx) {
+    public @Nonnull Translation visitTypecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         return translator.typecastExpression(ctx);
     }
 
@@ -175,14 +176,14 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public Translation visitPrimaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
+    public @Nonnull Translation visitPrimaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
         return translator.primaryExpression(ctx);
     }
 
     // visit type expressions
 
     @Override
-    public Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
+    public @Nonnull Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
         return new Translation(ctx.Bool().getText(), Type.BOOL, NORMAL);
     }
 

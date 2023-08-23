@@ -37,7 +37,7 @@ public class Asserts {
      *
      * @see #assertIsLine(String)
      */
-    public static String assertIsParagraph(@Nonnull final String str) {
+    public static @Nonnull String assertIsParagraph(@Nonnull final String str) {
         try {
             return assertMatches(str, TEXT_BLOCK);
         } catch (BashpileUncheckedAssertionException e) {
@@ -51,7 +51,7 @@ public class Asserts {
      *
      * @param str the string to check.
      */
-    public static String assertIsLine(@Nonnull final String str) {
+    public static @Nonnull String assertIsLine(@Nonnull final String str) {
         try {
             return assertMatches(str, TEXT_LINE);
         } catch (BashpileUncheckedAssertionException e) {
@@ -67,7 +67,7 @@ public class Asserts {
     }
 
     /** Checks for a complete match (i.e. whole string must match) */
-    public static String assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
+    public static @Nonnull String assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
         if (!matchResults.matches()) {
             throw new BashpileUncheckedAssertionException(
@@ -163,7 +163,7 @@ public class Asserts {
      * @param translatedShellScript The Bash script
      * @return The translatedShellScript for chaining.
      */
-    public static String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
+    public static @Nonnull String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
         final Path tempFile = Path.of("temp.bps");
         try {
             Files.writeString(tempFile, translatedShellScript);

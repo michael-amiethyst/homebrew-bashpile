@@ -50,14 +50,8 @@ public class BashTranslationEngine implements TranslationEngine {
     /** This is how we enforce type checking at compile time.  Mutable. */
     private final TypeStack typeStack = new TypeStack();
 
-    /** Should be set immediately after creation with {@link #setVisitor(BashpileVisitor)} */
-    private BashpileVisitor visitor;
-
     @Nonnull
     private final String origin;
-
-    /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
-    private int anonBlockCounter = 0;
 
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
@@ -65,6 +59,11 @@ public class BashTranslationEngine implements TranslationEngine {
     /** The current create statement filenames for using in a trap command */
     private final Stack<String> createFilenamesStack = new Stack<>();
 
+    /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
+    private int anonBlockCounter = 0;
+
+    /** Should be set immediately after creation with {@link #setVisitor(BashpileVisitor)} */
+    private BashpileVisitor visitor;
 
     // instance methods
 
@@ -81,7 +80,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // header translations
 
     @Override
-    public Translation originHeader() {
+    public @Nonnull Translation originHeader() {
         final ZonedDateTime now = ZonedDateTime.now();
         return toParagraphTranslation("""
                 #
@@ -131,7 +130,7 @@ public class BashTranslationEngine implements TranslationEngine {
      * <a href="https://www.davidpashley.com/articles/writing-robust-shell-scripts/">Writing Robust Shell Scripts</a>
      */
     @Override
-    public Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
+    public @Nonnull Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
         final boolean fileNameIsId = ctx.String() == null;
 
         // handle the initial variable declaration and type, if applicable
@@ -272,7 +271,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
+    public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         final Translation predicate;
         try (var ignored = new LevelCounter(UNWIND_ALL_LABEL)) {
             predicate = visitor.visit(ctx.expression());
@@ -387,7 +386,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
+    public @Nonnull Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
         final Translation expr = visitor.visit(ctx.expression()).add(NEWLINE);
         final Translation comment = createCommentTranslation("expression statement", lineNumber(ctx));
         final Translation subcomment =
@@ -430,7 +429,7 @@ public class BashTranslationEngine implements TranslationEngine {
      * Quoted numbers (numbers in STRs) cast to BOOLs like numbers.  Anything cast to an STR gets quotes around it.
      */
     @Override
-    public Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
+    public @Nonnull Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         final Type castTo = Type.valueOf(ctx.Type().getText().toUpperCase());
         Translation expression = visitor.visit(ctx.expression());
         final int lineNumber = lineNumber(ctx);
@@ -502,7 +501,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
+    public @Nonnull Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
         // drop parenthesis
         Translation ret = visitor.visit(ctx.expression());
 
@@ -549,7 +548,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
+    public @Nonnull Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
         final String primary = ctx.primary().getText();
         // TODO handle 'all'
         Translation valueBeingTested;
@@ -569,7 +568,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation idExpression(BashpileParser.IdExpressionContext ctx) {
+    public @Nonnull Translation idExpression(BashpileParser.IdExpressionContext ctx) {
         final String variableName = ctx.Id().getText();
         final Type type = typeStack.getVariableType(variableName);
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
@@ -579,7 +578,7 @@ public class BashTranslationEngine implements TranslationEngine {
     // expression helper rules
 
     @Override
-    public Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
+    public @Nonnull Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
         final int commandSubstitutionDepth = LevelCounter.getCommandSubstitution();
         Translation contentsTranslation;
         try (var ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {

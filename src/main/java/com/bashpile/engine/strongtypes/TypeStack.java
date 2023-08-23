@@ -91,7 +91,7 @@ public class TypeStack {
      * @return a type to pop the frame after it is out of scope with a try-with-resources statement.
      * @see <a href=https://www.techopedia.com/definition/22304/stack-frame>Stack Frame definition</a>
      */
-    public TypeStackClosable pushFrame() {
+    public @Nonnull TypeStackClosable pushFrame() {
         return new TypeStackClosable(this);
     }
 

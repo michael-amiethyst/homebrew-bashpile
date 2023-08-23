@@ -110,7 +110,6 @@ abstract public class BashpileTest {
 
         // check for nested command substitutions
         var ignored2 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
-            // TODO fix NESTED_COMMAND_SUBSTITUTION
             if (line.trim().charAt(0) != '#'
                     && !line.contains("(set -o noclobber")
                     && NESTED_COMMAND_SUBSTITUTION.matcher(line).find()) {

@@ -30,7 +30,8 @@ public class Exceptions {
      * @param <T> The type the supplier returns.
      * @return The result of the lambda.
      */
-    public static <T> @Nullable T asUncheckedIgnoreClosedStreams(final @Nonnull ThrowingSupplier<T, Exception> throwingSupplier) {
+    public static <T> @Nullable T asUncheckedIgnoreClosedStreams(
+            final @Nonnull ThrowingSupplier<T, Exception> throwingSupplier) {
         try {
             return throwingSupplier.get();
         } catch (Exception ex) {

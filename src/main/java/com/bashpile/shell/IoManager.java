@@ -27,9 +27,11 @@ import static com.bashpile.exceptions.Exceptions.*;
     private final static Logger LOG = LogManager.getLogger(IoManager.class);
 
     /** The wrapped child process */
+    @Nonnull
     private final Process childProcess;
 
     /** This runs our child process's STDOUT stream reader */
+    @Nonnull
     private final ExecutorService executorService;
 
     /**
@@ -37,15 +39,19 @@ import static com.bashpile.exceptions.Exceptions.*;
      *
      * @see #writeLn(String)
      */
+    @Nonnull
     private final BufferedWriter childStdInWriter;
 
     /** We need this reference to the buffer to get the final stdout contents */
+    @Nonnull
     private final ByteArrayOutputStream childStdOutBuffer;
 
     /** This is a writer to the {@link #childStdOutBuffer} */
+    @Nonnull
     private final PrintStream childStdOutWriter;
 
     /** We just need this to close down the STDOUT stream reader */
+    @Nonnull
     private final Future<?> childStdOutReaderFuture;
 
     public static @Nonnull IoManager of(@Nonnull final Process childProcess) {
@@ -83,7 +89,7 @@ import static com.bashpile.exceptions.Exceptions.*;
     }
 
     /** Joins to both background threads (process and STDOUT stream reader) */
-    public Pair<Integer, String> join() {
+    public @Nonnull Pair<Integer, String> join() {
         flush();
 
         // join to threads
