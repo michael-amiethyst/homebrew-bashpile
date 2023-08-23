@@ -55,7 +55,6 @@ expression
     | Id                                # idExpression
     ;
 
-// TODO move DollarOParen into shellStringContents
 shellString        : HashOParen shellStringContents* CParen;
 shellStringContents: shellString
                    | DollarOParen shellStringContents* CParen

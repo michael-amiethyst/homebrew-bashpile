@@ -8,7 +8,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// TODO test with function calls, other expressions.  parens, nested inlines
+// TODO test other expressions, parens
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ConditionalsBashpileTest extends BashpileTest {

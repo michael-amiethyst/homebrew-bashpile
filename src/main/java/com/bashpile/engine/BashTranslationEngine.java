@@ -151,7 +151,7 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation shellString;
         final boolean addingCommandSubstitution = ctx.typedId() != null;
         if (addingCommandSubstitution) {
-            try (var ignored = new LevelCounter(CREATE_LABEL)) {
+            try (var ignored = new LevelCounter(UNWIND_ALL_LABEL)) {
                 shellString = visitor.visit(ctx.shellString());
             }
         } else {
@@ -275,7 +275,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
-        final Translation predicate = visitor.visit(ctx.expression());
+        final Translation predicate;
+        try (var ignored = new LevelCounter(UNWIND_ALL_LABEL)) {
+            predicate = visitor.visit(ctx.expression());
+        }
         final Translation ifBlockStatements = visitBodyStatements(ctx.statement(), visitor);
         String elseBlock = "";
         if (ctx.elseBody() != null) {
@@ -305,9 +308,9 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
             exprTranslation = exprExists
-                    ? visitor.visit(ctx.expression()).inlineAsNeeded(innerUnnestLambda)
+                    ? visitor.visit(ctx.expression()).inlineAsNeeded(unwindNestedLambda)
                     : EMPTY_TRANSLATION;
-            exprTranslation = unnestAsNeeded(exprTranslation);
+            exprTranslation = unwindNested(exprTranslation);
         }
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
@@ -338,8 +341,8 @@ public class BashTranslationEngine implements TranslationEngine {
         // get expression and it's type
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(innerUnnestLambda);
-            exprTranslation = unnestAsNeeded(exprTranslation);
+            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(unwindNestedLambda);
+            exprTranslation = unwindNested(exprTranslation);
         }
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
@@ -372,9 +375,8 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
-                    .map(tr -> tr.inlineAsNeeded(innerUnnestLambda))
-                    // TODO should this be a while instead?
-                    .map(tr -> NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find() ? unnest(tr) : tr)
+                    .map(tr -> tr.inlineAsNeeded(unwindNestedLambda))
+                    .map(BashTranslationHelper::unwindNested)
                     .map(tr -> tr.body("""
                             printf "%s\\n"
                             """.formatted(tr.unquoteBody().body())))
@@ -461,9 +463,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
                         .map(visitor::visit)
-                        .map(tr -> tr.inlineAsNeeded(innerUnnestLambda))
-                        // TODO while NESTED_COMMAND_SUBSTITUTION unnest?
-                        .map(BashTranslationHelper::unnest)
+                        .map(tr -> tr.inlineAsNeeded(unwindNestedLambda))
+                        .map(BashTranslationHelper::unwindNested)
                         .toList()
                 : List.of();
 
@@ -602,29 +603,20 @@ public class BashTranslationEngine implements TranslationEngine {
                                 .collect(Collectors.joining("\n"))
                                 + trailingNewline;
                     });
-            if (commandSubstitutionDepth > 0) {
-                // then wrap in command substitution and unnest as needed
+
+            // wrap in command substitution possibly
+            if (commandSubstitutionDepth > 0  || LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
                 contentsTranslation = contentsTranslation
                         .body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE);
-                // leave 1 level of command substitution
-                // TODO change from selectively calling unnest to uses unnest/unnestAsNeeded instead
-                for (int i = 0; i < commandSubstitutionDepth; i++) {
-                    contentsTranslation = NESTED_COMMAND_SUBSTITUTION.matcher(contentsTranslation.body()).find()
-                            ? innerUnnestLambda.apply(contentsTranslation)
-                            : unnest(contentsTranslation);
-                }
-            } else if (LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
-                contentsTranslation = contentsTranslation
-                        .body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE);
-            } else if (LevelCounter.in(CREATE_LABEL)) {
-                while(COMMAND_SUBSTITUTION.matcher(contentsTranslation.body()).find()) {
-                    contentsTranslation = unnestLambda.apply(contentsTranslation);
-                }
+            }
+
+            // unwind
+            if (LevelCounter.in(UNWIND_ALL_LABEL)) {
+                contentsTranslation = unwindAll(contentsTranslation);
             } else {
-                // top level
-                contentsTranslation = unnestAsNeeded(contentsTranslation);
+                contentsTranslation = unwindNested(contentsTranslation);
             }
         }
-        return unnestAsNeeded(contentsTranslation).unescapeBody();
+        return contentsTranslation.unescapeBody();
     }
 }

@@ -30,6 +30,13 @@ import static com.bashpile.engine.strongtypes.Type.INT;
 import static com.bashpile.engine.strongtypes.Type.STR;
 import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
 
+/**
+ * Helper methods to {@link BashTranslationEngine}.
+ * <br>
+ * Has a concept of unwinding command substitutions.  Either only nested ones with {@link #unwindNested(Translation)} or
+ * all with {@link #unwindAll(Translation)}.  This is to prevent errored exit codes from being suppressed.  As examples,
+ * in Bash `$(echo $(echo hello; exit 1))` will suppress the error code and `[ -z $(echo hello; exit 1) ]` will as well.
+ */
 public class BashTranslationHelper {
 
     /**
@@ -48,10 +55,8 @@ public class BashTranslationHelper {
     public static final Pattern NESTED_COMMAND_SUBSTITUTION =
             Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
 
-    /* package */ static final Function<Translation, Translation> unnestLambda = (tr) -> unnestOnMatch(tr, COMMAND_SUBSTITUTION);
-
-    /* package */ static final Function<Translation, Translation> innerUnnestLambda =
-            (tr) -> unnestOnMatch(tr, NESTED_COMMAND_SUBSTITUTION);
+    /* package */ static final Function<Translation, Translation> unwindNestedLambda =
+            (tr) -> unwindOnMatch(tr, NESTED_COMMAND_SUBSTITUTION);
 
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
 
@@ -187,29 +192,37 @@ public class BashTranslationHelper {
         return ctx.start.getLine();
     }
 
-    // unnesting static methods
+    // unwind static methods
 
-    /* package */ static @Nonnull Translation unnestOnMatch(@Nonnull Translation tr, @Nonnull final Pattern pattern) {
+    /* package */ static Translation unwindAll(Translation tr) {
+        Translation ret = tr;
+        while (COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
+            ret = unwindOnMatch(ret, COMMAND_SUBSTITUTION);
+        }
+        return ret;
+    }
+
+    /* package */ static @Nonnull Translation unwindNested(@Nonnull final Translation tr) {
+        Translation ret = tr;
+        while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
+            ret = unwindNestedLambda.apply(ret);
+        }
+        return ret;
+    }
+
+    private static @Nonnull Translation unwindOnMatch(@Nonnull Translation tr, @Nonnull final Pattern pattern) {
         Translation ret = tr;
         // extract inner command substitution
         final Matcher bodyMatcher = pattern.matcher(ret.body());
         if (!bodyMatcher.find()) {
             return ret;
         }
-        final Translation unnested = unnest(new Translation(bodyMatcher.group(2), STR, NORMAL));
+        final Translation unnested = unwindBody(new Translation(bodyMatcher.group(2), STR, NORMAL));
         // replace group
         final String unnestedBody = Matcher.quoteReplacement(unnested.body());
         LOG.debug("Replacing with {}", unnestedBody);
         ret = ret.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
         return ret.addPreamble(unnested.preamble());
-    }
-
-    /* package */ static @Nonnull Translation unnestAsNeeded(@Nonnull final Translation tr) {
-        Translation ret = tr;
-        while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-            ret = innerUnnestLambda.apply(ret);
-        }
-        return ret;
     }
 
     /**
@@ -222,7 +235,7 @@ public class BashTranslationHelper {
      * The body is a Command Substitution of a created variable
      * that holds the results of executing <code>tr</code>'s body.
      */
-    /* package */ static Translation unnest(@Nonnull final Translation tr) {
+    private static Translation unwindBody(@Nonnull final Translation tr) {
         // guard to check if unnest not needed
         if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
             LOG.debug("Skipped unnest for " + tr.body());
@@ -231,7 +244,7 @@ public class BashTranslationHelper {
 
         if (NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
             LOG.debug("Found nested command substitution in unnest: {}", tr.body());
-            return unnestAsNeeded(tr);
+            return unwindNested(tr);
         }
 
         // assign Strings to use in translations
