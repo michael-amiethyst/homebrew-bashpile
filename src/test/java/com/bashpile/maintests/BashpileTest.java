@@ -94,7 +94,7 @@ abstract public class BashpileTest {
                 }
                 return line;
             }
-            if (firstToken.equals(")")) {
+            if (firstToken.equals(")") || firstToken.equals("then")) {
                 if (tabs != indentLevel.get() - 1) {
                     erroredLines.get().add(i);
                 }
@@ -124,6 +124,15 @@ abstract public class BashpileTest {
         var ignored3 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
             if (line.trim().startsWith("__bp_subshellReturn") && !COMMAND_SUBSTITUTION.matcher(line).find()) {
                 LOG.error("Unneeded unnest, line {}, text {}", i, line);
+                erroredLines.get().add(i);
+            }
+            return line;
+        }).toList();
+
+        // check for missing ifs
+        var ignored4 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+            if (!line.trim().contains("if") && line.endsWith("; then") ) {
+                LOG.error("Mangled if-then found, line {}, text {}", i, line);
                 erroredLines.get().add(i);
             }
             return line;

@@ -175,9 +175,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation bodyTranslation = toParagraphTranslation(body);
 
             // merge translations and preambles
-            return comment.add(
-                    subcomment.add(bodyTranslation)
-                            .mergePreamble());
+            return comment.add(subcomment.add(bodyTranslation).mergePreamble());
         } finally {
             createFilenamesStack.pop();
         }

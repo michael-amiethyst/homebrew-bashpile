@@ -71,7 +71,7 @@ public class BashTranslationHelper {
             @Nonnull final String filename,
             @Nonnull final BashpileVisitor visitor,
             @Nonnull final Stack<String> createFilenamesStack) {
-        String preamble, check;
+        String preamble, check, thenFragment;
         boolean briefGuard = !shellString.hasPreamble();
         if (briefGuard) {
             // collapse with semicolons to one line
@@ -82,10 +82,12 @@ public class BashTranslationHelper {
             if (Strings.isNotEmpty(preamble)) {
                 preamble += "; ";
             }
+            thenFragment = "; then";
         } else {
             // preserve whitespace
             preamble = "\n    ## end of unnest\n" + shellString.lambdaPreambleLines(str -> TAB + str).preamble();
             check = shellString.lambdaBodyLines(str -> TAB + str).body();
+            thenFragment = "\nthen";
         }
 
         // set noclobber avoids some race conditions
@@ -93,10 +95,10 @@ public class BashTranslationHelper {
         String variableName = null;
         if (ctx.typedId() != null) {
             variableName = ctx.typedId().Id().getText();
-            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null; then".formatted(
-                    getLocalText(), variableName, variableName, preamble, check);
+            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null%s".formatted(
+                    getLocalText(), variableName, variableName, preamble, check, thenFragment);
         } else {
-            ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null; then".formatted(preamble, check);
+            ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null%s".formatted(preamble, check, thenFragment);
         }
 
         // create our statements translation
