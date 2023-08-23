@@ -43,7 +43,7 @@ public class BashTranslationHelper {
      * This Pattern has three matching groups.
      * They are everything before the command substitution, the command substitution, and everything after.
      */
-    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*)(\\$\\(.*?\\))(.*)");
+    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(.*)(\\$\\(.*?\\))(.*)");
 
     /**
      * This single-line Pattern has three matching groups.
@@ -53,10 +53,10 @@ public class BashTranslationHelper {
      * WARNING: bug on two different, non-nesting command substitutions
      */
     public static final Pattern NESTED_COMMAND_SUBSTITUTION =
-            Pattern.compile("(?s)(.*\\$\\(.*?)(\\$\\(.*\\))(.*?\\).*)");
+            Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
 
     /* package */ static final Function<Translation, Translation> unwindNestedLambda =
-            (tr) -> unwindOnMatch(tr, false);
+            (tr) -> unwindOnMatch(tr, NESTED_COMMAND_SUBSTITUTION);
 
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
 
@@ -198,63 +198,33 @@ public class BashTranslationHelper {
 
     /* package */ static Translation unwindAll(Translation tr) {
         Translation ret = tr;
-        while (getWinding(ret.body()) >= 1) {
-            ret = unwindOnMatch(ret, true);
+        while (COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
+            ret = unwindOnMatch(ret, COMMAND_SUBSTITUTION);
         }
         return ret;
     }
 
     /* package */ static @Nonnull Translation unwindNested(@Nonnull final Translation tr) {
         Translation ret = tr;
-        while(getWinding(ret.body()) >= 2) {
-            ret = unwindOnMatch(ret, false);
+        while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
+            ret = unwindNestedLambda.apply(ret);
         }
         return ret;
     }
 
-    private static int getWinding(String bashScript) {
-        // count $( and (
-        // count )
-        // return highest nesting level or error on unmatched parens
-
-        if (NESTED_COMMAND_SUBSTITUTION.matcher(bashScript).find()) {
-            return 2;
-        } else if (COMMAND_SUBSTITUTION.matcher(bashScript).find()) {
-            return 1;
-        } // else
-        return 0;
-    }
-
-    private static @Nonnull Translation unwindOnMatch(@Nonnull Translation tr, boolean unwindAll) {
+    private static @Nonnull Translation unwindOnMatch(@Nonnull Translation tr, @Nonnull final Pattern pattern) {
         Translation ret = tr;
         // extract inner command substitution
-        int target = unwindAll ? 0 : 1;
-        if (getWinding(tr.body()) <= target) {
+        final Matcher bodyMatcher = pattern.matcher(ret.body());
+        if (!bodyMatcher.find()) {
             return ret;
         }
-        List<String> parts = splitOnNesting(tr.body(), unwindAll);
-        final Translation unnested = unwindBody(new Translation(parts.get(1), STR, NORMAL));
+        final Translation unnested = unwindBody(new Translation(bodyMatcher.group(2), STR, NORMAL));
         // replace group
         final String unnestedBody = Matcher.quoteReplacement(unnested.body());
         LOG.debug("Replacing with {}", unnestedBody);
-        ret = ret.body(parts.get(0) + unnested.body() + parts.get(2));
+        ret = ret.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
         return ret.addPreamble(unnested.preamble());
-    }
-
-    /** Return size 3, before, the command substitution, and after */
-    private static List<String> splitOnNesting(String bashScript, boolean unwindAll) {
-        // as parser
-        // visit body with bash parser
-        // have 3 states: before nest, nest, after nest, accumulate strings for each state
-        Matcher matcher;
-        if (unwindAll) {
-            matcher = COMMAND_SUBSTITUTION.matcher(bashScript);
-        } else {
-            matcher = NESTED_COMMAND_SUBSTITUTION.matcher(bashScript);
-        }
-        var ignored = matcher.find();
-        return List.of(matcher.group(1), matcher.group(2), matcher.group(3));
-
     }
 
     /**
