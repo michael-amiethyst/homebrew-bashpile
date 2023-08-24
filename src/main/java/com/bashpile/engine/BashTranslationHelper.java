@@ -65,7 +65,7 @@ public class BashTranslationHelper {
 
     // static methods
 
-    /* package */ static @Nonnull String getBodyString(
+    /* package */ static @Nonnull String getBodyStringForCreatesStatement(
             @Nonnull final BashpileParser.CreatesStatementContext ctx,
             @Nonnull final Translation shellString,
             @Nonnull final String filename,

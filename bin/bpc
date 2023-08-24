@@ -1,4 +1,9 @@
 #!/usr/bin/env bpr
 
+if not #(which brew > /dev/null 2>&1 ):
+    #(source /etc/bash.bashrc 2> /dev/null || true)
+if not #(which brew > /dev/null 2>&1 ):
+    #(source "$HOME"/.bashrc 2> /dev/null || true)
+
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 #(java -jar "$jarPath" "$@")

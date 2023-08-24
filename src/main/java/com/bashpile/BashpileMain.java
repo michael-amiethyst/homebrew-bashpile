@@ -21,7 +21,8 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO have bpr/bpc source stuff until `which brew` succeeds
+// TODO test bpr/bpc with needing to source .bashrc
+// TODO add 'and' to check for file existence in bpr/bpc
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -111,7 +112,6 @@ public class BashpileMain implements Callable<Integer> {
         final Pair<String, InputStream> namedInputStream = getNameAndInputStream();
         try (final InputStream inputStream = namedInputStream.getRight()) {
             final String parsed = parse(namedInputStream.getLeft(), inputStream);
-            LOG.debug("Generated Bash script:\n" + parsed);
             return Asserts.assertNoShellcheckWarnings(parsed);
         }
     }
@@ -122,7 +122,7 @@ public class BashpileMain implements Callable<Integer> {
             InputStream is;
             if (SHEBANG.matcher(lines.get(0)).matches()) {
                 final String removedShebang = String.join("\n", lines.subList(1, lines.size()));
-                LOG.debug("Removed shebang to get:\n" + removedShebang);
+                LOG.trace("Removed shebang to get:\n" + removedShebang);
                 is = IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
             } else {
                 is = Files.newInputStream(inputFile);

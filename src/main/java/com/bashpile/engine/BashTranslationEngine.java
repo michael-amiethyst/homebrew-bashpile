@@ -170,7 +170,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
 
             // create a large if-else block with traps
-            final String body = getBodyString(ctx, shellString, filename, visitor, createFilenamesStack);
+            final String body = getBodyStringForCreatesStatement(ctx, shellString, filename, visitor, createFilenamesStack);
             final Translation bodyTranslation = toParagraphTranslation(body);
 
             // merge translations and preambles
@@ -272,9 +272,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
-        final Translation predicate;
+        final Translation guard;
         try (var ignored = new LevelCounter(UNWIND_ALL_LABEL)) {
-            predicate = visitor.visit(ctx.expression());
+            final Translation not = ctx.Not() != null ? new Translation("! ", STR, NORMAL) : EMPTY_TRANSLATION;
+            guard = not.add(visitor.visit(ctx.expression()));
         }
         final Translation ifBlockStatements = visitBodyStatements(ctx.statement(), visitor);
         String elseBlock = "";
@@ -289,8 +290,8 @@ public class BashTranslationEngine implements TranslationEngine {
                 if %s; then
                 %s%s
                 fi
-                """.formatted(predicate.body(), ifBlockStatements.mergePreamble().body().stripTrailing(), elseBlock);
-        return toParagraphTranslation(predicate.preamble() + conditional);
+                """.formatted(guard.body(), ifBlockStatements.mergePreamble().body().stripTrailing(), elseBlock);
+        return toParagraphTranslation(guard.preamble() + conditional);
     }
 
     @Override
@@ -597,6 +598,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         return Arrays.stream(lines)
                                 .filter(str -> !Strings.isBlank(str))
                                 .map(str -> str.substring(spaces))
+                                .map(String::stripTrailing)
                                 .collect(Collectors.joining("\n"))
                                 + trailingNewline;
                     });

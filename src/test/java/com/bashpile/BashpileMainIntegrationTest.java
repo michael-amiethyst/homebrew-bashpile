@@ -27,7 +27,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test @Timeout(20) @Order(5)
     public void bprDeploysSuccessfully() throws IOException {
-        log.debug("In bprDeploysSuccessfully");
+        log.info("In bprDeploysSuccessfully");
 
         final String translatedFilename = "bin/bpr";
         final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
@@ -42,7 +42,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test @Timeout(10) @Order(10)
     public void bpcTranspiles() throws IOException {
-        log.debug("In noSubCommandTest");
+        log.info("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
         final String command = "bin/bpr bin/bpc src/test/resources/testrigData.bps";
@@ -61,7 +61,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test @Timeout(20) @Order(11)
     public void bprWorks() throws IOException {
-        log.debug("In noSubCommandTest");
+        log.info("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
@@ -74,7 +74,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test @Timeout(10) @Order(20)
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
-        log.debug("In noSubCommandWithNoExtensionTranspiles");
+        log.info("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
 
         final String command = "bin/bpr bin/bpc src/test/resources/testrigData";
@@ -93,7 +93,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test @Timeout(10) @Order(30)
     public void noSubCommandWithMissingFileFails() throws IOException {
-        log.debug("In noSubCommandWithMissingFileFails");
+        log.info("In noSubCommandWithMissingFileFails");
         Assumptions.assumeTrue(bprDeployed);
 
         final String command = "bin/bpr bin/bpc src/test/resources/testrigData.fileDoesNotExist";
@@ -106,7 +106,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test @Timeout(30) @Order(40)
     public void noSubCommandWithOutputSpecifiedTranspiles() throws IOException {
-        log.debug("In noSubCommandWithNoExtensionTranspiles");
+        log.info("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
 
         final String translatedFilename = "src/test/resources/testrigData.example.bps";
@@ -131,7 +131,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test @Timeout(20) @Order(50)
     public void bprCreateErrorMessagesPropagate() throws IOException {
-        log.debug("In noSubCommandTest");
+        log.info("In bprCreateErrorMessagesPropagate");
         Assumptions.assumeTrue(bprDeployed);
 
         final String bashpileFilename = "src/test/resources/scripts/bprShebang.bps";

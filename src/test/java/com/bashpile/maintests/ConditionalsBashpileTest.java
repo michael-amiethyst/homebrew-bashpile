@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // TODO test other expressions, parens
 @Order(60)
@@ -225,5 +226,21 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(180)
+    public void ifNotWhichWorks() {
+        final ExecutionResults results = runText("""
+                #(# shellcheck source=/dev/null)
+                if not #(which brew > /dev/null 2>&1 ):
+                    #(source ~/bash.bashrc)
+                    print('no brew')
+                else:
+                    print('brew')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("# shellcheck"));
+        assertEquals("brew\n", results.stdout());
     }
 }

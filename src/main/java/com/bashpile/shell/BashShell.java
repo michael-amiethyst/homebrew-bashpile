@@ -42,7 +42,7 @@ public class BashShell implements Closeable {
     }
 
     /**
-     * Runs bashString and supporting worker threads in the background
+     * Runs bashString in a non-interactive login Bash shell and supporting worker threads in the background.
      *
      * @param bashString The Bash script to run
      * @return A BashShell holding the running threads.

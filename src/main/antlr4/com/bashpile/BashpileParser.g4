@@ -12,7 +12,7 @@ statement
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon INDENT statement+
                                    DEDENT # anonymousBlockStatement
-    | If expression Colon INDENT statement+
+    | If Not? expression Colon INDENT statement+
             DEDENT (Else Colon elseBody)? # conditionalStatement
     | typedId (Equals expression)? Newline# assignmentStatement
     | Id Equals expression Newline        # reassignmentStatement

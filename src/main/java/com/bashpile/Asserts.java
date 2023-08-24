@@ -172,7 +172,9 @@ public class Asserts {
                     BashShell.runAndJoin(
                             "shellcheck --shell=bash --severity=warning --exclude=SC2157 " + tempFile);
             if (shellcheckResults.exitCode() != 0) {
-                throw new BashpileUncheckedAssertionException(shellcheckResults.stdout());
+                final String message = "Script failed shellcheck.  Script:\n%s\nShellcheck output:\n%s".formatted(
+                        translatedShellScript, shellcheckResults.stdout());
+                throw new BashpileUncheckedAssertionException(message);
             }
             return translatedShellScript;
         } catch (IOException e) {
