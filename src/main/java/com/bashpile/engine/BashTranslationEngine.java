@@ -406,7 +406,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 (BashpileParser.FunctionDeclarationStatementContext) ctx.parent.parent;
         final String functionName = enclosingFunction.typedId().Id().getText();
         final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
-        final Translation exprTranslation =
+        Translation exprTranslation =
                 exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_TYPE;
         assertTypesCoerce(functionTypes.returnType(), exprTranslation.type(), functionName, lineNumber(ctx));
 
@@ -415,12 +415,16 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         final Translation comment = createHoistedCommentTranslation("return statement", lineNumber(ctx));
-        final Function<String, String> strToPrintf = str -> functionTypes.returnType().equals(STR)
-                ? "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""))
-                : str + "\n";
-        final Translation exprBody = toParagraphTranslation(lambdaLastLine(exprTranslation.body(), strToPrintf))
-                .addPreamble(exprTranslation.preamble());
-        return comment.add(exprBody.mergePreamble());
+        final Function<String, String> returnLineLambda = str -> {
+            if (functionTypes.returnType().equals(STR)) {
+                return "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""));
+            } else if (ctx.expression() instanceof BashpileParser.NumberExpressionContext) {
+                return "return %s\n".formatted(str);
+            } // else
+            return str + "\n";
+        };
+        exprTranslation = exprTranslation.body(lambdaLastLine(exprTranslation.body(), returnLineLambda));
+        return comment.add(exprTranslation.mergePreamble());
     }
 
     // expressions

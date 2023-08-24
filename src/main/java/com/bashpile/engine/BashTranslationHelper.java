@@ -298,7 +298,8 @@ public class BashTranslationHelper {
             expressionValue = new BigInteger(expression.body());
         } catch (final NumberFormatException e) {
             throw new UserError(
-                    "Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber);
+                    "Couldn't parse '%s' to an INT.  Typecasts only work on literals, was this an ID or function call?"
+                            .formatted(expression.body()), lineNumber);
         }
 
         // cast

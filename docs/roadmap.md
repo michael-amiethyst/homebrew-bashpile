@@ -1,14 +1,13 @@
 # 1.0 features
 1. Change bpt output from `export` to `declare -x` (and type)
-2. Get rid of inlines, shell strings only
-3. Arrays, Hashes, Refs
-4. Loops
-5. String interpolation with $[]
-6. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+2. Arrays, Hashes, Refs
+3. Loops
+4. String interpolation with $[]
+5. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
 
 # Later
 (Not ordered)
-* OOP
+* OOP (use / be inspired by bash infinity?)
 * Factor out text for future localization and consistent end-user feel.
 * Regexes for Strings, files
 * imports
@@ -22,6 +21,7 @@
 * `until`
 * `unless`
 * `expr AND expr` like Bash's `(expr;expr)` without the subshell (maybe)
+* typecasts on IDs and function calls - implemented in the translated output
 
 # much later
 * tooling (IDE integrations, code highlighting)
@@ -31,4 +31,3 @@
 * function overloading 
    * behind the scenes name the function name_returnType_arg1Type_arg2Type_...)
 * reflections api
-* objects
