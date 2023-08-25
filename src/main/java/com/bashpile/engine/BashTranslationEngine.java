@@ -569,7 +569,6 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
         final String primary = ctx.primary().getText();
-        // TODO handle 'all'
         Translation valueBeingTested;
         // right now all implemented primaries are string tests
         expectedTypeInConditional.push(STR);

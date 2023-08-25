@@ -1,51 +1,43 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-08-24T09:34:47.381616466-07:00[America/Los_Angeles] (timestamp 1692894887381)
+# Generated from bin/bpr.bps on 2023-08-25T15:39:02.702998403-07:00[America/Los_Angeles] (timestamp 1693003142702)
 #
 # strict mode header
 set -eEuo pipefail -o posix
 export IFS=$'\n\t'
 declare s
 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
-if ! which brew > /dev/null 2>&1; then
-    # expression statement, Bashpile line 8
-    source /etc/bash.bashrc 2> /dev/null || true
-fi
-if ! which brew > /dev/null 2>&1; then
-    # expression statement, Bashpile line 10
-    source "$HOME"/.bashrc 2> /dev/null || true
-fi
-# assign statement, Bashpile line 13
+# assign statement, Bashpile line 8
 export jarPath
 jarPath=$(dirname "${BASH_SOURCE[0]}")/bashpile.jar
 if [ -z "${1+default}" ]; then
-    # expression statement, Bashpile line 17
+    # expression statement, Bashpile line 12
     trap - ERR
-    # expression statement, Bashpile line 18
+    # expression statement, Bashpile line 13
     java -jar "$jarPath"
-    # expression statement, Bashpile line 19
+    # expression statement, Bashpile line 14
     exit $?
 fi
-# creates statement, Bashpile line 22
+# creates statement, Bashpile line 17
 export  translatedFilename
 if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
     trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
     ## wrapped body of creates statement
-    # expression statement, Bashpile line 26
+    # expression statement, Bashpile line 21
     sleep .2
-    # expression statement, Bashpile line 27
+    # expression statement, Bashpile line 22
     shift
-    # print statement, Bashpile line 28
+    # print statement, Bashpile line 23
     printf "Start of ${translatedFilename}\n"
-    # expression statement, Bashpile line 29
+    # expression statement, Bashpile line 24
     chmod 755 $translatedFilename
-    # creates statement, Bashpile line 31
+    # creates statement, Bashpile line 26
     if (set -o noclobber; "$translatedFilename" "$@" 2>&1 | tee "bpr.log") 2> /dev/null; then
         trap 'rm -f "$translatedFilename" bpr.log; exit 10' INT TERM EXIT
         ## wrapped body of creates statement
         if cat bpr.log | grep 'unexpected EOF while looking for matching' > /dev/null 2>&1; then
-            # expression statement, Bashpile line 33
+            # expression statement, Bashpile line 28
             "$translatedFilename" "$@"
         fi
         ## end of wrapped body of creates statement

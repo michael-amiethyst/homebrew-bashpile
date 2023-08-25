@@ -21,8 +21,8 @@ import java.util.regex.Pattern;
 
 import static com.bashpile.AntlrUtils.parse;
 
-// TODO test bpr/bpc with needing to source .bashrc
-// TODO feature/andOrOperators add 'and' to check for file existence in bpr/bpc
+// TODO FEATURE feature/andOrOperators add 'and' to check for file existence in bpr/bpc
+// TODO FEATURE have bpc use arguments, arguments[all] and --output
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
