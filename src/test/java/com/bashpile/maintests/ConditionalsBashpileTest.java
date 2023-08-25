@@ -168,9 +168,9 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(121)
     public void ifFunctionWithIntWorks() {
         final ExecutionResults results = runText("""
-                function retT: int():
-                    return 0
-                if retT():
+                function ret1: int():
+                    return 1
+                if ret1():
                     print("true")""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
@@ -181,9 +181,9 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(122)
     public void ifFunctionWithIntCanFail() {
         final ExecutionResults results = runText("""
-                function retF: int():
-                    return 1
-                if retF():
+                function ret0: int():
+                    return 0
+                if ret0():
                     print("true")
                 else:
                     print("false")""");
@@ -192,34 +192,35 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("false\n", results.stdout());
     }
 
-    // TODO uncomment and fix
-//    @Test
-//    @Order(123)
-//    public void ifFunctionWithParenthesisWorks() {
-//        final ExecutionResults results = runText("""
-//                function ret42: int():
-//                    return 42
-//                if (ret42() * 0):
-//                    print("true")""");
-//        assertCorrectFormatting(results);
-//        assertSuccessfulExitCode(results);
-//        assertEquals("true\n", results.stdout());
-//    }
-//
-//    @Test
-//    @Order(124)
-//    public void ifFunctionWithParenthesisCanFail() {
-//        final ExecutionResults results = runText("""
-//                function ret0: int():
-//                    return 0
-//                if (ret0() + 53456467687):
-//                    print("true")
-//                else:
-//                    print("false")""");
-//        assertCorrectFormatting(results);
-//        assertSuccessfulExitCode(results);
-//        assertEquals("false\n", results.stdout());
-//    }
+    @Test
+    @Order(123)
+    public void ifFunctionWithParenthesisWorks() {
+        final ExecutionResults results = runText("""
+                function ret42: int():
+                    return 42
+                if (ret42() * 1):
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(124)
+    public void ifFunctionWithParenthesisCanFail() {
+        final ExecutionResults results = runText("""
+                function ret0: int():
+                    return 0
+                if (ret0() + 0):
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
 
     @Test
     @Order(130)
