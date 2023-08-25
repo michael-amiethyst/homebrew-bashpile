@@ -122,7 +122,7 @@ public class BashTranslationHelper {
         ifBody = lambdaFirstLine(ifBody, String::stripLeading);
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
-        final String exitOrReturn = isTopLevelShell() && !in(BLOCK_LABEL) ? "exit" : "return";
+        final String exitOrReturn = isTopLevelStatement() && !in(BLOCK_LABEL) ? "exit" : "return";
         final String plainFilename = STRING_QUOTES.matcher(filename).replaceAll("").substring(1);
         final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
         String elseBody = """
@@ -185,7 +185,7 @@ public class BashTranslationHelper {
         return toLineTranslation("# %s, Bashpile line %d%s\n".formatted(name, lineNumber, hoisted));
     }
 
-    /* package */ static boolean isTopLevelShell() {
+    /* package */ static boolean isTopLevelStatement() {
         return !in(CALC_LABEL) && !in(PRINT_LABEL);
     }
 

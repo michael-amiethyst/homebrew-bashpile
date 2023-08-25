@@ -501,17 +501,19 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = typeStack.getFunctionTypes(id).returnType();
 
         // suppress output if we are a top-level statement
-        // this covers the case of calling a str function without using the string
-        final boolean topLevelStatement = isTopLevelShell();
-        // TODO NEXT clean up this logic, possibly with checking !LevelCounter.in(UNWIND_ALL_LABEL)
-        if (topLevelStatement) {
-            return expectedTypeInConditional.peek().equals(INT) && retType.equals(INT)
-                    ? new Translation(argumentTranslations.preamble(), id + argumentTranslations.body(), retType, NORMAL)
-                    .lambdaBody("[ \"$(%s)\" -eq 0 ]"::formatted).mergePreamble()
-                    : new Translation(argumentTranslations.preamble(), id + argumentTranslations.body() + " >/dev/null", retType, NORMAL).mergePreamble();
-        } // else return an inline (command substitution)
-        final String text = "$(%s%s)".formatted(id, argumentTranslations.body());
-        return new Translation(argumentTranslations.preamble(), text, retType, INLINE);
+        // this covers the case of calling a function without using the return
+        Translation ret = new Translation(
+                argumentTranslations.preamble(), id + argumentTranslations.body(), retType, NORMAL);
+        boolean intToBoolNeeded = expectedTypeInConditional.peek().equals(INT) && retType.equals(INT);
+        if (isTopLevelStatement()) {
+            ret = intToBoolNeeded
+                    ? ret.lambdaBody("[ \"$(%s)\" -eq 0 ]"::formatted)
+                    : ret.lambdaBody("%s >/dev/null"::formatted).mergePreamble();
+        } else {
+            // else not in a top level statement, return an inline (command substitution)
+            ret = ret.lambdaBody("$(%s)"::formatted).typeMetadata(INLINE);
+        }
+        return ret;
     }
 
     @Override

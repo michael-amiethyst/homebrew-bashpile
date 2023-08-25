@@ -9,7 +9,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO test ids, parens
+// TODO test ids, parens, nested ifs to test expected stack
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ConditionalsBashpileTest extends BashpileTest {
