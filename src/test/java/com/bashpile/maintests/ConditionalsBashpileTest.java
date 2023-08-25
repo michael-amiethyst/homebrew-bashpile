@@ -9,7 +9,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO test ids, parens, nested ifs to test expected stack
+// TODO test ids, nested ifs to test expected stack
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ConditionalsBashpileTest extends BashpileTest {
@@ -72,6 +72,34 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(51)
+    public void ifFloatWorks() {
+        final ExecutionResults results = runText("""
+                testFloat: float = 0.00
+                if testFloat:
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(52)
+    public void ifFloatCanFail() {
+        final ExecutionResults results = runText("""
+                testFloat: float = 1.5
+                if testFloat:
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
     }
 
     @Test

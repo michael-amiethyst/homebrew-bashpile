@@ -25,6 +25,7 @@ import static com.bashpile.AntlrUtils.streamContexts;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.*;
 import static com.bashpile.engine.BashTranslationHelper.*;
+import static com.bashpile.engine.BashTranslationHelper.unwindNested;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
@@ -50,8 +51,6 @@ public class BashTranslationEngine implements TranslationEngine {
     /** This is how we enforce type checking at compile time.  Mutable. */
     private final TypeStack typeStack = new TypeStack();
 
-    private final Stack<Type> expectedTypeInConditional = new Stack<>();
-
     /** The Bashpile script input file or literal text */
     @Nonnull
     private final String origin;
@@ -73,8 +72,6 @@ public class BashTranslationEngine implements TranslationEngine {
     public BashTranslationEngine(@Nonnull final String origin) {
         // escape newlines -- origin may be multi-line script
         this.origin = StringEscapeUtils.escapeJava(origin);
-        // to prevent empty stack exceptions
-        expectedTypeInConditional.push(UNKNOWN);
     }
 
     @Override
@@ -278,14 +275,19 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         final Translation guard;
-        expectedTypeInConditional.push(INT);
         try (var ignored = new LevelCounter(UNWIND_ALL_LABEL)) {
             final Translation not = ctx.Not() != null ? new Translation("! ", STR, NORMAL) : EMPTY_TRANSLATION;
             Translation expressionTranslation = visitor.visit(ctx.expression());
+            if (expressionTranslation.type().isNumeric()) {
+                // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
+                expressionTranslation = expressionTranslation
+                        .inlineAsNeeded(unwindNestedLambda)
+                        .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
+                expressionTranslation = unwindNested(expressionTranslation);
+            }
             guard = not.add(expressionTranslation);
-        } finally {
-            expectedTypeInConditional.pop();
         }
+
         final Translation ifBlockStatements = visitBodyStatements(ctx.statement(), visitor);
         String elseBlock = "";
         if (ctx.elseBody() != null) {
@@ -504,11 +506,9 @@ public class BashTranslationEngine implements TranslationEngine {
         // this covers the case of calling a function without using the return
         Translation ret = new Translation(
                 argumentTranslations.preamble(), id + argumentTranslations.body(), retType, NORMAL);
-        boolean intToBoolNeeded = expectedTypeInConditional.peek().equals(INT) && retType.equals(INT);
         if (isTopLevelStatement()) {
-            ret = intToBoolNeeded
-                    ? ret.lambdaBody("[ \"$(%s)\" -eq 0 ]"::formatted)
-                    : ret.lambdaBody("%s >/dev/null"::formatted).mergePreamble();
+            // TODO add dev/null somewhere
+            ret = ret.lambdaBody("%s"::formatted).typeMetadata(NEEDS_INLINING_OFTEN).mergePreamble();
         } else {
             // else not in a top level statement, return an inline (command substitution)
             ret = ret.lambdaBody("$(%s)"::formatted).typeMetadata(INLINE);
@@ -550,11 +550,8 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (maybeNumericExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
-            Translation ret = toTranslation(childTranslations.stream(), Type.NUMBER, NEEDS_INLINING_OFTEN)
+            return toTranslation(childTranslations.stream(), Type.NUMBER, NEEDS_INLINING_OFTEN)
                     .body("bc <<< \"%s\"".formatted(translationsString));
-            return LevelCounter.in(UNWIND_ALL_LABEL)
-                    ? ret.inlineAsNeeded(unwindNestedLambda).lambdaBody("[ \"%s\" -eq 0 ]"::formatted)
-                    : ret;
             // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(
@@ -571,12 +568,10 @@ public class BashTranslationEngine implements TranslationEngine {
         final String primary = ctx.primary().getText();
         Translation valueBeingTested;
         // right now all implemented primaries are string tests
-        expectedTypeInConditional.push(STR);
         try (var ignored = new LevelCounter(INLINE_LABEL)) {
             valueBeingTested = visitor.visit(ctx.expression());
-        } finally {
-            expectedTypeInConditional.pop();
         }
+
         if (ctx.expression() instanceof BashpileParser.ArgumentsBuiltinExpressionContext argumentsCtx) {
             // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
             // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
