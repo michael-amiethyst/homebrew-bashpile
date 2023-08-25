@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 import static com.bashpile.AntlrUtils.parse;
 
 // TODO test bpr/bpc with needing to source .bashrc
-// TODO add 'and' to check for file existence in bpr/bpc
+// TODO feature/andOrOperators add 'and' to check for file existence in bpr/bpc
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",

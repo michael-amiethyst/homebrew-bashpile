@@ -168,9 +168,9 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(121)
     public void ifFunctionWithIntWorks() {
         final ExecutionResults results = runText("""
-                function ret1: int():
-                    return 1
-                if ret1():
+                function ret0: int():
+                    return 0
+                if ret0():
                     print("true")""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
@@ -181,9 +181,9 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(122)
     public void ifFunctionWithIntCanFail() {
         final ExecutionResults results = runText("""
-                function ret0: int():
-                    return 0
-                if ret0():
+                function ret1: int():
+                    return 1
+                if ret1():
                     print("true")
                 else:
                     print("false")""");
@@ -198,7 +198,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 function ret42: int():
                     return 42
-                if (ret42() * 1):
+                if (ret42() * 0):
                     print("true")
                 else:
                     print("false")""");
@@ -211,9 +211,9 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(124)
     public void ifFunctionWithParenthesisCanFail() {
         final ExecutionResults results = runText("""
-                function ret0: int():
-                    return 0
-                if (ret0() + 0):
+                function ret1: int():
+                    return 1
+                if (ret1() + 0):
                     print("true")
                 else:
                     print("false")""");

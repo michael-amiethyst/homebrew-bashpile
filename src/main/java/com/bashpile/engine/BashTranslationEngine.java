@@ -507,8 +507,7 @@ public class BashTranslationEngine implements TranslationEngine {
         if (topLevelStatement) {
             return expectedTypeInConditional.peek().equals(INT) && retType.equals(INT)
                     ? new Translation(argumentTranslations.preamble(), id + argumentTranslations.body(), retType, NORMAL)
-                    // TODO NEXT change to -eq 0
-                    .lambdaBody("[ \"$(%s)\" -ne 0 ]"::formatted).mergePreamble()
+                    .lambdaBody("[ \"$(%s)\" -eq 0 ]"::formatted).mergePreamble()
                     : new Translation(argumentTranslations.preamble(), id + argumentTranslations.body() + " >/dev/null", retType, NORMAL).mergePreamble();
         } // else return an inline (command substitution)
         final String text = "$(%s%s)".formatted(id, argumentTranslations.body());
@@ -552,8 +551,7 @@ public class BashTranslationEngine implements TranslationEngine {
             Translation ret = toTranslation(childTranslations.stream(), Type.NUMBER, NEEDS_INLINING_OFTEN)
                     .body("bc <<< \"%s\"".formatted(translationsString));
             return LevelCounter.in(UNWIND_ALL_LABEL)
-                    // TODO NEXT change to -eq 0
-                    ? ret.inlineAsNeeded(unwindNestedLambda).lambdaBody("[ \"%s\" -ne 0 ]"::formatted)
+                    ? ret.inlineAsNeeded(unwindNestedLambda).lambdaBody("[ \"%s\" -eq 0 ]"::formatted)
                     : ret;
             // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
