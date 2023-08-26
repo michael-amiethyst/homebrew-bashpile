@@ -1,4 +1,4 @@
 #!/usr/bin/env bpr
 
-jarPath: str = $(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
+jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 #(java -jar "$jarPath" "$@")

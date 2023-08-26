@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.bashpile.engine.BashTranslationHelper.COMMAND_SUBSTITUTION;
+import static com.bashpile.engine.BashTranslationHelper.NESTED_COMMAND_SUBSTITUTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -48,7 +50,9 @@ abstract public class BashpileTest {
         // track if, else, fi for now
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
         final AtomicLong indentLevel = new AtomicLong(0);
-        final List<String> ignored = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+
+        // check for correct indents
+        var ignored = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
             final int spaces = line.length() - line.stripLeading().length();
             if (spaces % 4 != 0 || Strings.isBlank(line)) {
                 erroredLines.get().add(i);
@@ -90,6 +94,12 @@ abstract public class BashpileTest {
                 }
                 return line;
             }
+            if (firstToken.equals(")") || firstToken.equals("then")) {
+                if (tabs != indentLevel.get() - 1) {
+                    erroredLines.get().add(i);
+                }
+                return line;
+            }
 
             // check for 'regular' lines
             if (tabs != indentLevel.get()) {
@@ -97,6 +107,36 @@ abstract public class BashpileTest {
             }
             return line;
         }).toList();
+
+        // check for nested command substitutions
+        var ignored2 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+            if (line.trim().charAt(0) != '#'
+                    && !line.contains("(set -o noclobber")
+                    && NESTED_COMMAND_SUBSTITUTION.matcher(line).find()) {
+                LOG.error("Found nested command substitution, line {}, text {}", i, line);
+                erroredLines.get().add(i);
+            }
+            return line;
+        }).toList();
+
+        // check for unnecessary unnested command substitutions
+        var ignored3 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+            if (line.trim().startsWith("__bp_subshellReturn") && !COMMAND_SUBSTITUTION.matcher(line).find()) {
+                LOG.error("Unneeded unnest, line {}, text {}", i, line);
+                erroredLines.get().add(i);
+            }
+            return line;
+        }).toList();
+
+        // check for missing ifs
+        var ignored4 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+            if (!line.trim().contains("if") && line.endsWith("; then") ) {
+                LOG.error("Mangled if-then found, line {}, text {}", i, line);
+                erroredLines.get().add(i);
+            }
+            return line;
+        }).toList();
+
         if (!erroredLines.get().isEmpty()) {
             throw new BashpileUncheckedAssertionException("Bad formatting on lines " + erroredLines.get().stream()
                     .map(Object::toString)
@@ -150,7 +190,7 @@ abstract public class BashpileTest {
     }
 
     private static BashpileUncheckedException createExecutionException(Throwable e, String bashScript) {
-        if (e.getMessage().contains("shellcheck") && e.getMessage().contains("not found")) {
+        if (e.getMessage() != null && e.getMessage().contains("shellcheck") && e.getMessage().contains("not found")) {
             return new BashpileUncheckedException("Please install shellcheck (e.g. via `brew install shellcheck`)");
         }
         String msg = bashScript != null ? "\nCouldn't run `%s`".formatted(bashScript) : "\nCouldn't parse input";

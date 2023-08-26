@@ -13,8 +13,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static com.bashpile.Strings.appendIfMissing;
-import static com.bashpile.exceptions.Exceptions.asUnchecked;
-import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
+import static com.bashpile.exceptions.Exceptions.*;
 
 /**
  * Handles I/O and closing resources on a running child {@link Process}.<br>
@@ -28,9 +27,11 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
     private final static Logger LOG = LogManager.getLogger(IoManager.class);
 
     /** The wrapped child process */
+    @Nonnull
     private final Process childProcess;
 
     /** This runs our child process's STDOUT stream reader */
+    @Nonnull
     private final ExecutorService executorService;
 
     /**
@@ -38,15 +39,19 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
      *
      * @see #writeLn(String)
      */
+    @Nonnull
     private final BufferedWriter childStdInWriter;
 
     /** We need this reference to the buffer to get the final stdout contents */
+    @Nonnull
     private final ByteArrayOutputStream childStdOutBuffer;
 
     /** This is a writer to the {@link #childStdOutBuffer} */
+    @Nonnull
     private final PrintStream childStdOutWriter;
 
     /** We just need this to close down the STDOUT stream reader */
+    @Nonnull
     private final Future<?> childStdOutReaderFuture;
 
     public static @Nonnull IoManager of(@Nonnull final Process childProcess) {
@@ -84,12 +89,12 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
     }
 
     /** Joins to both background threads (process and STDOUT stream reader) */
-    public Pair<Integer, String> join() {
+    public @Nonnull Pair<Integer, String> join() {
         flush();
 
         // join to threads
         final int exitCode = asUnchecked(childProcess::waitFor);
-        asUncheckedIgnoreClosedStreams(() -> childStdOutReaderFuture.get(10, TimeUnit.SECONDS));
+        var ignored = asUncheckedIgnoreClosedStreams(() -> childStdOutReaderFuture.get(10, TimeUnit.SECONDS));
 
         return Pair.of(exitCode, childStdOutBuffer.toString());
     }
@@ -115,7 +120,7 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
         // shut down the background threads
         if (childProcess.isAlive()) {
             try {
-                join();
+                var ignored = ignoreClosedStreams(this::join);
             } catch (Exception e) {
                 LOG.warn(e);
             }
@@ -123,8 +128,8 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
 
         // close stdin writer
         try {
-            childStdInWriter.flush();
-            childStdInWriter.close();
+            ignoreClosedStreams(() -> { childStdInWriter.flush(); return ""; });
+            ignoreClosedStreams(() -> { childStdInWriter.close(); return ""; });
         } catch (Exception e) {
             LOG.warn(e);
         } finally {
@@ -134,11 +139,12 @@ import static com.bashpile.exceptions.Exceptions.asUncheckedIgnoreClosedStreams;
         // close everything else
         try {
             // so many resources to deal with
-            childStdOutBuffer.flush();
-            childStdOutWriter.flush();
-            executorService.close();
-            childStdOutBuffer.close();
-            childStdOutWriter.close();
+            ignoreClosedStreams(() -> { childStdOutBuffer.flush(); return ""; });
+            ignoreClosedStreams(() -> { childStdOutWriter.flush(); return ""; });
+
+            ignoreClosedStreams(() -> { executorService.close(); return ""; });
+            ignoreClosedStreams(() -> { childStdOutBuffer.close(); return ""; });
+            ignoreClosedStreams(() -> { childStdOutWriter.close(); return ""; });
         } catch (Exception e) {
             LOG.warn(e);
         } finally {

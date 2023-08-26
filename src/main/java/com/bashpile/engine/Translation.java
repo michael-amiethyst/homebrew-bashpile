@@ -1,16 +1,18 @@
 package com.bashpile.engine;
 
 import com.bashpile.Strings;
+import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
-import com.bashpile.engine.strongtypes.TypeMetadata;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.*;
+import static com.bashpile.Strings.lambdaAllLines;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 /**
@@ -23,27 +25,27 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
  * @param body The target shell script (e.g. Bash) literal text.
  * @param type The Bashpile type.  For Shell Strings and Command Substitutions this is the type of the result.
  *             E.g. $(expr 1 + 1) could have a type of int.
- * @param typeMetadata Further information on the type (e.g. is this a subshell?)
+ * @param metadata Further information on the type (e.g. is this a subshell?)
  */
 public record Translation(
         @Nonnull String preamble,
         @Nonnull String body,
         @Nonnull Type type,
-        @Nonnull TypeMetadata typeMetadata) {
+        @Nonnull List<TranslationMetadata> metadata) {
 
     // static constants
 
     /** The Bashpile version of NIL or NULL */
-    public static final Translation EMPTY_TYPE = new Translation("", Type.EMPTY, TypeMetadata.NORMAL);
+    public static final Translation EMPTY_TYPE = new Translation("", Type.EMPTY, TranslationMetadata.NORMAL);
 
     /** An empty translation with an empty string an UNKNOWN type */
-    public static final Translation EMPTY_TRANSLATION = new Translation("", Type.UNKNOWN, TypeMetadata.NORMAL);
+    public static final Translation EMPTY_TRANSLATION = new Translation("", Type.UNKNOWN, TranslationMetadata.NORMAL);
 
     /** A '\n' as a Translation */
     public static final Translation NEWLINE = toLineTranslation("\n");
 
     /** A pattern of starting and ending double quotes */
-    public static final Pattern STRING_QUOTES = Pattern.compile("^\"|\"$");
+    public static final Pattern STRING_QUOTES = Pattern.compile("^[\"']|[\"']$");
 
     // static methods
 
@@ -65,53 +67,63 @@ public record Translation(
      * Asserts text is a collection of lines, with each ending with '\n', or the empty string.
      * @return A NORMAL STR Translation.
      */
-    public static Translation toParagraphTranslation(@Nonnull final String text) {
-        return new Translation(assertIsParagraph(text), Type.STR, TypeMetadata.NORMAL);
+    public static @Nonnull Translation toParagraphTranslation(@Nonnull final String text) {
+        return new Translation(assertIsParagraph(text), Type.STR, TranslationMetadata.NORMAL);
     }
 
     /**
      * Asserts text is a single line ending with '\n', or the empty string.
      * @return A NORMAL STR Translation.
      */
-    public static Translation toLineTranslation(@Nonnull final String text) {
-        return new Translation(assertIsLine(text), Type.STR, TypeMetadata.NORMAL);
+    public static @Nonnull Translation toLineTranslation(@Nonnull final String text) {
+        return new Translation(assertIsLine(text), Type.STR, TranslationMetadata.NORMAL);
     }
 
     // toPhraseTranslation not used/needed
 
     // constructors
 
-    public Translation(@Nonnull final String text, @Nonnull final Type type, @Nonnull final TypeMetadata typeMetadata) {
-        this("", text, type, typeMetadata);
+    public Translation(
+            @Nonnull final String text,
+            @Nonnull final Type type,
+            @Nonnull final TranslationMetadata translationMetadata) {
+        this("", text, type, List.of(translationMetadata));
+    }
+
+    public Translation(
+            @Nonnull final String text,
+            @Nonnull final Type type,
+            @Nonnull final List<TranslationMetadata> translationMetadata) {
+        this("", text, type, translationMetadata);
     }
 
     /** Accumulates all the stream translations' preambles and bodies into the result */
-    public static Translation toTranslation(
+    public static @Nonnull Translation toTranslation(
             @Nonnull final Stream<Translation> stream,
             @Nonnull final Type type,
-            @Nonnull final TypeMetadata typeMetadata) {
+            @Nonnull final TranslationMetadata translationMetadata) {
         final Translation joined = stream.reduce(Translation::add).orElseThrow();
-        return new Translation(joined.preamble, joined.body, type, typeMetadata);
+        return new Translation(joined.preamble, joined.body, type, List.of(translationMetadata));
     }
 
     // instance methods
 
     /** Concatenates other's preamble and body to this preamble and body */
-    public Translation add(@Nonnull final Translation other) {
-        return new Translation(preamble + other.preamble, body + other.body, type, typeMetadata);
+    public @Nonnull Translation add(@Nonnull final Translation other) {
+        return new Translation(preamble + other.preamble, body + other.body, type, metadata);
     }
 
     // preamble instance methods
 
     /** Appends additionalPreamble to this object's preamble */
-    public Translation addPreamble(@Nonnull final String additionalPreamble) {
-        return new Translation(preamble + additionalPreamble, body, type, typeMetadata);
+    public @Nonnull Translation addPreamble(@Nonnull final String additionalPreamble) {
+        return new Translation(preamble + additionalPreamble, body, type, metadata);
     }
 
     /** Ensures this translation has no preamble */
-    public Translation assertEmptyPreamble() {
+    public @Nonnull Translation assertEmptyPreamble() {
         if (hasPreamble()) {
-            throw new BashpileUncheckedAssertionException("Found preamble in translation: " + this);
+            throw new BashpileUncheckedAssertionException("Found preamble in translation: " + this.body);
         }
         return this;
     }
@@ -121,51 +133,61 @@ public record Translation(
         return !isEmpty(preamble);
     }
 
+    /** Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax. */
+    public @Nonnull Translation lambdaPreambleLines(@Nonnull final Function<String, String> lambda) {
+        return new Translation(lambdaAllLines(preamble, lambda), body, type, metadata);
+    }
+
     /** Prepends the preamble to the body */
-    public Translation mergePreamble() {
-        return new Translation(preamble + body, type, typeMetadata);
+    public @Nonnull Translation mergePreamble() {
+        return new Translation(preamble + body, type, metadata);
     }
 
     // body instance methods
 
     /** Replaces the body */
-    public Translation body(@Nonnull final String nextBody) {
-        return new Translation(preamble, nextBody, type, typeMetadata);
+    public @Nonnull Translation body(@Nonnull final String nextBody) {
+        return new Translation(preamble, nextBody, type, metadata);
     }
 
     /** See {@link Strings#unescape(java.lang.String)} */
-    public Translation unescapeBody() {
+    public @Nonnull Translation unescapeBody() {
         return lambdaBody(Strings::unescape);
     }
 
     /** Put quotes around body */
-    public Translation quoteBody() {
+    public @Nonnull Translation quoteBody() {
         return lambdaBody("\"%s\""::formatted);
     }
 
     /** Remove quotes around body */
-    public Translation unquoteBody() {
+    public @Nonnull Translation unquoteBody() {
         return lambdaBody(body -> STRING_QUOTES.matcher(body).replaceAll(""));
     }
 
     /** Put parenthesis around body */
-    public Translation parenthesizeBody() {
+    public @Nonnull Translation parenthesizeBody() {
         return lambdaBody("(%s)"::formatted);
     }
 
     /** Apply arbitrary function to body.  E.g. `str -> str`. */
-    public Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
-        return new Translation(preamble, lambda.apply(body), type, typeMetadata);
+    public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
+        return new Translation(preamble, lambda.apply(body), type, metadata);
+    }
+
+    /** Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax. */
+    public @Nonnull Translation lambdaBodyLines(@Nonnull final Function<String, String> lambda) {
+        return this.body(lambdaAllLines(body, lambda));
     }
 
     /** Ensures body is a paragraph */
-    public Translation assertParagraphBody() {
+    public @Nonnull Translation assertParagraphBody() {
         assertIsParagraph(body);
         return this;
     }
 
     /** Ensures body has no empty or blank lines and is not the empty string */
-    public Translation assertNoBlankLinesInBody() {
+    public @Nonnull Translation assertNoBlankLinesInBody() {
         assertNoBlankLines(body);
         return this;
     }
@@ -173,17 +195,35 @@ public record Translation(
     // type and typeMetadata instance methods
 
     /** Replaces the type */
-    public Translation type(@Nonnull final Type typecastType) {
-        return new Translation(preamble, body, typecastType, typeMetadata);
+    public @Nonnull Translation type(@Nonnull final Type typecastType) {
+        return new Translation(preamble, body, typecastType, metadata);
     }
 
     /** Replaces the type metadata */
-    public Translation typeMetadata(@Nonnull final TypeMetadata meta) {
+    public @Nonnull Translation metadata(@Nonnull final TranslationMetadata meta) {
+        return new Translation(preamble, body, type, List.of(meta));
+    }
+
+    /** Replaces the type metadata */
+    public @Nonnull Translation metadata(@Nonnull final List<TranslationMetadata> meta) {
         return new Translation(preamble, body, type, meta);
     }
 
-    /** Checks if this is a subshell or an inline (command substitution in Bash parlance) */
-    public boolean isInlineOrSubshell() {
-        return typeMetadata.equals(TypeMetadata.SUBSHELL) || typeMetadata.equals(TypeMetadata.INLINE);
+    /**
+     * Create an inline Translation if this is a {@link TranslationMetadata#NEEDS_INLINING_OFTEN} translation.
+     * @return Converts body to an inline and change the type metadata to {@link TranslationMetadata#INLINE}.
+     */
+    public @Nonnull Translation inlineAsNeeded(
+            @Nonnull final Function<Translation, Translation> bodyLambda) {
+        if (metadata.contains(TranslationMetadata.NEEDS_INLINING_OFTEN)) {
+            return bodyLambda.apply(
+                    new Translation(preamble, "$(%s)".formatted(body), type, List.of(TranslationMetadata.INLINE)));
+        } // else
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return assertEmptyPreamble().body;
     }
 }

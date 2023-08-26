@@ -4,6 +4,8 @@ import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
 import com.bashpile.engine.strongtypes.Type;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,9 +13,10 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStream;
+import java.util.stream.IntStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
-import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
  * Antlr4 calls these methods.
@@ -22,6 +25,7 @@ import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
  */
 public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
+    @Nonnull
     private final TranslationEngine translator;
 
     private final Logger log = LogManager.getLogger(BashpileVisitor.class);
@@ -45,6 +49,24 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     // visitors
 
+    /**
+     * This is the default visitor.
+     * <br>
+     * {@inheritDoc}
+     *
+     * @param node The {@link RuleNode} whose children should be visited.
+     * @return A Translation aggregating all visited children.
+     */
+    @Override
+    public @Nonnull Translation visitChildren(RuleNode node) {
+        final RuleContext ctx = node.getRuleContext();
+        return IntStream.range(0, ctx.getChildCount())
+                .mapToObj(ctx::getChild)
+                .map(this::visit)
+                .reduce(Translation::add)
+                .orElseThrow();
+    }
+
     @Override
     public @Nonnull Translation visitProgram(@Nonnull final BashpileParser.ProgramContext ctx) {
         // save root for later usage
@@ -66,18 +88,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit statements
 
     @Override
-    public @Nonnull Translation visitAssignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
-        return translator.assignmentStatement(ctx);
-    }
-
-    @Override
-    public @Nonnull Translation visitReassignmentStatement(@Nonnull BashpileParser.ReassignmentStatementContext ctx) {
-        return translator.reassignmentStatement(ctx);
-    }
-
-    @Override
-    public @Nonnull Translation visitPrintStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
-        return translator.printStatement(ctx);
+    public @Nonnull Translation visitCreatesStatement(BashpileParser.CreatesStatementContext ctx) {
+        return translator.createsStatement(ctx);
     }
 
     @Override
@@ -99,8 +111,23 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public Translation visitCreatesStatement(BashpileParser.CreatesStatementContext ctx) {
-        return translator.createsStatement(ctx);
+    public @Nonnull Translation visitConditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
+        return translator.conditionalStatement(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitAssignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
+        return translator.assignmentStatement(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitReassignmentStatement(@Nonnull BashpileParser.ReassignmentStatementContext ctx) {
+        return translator.reassignmentStatement(ctx);
+    }
+
+    @Override
+    public @Nonnull Translation visitPrintStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
+        return translator.printStatement(ctx);
     }
 
     @Override
@@ -123,7 +150,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit expressions
 
     @Override
-    public Translation visitTypecastExpression(BashpileParser.TypecastExpressionContext ctx) {
+    public @Nonnull Translation visitTypecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         return translator.typecastExpression(ctx);
     }
 
@@ -148,10 +175,15 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         return translator.calculationExpression(ctx);
     }
 
+    @Override
+    public @Nonnull Translation visitPrimaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
+        return translator.primaryExpression(ctx);
+    }
+
     // visit type expressions
 
     @Override
-    public Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
+    public @Nonnull Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
         return new Translation(ctx.Bool().getText(), Type.BOOL, NORMAL);
     }
 
@@ -180,10 +212,5 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public Translation visitShellString(BashpileParser.ShellStringContext ctx) {
         return translator.shellString(ctx);
-    }
-
-    @Override
-    public Translation visitInline(BashpileParser.InlineContext ctx) {
-        return translator.inline(ctx);
     }
 }

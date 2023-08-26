@@ -1,7 +1,13 @@
 package com.bashpile;
 
+import com.bashpile.engine.BashTranslationEngine;
+import com.bashpile.engine.BashpileVisitor;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.google.common.annotations.VisibleForTesting;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -19,8 +25,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
-import static com.bashpile.AntlrUtils.parse;
-
+// TODO FEATURE feature/andOrOperators add 'and' to check for file existence in bpr/bpc
+// TODO FEATURE have bpc use arguments, arguments[all] and --output
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -109,7 +115,8 @@ public class BashpileMain implements Callable<Integer> {
     public @Nonnull String transpile() throws IOException {
         final Pair<String, InputStream> namedInputStream = getNameAndInputStream();
         try (final InputStream inputStream = namedInputStream.getRight()) {
-            return Asserts.assertNoShellcheckWarnings(parse(namedInputStream.getLeft(), inputStream));
+            final String parsed = parse(namedInputStream.getLeft(), inputStream);
+            return Asserts.assertNoShellcheckWarnings(parsed);
         }
     }
 
@@ -119,7 +126,7 @@ public class BashpileMain implements Callable<Integer> {
             InputStream is;
             if (SHEBANG.matcher(lines.get(0)).matches()) {
                 final String removedShebang = String.join("\n", lines.subList(1, lines.size()));
-                LOG.debug("Removed shebang to get:\n" + removedShebang);
+                LOG.trace("Removed shebang to get:\n" + removedShebang);
                 is = IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
             } else {
                 is = Files.newInputStream(inputFile);
@@ -132,8 +139,8 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
-    private @Nonnull Path findFile(@Nonnull Path path) {
-        path = path.normalize().toAbsolutePath();
+    private @Nonnull Path findFile(@Nonnull final Path find) {
+        Path path = find.normalize().toAbsolutePath();
         final Path filename = path.getFileName();
         while(!Files.exists(path) && path.getParent() != null && path.getParent().getParent() != null) {
             path = path.getParent().getParent().resolve(filename);
@@ -143,5 +150,34 @@ public class BashpileMain implements Callable<Integer> {
             return path;
         }
         throw new  BashpileUncheckedException("Could not find " + path.getFileName());
+    }
+
+    /**
+     * These are the core antlr calls to run the lexer, parser, visitor and translation engine.
+     *
+     * @param origin The filename (if a file) or text (if just script lines) of the <code>is</code>.
+     * @param is The input stream holding the Bashpile that we parse.
+     * @return The generated shell script.
+     */
+    private static @Nonnull String parse(
+            @Nonnull final String origin, @Nonnull final InputStream is) throws IOException {
+        LOG.trace("Starting parse");
+        // lexer
+        final CharStream input = CharStreams.fromStream(is);
+        final BashpileLexer lexer = new BashpileLexer(input);
+        final CommonTokenStream tokens = new CommonTokenStream(lexer);
+
+        // parser
+        final BashpileParser parser = new BashpileParser(tokens);
+        final ParseTree tree = parser.program();
+
+        return transpile(origin, tree);
+    }
+
+    /** Returns bash text block */
+    private static @Nonnull String transpile(@Nonnull final String origin, @Nonnull final ParseTree tree) {
+        // visitor and engine linked in visitor constructor
+        final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine(origin));
+        return bashpileLogic.visit(tree).body();
     }
 }

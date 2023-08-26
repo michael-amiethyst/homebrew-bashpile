@@ -2,18 +2,22 @@ parser grammar BashpileParser;
 options { tokenVocab = BashpileLexer; }
 
 program: statement+;
+
+// statements, in descending order of complexity
 statement
-    : typedId (Equals expression)? Newline# assignmentStatement
-    | Id Equals expression Newline        # reassignmentStatement
-    | Print OParen argumentList? CParen
-                                  Newline # printStatement
+    : (typedId Equals)? shellString Creates (String|Id)
+           Colon INDENT statement+ DEDENT # createsStatement
     | Function typedId paramaters         # functionForwardDeclarationStatement
     | Function typedId paramaters tags?
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon INDENT statement+
                                    DEDENT # anonymousBlockStatement
-    | (typedId Equals)? shellString Creates (String|Id)
-           Colon INDENT statement+ DEDENT # createsStatement
+    | If Not? expression Colon INDENT statement+
+            DEDENT (Else Colon elseBody)? # conditionalStatement
+    | typedId (Equals expression)? Newline# assignmentStatement
+    | Id Equals expression Newline        # reassignmentStatement
+    | Print OParen argumentList? CParen
+                                  Newline # printStatement
     | expression Newline                  # expressionStatement
     | Newline                             # blankStmt
     ;
@@ -23,6 +27,7 @@ tags        : OBracket (String*) CBracket;
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
 typedId     : Id Colon Type;
 argumentList: expression (Comma expression)*;
+elseBody    : INDENT statement+ DEDENT;
 
 // Force the final statement to be a return.
 // This is a work around for Bash not allawing the return keyword with a string.
@@ -31,16 +36,18 @@ argumentList: expression (Comma expression)*;
 functionBlock       : INDENT statement* returnPsudoStatement DEDENT;
 returnPsudoStatement: Return expression? Newline;
 
+// in operator precedence order?
 expression
     : expression Colon Type             # typecastExpression
     | shellString                       # shellStringExpression
-    | inline                            # inlineExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
     | OParen expression CParen          # parenthesisExpression
     | expression
          op=(Multiply|Divide|Add|Minus)
                              expression # calculationExpression
+    | primary expression                # primaryExpression
+    | argumentsBuiltin                  # argumentsBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
     | <assoc=right> Minus? Number       # numberExpression
@@ -49,10 +56,13 @@ expression
     ;
 
 shellString        : HashOParen shellStringContents* CParen;
-shellStringContents: ShellStringText | ShellStringEscapeSequence | inline | shellString;
+shellStringContents: shellString
+                   | DollarOParen shellStringContents* CParen
+                   | OParen shellStringContents* CParen
+                   | ShellStringText
+                   | ShellStringEscapeSequence;
 
-inline        : DollarOParen inlineContents* CParen;
-inlineContents: InlineText
-              | InlineEscapeSequence
-              | shellString
-              | inline;
+// full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
+primary: Unset | Empty | NotEmpty;
+
+argumentsBuiltin: Arguments OBracket Number CBracket;

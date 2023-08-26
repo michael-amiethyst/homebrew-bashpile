@@ -35,14 +35,14 @@ public class BashShell implements Closeable {
      * @throws IOException and {@link BashpileUncheckedException} wrapping
      *  ExecutionException, InterruptedException or TimeoutException.
      */
-    public static @Nonnull ExecutionResults runAndJoin(@Nonnull String bashString) throws IOException {
+    public static @Nonnull ExecutionResults runAndJoin(@Nonnull final String bashString) throws IOException {
         try(final BashShell shell = runAsync(bashString)) {
             return shell.join();
         }
     }
 
     /**
-     * Runs bashString and supporting worker threads in the background
+     * Runs bashString in a non-interactive login Bash shell and supporting worker threads in the background.
      *
      * @param bashString The Bash script to run
      * @return A BashShell holding the running threads.
@@ -51,7 +51,7 @@ public class BashShell implements Closeable {
      * @see #sendTerminationSignal()
      * @see #join()
      */
-    public static @Nonnull BashShell runAsync(@Nonnull String bashString) throws IOException {
+    public static @Nonnull BashShell runAsync(@Nonnull final String bashString) throws IOException {
         LOG.info("Executing bash text:\n" + bashString);
 
         // run our CommandLine process in background threads
@@ -112,13 +112,13 @@ public class BashShell implements Closeable {
 
     // helpers
 
-    private static Process spawnLinuxProcess() throws IOException {
+    private static @Nonnull Process spawnLinuxProcess() throws IOException {
         ProcessBuilder linuxProcess = createProcessBuilder();
         linuxProcess.redirectErrorStream(true);
         return linuxProcess.start();
     }
 
-    private static ProcessBuilder createProcessBuilder() {
+    private static @Nonnull ProcessBuilder createProcessBuilder() {
         final ProcessBuilder builder = new ProcessBuilder();
         if (isWindows()) {
             LOG.trace("Detected windows");

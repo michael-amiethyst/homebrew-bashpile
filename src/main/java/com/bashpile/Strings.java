@@ -12,12 +12,12 @@ import java.util.stream.Collectors;
 public class Strings extends StringUtils {
 
     /** @see StringEscapeUtils#unescapeJava(String) */
-    public static String unescape(@Nonnull final String text) {
+    public static @Nonnull String unescape(@Nonnull final String text) {
         return StringEscapeUtils.unescapeJava(text);
     }
 
     /** Applies a function to the first line only */
-    public static String lambdaFirstLine(
+    public static @Nonnull String lambdaFirstLine(
             @Nonnull final String text, @Nonnull final Function<String, String> lambda) {
         final String[] retLines = text.split("\n");
         retLines[0] = lambda.apply(retLines[0]);
@@ -32,7 +32,7 @@ public class Strings extends StringUtils {
      * @param text Does not need to end with a newline.
      * @return A paragraph (ends with a newline).
      */
-    public static String lambdaLastLine(
+    public static @Nonnull String lambdaLastLine(
             @Nonnull final String text, @Nonnull final Function<String, String> lambda) {
         final String[] retLines = text.split("\n");
         final int lastLineIndex = retLines.length - 1;
@@ -42,7 +42,8 @@ public class Strings extends StringUtils {
     }
 
     /** Applies a function to the last line only */
-    public static String lambdaAllLines(@Nonnull final String text, @Nonnull final Function<String, String> lambda) {
+    public static @Nonnull String lambdaAllLines(
+            @Nonnull final String text, @Nonnull final Function<String, String> lambda) {
         final String[] lines = text.split("\n");
         final String tabbedBody = Arrays.stream(lines)
                 .filter(Strings::isNotBlank)

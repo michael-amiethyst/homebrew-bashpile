@@ -3,43 +3,10 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.bashpile</groupId>
   <artifactId>bashpile</artifactId>
-  <version>0.10.0-SNAPSHOT</version>
+  <version>0.11.0-SNAPSHOT</version>
   <build>
     <finalName>bashpile</finalName>
     <plugins>
-      <plugin>
-        <artifactId>maven-clean-plugin</artifactId>
-        <version>3.3.1</version>
-        <executions>
-          <execution>
-            <id>auto-clean</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>clean</goal>
-            </goals>
-            <configuration>
-              <filesets>
-                <fileset>
-                  <directory>bin</directory>
-                  <followSymlinks>false</followSymlinks>
-                  <useDefaultExcludes>true</useDefaultExcludes>
-                  <includes>
-                    <include>*.jar</include>
-                  </includes>
-                </fileset>
-                <fileset>
-                  <directory>deploy</directory>
-                  <followSymlinks>false</followSymlinks>
-                  <useDefaultExcludes>true</useDefaultExcludes>
-                  <includes>
-                    <include>*.tar.gz</include>
-                  </includes>
-                </fileset>
-              </filesets>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.antlr</groupId>
         <artifactId>antlr4-maven-plugin</artifactId>

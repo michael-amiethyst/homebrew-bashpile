@@ -1,3 +1,1 @@
-#(export filename=src/test/resources/testdata.txt)
-contents: str = $(cat $(echo $filename))
-print(contents)
+#(echo "$(echo "$(echo "Captain's log, stardate...")")")

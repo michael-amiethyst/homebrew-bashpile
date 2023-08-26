@@ -27,6 +27,8 @@ public class LevelCounter implements Closeable {
     /** For assign and reassign */
     public static final String ASSIGNMENT_LABEL = "(re)assign";
 
+    public static final String UNWIND_ALL_LABEL = "unwindAll";
+
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
 
     // static methods
@@ -36,14 +38,9 @@ public class LevelCounter implements Closeable {
         return counters.containsKey(name);
     }
 
-    /** Are we in anything implemented with a Bash Command Substitution? */
-    public static boolean inCommandSubstitution() {
-        return in(CALC_LABEL) || in(INLINE_LABEL) || in(FORWARD_DECL_LABEL);
-    }
-
     /** How many levels are we in any label implemented with a Bash command line substitution? */
     public static int getCommandSubstitution() {
-        return get(CALC_LABEL) + get(INLINE_LABEL) + get(FORWARD_DECL_LABEL);
+        return get(INLINE_LABEL) + get(FORWARD_DECL_LABEL);
     }
 
     /** How many levels are we in for label? */

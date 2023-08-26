@@ -57,7 +57,7 @@ public enum Type {
     }
 
     /** Throws NumberFormatException on bad parse. */
-    public static Type parseNumberString(@Nonnull final String text) {
+    public static @Nonnull Type parseNumberString(@Nonnull final String text) {
         Type type;
         try {
             new BigInteger(text);

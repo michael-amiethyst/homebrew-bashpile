@@ -29,14 +29,8 @@ public interface TranslationEngine {
 
     // statement translations
 
-    /** Translates an assignment */
-    Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
-
-    /** Translates a reassignment */
-    Translation reassignmentStatement(final BashpileParser.ReassignmentStatementContext ctx);
-
-    /** Translates a print */
-    Translation printStatement(final BashpileParser.PrintStatementContext ctx);
+    /** Translates a creates statement, similar to a try-with-resources block in Java */
+    Translation createsStatement(final BashpileParser.CreatesStatementContext ctx);
 
     /** Translates a forward declaration */
     Translation functionForwardDeclarationStatement(final BashpileParser.FunctionForwardDeclarationStatementContext ctx);
@@ -47,8 +41,17 @@ public interface TranslationEngine {
     /** Translates an anonymous block */
     Translation anonymousBlockStatement(final BashpileParser.AnonymousBlockStatementContext ctx);
 
-    /** Translates a creates statement, similar to a try-with-resources block in Java */
-    Translation createsStatement(final BashpileParser.CreatesStatementContext ctx);
+    /** Translates a conditional (if, else if, else block) */
+    Translation conditionalStatement(final BashpileParser.ConditionalStatementContext ctx);
+
+    /** Translates an assignment */
+    Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
+
+    /** Translates a reassignment */
+    Translation reassignmentStatement(final BashpileParser.ReassignmentStatementContext ctx);
+
+    /** Translates a print */
+    Translation printStatement(final BashpileParser.PrintStatementContext ctx);
 
     /** Translates an expression */
     Translation expressionStatement(final BashpileParser.ExpressionStatementContext ctx);
@@ -76,6 +79,12 @@ public interface TranslationEngine {
     /** Translates a calculation, including adding strings */
     Translation calculationExpression(final BashpileParser.CalculationExpressionContext ctx);
 
+    /**
+     * Translates a relational or equality, called a primary in Bash
+     * @see <a href=https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html>Primaries</a>
+     */
+    Translation primaryExpression(final BashpileParser.PrimaryExpressionContext ctx);
+
     /** Translates IDs */
     Translation idExpression(final BashpileParser.IdExpressionContext ctx);
 
@@ -83,7 +92,4 @@ public interface TranslationEngine {
 
     /** Translates shell strings */
     Translation shellString(final BashpileParser.ShellStringContext ctx);
-
-    /** Translates inlines */
-    Translation inline(final BashpileParser.InlineContext ctx);
 }

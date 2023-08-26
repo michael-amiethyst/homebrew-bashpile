@@ -1,26 +1,29 @@
 #!/usr/bin/env bpr
 
 /**
- * Deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
+ * Deployed with integration tests.
+ * Manually deploy with `bin/bpr bin/bpc --outputFile=bin/bpr bin/bpr.bps`
  */
 
 // get script directory and jar location
-jarPath: str = $(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
+jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 
 // if $1 is the default blank value then unset the ERR trap and trigger an error with help text from the jar
-#(
-    if [ -z "${1:-}" ]; then
-        trap - ERR
-        java -jar "$jarPath"
-        exit $?
-    fi
-)
+if unset arguments[1]:
+    #(trap - ERR)
+    #(java -jar "$jarPath")
+    #(exit $?)
 
 // last line of the jar's output is the generated Bash script
 translatedFilename: str = #(
     java -jar "$jarPath" "$1" | tail --lines 1
 ) creates translatedFilename:
+    // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
+    #(sleep .2)
     #(shift)
     print("Start of " + translatedFilename)
     #(chmod 755 $translatedFilename)
-    #("$translatedFilename" "$@")
+    // occasional false positive for unexpected EOF, odd bug of Bash itself
+    #("$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
+        if #(cat bpr.log | grep 'unexpected EOF while looking for matching' > /dev/null 2>&1):
+            #("$translatedFilename" "$@")

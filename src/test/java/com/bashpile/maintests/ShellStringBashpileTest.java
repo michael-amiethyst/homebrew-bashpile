@@ -1,5 +1,6 @@
 package com.bashpile.maintests;
 
+import com.bashpile.Strings;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -9,8 +10,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -66,9 +66,29 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertEquals("()\n", results.stdout());
     }
 
+    @Test @Order(41)
+    public void shellStringInAssignmentWorksWithoutUnnesting() {
+        final ExecutionResults results = runText("""
+                jarPath: str = #(dirname "${BASH_SOURCE:-}") + "/bashpile.jar"
+                print(jarPath)
+                """);
+        assertCorrectFormatting(results);
+        assertFalse(results.stdin().contains("__bp"));
+        assertSuccessfulExitCode(results);
+        assertTrue(Strings.isNotEmpty(results.stdoutLines().get(0)));
+    }
+
     @Test @Order(50)
     public void nestedShellStringsWork() {
-        final ExecutionResults results = runText("#(cat #(src/test/resources/testdata.txt))");
+        final ExecutionResults results = runText("#(cat \"#(printf \"src/test/resources/testdata.txt\")\")");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("test\n", results.stdout());
+    }
+
+    @Test @Order(51)
+    public void nestedShellStringAndCommandSubstitutionWorks() {
+        final ExecutionResults results = runText("#(cat \"$(printf \"src/test/resources/testdata.txt\")\")");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("test\n", results.stdout());
@@ -129,9 +149,17 @@ public class ShellStringBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 #(pwd)
                 #(ls non_existent_file)""");
-        assertFailedExitCode(results);
         assertCorrectFormatting(results);
+        assertFailedExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertTrue(lines.get(lines.size() - 1).contains("ls non_existent_file"));
+    }
+
+    @Test @Order(110)
+    public void shellStringWithSubshellWorks() {
+        final ExecutionResults results = runText("""
+                #((which ls 1>/dev/null))""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
     }
 }
