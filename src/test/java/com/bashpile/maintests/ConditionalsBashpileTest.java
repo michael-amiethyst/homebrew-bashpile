@@ -9,7 +9,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO test ids, nested ifs to test expected stack
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ConditionalsBashpileTest extends BashpileTest {
@@ -328,5 +327,33 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertTrue(results.stdin().contains("# shellcheck"));
         assertEquals("brew\n", results.stdout());
+    }
+
+    @Test
+    @Order(190)
+    public void nestedIfsWithInlineWorks() {
+        final ExecutionResults results = runText("""
+                tested: float = 0
+                if tested:
+                    if isNotEmpty #(printf "notEmpty"):
+                        print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(200)
+    public void nestedIfsWithInlineCanFail() {
+        final ExecutionResults results = runText("""
+                tested: float = 000000.00
+                if tested:
+                    if isNotEmpty #(printf ""):
+                        print("true")
+                    else:
+                        print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
     }
 }
