@@ -9,3 +9,4 @@
 * 0.9.0 - Easy running from the command line ("Drink your own champaign"/dogfooding)
 * 0.10.0 - Support deployment with brew
 * 0.11.0 - Conditionals, comparison operators and boolean logic
+* 0.11.1 - Fix for `brew install`
