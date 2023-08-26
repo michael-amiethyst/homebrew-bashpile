@@ -16,7 +16,7 @@ import java.io.InputStream;
 import java.util.stream.IntStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
-import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
  * Antlr4 calls these methods.

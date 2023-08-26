@@ -29,7 +29,7 @@ import static com.bashpile.engine.BashTranslationHelper.unwindNested;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.*;
-import static com.bashpile.engine.strongtypes.TypeMetadata.*;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.google.common.collect.Iterables.getLast;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -281,6 +281,7 @@ public class BashTranslationEngine implements TranslationEngine {
             if (expressionTranslation.type().isNumeric()) {
                 // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
                 expressionTranslation = expressionTranslation
+                        .lambdaBody(str -> Strings.removeEnd(str, ">/dev/null"))
                         .inlineAsNeeded(unwindNestedLambda)
                         .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
                 expressionTranslation = unwindNested(expressionTranslation);
@@ -335,7 +336,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // order is comment, preamble, subcomment, variable declaration, assignment
         final Translation subcommentToAssignment = subcomment.add(variableDeclaration).add(assignment);
-        return comment.add(subcommentToAssignment.mergePreamble()).type(NA).typeMetadata(NORMAL);
+        return comment.add(subcommentToAssignment.mergePreamble()).type(NA).metadata(NORMAL);
     }
 
     @Override
@@ -368,7 +369,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // order is: comment, preamble, subcomment, reassignment
         final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
-        return comment.add(preambleToReassignment).assertParagraphBody().type(NA).typeMetadata(NORMAL);
+        return comment.add(preambleToReassignment).assertParagraphBody().type(NA).metadata(NORMAL);
     }
 
     @Override
@@ -405,7 +406,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 subcommentTranslationOrDefault(expr.hasPreamble(), "expression statement body");
         // order is: comment, preamble, subcomment, expr
         final Translation exprStatement = subcomment.add(expr).mergePreamble();
-        return comment.add(exprStatement).type(expr.type()).typeMetadata(expr.typeMetadata());
+        return comment.add(exprStatement).type(expr.type()).metadata(expr.metadata());
     }
 
     @Override
@@ -495,7 +496,7 @@ public class BashTranslationEngine implements TranslationEngine {
                             left.preamble() + right.preamble(),
                             left.body() + " " + right.body(),
                             right.type(),
-                            right.typeMetadata()))
+                            right.metadata()))
                     .orElseThrow());
         }
 
@@ -505,13 +506,12 @@ public class BashTranslationEngine implements TranslationEngine {
         // suppress output if we are a top-level statement
         // this covers the case of calling a function without using the return
         Translation ret = new Translation(
-                argumentTranslations.preamble(), id + argumentTranslations.body(), retType, NORMAL);
+                argumentTranslations.preamble(), id + argumentTranslations.body(), retType, List.of(NORMAL));
         if (isTopLevelStatement()) {
-            // TODO add dev/null somewhere
-            ret = ret.lambdaBody("%s"::formatted).typeMetadata(NEEDS_INLINING_OFTEN).mergePreamble();
+            ret = ret.lambdaBody("%s >/dev/null"::formatted).metadata(NEEDS_INLINING_OFTEN).mergePreamble();
         } else {
             // else not in a top level statement, return an inline (command substitution)
-            ret = ret.lambdaBody("$(%s)"::formatted).typeMetadata(INLINE);
+            ret = ret.lambdaBody("$(%s)"::formatted).metadata(INLINE);
         }
         return ret;
     }
@@ -581,7 +581,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
         final String body = "[ %s \"%s\" ]".formatted(
                 primaryTranslations.get(primary), valueBeingTested.unquoteBody().body());
-        return new Translation(valueBeingTested.preamble(), body, STR, NORMAL);
+        return new Translation(valueBeingTested.preamble(), body, STR, List.of(NORMAL));
     }
 
     @Override
@@ -622,7 +622,7 @@ public class BashTranslationEngine implements TranslationEngine {
             // wrap in command substitution possibly
             if (commandSubstitutionDepth > 0  || LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
                 contentsTranslation = contentsTranslation
-                        .body("$(%s)".formatted(contentsTranslation.body())).typeMetadata(INLINE);
+                        .body("$(%s)".formatted(contentsTranslation.body())).metadata(INLINE);
             }
 
             // unwind

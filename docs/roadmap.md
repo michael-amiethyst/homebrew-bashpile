@@ -1,5 +1,5 @@
 # 1.0 features
-1. Redesign - get rid of level-counter and most other state.  Use typeMetadata and translation API instead in parent node
+1. Redesign - get rid of level-counter and most other state.  Use translationMetadata and translation API instead in parent node
 2. Change bpt output from `export` to `declare -x` (and type)
 3. Arrays, Hashes, Refs
 4. Loops

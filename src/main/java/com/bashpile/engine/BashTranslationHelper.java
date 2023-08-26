@@ -28,7 +28,7 @@ import static com.bashpile.engine.LevelCounter.PRINT_LABEL;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.Type.INT;
 import static com.bashpile.engine.strongtypes.Type.STR;
-import static com.bashpile.engine.strongtypes.TypeMetadata.NORMAL;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
  * Helper methods to {@link BashTranslationEngine}.
