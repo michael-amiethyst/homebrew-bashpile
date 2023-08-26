@@ -3,9 +3,11 @@ package com.bashpile.engine;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.Type;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,20 +17,22 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.LevelCounter.*;
-import static com.bashpile.engine.LevelCounter.PRINT_LABEL;
 import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 import static com.bashpile.engine.strongtypes.Type.INT;
 import static com.bashpile.engine.strongtypes.Type.STR;
-import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
  * Helper methods to {@link BashTranslationEngine}.
@@ -192,6 +196,43 @@ public class BashTranslationHelper {
     /** Get the Bashpile script linenumber that ctx is found in. */
     /* package */ static int lineNumber(@Nonnull final ParserRuleContext ctx) {
         return ctx.start.getLine();
+    }
+
+    /**
+     * Helper to {@link BashTranslationEngine#functionForwardDeclarationStatement(BashpileParser.FunctionForwardDeclarationStatementContext)}
+     */
+    /* package */ static @Nonnull ParserRuleContext getFunctionDeclCtx(
+            @Nonnull final BashpileVisitor visitor,
+            @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
+        final String functionName = ctx.typedId().Id().getText();
+        assert visitor.getContextRoot() != null;
+        final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
+        final Predicate<ParserRuleContext> namesMatch =
+                context -> {
+                    final boolean isDeclaration = context instanceof BashpileParser.FunctionDeclarationStatementContext;
+                    // is a function declaration and the names match
+                    if (!isDeclaration) {
+                        return false;
+                    }
+                    final BashpileParser.FunctionDeclarationStatementContext decl =
+                            (BashpileParser.FunctionDeclarationStatementContext) context;
+                    final boolean nameMatches = decl.typedId().Id().getText().equals(functionName);
+                    return nameMatches && paramsMatch(decl.paramaters(), ctx.paramaters());
+                };
+        return allContexts
+                .filter(namesMatch)
+                .findFirst()
+                .orElseThrow(
+                        () -> new BashpileUncheckedException("No matching function declaration for " + functionName));
+    }
+
+    /** Concatenates inputs into stream */
+    /* package */ static @Nonnull Stream<ParserRuleContext> streamContexts(
+            @Nonnull final List<BashpileParser.StatementContext> statements,
+            @Nonnull final BashpileParser.ReturnPsudoStatementContext returnPsudoStatementContext) {
+        // map of x to x needed for upcasting to parent type
+        final Stream<ParserRuleContext> statementStream = statements.stream().map(x -> x);
+        return Stream.concat(statementStream, Stream.of(returnPsudoStatementContext));
     }
 
     // unwind static methods
@@ -389,6 +430,42 @@ public class BashTranslationHelper {
         switch (castTo) {
             case BOOL, INT, FLOAT, STR -> {}
             default -> throw typecastError;
+        }
+    }
+
+    // helpers to helpers
+
+    private static boolean paramsMatch(
+            @Nonnull final BashpileParser.ParamatersContext left,
+            @Nonnull final BashpileParser.ParamatersContext right) {
+        // create a stream of ids and a list of ids
+        final Stream<String> leftStream = left.typedId().stream()
+                .map(BashpileParser.TypedIdContext::Id).map(ParseTree::getText);
+        final List<String> rightList = right.typedId().stream()
+                .map(BashpileParser.TypedIdContext::Id).map(ParseTree::getText).toList();
+
+        // match each left id to the corresponding right id, record the mismatches
+        final AtomicInteger i = new AtomicInteger(0);
+        final Stream<String> mismatches = leftStream.filter(str -> !str.equals(rightList.get(i.getAndIncrement())));
+
+        // params match if we can't find any mismatches
+        return mismatches.findFirst().isEmpty();
+    }
+
+    /**
+     * Lazy DFS.
+     * Helper to {@link #getFunctionDeclCtx(BashpileVisitor, BashpileParser.FunctionForwardDeclarationStatementContext)}
+     *
+     * @see <a href="https://stackoverflow.com/questions/26158082/how-to-convert-a-tree-structure-to-a-stream-of-nodes-in-java">Stack Overflow</a>
+     * @param parentNode the root.
+     * @return Flattened stream of parent nodes' rule context children.
+     */
+    private static @Nonnull Stream<ParserRuleContext> stream(@Nonnull final ParserRuleContext parentNode) {
+        if (parentNode.getChildCount() == 0) {
+            return Stream.of(parentNode);
+        } else {
+            final Stream<ParserRuleContext> children = parentNode.getRuleContexts(ParserRuleContext.class).stream();
+            return Stream.concat(Stream.of(parentNode), children.flatMap(BashTranslationHelper::stream));
         }
     }
 }

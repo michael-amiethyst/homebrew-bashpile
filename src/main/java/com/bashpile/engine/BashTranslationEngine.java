@@ -20,8 +20,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.bashpile.AntlrUtils.getFunctionDeclCtx;
-import static com.bashpile.AntlrUtils.streamContexts;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.*;
 import static com.bashpile.engine.BashTranslationHelper.*;
