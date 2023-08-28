@@ -149,12 +149,9 @@ public class BashTranslationEngine implements TranslationEngine {
         // create child translations and other variables
         Translation shellString;
         final boolean addingCommandSubstitution = ctx.typedId() != null;
+        shellString = visitor.visit(ctx.shellString());
         if (addingCommandSubstitution) {
-            try (var ignored = new LevelCounter(UNWIND_ALL_LABEL)) {
-                shellString = visitor.visit(ctx.shellString());
-            }
-        } else {
-            shellString = visitor.visit(ctx.shellString());
+            shellString = unwindAll(shellString);
         }
         final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
         String filename =  visitor.visit(filenameNode).unquoteBody().body();
@@ -273,19 +270,17 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         final Translation guard;
-        try (var ignored = new LevelCounter(UNWIND_ALL_LABEL)) {
-            final Translation not = ctx.Not() != null ? new Translation("! ", STR, NORMAL) : EMPTY_TRANSLATION;
-            Translation expressionTranslation = visitor.visit(ctx.expression());
-            if (expressionTranslation.type().isNumeric()) {
-                // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
-                expressionTranslation = expressionTranslation
-                        .lambdaBody(str -> Strings.removeEnd(str, ">/dev/null"))
-                        .inlineAsNeeded(unwindNestedLambda)
-                        .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
-                expressionTranslation = unwindNested(expressionTranslation);
-            }
-            guard = not.add(expressionTranslation);
+        final Translation not = ctx.Not() != null ? new Translation("! ", STR, NORMAL) : EMPTY_TRANSLATION;
+        Translation expressionTranslation = visitor.visit(ctx.expression());
+        expressionTranslation = unwindAll(expressionTranslation);
+        if (expressionTranslation.type().isNumeric()) {
+            // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
+            expressionTranslation = expressionTranslation
+                    .lambdaBody(str -> Strings.removeEnd(str, " >/dev/null"))
+                    .inlineAsNeeded(BashTranslationHelper::unwindAll)
+                    .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
+        guard = not.add(expressionTranslation);
 
         final Translation ifBlockStatements = visitBodyStatements(ctx.statement(), visitor);
         String elseBlock = "";
@@ -624,11 +619,7 @@ public class BashTranslationEngine implements TranslationEngine {
             }
 
             // unwind
-            if (LevelCounter.in(UNWIND_ALL_LABEL)) {
-                contentsTranslation = unwindAll(contentsTranslation);
-            } else {
-                contentsTranslation = unwindNested(contentsTranslation);
-            }
+            contentsTranslation = unwindNested(contentsTranslation);
         }
         return contentsTranslation.unescapeBody();
     }

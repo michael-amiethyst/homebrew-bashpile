@@ -83,6 +83,10 @@ public record Translation(
 
     // constructors
 
+    public Translation(@Nonnull final String text) {
+        this(text, Type.UNKNOWN, List.of());
+    }
+
     public Translation(
             @Nonnull final String text,
             @Nonnull final Type type,
@@ -211,6 +215,7 @@ public record Translation(
 
     /**
      * Create an inline Translation if this is a {@link TranslationMetadata#NEEDS_INLINING_OFTEN} translation.
+     * @param bodyLambda How to unwind if we need to add a command substitution.
      * @return Converts body to an inline and change the type metadata to {@link TranslationMetadata#INLINE}.
      */
     public @Nonnull Translation inlineAsNeeded(

@@ -59,6 +59,7 @@ public class BashTranslationHelper {
     public static final Pattern NESTED_COMMAND_SUBSTITUTION =
             Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
 
+    // TODO remove, use unwindNested instead
     /* package */ static final Function<Translation, Translation> unwindNestedLambda =
             (tr) -> unwindOnMatch(tr, NESTED_COMMAND_SUBSTITUTION);
 
