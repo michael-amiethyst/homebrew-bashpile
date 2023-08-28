@@ -1,10 +1,9 @@
 # 1.0 features
-1. Redesign - get rid of level-counter and most other state.  Use translationMetadata and translation API instead in parent node
-2. Change bpt output from `export` to `declare -x` (and type)
-3. Arrays, Hashes, Refs
-4. Loops
-5. String interpolation with $[]
-6. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+1. Change bpt output from `export` to `declare -x` (and type)
+2. Arrays, Hashes, Refs
+3. Loops
+4. String interpolation with $[]
+5. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
 
 # Later
 (Not ordered)
