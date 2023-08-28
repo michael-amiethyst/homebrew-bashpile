@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,10 +57,6 @@ public class BashTranslationHelper {
      */
     public static final Pattern NESTED_COMMAND_SUBSTITUTION =
             Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
-
-    // TODO remove, use unwindNested instead
-    /* package */ static final Function<Translation, Translation> unwindNestedLambda =
-            (tr) -> unwindOnMatch(tr, NESTED_COMMAND_SUBSTITUTION);
 
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
 
@@ -249,7 +244,7 @@ public class BashTranslationHelper {
     /* package */ static @Nonnull Translation unwindNested(@Nonnull final Translation tr) {
         Translation ret = tr;
         while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-            ret = unwindNestedLambda.apply(ret);
+            ret = unwindOnMatch(ret, NESTED_COMMAND_SUBSTITUTION);
         }
         return ret;
     }

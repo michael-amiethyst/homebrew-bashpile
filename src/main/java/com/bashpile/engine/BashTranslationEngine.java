@@ -311,7 +311,7 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
             exprTranslation = exprExists
-                    ? visitor.visit(ctx.expression()).inlineAsNeeded(unwindNestedLambda)
+                    ? visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested)
                     : EMPTY_TRANSLATION;
             exprTranslation = unwindNested(exprTranslation);
         }
@@ -344,7 +344,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get expression and it's type
         Translation exprTranslation;
         try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(unwindNestedLambda);
+            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
             exprTranslation = unwindNested(exprTranslation);
         }
         final Type actualType = exprTranslation.type();
@@ -378,7 +378,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
             final Translation arguments = argList.expression().stream()
                     .map(visitor::visit)
-                    .map(tr -> tr.inlineAsNeeded(unwindNestedLambda))
+                    .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
                     .map(BashTranslationHelper::unwindNested)
                     .map(tr -> tr.body("""
                             printf "%s\\n"
@@ -469,7 +469,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
                         .map(visitor::visit)
-                        .map(tr -> tr.inlineAsNeeded(unwindNestedLambda))
+                        .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
                         .map(BashTranslationHelper::unwindNested)
                         .toList()
                 : List.of();
