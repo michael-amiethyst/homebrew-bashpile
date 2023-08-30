@@ -4,6 +4,7 @@ import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
+import com.google.common.collect.Streams;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -45,7 +46,10 @@ public record Translation(
     public static final Translation NEWLINE = toLineTranslation("\n");
 
     /** A pattern of starting and ending double quotes */
+    // TODO rewrite to use .* in the middle instead of |
     public static final Pattern STRING_QUOTES = Pattern.compile("^[\"']|[\"']$");
+
+    private static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
 
     // static methods
 
@@ -110,11 +114,22 @@ public record Translation(
         return new Translation(joined.preamble, joined.body, type, List.of(translationMetadata));
     }
 
+    /** Accumulates all the stream translations' preambles and bodies into the result */
+    public static @Nonnull Translation toTranslation(@Nonnull final Stream<Translation> stream) {
+        return stream.reduce(Translation::add).orElseThrow();
+    }
+
     // instance methods
 
     /** Concatenates other's preamble and body to this preamble and body */
     public @Nonnull Translation add(@Nonnull final Translation other) {
-        return new Translation(preamble + other.preamble, body + other.body, type, metadata);
+        final List<TranslationMetadata> nextMetadata =
+                Streams.concat(metadata.stream(), other.metadata.stream()).toList();
+        // favor anything over UNKNOWN
+        Type nextType = type.equals(Type.UNKNOWN) ? other.type : Type.UNKNOWN;
+        // favor INT or FLOAT over NUMBER
+        nextType = type.equals(Type.NUMBER) && other.type.isNumeric() ? other.type : nextType;
+        return new Translation(preamble + other.preamble, body + other.body, nextType, nextMetadata);
     }
 
     // preamble instance methods
@@ -172,6 +187,13 @@ public record Translation(
     /** Put parenthesis around body */
     public @Nonnull Translation parenthesizeBody() {
         return lambdaBody("(%s)"::formatted);
+    }
+
+    public @Nonnull Translation unparenthesizeBody() {
+        if (PARENTHESIS.matcher(body).matches()) {
+            return body(body.substring(1, body.length() - 1));
+        } // else
+        return this;
     }
 
     /** Apply arbitrary function to body.  E.g. `str -> str`. */

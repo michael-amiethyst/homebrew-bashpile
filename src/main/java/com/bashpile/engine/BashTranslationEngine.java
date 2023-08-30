@@ -539,7 +539,10 @@ public class BashTranslationEngine implements TranslationEngine {
         } else if (maybeStringExpressions(first, second)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
-            return toTranslation(Stream.of(first.unquoteBody(), second.unquoteBody()), STR, NORMAL);
+            return toTranslation(Stream.of(first, second)
+                    .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
+                    .map(Translation::unquoteBody)
+                    .map(Translation::unparenthesizeBody));
         } else if (maybeNumericExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
@@ -613,9 +616,12 @@ public class BashTranslationEngine implements TranslationEngine {
                     });
 
             // wrap in command substitution possibly
-            if (commandSubstitutionDepth > 0  || LevelCounter.in(PRINT_LABEL) || LevelCounter.in(ASSIGNMENT_LABEL)) {
+            // TODO move inlining here to the else block
+            if (commandSubstitutionDepth > 0  || LevelCounter.in(PRINT_LABEL)) {
                 contentsTranslation = contentsTranslation
                         .body("$(%s)".formatted(contentsTranslation.body())).metadata(INLINE);
+            } else {
+                contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
             }
 
             // unwind
