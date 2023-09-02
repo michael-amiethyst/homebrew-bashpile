@@ -45,10 +45,6 @@ public record Translation(
     /** A '\n' as a Translation */
     public static final Translation NEWLINE = toLineTranslation("\n");
 
-    /** A pattern of starting and ending double quotes */
-    // TODO rewrite to use .* in the middle instead of |
-    public static final Pattern STRING_QUOTES = Pattern.compile("^[\"']|[\"']$");
-
     private static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
 
     // static methods
@@ -181,7 +177,7 @@ public record Translation(
 
     /** Remove quotes around body */
     public @Nonnull Translation unquoteBody() {
-        return lambdaBody(body -> STRING_QUOTES.matcher(body).replaceAll(""));
+        return lambdaBody(Strings::unquote);
     }
 
     /** Put parenthesis around body */

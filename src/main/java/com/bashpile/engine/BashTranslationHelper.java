@@ -28,7 +28,8 @@ import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.LevelCounter.*;
-import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.Translation.EMPTY_TRANSLATION;
+import static com.bashpile.engine.Translation.toLineTranslation;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 import static com.bashpile.engine.strongtypes.Type.INT;
 import static com.bashpile.engine.strongtypes.Type.STR;
@@ -123,7 +124,7 @@ public class BashTranslationHelper {
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
         final String exitOrReturn = isTopLevelStatement() && !in(BLOCK_LABEL) ? "exit" : "return";
-        final String plainFilename = STRING_QUOTES.matcher(filename).replaceAll("").substring(1);
+        final String plainFilename = Strings.unquote(filename).substring(1);
         final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
         String elseBody = """
                 printf "Failed to create %s correctly.%s"

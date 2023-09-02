@@ -423,7 +423,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Function<String, String> returnLineLambda = str -> {
             if (functionTypes.returnType().equals(STR)
                     || ctx.expression() instanceof BashpileParser.NumberExpressionContext) {
-                return "printf \"%s\"\n".formatted(STRING_QUOTES.matcher(str).replaceAll(""));
+                return "printf \"%s\"\n".formatted(Strings.unquote(str));
             } // else
             return str + "\n";
         };
