@@ -10,3 +10,4 @@
 * 0.10.0 - Support deployment with brew
 * 0.11.0 - Conditionals, comparison operators and boolean logic
 * 0.11.1 - Fix for `brew install`
+* 0.11.2 - Permissions fix for OSX
