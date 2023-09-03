@@ -15,9 +15,6 @@ public class LevelCounter implements Closeable {
     /** A command substitution label */
     public static final String CALC_LABEL = "calc";
 
-    /** A command substitution label */
-    public static final String FORWARD_DECL_LABEL = "forwardDecl";
-
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
 
     // static methods

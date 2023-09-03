@@ -178,17 +178,16 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionForwardDeclarationStatement(
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
+        // create translations
+        final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
-        try (var ignored = new LevelCounter(FORWARD_DECL_LABEL)) {
-            // create translations
-            final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
-            // remove trailing newline
-            final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
-            // register that this forward declaration has been handled
-            foundForwardDeclarations.add(ctx.typedId().Id().getText());
-            // add translations
-            return comment.add(hoistedFunction.assertEmptyPreamble());
-        }
+        final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
+
+        // register that this forward declaration has been handled
+        foundForwardDeclarations.add(ctx.typedId().Id().getText());
+
+        // add translations
+        return comment.add(hoistedFunction.assertEmptyPreamble());
     }
 
     @Override
@@ -222,7 +221,7 @@ public class BashTranslationEngine implements TranslationEngine {
                             x.Id().getText(), Type.valueOf(x.Type().getText().toUpperCase()), lineNumber(ctx)));
 
             // create Translations
-            final Translation comment = createHoistedCommentTranslation("function declaration", lineNumber(ctx));
+            final Translation comment = createCommentTranslation("function declaration", lineNumber(ctx));
             final AtomicInteger i = new AtomicInteger(1);
             // the empty string or ...
             String namedParams = "";
@@ -253,7 +252,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
         try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
-            final Translation comment = createHoistedCommentTranslation("anonymous block", lineNumber(ctx));
+            final Translation comment = createCommentTranslation("anonymous block", lineNumber(ctx));
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
             // map of x to x needed for upcasting to parent type
@@ -410,7 +409,7 @@ public class BashTranslationEngine implements TranslationEngine {
             return EMPTY_TRANSLATION;
         }
 
-        final Translation comment = createHoistedCommentTranslation("return statement", lineNumber(ctx));
+        final Translation comment = createCommentTranslation("return statement", lineNumber(ctx));
         final Function<String, String> returnLineLambda = str -> {
             if (functionTypes.returnType().equals(STR)
                     || ctx.expression() instanceof BashpileParser.NumberExpressionContext) {

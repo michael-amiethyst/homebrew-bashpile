@@ -180,12 +180,6 @@ public class BashTranslationHelper {
         return EMPTY_TRANSLATION;
     }
 
-    /* package */ static @Nonnull Translation createHoistedCommentTranslation(
-            @Nonnull final String name, final int lineNumber) {
-        final String hoisted = LevelCounter.in(FORWARD_DECL_LABEL) ? " (hoisted)" : "";
-        return toLineTranslation("# %s, Bashpile line %d%s\n".formatted(name, lineNumber, hoisted));
-    }
-
     /* package */ static boolean isTopLevelStatement(@Nonnull final ParserRuleContext ctx) {
         return ctx.parent instanceof BashpileParser.ProgramContext;
     }
