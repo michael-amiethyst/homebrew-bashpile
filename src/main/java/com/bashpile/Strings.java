@@ -13,10 +13,12 @@ import java.util.stream.Collectors;
 /** Our String utilities class */
 public class Strings extends StringUtils {
 
+    /** Finds starting/ending parenthesis */
+    // TODO distinguish between "(something) and (something)" and "(something)".  First shouldn't match
+    public static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
+
     /** A pattern of starting and ending double quotes */
     private static final Pattern STRING_QUOTES = Pattern.compile("^([\"'])(.*)([\"'])$");
-
-    private static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
 
     public static @Nonnull String unquote(@Nonnull final String str) {
         return removeEndGroups(STRING_QUOTES, str);

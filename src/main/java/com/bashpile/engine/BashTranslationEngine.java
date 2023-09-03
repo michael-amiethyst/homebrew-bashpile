@@ -563,9 +563,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String primary = ctx.primary().getText();
         Translation valueBeingTested;
         // right now all implemented primaries are string tests
-        try (var ignored = new LevelCounter(INLINE_LABEL)) {
-            valueBeingTested = visitor.visit(ctx.expression());
-        }
+        valueBeingTested = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
         if (ctx.expression() instanceof BashpileParser.ArgumentsBuiltinExpressionContext argumentsCtx) {
             // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
@@ -591,26 +589,19 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
-        final int commandSubstitutionDepth = LevelCounter.getCommandSubstitution();
         Translation contentsTranslation;
-        try (var ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
-            final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
-            // we may have too much whitespace or not have enough
-            contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL)
-                    .lambdaBody(Strings::dedent)
-                    // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
-                    .lambdaBody(Strings::addSpacesAroundParenthesis);
-            // TODO move inlining here to the else block
-            if (commandSubstitutionDepth > 0) {
-                contentsTranslation = contentsTranslation
-                        .body("$(%s)".formatted(contentsTranslation.body())).metadata(INLINE);
-            } else {
-                contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
-            }
-
-            // unwind
-            contentsTranslation = unwindNested(contentsTranslation);
+        final Stream<Translation> contentsStream = ctx.shellStringContents().stream()
+                .map(visitor::visit).map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested));
+        contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL).lambdaBody(Strings::dedent);
+        if (Strings.PARENTHESIS.matcher(contentsTranslation.body()).matches()) {
+            // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
+            contentsTranslation = contentsTranslation.lambdaBody(Strings::addSpacesAroundParenthesis);
+            // a subshell does NOT need inlining often, see conditionalStatement
+        } else {
+            contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
         }
+
+        contentsTranslation = unwindNested(contentsTranslation);
         return contentsTranslation.unescapeBody();
     }
 }

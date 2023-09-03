@@ -16,9 +16,6 @@ public class LevelCounter implements Closeable {
     public static final String CALC_LABEL = "calc";
 
     /** A command substitution label */
-    public static final String INLINE_LABEL = "inline";
-
-    /** A command substitution label */
     public static final String FORWARD_DECL_LABEL = "forwardDecl";
 
     /** LevelCounter label */
@@ -34,11 +31,6 @@ public class LevelCounter implements Closeable {
     /** are we in any level of indention for this label */
     public static boolean in(@Nonnull final String name) {
         return counters.containsKey(name);
-    }
-
-    /** How many levels are we in any label implemented with a Bash command line substitution? */
-    public static int getCommandSubstitution() {
-        return get(INLINE_LABEL) + get(FORWARD_DECL_LABEL);
     }
 
     /** How many levels are we in for label? */
