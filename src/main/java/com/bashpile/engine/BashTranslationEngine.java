@@ -307,12 +307,10 @@ public class BashTranslationEngine implements TranslationEngine {
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
         Translation exprTranslation;
-        try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = exprExists
-                    ? visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested)
-                    : EMPTY_TRANSLATION;
-            exprTranslation = unwindNested(exprTranslation);
-        }
+        exprTranslation = exprExists
+                ? visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested)
+                : EMPTY_TRANSLATION;
+        exprTranslation = unwindNested(exprTranslation);
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
@@ -341,10 +339,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get expression and it's type
         Translation exprTranslation;
-        try (var ignored = new LevelCounter(ASSIGNMENT_LABEL)) {
-            exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
-            exprTranslation = unwindNested(exprTranslation);
-        }
+        exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
+        exprTranslation = unwindNested(exprTranslation);
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
 
