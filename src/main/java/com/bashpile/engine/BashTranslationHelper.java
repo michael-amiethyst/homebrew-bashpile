@@ -123,7 +123,7 @@ public class BashTranslationHelper {
         ifBody = lambdaFirstLine(ifBody, String::stripLeading);
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
-        final String exitOrReturn = isTopLevelStatement() && !in(BLOCK_LABEL) ? "exit" : "return";
+        final String exitOrReturn = isTopLevelStatement(ctx) && !in(BLOCK_LABEL) ? "exit" : "return";
         final String plainFilename = Strings.unquote(filename).substring(1);
         final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
         String elseBody = """
@@ -186,8 +186,8 @@ public class BashTranslationHelper {
         return toLineTranslation("# %s, Bashpile line %d%s\n".formatted(name, lineNumber, hoisted));
     }
 
-    /* package */ static boolean isTopLevelStatement() {
-        return !in(CALC_LABEL) && !in(PRINT_LABEL);
+    /* package */ static boolean isTopLevelStatement(@Nonnull final ParserRuleContext ctx) {
+        return ctx.parent instanceof BashpileParser.ProgramContext;
     }
 
     /** Get the Bashpile script linenumber that ctx is found in. */

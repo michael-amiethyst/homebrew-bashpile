@@ -229,8 +229,10 @@ public record Translation(
     public @Nonnull Translation inlineAsNeeded(
             @Nonnull final Function<Translation, Translation> bodyLambda) {
         if (metadata.contains(TranslationMetadata.NEEDS_INLINING_OFTEN)) {
+            // function calls may have redirect to /dev/null if only side effects needed
+            final String nextBody = Strings.removeEnd(body, ">/dev/null").stripTrailing();
             return bodyLambda.apply(
-                    new Translation(preamble, "$(%s)".formatted(body), type, List.of(TranslationMetadata.INLINE)));
+                    new Translation(preamble, "$(%s)".formatted(nextBody), type, List.of(TranslationMetadata.INLINE)));
         } // else
         return this;
     }

@@ -274,7 +274,6 @@ public class BashTranslationEngine implements TranslationEngine {
         if (expressionTranslation.type().isNumeric()) {
             // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
             expressionTranslation = expressionTranslation
-                    .lambdaBody(str -> Strings.removeEnd(str, " >/dev/null"))
                     .inlineAsNeeded(BashTranslationHelper::unwindAll)
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
@@ -494,12 +493,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // this covers the case of calling a function without using the return
         Translation ret = new Translation(
                 argumentTranslations.preamble(), id + argumentTranslations.body(), retType, List.of(NORMAL));
-        if (isTopLevelStatement()) {
-            ret = ret.lambdaBody("%s >/dev/null"::formatted).metadata(NEEDS_INLINING_OFTEN).mergePreamble();
-        } else {
-            // else not in a top level statement, return an inline (command substitution)
-            ret = ret.lambdaBody("$(%s)"::formatted).metadata(INLINE);
-        }
+        ret = ret.lambdaBody("%s >/dev/null"::formatted).metadata(NEEDS_INLINING_OFTEN).mergePreamble();
         return ret;
     }
 
