@@ -367,21 +367,19 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // body
-        try (final var ignored = new LevelCounter(PRINT_LABEL)) {
-            final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
-            final Translation arguments = argList.expression().stream()
-                    .map(visitor::visit)
-                    .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
-                    .map(BashTranslationHelper::unwindNested)
-                    .map(tr -> tr.body("""
-                            printf "%s\\n"
-                            """.formatted(tr.unquoteBody().body())))
-                    .reduce(Translation::add)
-                    .orElseThrow();
-            final Translation subcomment =
-                    subcommentTranslationOrDefault(arguments.hasPreamble(), "print statement body");
-            return comment.add(subcomment.add(arguments).mergePreamble());
-        }
+        final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
+        final Translation arguments = argList.expression().stream()
+                .map(visitor::visit)
+                .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
+                .map(BashTranslationHelper::unwindNested)
+                .map(tr -> tr.body("""
+                        printf "%s\\n"
+                        """.formatted(tr.unquoteBody().body())))
+                .reduce(Translation::add)
+                .orElseThrow();
+        final Translation subcomment =
+                subcommentTranslationOrDefault(arguments.hasPreamble(), "print statement body");
+        return comment.add(subcomment.add(arguments).mergePreamble());
     }
 
     @Override
