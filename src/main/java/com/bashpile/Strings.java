@@ -16,13 +16,53 @@ public class Strings extends StringUtils {
     /** A pattern of starting and ending double quotes */
     private static final Pattern STRING_QUOTES = Pattern.compile("^([\"'])(.*)([\"'])$");
 
+    private static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
+
     public static @Nonnull String unquote(@Nonnull final String str) {
         return removeEndGroups(STRING_QUOTES, str);
+    }
+
+    public static @Nonnull String unparenthesize(@Nonnull final String str) {
+        if (PARENTHESIS.matcher(str).matches()) { return str.substring(1, str.length() - 1); }
+        return str;
     }
 
     /** @see StringEscapeUtils#unescapeJava(String) */
     public static @Nonnull String unescape(@Nonnull final String text) {
         return StringEscapeUtils.unescapeJava(text);
+    }
+
+    /**
+     * Left-aligns text, preserves spacing of subsequent lines relative to first line.
+     * <br>
+     * E.g.  If the first non-blank line started with 8 spaces every line would have the first 8 characters removed.
+     * Each line is stripped of trailing whitespace too.  If initial text ended with a newline it will be added back.
+     *
+     * @param text The text to dedent.
+     * @return The first non-blank line text's initial whitespace chars count stripped from every subsequent line.
+     */
+    public static @Nonnull String dedent(@Nonnull final String text) {
+        // find leading whitespace of first non-blank line.  Strip that many chars from each line
+        final String[] lines = text.split("\n");
+        int i = 0;
+        while (isBlank(lines[i])) {
+            i++;
+        }
+        final String line = lines[i];
+        final int spaces = line.length() - line.stripLeading().length();
+        final String trailingNewline = text.endsWith("\n") ? "\n" : "";
+        return Arrays.stream(lines)
+                .filter(str -> !Strings.isBlank(str))
+                .map(str -> str.substring(spaces))
+                .map(String::stripTrailing)
+                .collect(Collectors.joining("\n"))
+                + trailingNewline;
+    }
+
+    public static @Nonnull String addSpacesAroundParenthesis(@Nonnull final String text) {
+        final Matcher matcher = PARENTHESIS.matcher(text);
+        if (matcher.matches()) { return " %s ".formatted(text); }
+        return text;
     }
 
     /** Applies a function to the first line only */

@@ -21,15 +21,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.*;
-import static com.bashpile.Strings.*;
+import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
-import static com.bashpile.engine.BashTranslationHelper.unwindNested;
 import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.*;
-import static com.bashpile.engine.strongtypes.Type.*;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
+import static com.bashpile.engine.strongtypes.Type.*;
 import static com.google.common.collect.Iterables.getLast;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Translates to Bash5 with four spaces as a tab.
@@ -542,7 +540,8 @@ public class BashTranslationEngine implements TranslationEngine {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
             return toTranslation(Stream.of(first, second)
-                    .map(Translation::unquoteBody).map(Translation::unparenthesizeBody));
+                    .map(Translation::unquoteBody)
+                    .map(tr -> tr.lambdaBody(Strings::unparenthesize)));
         } else if (maybeNumericExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
@@ -596,26 +595,11 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation contentsTranslation;
         try (var ignored = new LevelCounter(LevelCounter.INLINE_LABEL)) {
             final Stream<Translation> contentsStream = ctx.shellStringContents().stream().map(visitor::visit);
+            // we may have too much whitespace or not have enough
             contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL)
-                    .lambdaBody(body -> {
-                        // find leading whitespace of first non-blank line.  Strip that many chars from each line
-                        final String[] lines = body.split("\n");
-                        int i = 0;
-                        while (isBlank(lines[i])) {
-                            i++;
-                        }
-                        final String line = lines[i];
-                        final int spaces = line.length() - line.stripLeading().length();
-                        final String trailingNewline = body.endsWith("\n") ? "\n" : "";
-                        return Arrays.stream(lines)
-                                .filter(str -> !Strings.isBlank(str))
-                                .map(str -> str.substring(spaces))
-                                .map(String::stripTrailing)
-                                .collect(Collectors.joining("\n"))
-                                + trailingNewline;
-                    });
-
-            // wrap in command substitution possibly
+                    .lambdaBody(Strings::dedent)
+                    // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
+                    .lambdaBody(Strings::addSpacesAroundParenthesis);
             // TODO move inlining here to the else block
             if (commandSubstitutionDepth > 0) {
                 contentsTranslation = contentsTranslation

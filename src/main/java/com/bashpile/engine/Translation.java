@@ -9,7 +9,6 @@ import com.google.common.collect.Streams;
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.*;
@@ -44,8 +43,6 @@ public record Translation(
 
     /** A '\n' as a Translation */
     public static final Translation NEWLINE = toLineTranslation("\n");
-
-    private static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
 
     // static methods
 
@@ -183,13 +180,6 @@ public record Translation(
     /** Put parenthesis around body */
     public @Nonnull Translation parenthesizeBody() {
         return lambdaBody("(%s)"::formatted);
-    }
-
-    public @Nonnull Translation unparenthesizeBody() {
-        if (PARENTHESIS.matcher(body).matches()) {
-            return body(body.substring(1, body.length() - 1));
-        } // else
-        return this;
     }
 
     /** Apply arbitrary function to body.  E.g. `str -> str`. */

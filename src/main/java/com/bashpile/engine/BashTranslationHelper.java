@@ -47,7 +47,7 @@ public class BashTranslationHelper {
      * This Pattern has three matching groups.
      * They are everything before the command substitution, the command substitution, and everything after.
      */
-    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*)(\\$\\(.*?\\))(.*)");
+    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*?)(\\$\\(.*\\))(.*?)");
 
     /**
      * This single-line Pattern has three matching groups.
