@@ -526,29 +526,29 @@ public class BashTranslationEngine implements TranslationEngine {
         // get the child translations
         List<Translation> childTranslations;
         try (var ignored = new LevelCounter(CALC_LABEL)) {
-            childTranslations = ctx.children.stream().map(visitor::visit).toList();
+            childTranslations = ctx.children.stream()
+                    .map(visitor::visit)
+                    .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
+                    .toList();
         }
 
         // child translations in the format of 'expr operator expr', so we are only interested in the first and last
         final Translation first = childTranslations.get(0);
         final Translation second = getLast(childTranslations);
-        // check for nested calc call
+        // types section
         if (LevelCounter.in(CALC_LABEL) && maybeNumericExpressions(first, second)) {
             return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
-            // types section
         } else if (maybeStringExpressions(first, second)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
             return toTranslation(Stream.of(first, second)
-                    .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
-                    .map(Translation::unquoteBody)
-                    .map(Translation::unparenthesizeBody));
+                    .map(Translation::unquoteBody).map(Translation::unparenthesizeBody));
         } else if (maybeNumericExpressions(first, second)) {
             final String translationsString = childTranslations.stream()
                     .map(Translation::body).collect(Collectors.joining(" "));
             return toTranslation(childTranslations.stream(), Type.NUMBER, NEEDS_INLINING_OFTEN)
                     .body("bc <<< \"%s\"".formatted(translationsString));
-            // found no matching types -- error section
+        // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(
                     first.body(), second.body()), lineNumber(ctx));
@@ -617,7 +617,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
             // wrap in command substitution possibly
             // TODO move inlining here to the else block
-            if (commandSubstitutionDepth > 0  || LevelCounter.in(PRINT_LABEL)) {
+            if (commandSubstitutionDepth > 0) {
                 contentsTranslation = contentsTranslation
                         .body("$(%s)".formatted(contentsTranslation.body())).metadata(INLINE);
             } else {
