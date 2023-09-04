@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
-import static com.bashpile.engine.LevelCounter.BLOCK_LABEL;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING_OFTEN;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
@@ -214,7 +213,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
-        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
+        try (var ignored2 = typeStack.pushFrame()) {
 
             // register local variable types
             ctx.paramaters().typedId().forEach(
@@ -252,12 +251,12 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
-        try (var ignored = new LevelCounter(BLOCK_LABEL); var ignored2 = typeStack.pushFrame()) {
+        try (var ignored2 = typeStack.pushFrame()) {
             final Translation comment = createCommentTranslation("anonymous block", lineNumber(ctx));
             // behind the scenes we need to name the anonymous function
             final String anonymousFunctionName = "anon" + anonBlockCounter++;
             // map of x to x needed for upcasting to parent type
-            final Translation blockStatements = visitBodyStatements(ctx.statement(), visitor);
+            final Translation blockStatements = visitBodyStatements(ctx.functionBlock().statement(), visitor);
             // define function and then call immediately with no arguments
             final Translation selfCallingAnonymousFunction = toParagraphTranslation("%s () {\n%s}; %s\n"
                     .formatted(anonymousFunctionName, blockStatements.body(), anonymousFunctionName));
@@ -316,7 +315,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = createCommentTranslation("assign statement", lineNumber(ctx));
         final Translation subcomment =
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "assign statement body");
-        final Translation variableDeclaration = toLineTranslation(getLocalText() + variableName + "\n");
+        final Translation variableDeclaration = toLineTranslation(getLocalText(ctx) + variableName + "\n");
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
         final Translation assignment =
@@ -349,7 +348,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "reassignment statement body");
         // merge exprTranslation into reassignment
         final String reassignmentBody = "%s%s=%s\n".formatted(
-                getLocalText(true), variableName, exprTranslation.body());
+                getLocalText(ctx, true), variableName, exprTranslation.body());
         final Translation reassignment =
                 toLineTranslation(reassignmentBody).addPreamble(exprTranslation.preamble());
 

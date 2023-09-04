@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.LevelCounter.*;
 import static com.bashpile.engine.Translation.EMPTY_TRANSLATION;
 import static com.bashpile.engine.Translation.toLineTranslation;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
@@ -98,7 +97,7 @@ public class BashTranslationHelper {
         if (ctx.typedId() != null) {
             variableName = ctx.typedId().Id().getText();
             ifGuard = "%s %s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null%s".formatted(
-                    getLocalText(), variableName, variableName, preamble, check, thenFragment);
+                    getLocalText(ctx), variableName, variableName, preamble, check, thenFragment);
         } else {
             ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null%s".formatted(preamble, check, thenFragment);
         }
@@ -124,7 +123,7 @@ public class BashTranslationHelper {
         ifBody = lambdaFirstLine(ifBody, String::stripLeading);
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
-        final String exitOrReturn = isTopLevelStatement(ctx) && !in(BLOCK_LABEL) ? "exit" : "return";
+        final String exitOrReturn = inBlock(ctx) ? "return" : "exit";
         final String plainFilename = Strings.unquote(filename).substring(1);
         final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
         String elseBody = """
@@ -158,15 +157,15 @@ public class BashTranslationHelper {
         return toLineTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
     }
 
-    /* package */ static @Nonnull String getLocalText() {
-        return getLocalText(false);
+    /* package */ static @Nonnull String getLocalText(@Nonnull final RuleContext ctx) {
+        return getLocalText(ctx, false);
     }
 
-    /* package */ static @Nonnull String getLocalText(final boolean reassignment) {
-        final boolean indented = LevelCounter.in(BLOCK_LABEL);
-        if (indented && !reassignment) {
+    /* package */ static @Nonnull String getLocalText(@Nonnull final RuleContext ctx, final boolean reassignment) {
+        final boolean block = inBlock(ctx);
+        if (block && !reassignment) {
             return "local ";
-        } else if (!indented && !reassignment) {
+        } else if (!block && !reassignment) {
             return "export ";
         } else { // reassignment
             return "";
@@ -181,10 +180,6 @@ public class BashTranslationHelper {
         return EMPTY_TRANSLATION;
     }
 
-    /* package */ static boolean isTopLevelStatement(@Nonnull final ParserRuleContext ctx) {
-        return ctx.parent instanceof BashpileParser.ProgramContext;
-    }
-
     /**
      * Checks if this context is in a calculation context.
      *
@@ -192,11 +187,20 @@ public class BashTranslationHelper {
      * @return If ctx is a child of a {@link BashpileParser.CalculationExpressionContext}.
      */
     /* package */ static boolean inCalc(@Nonnull final RuleContext ctx) {
+        return in(ctx, BashpileParser.CalculationExpressionContext.class);
+    }
+
+    /* package */ static boolean inBlock(@Nonnull final RuleContext ctx) {
+        return in(ctx, BashpileParser.FunctionBlockContext.class);
+    }
+
+    private static <T extends RuleContext> boolean in(
+            @Nonnull final RuleContext ctx, @Nonnull final Class<T> clazz) {
         RuleContext curr = ctx;
         boolean inCalc = false;
         while (!inCalc && curr.parent != null) {
             curr = curr.parent;
-            if (curr instanceof BashpileParser.CalculationExpressionContext) {
+            if (clazz.isInstance(curr)) {
                 inCalc = true;
             }
         }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-09-03T07:03:54.820877538-07:00[America/Los_Angeles] (timestamp 1693749834820)
+# Generated from bin/bpr.bps on 2023-09-04T04:21:55.437810830-07:00[America/Los_Angeles] (timestamp 1693826515437)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -36,7 +36,7 @@ if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lin
     if (set -o noclobber; ./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") 2> /dev/null; then
         trap 'rm -f "$translatedFilename" bpr.log; exit 10' INT TERM EXIT
         ## wrapped body of creates statement
-        if cat bpr.log | grep -E 'unexpected EOF|syntax error' > /dev/null 2>&1; then
+        if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1; then
             # expression statement, Bashpile line 28
             ./"$translatedFilename" "$@"
         fi

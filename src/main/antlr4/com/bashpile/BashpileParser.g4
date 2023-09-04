@@ -10,8 +10,7 @@ statement
     | Function typedId paramaters         # functionForwardDeclarationStatement
     | Function typedId paramaters tags?
                       Colon functionBlock # functionDeclarationStatement
-    | Block tags? Colon INDENT statement+
-                                   DEDENT # anonymousBlockStatement
+    | Block tags? Colon functionBlock     # anonymousBlockStatement
     | If Not? expression Colon INDENT statement+
             DEDENT (Else Colon elseBody)? # conditionalStatement
     | typedId (Equals expression)? Newline# assignmentStatement
@@ -33,7 +32,7 @@ elseBody    : INDENT statement+ DEDENT;
 // This is a work around for Bash not allawing the return keyword with a string.
 // Bash will interpret the last line of a function (which may be a string) as the return if no return keyword.
 // see https://linuxhint.com/return-string-bash-functions/ example 3
-functionBlock       : INDENT statement* returnPsudoStatement DEDENT;
+functionBlock       : INDENT statement* (returnPsudoStatement | statement) DEDENT;
 returnPsudoStatement: Return expression? Newline;
 
 // in operator precedence order?
