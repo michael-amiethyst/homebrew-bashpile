@@ -62,8 +62,9 @@ public class Strings extends StringUtils {
     }
 
     public static @Nonnull String addSpacesAroundParenthesis(@Nonnull final String text) {
-        final Matcher matcher = PARENTHESIS.matcher(text);
-        if (matcher.matches()) { return " %s ".formatted(text); }
+        if (PARENTHESIS.matcher(text).matches()) {
+            return " %s ".formatted(text);
+        }
         return text;
     }
 

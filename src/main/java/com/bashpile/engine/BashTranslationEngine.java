@@ -39,7 +39,9 @@ public class BashTranslationEngine implements TranslationEngine {
     /** Four spaces */
     public static final String TAB = "    ";
 
-    private static final Map<String, String> primaryTranslations = Map.of("unset", "-z", "isEmpty", "-z",
+    private static final Map<String, String> primaryTranslations = Map.of(
+            "unset", "-z",
+            "isEmpty", "-z",
             "isNotEmpty", "-n");
 
     // instance variables
@@ -47,15 +49,14 @@ public class BashTranslationEngine implements TranslationEngine {
     /** This is how we enforce type checking at compile time.  Mutable. */
     private final TypeStack typeStack = new TypeStack();
 
-    /** The Bashpile script input file or literal text */
-    @Nonnull
-    private final String origin;
-
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
     /** The current create statement filenames for using in a trap command */
     private final Stack<String> createFilenamesStack = new Stack<>();
+
+    /** The Bashpile script input file or literal text */
+    private final @Nonnull String origin;
 
     /** We need to name the anonymous blocks, anon0, anon1, anon2, etc.  We keep that counter here. */
     private int anonBlockCounter = 0;
