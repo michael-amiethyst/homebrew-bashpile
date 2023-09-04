@@ -7,6 +7,7 @@ import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,7 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.LevelCounter.*;
-import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.Translation.EMPTY_TRANSLATION;
+import static com.bashpile.engine.Translation.toLineTranslation;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 import static com.bashpile.engine.strongtypes.Type.INT;
 import static com.bashpile.engine.strongtypes.Type.STR;
@@ -47,7 +47,7 @@ public class BashTranslationHelper {
      * This Pattern has three matching groups.
      * They are everything before the command substitution, the command substitution, and everything after.
      */
-    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(.*)(\\$\\(.*?\\))(.*)");
+    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*?)(\\$\\(.*\\))(.*?)");
 
     /**
      * This single-line Pattern has three matching groups.
@@ -58,9 +58,6 @@ public class BashTranslationHelper {
      */
     public static final Pattern NESTED_COMMAND_SUBSTITUTION =
             Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
-
-    /* package */ static final Function<Translation, Translation> unwindNestedLambda =
-            (tr) -> unwindOnMatch(tr, NESTED_COMMAND_SUBSTITUTION);
 
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
 
@@ -100,7 +97,7 @@ public class BashTranslationHelper {
         if (ctx.typedId() != null) {
             variableName = ctx.typedId().Id().getText();
             ifGuard = "%s %s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null%s".formatted(
-                    getLocalText(), variableName, variableName, preamble, check, thenFragment);
+                    getLocalText(ctx), variableName, variableName, preamble, check, thenFragment);
         } else {
             ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null%s".formatted(preamble, check, thenFragment);
         }
@@ -126,8 +123,8 @@ public class BashTranslationHelper {
         ifBody = lambdaFirstLine(ifBody, String::stripLeading);
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
-        final String exitOrReturn = isTopLevelStatement() && !in(BLOCK_LABEL) ? "exit" : "return";
-        final String plainFilename = STRING_QUOTES.matcher(filename).replaceAll("").substring(1);
+        final String exitOrReturn = inBlock(ctx) ? "return" : "exit";
+        final String plainFilename = Strings.unquote(filename).substring(1);
         final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
         String elseBody = """
                 printf "Failed to create %s correctly.%s"
@@ -160,15 +157,15 @@ public class BashTranslationHelper {
         return toLineTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
     }
 
-    /* package */ static @Nonnull String getLocalText() {
-        return getLocalText(false);
+    /* package */ static @Nonnull String getLocalText(@Nonnull final RuleContext ctx) {
+        return getLocalText(ctx, false);
     }
 
-    /* package */ static @Nonnull String getLocalText(final boolean reassignment) {
-        final boolean indented = LevelCounter.in(BLOCK_LABEL);
-        if (indented && !reassignment) {
+    /* package */ static @Nonnull String getLocalText(@Nonnull final RuleContext ctx, final boolean reassignment) {
+        final boolean block = inBlock(ctx);
+        if (block && !reassignment) {
             return "local ";
-        } else if (!indented && !reassignment) {
+        } else if (!block && !reassignment) {
             return "export ";
         } else { // reassignment
             return "";
@@ -183,14 +180,31 @@ public class BashTranslationHelper {
         return EMPTY_TRANSLATION;
     }
 
-    /* package */ static @Nonnull Translation createHoistedCommentTranslation(
-            @Nonnull final String name, final int lineNumber) {
-        final String hoisted = LevelCounter.in(FORWARD_DECL_LABEL) ? " (hoisted)" : "";
-        return toLineTranslation("# %s, Bashpile line %d%s\n".formatted(name, lineNumber, hoisted));
+    /**
+     * Checks if this context is in a calculation context.
+     *
+     * @param ctx The context to check.
+     * @return If ctx is a child of a {@link BashpileParser.CalculationExpressionContext}.
+     */
+    /* package */ static boolean inCalc(@Nonnull final RuleContext ctx) {
+        return in(ctx, BashpileParser.CalculationExpressionContext.class);
     }
 
-    /* package */ static boolean isTopLevelStatement() {
-        return !in(CALC_LABEL) && !in(PRINT_LABEL);
+    /* package */ static boolean inBlock(@Nonnull final RuleContext ctx) {
+        return in(ctx, BashpileParser.FunctionBlockContext.class);
+    }
+
+    private static <T extends RuleContext> boolean in(
+            @Nonnull final RuleContext ctx, @Nonnull final Class<T> clazz) {
+        RuleContext curr = ctx;
+        boolean inCalc = false;
+        while (!inCalc && curr.parent != null) {
+            curr = curr.parent;
+            if (clazz.isInstance(curr)) {
+                inCalc = true;
+            }
+        }
+        return inCalc;
     }
 
     /** Get the Bashpile script linenumber that ctx is found in. */
@@ -248,7 +262,7 @@ public class BashTranslationHelper {
     /* package */ static @Nonnull Translation unwindNested(@Nonnull final Translation tr) {
         Translation ret = tr;
         while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-            ret = unwindNestedLambda.apply(ret);
+            ret = unwindOnMatch(ret, NESTED_COMMAND_SUBSTITUTION);
         }
         return ret;
     }

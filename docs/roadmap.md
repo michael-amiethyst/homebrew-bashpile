@@ -1,10 +1,12 @@
 # 1.0 features
-1. Redesign - get rid of level-counter and most other state.  Use translationMetadata and translation API instead in parent node
+1. Shell Strings default on command ('e.g. `which ls` without #())
 2. Change bpt output from `export` to `declare -x` (and type)
-3. Arrays, Hashes, Refs
-4. Loops
-5. String interpolation with $[]
-6. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+3. Use bashpile.rb test section
+4. Arrays, Hashes, Refs
+5. Loops
+6. String interpolation with $[]
+   1. have bpr use arguments, arguments[all]
+7. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
 
 # Later
 (Not ordered)

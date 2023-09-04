@@ -4,6 +4,7 @@ import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
+import com.google.common.collect.Streams;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -44,21 +45,20 @@ public record Translation(
     /** A '\n' as a Translation */
     public static final Translation NEWLINE = toLineTranslation("\n");
 
-    /** A pattern of starting and ending double quotes */
-    public static final Pattern STRING_QUOTES = Pattern.compile("^[\"']|[\"']$");
+    private static final Pattern NUMBER = Pattern.compile("[\\d().]+");
 
     // static methods
 
     /** Are ony translations Strings (STR) or UNKNOWN? */
-    public static boolean maybeStringExpressions(@Nonnull final Translation... translations) {
+    public static boolean areStringExpressions(@Nonnull final Translation... translations) {
         // if all strings the stream of not-strings will be empty
-        return Stream.of(translations).allMatch(x -> x.type() == Type.STR || x.type() == Type.UNKNOWN);
+        return Stream.of(translations).map(Translation::parseUnknown).allMatch(x -> x.type() == Type.STR);
     }
 
     /** Are any translations numeric (number, int or float) or UNKNOWN? */
-    public static boolean maybeNumericExpressions(@Nonnull final Translation... translations) {
+    public static boolean areNumericExpressions(@Nonnull final Translation... translations) {
         // if all numbers the stream of not-numbers will be empty
-        return Stream.of(translations).allMatch(x -> x.type().isNumeric() || x.type() == Type.UNKNOWN);
+        return Stream.of(translations).map(Translation::parseUnknown).allMatch(x -> x.type().isNumeric());
     }
 
     // static initializers
@@ -83,6 +83,10 @@ public record Translation(
 
     // constructors
 
+    public Translation(@Nonnull final String text) {
+        this(text, Type.UNKNOWN, List.of());
+    }
+
     public Translation(
             @Nonnull final String text,
             @Nonnull final Type type,
@@ -106,11 +110,22 @@ public record Translation(
         return new Translation(joined.preamble, joined.body, type, List.of(translationMetadata));
     }
 
+    /** Accumulates all the stream translations' preambles and bodies into the result */
+    public static @Nonnull Translation toTranslation(@Nonnull final Stream<Translation> stream) {
+        return stream.reduce(Translation::add).orElseThrow();
+    }
+
     // instance methods
 
     /** Concatenates other's preamble and body to this preamble and body */
     public @Nonnull Translation add(@Nonnull final Translation other) {
-        return new Translation(preamble + other.preamble, body + other.body, type, metadata);
+        final List<TranslationMetadata> nextMetadata =
+                Streams.concat(metadata.stream(), other.metadata.stream()).toList();
+        // favor anything over UNKNOWN
+        Type nextType = type.equals(Type.UNKNOWN) ? other.type : Type.UNKNOWN;
+        // favor INT or FLOAT over NUMBER
+        nextType = type.equals(Type.NUMBER) && other.type.isNumeric() ? other.type : nextType;
+        return new Translation(preamble + other.preamble, body + other.body, nextType, nextMetadata);
     }
 
     // preamble instance methods
@@ -162,7 +177,7 @@ public record Translation(
 
     /** Remove quotes around body */
     public @Nonnull Translation unquoteBody() {
-        return lambdaBody(body -> STRING_QUOTES.matcher(body).replaceAll(""));
+        return lambdaBody(Strings::unquote);
     }
 
     /** Put parenthesis around body */
@@ -211,13 +226,18 @@ public record Translation(
 
     /**
      * Create an inline Translation if this is a {@link TranslationMetadata#NEEDS_INLINING_OFTEN} translation.
+     * @param bodyLambda How to unwind if we need to add a command substitution.
      * @return Converts body to an inline and change the type metadata to {@link TranslationMetadata#INLINE}.
      */
     public @Nonnull Translation inlineAsNeeded(
             @Nonnull final Function<Translation, Translation> bodyLambda) {
         if (metadata.contains(TranslationMetadata.NEEDS_INLINING_OFTEN)) {
+            // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
+            String nextBody = Strings.addSpacesAroundParenthesis(body);
+            // function calls may have redirect to /dev/null if only side effects needed
+            nextBody = Strings.removeEnd(nextBody, ">/dev/null").stripTrailing();
             return bodyLambda.apply(
-                    new Translation(preamble, "$(%s)".formatted(body), type, List.of(TranslationMetadata.INLINE)));
+                    new Translation(preamble, "$(%s)".formatted(nextBody), type, List.of(TranslationMetadata.INLINE)));
         } // else
         return this;
     }
@@ -225,5 +245,17 @@ public record Translation(
     @Override
     public String toString() {
         return assertEmptyPreamble().body;
+    }
+
+    // helpers
+
+    private static @Nonnull Translation parseUnknown(Translation tr) {
+        if (tr.type.equals(Type.UNKNOWN) && NUMBER.matcher(tr.body).matches()) {
+            return tr.type(Type.NUMBER);
+        } else if (tr.type.equals(Type.UNKNOWN)) {
+            return tr.type(Type.STR);
+        } else {
+            return tr;
+        }
     }
 }

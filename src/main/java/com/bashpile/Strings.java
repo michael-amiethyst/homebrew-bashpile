@@ -5,15 +5,97 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
+import java.util.Stack;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** Our String utilities class */
 public class Strings extends StringUtils {
 
+    /** Finds starting/ending parenthesis */
+    private static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
+
+    /** A pattern of starting and ending double quotes */
+    private static final Pattern STRING_QUOTES = Pattern.compile("^([\"'])(.*)([\"'])$");
+
+    /**
+     * Checks if str is wrapped in parentheses like "(expr)" but not "(expr)(expr)".
+     *
+     * @param str The string to check.
+     * @return If str is wrapped in matching parentheses or not.
+     */
+    public static boolean inParentheses(@Nonnull final String str) {
+        return PARENTHESIS.matcher(str).matches()
+                && matchingParenthesis(str)
+                && (str.length() < 2 || matchingParenthesis(str.substring(1, str.length() - 1)));
+    }
+
+    /**
+     * Remove double quotes from the start and end of the string, if present.
+     *
+     * @param str The string to unquote.
+     * @return The string stripped of leading and trailing quotes, if they match.
+     */
+    public static @Nonnull String unquote(@Nonnull final String str) {
+        return removeEndGroups(STRING_QUOTES, str);
+    }
+
+    /**
+     * Remove parentheses from the start and end of the string, if present.
+     *
+     * @param str The string to unparenthesize.
+     * @return The string stripped if leading and trailing parenthesis, if they match.
+     */
+    public static @Nonnull String unparenthesize(@Nonnull final String str) {
+        if (inParentheses(str)) { return str.substring(1, str.length() - 1); }
+        return str;
+    }
+
     /** @see StringEscapeUtils#unescapeJava(String) */
     public static @Nonnull String unescape(@Nonnull final String text) {
         return StringEscapeUtils.unescapeJava(text);
+    }
+
+    /**
+     * Left-aligns text, preserves spacing of subsequent lines relative to first line.
+     * <br>
+     * E.g.  If the first non-blank line started with 8 spaces every line would have the first 8 characters removed.
+     * Each line is stripped of trailing whitespace too.  If initial text ended with a newline it will be added back.
+     *
+     * @param text The text to dedent.
+     * @return The first non-blank line text's initial whitespace chars count stripped from every subsequent line.
+     */
+    public static @Nonnull String dedent(@Nonnull final String text) {
+        // find leading whitespace of first non-blank line.  Strip that many chars from each line
+        final String[] lines = text.split("\n");
+        int i = 0;
+        while (isBlank(lines[i])) {
+            i++;
+        }
+        final String line = lines[i];
+        final int spaces = line.length() - line.stripLeading().length();
+        final String trailingNewline = text.endsWith("\n") ? "\n" : "";
+        return Arrays.stream(lines)
+                .filter(str -> !Strings.isBlank(str))
+                .map(str -> str.substring(spaces))
+                .map(String::stripTrailing)
+                .collect(Collectors.joining("\n"))
+                + trailingNewline;
+    }
+
+    /**
+     * Adds spaces around parentheses.  This is typically to break up $(()) syntax into $( () ).
+     *
+     * @param text The string to add spaces to.
+     * @return The string with spaces added around it, if needed.
+     */
+    public static @Nonnull String addSpacesAroundParenthesis(@Nonnull final String text) {
+        if (inParentheses(text)) {
+            return " %s ".formatted(text);
+        }
+        return text;
     }
 
     /** Applies a function to the first line only */
@@ -51,5 +133,41 @@ public class Strings extends StringUtils {
                 .collect(Collectors.joining("\n"));
         final String append = text.endsWith("\n") ? "\n" : "";
         return tabbedBody + append;
+    }
+
+    // helpers
+
+    private static @Nonnull String removeEndGroups(@Nonnull final Pattern pattern, @Nonnull final String str) {
+        final Matcher matcher = pattern.matcher(str);
+        return matcher.find()
+                ? matcher.replaceFirst(Matcher.quoteReplacement(matcher.group(2)))
+                : str;
+    }
+
+    /** From <a href="https://www.javatpoint.com/balanced-parentheses-in-java">Java Tutorials Point</a> */
+    private static boolean matchingParenthesis(@Nonnull final String str) {
+        Stack<Character> openCharStack = new Stack<>();
+        char[] charArray = str.toCharArray();
+        for (char current : charArray) {
+            if (current == '{' || current == '[' || current == '(') {
+                openCharStack.push(current);
+                continue;
+            }
+            if (")]}".contains(String.valueOf(current)) && openCharStack.isEmpty()) {
+                return false;
+            }
+            switch (current) {
+                case ')' -> {
+                    if (openCharStack.pop() != '(') { return false; }
+                }
+                case '}' -> {
+                    if (openCharStack.pop() != '{') { return false; }
+                }
+                case ']' -> {
+                    if (openCharStack.pop() != '[') { return false; }
+                }
+            }
+        }
+        return openCharStack.isEmpty();
     }
 }

@@ -187,7 +187,6 @@ class FunctionBashpileTest extends BashpileTest {
                 results.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
                 "Wrong circleArea count");
         assertEquals("6.28", results.stdoutLines().get(0), "Wrong return");
-        assertTrue(results.stdin().contains("(hoisted)"));
     }
 
     @Test

@@ -23,7 +23,7 @@ translatedFilename: str = #(
     #(shift)
     print("Start of " + translatedFilename)
     #(chmod 755 $translatedFilename)
-    // occasional false positive for unexpected EOF, odd bug of Bash itself
+    // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
     #(./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
-        if #(cat bpr.log | grep 'unexpected EOF while looking for matching' > /dev/null 2>&1):
+        if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
             #(./"$translatedFilename" "$@")
