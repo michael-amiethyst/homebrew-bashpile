@@ -14,8 +14,10 @@ public enum Type {
     NOT_FOUND,
     /** Not applicable -- as in for statements */
     NA,
-    /** Type could not be determined, coerces to any regular type (BOOL, INT, FLOAT, STR) */
-    // TODO get rid of?
+    /**
+     *  Type could not be determined (e.g. shell string results),
+     *  coerces to any regular type (BOOL, INT, FLOAT, STR)
+     */
     UNKNOWN,
     /** Instead of NIL or null we have the empty String or an empty object */
     EMPTY,
