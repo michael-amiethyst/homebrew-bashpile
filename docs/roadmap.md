@@ -1,9 +1,12 @@
 # 1.0 features
-1. Change bpt output from `export` to `declare -x` (and type)
-2. Arrays, Hashes, Refs
-3. Loops
-4. String interpolation with $[]
-5. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+1. Shell Strings default on command ('e.g. `which ls` without #())
+2. Change bpt output from `export` to `declare -x` (and type)
+3. Use bashpile.rb test section
+4. Arrays, Hashes, Refs
+5. Loops
+6. String interpolation with $[]
+   1. have bpr use arguments, arguments[all]
+7. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
 
 # Later
 (Not ordered)

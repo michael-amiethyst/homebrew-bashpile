@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
-// TODO FEATURE have bpr use arguments, arguments[all]
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
