@@ -23,9 +23,10 @@ import java.util.stream.Stream;
 import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
-import static com.bashpile.engine.LevelCounter.*;
+import static com.bashpile.engine.LevelCounter.BLOCK_LABEL;
 import static com.bashpile.engine.Translation.*;
-import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING_OFTEN;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static com.google.common.collect.Iterables.getLast;
 
@@ -500,7 +501,7 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation ret = visitor.visit(ctx.expression());
 
         // only keep parenthesis for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
-        if (ret.type().isPossiblyNumeric() && LevelCounter.in(CALC_LABEL)) {
+        if (ret.type().isPossiblyNumeric() && inCalc(ctx)) {
             ret = ret.parenthesizeBody();
         }
         return ret;
@@ -510,30 +511,28 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
         // get the child translations
         List<Translation> childTranslations;
-        try (var ignored = new LevelCounter(CALC_LABEL)) {
-            childTranslations = ctx.children.stream()
-                    .map(visitor::visit)
-                    .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
-                    .toList();
-        }
+        childTranslations = ctx.children.stream()
+                .map(visitor::visit)
+                .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
+                .toList();
 
         // child translations in the format of 'expr operator expr', so we are only interested in the first and last
         final Translation first = childTranslations.get(0);
         final Translation second = getLast(childTranslations);
         // types section
-        if (LevelCounter.in(CALC_LABEL) && maybeNumericExpressions(first, second)) {
+        if (areNumericExpressions(first, second) && inCalc(ctx)) {
             return toTranslation(childTranslations.stream(), Type.NUMBER, NORMAL);
-        } else if (maybeStringExpressions(first, second)) {
+        } else if (areNumericExpressions(first, second)) {
+            final String translationsString = childTranslations.stream()
+                    .map(Translation::body).collect(Collectors.joining(" "));
+            return toTranslation(childTranslations.stream(), Type.NUMBER, NEEDS_INLINING_OFTEN)
+                    .body("bc <<< \"%s\"".formatted(translationsString));
+        } else if (areStringExpressions(first, second)) {
             final String op = ctx.op.getText();
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
             return toTranslation(Stream.of(first, second)
                     .map(Translation::unquoteBody)
                     .map(tr -> tr.lambdaBody(Strings::unparenthesize)));
-        } else if (maybeNumericExpressions(first, second)) {
-            final String translationsString = childTranslations.stream()
-                    .map(Translation::body).collect(Collectors.joining(" "));
-            return toTranslation(childTranslations.stream(), Type.NUMBER, NEEDS_INLINING_OFTEN)
-                    .body("bc <<< \"%s\"".formatted(translationsString));
         // found no matching types -- error section
         } else if (first.type().equals(Type.NOT_FOUND) || second.type().equals(Type.NOT_FOUND)) {
             throw new UserError("`%s` or `%s` are undefined".formatted(

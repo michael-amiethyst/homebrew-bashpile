@@ -9,6 +9,7 @@ import com.google.common.collect.Streams;
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.*;
@@ -44,18 +45,20 @@ public record Translation(
     /** A '\n' as a Translation */
     public static final Translation NEWLINE = toLineTranslation("\n");
 
+    private static final Pattern NUMBER = Pattern.compile("[\\d().]+");
+
     // static methods
 
     /** Are ony translations Strings (STR) or UNKNOWN? */
-    public static boolean maybeStringExpressions(@Nonnull final Translation... translations) {
+    public static boolean areStringExpressions(@Nonnull final Translation... translations) {
         // if all strings the stream of not-strings will be empty
-        return Stream.of(translations).allMatch(x -> x.type() == Type.STR || x.type() == Type.UNKNOWN);
+        return Stream.of(translations).map(Translation::parseUnknown).allMatch(x -> x.type() == Type.STR);
     }
 
     /** Are any translations numeric (number, int or float) or UNKNOWN? */
-    public static boolean maybeNumericExpressions(@Nonnull final Translation... translations) {
+    public static boolean areNumericExpressions(@Nonnull final Translation... translations) {
         // if all numbers the stream of not-numbers will be empty
-        return Stream.of(translations).allMatch(x -> x.type().isNumeric() || x.type() == Type.UNKNOWN);
+        return Stream.of(translations).map(Translation::parseUnknown).allMatch(x -> x.type().isNumeric());
     }
 
     // static initializers
@@ -242,5 +245,17 @@ public record Translation(
     @Override
     public String toString() {
         return assertEmptyPreamble().body;
+    }
+
+    // helpers
+
+    private static @Nonnull Translation parseUnknown(Translation tr) {
+        if (tr.type.equals(Type.UNKNOWN) && NUMBER.matcher(tr.body).matches()) {
+            return tr.type(Type.NUMBER);
+        } else if (tr.type.equals(Type.UNKNOWN)) {
+            return tr.type(Type.STR);
+        } else {
+            return tr;
+        }
     }
 }

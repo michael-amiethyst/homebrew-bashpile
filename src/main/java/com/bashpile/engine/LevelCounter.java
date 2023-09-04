@@ -12,9 +12,6 @@ public class LevelCounter implements Closeable {
     /** A label for changing lexical scopes */
     public static final String BLOCK_LABEL = "block";
 
-    /** A command substitution label */
-    public static final String CALC_LABEL = "calc";
-
     private static final HashMap<String, Integer> counters = HashMap.newHashMap(20);
 
     // static methods

@@ -7,6 +7,7 @@ import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -182,6 +183,24 @@ public class BashTranslationHelper {
 
     /* package */ static boolean isTopLevelStatement(@Nonnull final ParserRuleContext ctx) {
         return ctx.parent instanceof BashpileParser.ProgramContext;
+    }
+
+    /**
+     * Checks if this context is in a calculation context.
+     *
+     * @param ctx The context to check.
+     * @return If ctx is a child of a {@link BashpileParser.CalculationExpressionContext}.
+     */
+    /* package */ static boolean inCalc(@Nonnull final RuleContext ctx) {
+        RuleContext curr = ctx;
+        boolean inCalc = false;
+        while (!inCalc && curr.parent != null) {
+            curr = curr.parent;
+            if (curr instanceof BashpileParser.CalculationExpressionContext) {
+                inCalc = true;
+            }
+        }
+        return inCalc;
     }
 
     /** Get the Bashpile script linenumber that ctx is found in. */
