@@ -32,37 +32,22 @@ public class Strings extends StringUtils {
                 && (str.length() < 2 || matchingParenthesis(str.substring(1, str.length() - 1)));
     }
 
-    /** From <a href="https://www.javatpoint.com/balanced-parentheses-in-java">Java Tutorials Point</a> */
-    private static boolean matchingParenthesis(@Nonnull final String str) {
-        Stack<Character> openCharStack = new Stack<>();
-        char[] charArray = str.toCharArray();
-        for (char current : charArray) {
-            if (current == '{' || current == '[' || current == '(') {
-                openCharStack.push(current);
-                continue;
-            }
-            if (")]}".contains(String.valueOf(current)) && openCharStack.isEmpty()) {
-                return false;
-            }
-            switch (current) {
-                case ')' -> {
-                    if (openCharStack.pop() != '(') { return false; }
-                }
-                case '}' -> {
-                    if (openCharStack.pop() != '{') { return false; }
-                }
-                case ']' -> {
-                    if (openCharStack.pop() != '[') { return false; }
-                }
-            }
-        }
-        return openCharStack.isEmpty();
-    }
-
+    /**
+     * Remove double quotes from the start and end of the string, if present.
+     *
+     * @param str The string to unquote.
+     * @return The string stripped of leading and trailing quotes, if they match.
+     */
     public static @Nonnull String unquote(@Nonnull final String str) {
         return removeEndGroups(STRING_QUOTES, str);
     }
 
+    /**
+     * Remove parentheses from the start and end of the string, if present.
+     *
+     * @param str The string to unparenthesize.
+     * @return The string stripped if leading and trailing parenthesis, if they match.
+     */
     public static @Nonnull String unparenthesize(@Nonnull final String str) {
         if (inParentheses(str)) { return str.substring(1, str.length() - 1); }
         return str;
@@ -100,6 +85,12 @@ public class Strings extends StringUtils {
                 + trailingNewline;
     }
 
+    /**
+     * Adds spaces around parentheses.  This is typically to break up $(()) syntax into $( () ).
+     *
+     * @param text The string to add spaces to.
+     * @return The string with spaces added around it, if needed.
+     */
     public static @Nonnull String addSpacesAroundParenthesis(@Nonnull final String text) {
         if (inParentheses(text)) {
             return " %s ".formatted(text);
@@ -151,5 +142,32 @@ public class Strings extends StringUtils {
         return matcher.find()
                 ? matcher.replaceFirst(Matcher.quoteReplacement(matcher.group(2)))
                 : str;
+    }
+
+    /** From <a href="https://www.javatpoint.com/balanced-parentheses-in-java">Java Tutorials Point</a> */
+    private static boolean matchingParenthesis(@Nonnull final String str) {
+        Stack<Character> openCharStack = new Stack<>();
+        char[] charArray = str.toCharArray();
+        for (char current : charArray) {
+            if (current == '{' || current == '[' || current == '(') {
+                openCharStack.push(current);
+                continue;
+            }
+            if (")]}".contains(String.valueOf(current)) && openCharStack.isEmpty()) {
+                return false;
+            }
+            switch (current) {
+                case ')' -> {
+                    if (openCharStack.pop() != '(') { return false; }
+                }
+                case '}' -> {
+                    if (openCharStack.pop() != '{') { return false; }
+                }
+                case ']' -> {
+                    if (openCharStack.pop() != '[') { return false; }
+                }
+            }
+        }
+        return openCharStack.isEmpty();
     }
 }

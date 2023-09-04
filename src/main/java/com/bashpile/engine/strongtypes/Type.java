@@ -15,6 +15,7 @@ public enum Type {
     /** Not applicable -- as in for statements */
     NA,
     /** Type could not be determined, coerces to any regular type (BOOL, INT, FLOAT, STR) */
+    // TODO get rid of?
     UNKNOWN,
     /** Instead of NIL or null we have the empty String or an empty object */
     EMPTY,
