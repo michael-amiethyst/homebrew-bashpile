@@ -229,8 +229,10 @@ public record Translation(
     public @Nonnull Translation inlineAsNeeded(
             @Nonnull final Function<Translation, Translation> bodyLambda) {
         if (metadata.contains(TranslationMetadata.NEEDS_INLINING_OFTEN)) {
+            // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
+            String nextBody = Strings.addSpacesAroundParenthesis(body);
             // function calls may have redirect to /dev/null if only side effects needed
-            final String nextBody = Strings.removeEnd(body, ">/dev/null").stripTrailing();
+            nextBody = Strings.removeEnd(nextBody, ">/dev/null").stripTrailing();
             return bodyLambda.apply(
                     new Translation(preamble, "$(%s)".formatted(nextBody), type, List.of(TranslationMetadata.INLINE)));
         } // else

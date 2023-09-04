@@ -580,12 +580,9 @@ public class BashTranslationEngine implements TranslationEngine {
         final Stream<Translation> contentsStream = ctx.shellStringContents().stream()
                 .map(visitor::visit).map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested));
         contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL).lambdaBody(Strings::dedent);
-        if (Strings.PARENTHESIS.matcher(contentsTranslation.body()).matches()) {
-            // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
-            contentsTranslation = contentsTranslation.lambdaBody(Strings::addSpacesAroundParenthesis);
-            // a subshell does NOT need inlining often, see conditionalStatement
-        } else {
+        if (!Strings.PARENTHESIS.matcher(contentsTranslation.body()).matches()) {
             contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
+            // a subshell does NOT need inlining often, see conditionalStatement
         }
 
         contentsTranslation = unwindNested(contentsTranslation);
