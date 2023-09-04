@@ -5,6 +5,7 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
+import java.util.Stack;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,18 +15,56 @@ import java.util.stream.Collectors;
 public class Strings extends StringUtils {
 
     /** Finds starting/ending parenthesis */
-    // TODO distinguish between "(something) and (something)" and "(something)".  First shouldn't match
-    public static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
+    private static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
 
     /** A pattern of starting and ending double quotes */
     private static final Pattern STRING_QUOTES = Pattern.compile("^([\"'])(.*)([\"'])$");
+
+    /**
+     * Checks if str is wrapped in parentheses like "(expr)" but not "(expr)(expr)".
+     *
+     * @param str The string to check.
+     * @return If str is wrapped in matching parentheses or not.
+     */
+    public static boolean inParentheses(@Nonnull final String str) {
+        return PARENTHESIS.matcher(str).matches()
+                && matchingParenthesis(str)
+                && (str.length() < 2 || matchingParenthesis(str.substring(1, str.length() - 1)));
+    }
+
+    /** From <a href="https://www.javatpoint.com/balanced-parentheses-in-java">Java Tutorials Point</a> */
+    private static boolean matchingParenthesis(@Nonnull final String str) {
+        Stack<Character> openCharStack = new Stack<>();
+        char[] charArray = str.toCharArray();
+        for (char current : charArray) {
+            if (current == '{' || current == '[' || current == '(') {
+                openCharStack.push(current);
+                continue;
+            }
+            if (")]}".contains(String.valueOf(current)) && openCharStack.isEmpty()) {
+                return false;
+            }
+            switch (current) {
+                case ')' -> {
+                    if (openCharStack.pop() != '(') { return false; }
+                }
+                case '}' -> {
+                    if (openCharStack.pop() != '{') { return false; }
+                }
+                case ']' -> {
+                    if (openCharStack.pop() != '[') { return false; }
+                }
+            }
+        }
+        return openCharStack.isEmpty();
+    }
 
     public static @Nonnull String unquote(@Nonnull final String str) {
         return removeEndGroups(STRING_QUOTES, str);
     }
 
     public static @Nonnull String unparenthesize(@Nonnull final String str) {
-        if (PARENTHESIS.matcher(str).matches()) { return str.substring(1, str.length() - 1); }
+        if (inParentheses(str)) { return str.substring(1, str.length() - 1); }
         return str;
     }
 
@@ -62,7 +101,7 @@ public class Strings extends StringUtils {
     }
 
     public static @Nonnull String addSpacesAroundParenthesis(@Nonnull final String text) {
-        if (PARENTHESIS.matcher(text).matches()) {
+        if (inParentheses(text)) {
             return " %s ".formatted(text);
         }
         return text;

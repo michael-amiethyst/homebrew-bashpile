@@ -579,7 +579,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Stream<Translation> contentsStream = ctx.shellStringContents().stream()
                 .map(visitor::visit).map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested));
         contentsTranslation = toTranslation(contentsStream, UNKNOWN, NORMAL).lambdaBody(Strings::dedent);
-        if (!Strings.PARENTHESIS.matcher(contentsTranslation.body()).matches()) {
+        if (!Strings.inParentheses(contentsTranslation.body())) {
             contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
             // a subshell does NOT need inlining often, see conditionalStatement
         }
