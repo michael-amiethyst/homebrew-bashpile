@@ -1,5 +1,5 @@
 # 1.0 features
-1. Shell Strings default on command ('e.g. `which ls` without #())
+1. Start using Kotlin
 2. Change bpt output from `export` to `declare -x` (and type)
 3. Use bashpile.rb test section
 4. Arrays, Hashes, Refs

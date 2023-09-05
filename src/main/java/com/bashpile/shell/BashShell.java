@@ -51,8 +51,15 @@ public class BashShell implements Closeable {
      * @see #sendTerminationSignal()
      * @see #join()
      */
+    // TODO make a way to spam commands better
     public static @Nonnull BashShell runAsync(@Nonnull final String bashString) throws IOException {
-        LOG.info("Executing bash text:\n" + bashString);
+        // info for large runs, trace for small commands
+        final String message = "Executing bash text:\n" + bashString;
+        if (bashString.length() > 20) {
+            LOG.info(message);
+        } else {
+            LOG.trace(message);
+        }
 
         // run our CommandLine process in background threads
         final IoManager commandLine = IoManager.of(spawnLinuxProcess());

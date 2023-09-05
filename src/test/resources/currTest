@@ -1,0 +1,1 @@
+find . -maxdepth 1 -print0 | xargs ls 2>&1

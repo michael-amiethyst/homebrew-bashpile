@@ -104,7 +104,9 @@ public class ShellStringBashpileTest extends BashpileTest {
 
     @Test @Order(61)
     public void shellStringsInAssignWorks() {
-        final ExecutionResults results = runText("sha256sum  : str = #(echo sha256sumValue)\nprint(sha256sum)");
+        final ExecutionResults results = runText("""
+                _sha256sum  : str = #(echo sha256sumValue)
+                print(_sha256sum)""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("sha256sumValue\n", results.stdout());
@@ -161,5 +163,23 @@ public class ShellStringBashpileTest extends BashpileTest {
                 #((which ls 1>/dev/null))""");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
+    }
+
+    // shellLine tests
+
+    @Test @Order(120)
+    public void shellLineWorks() {
+        final ExecutionResults results = runText("ls");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("ls\n"));
+    }
+
+    @Test @Order(130)
+    public void complexShellLineWorks() {
+        final ExecutionResults results = runText("find . -maxdepth 1 -print0 | xargs ls 2>&1");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("xargs"));
     }
 }
