@@ -12,3 +12,4 @@
 * 0.11.1 - Fix for `brew install`
 * 0.11.2 - Permissions fix for OSX
 * 0.12.0 - Redesign of the logic, favor Translations with flags over checking state/context
+* 0.12.1 - bpr.bps uses POSIX compliant `tail` options

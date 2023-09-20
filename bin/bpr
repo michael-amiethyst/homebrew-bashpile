@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-09-04T04:21:55.437810830-07:00[America/Los_Angeles] (timestamp 1693826515437)
+# Generated from bin/bpr.bps on 2023-09-19T20:21:47.373697031-07:00[America/Los_Angeles] (timestamp 1695180107373)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -21,7 +21,7 @@ if [ -z "${1+default}" ]; then
 fi
 # creates statement, Bashpile line 17
 export  translatedFilename
-if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail --lines 1) 2> /dev/null; then
+if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail -1) 2> /dev/null; then
     trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
     ## wrapped body of creates statement
     # expression statement, Bashpile line 21
