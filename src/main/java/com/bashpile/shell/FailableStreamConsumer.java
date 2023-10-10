@@ -8,6 +8,7 @@ import javax.annotation.Nonnull;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.Duration;
 
 /**
  * Applies consumer to each inputStream line.  Exceptions are handled both in the stream and the consumer.
@@ -30,6 +31,8 @@ import java.io.InputStreamReader;
     public void run() {
         final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
         try {
+            // give a little time for the inputStream to populate
+            Thread.sleep(Duration.ofMillis(10));
             Streams.stream(bufferedReader.lines()).forEach(consumer);
         } catch (Exception e) {
             throw new BashpileUncheckedException(e);

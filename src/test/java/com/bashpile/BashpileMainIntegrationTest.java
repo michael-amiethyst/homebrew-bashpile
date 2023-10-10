@@ -29,9 +29,16 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void bprDeploysSuccessfully() throws IOException {
         log.info("In bprDeploysSuccessfully");
 
+        // ensure bin/bpr is using /n instead of /r/n
         final String translatedFilename = "bin/bpr";
+        // from https://superuser.com/a/1066353/1850749
+        final String awkCommand = """
+                awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' %s""".formatted(translatedFilename);
+        ExecutionResults results = runAndJoin(awkCommand);
+        assertSuccessfulExitCode(results);
+
         final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
-        final ExecutionResults results = runAndJoin(command);
+        results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
