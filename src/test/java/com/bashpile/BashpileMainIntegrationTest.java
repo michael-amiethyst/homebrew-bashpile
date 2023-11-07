@@ -44,7 +44,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         bprDeployed = true;
         final List<String> lines = results.stdoutLines();
-        assertEquals(translatedFilename, lines.get(lines.size() - 1));
+        assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
     }
 
     @Test @Timeout(10) @Order(10)
@@ -60,7 +60,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -92,7 +92,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -124,13 +124,13 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             List<String> lines = results.stdoutLines();
-            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
 
             // 2nd run to verify overwrites OK
             results = runAndJoin(command);
             assertSuccessfulExitCode(results);
             lines = results.stdoutLines();
-            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }

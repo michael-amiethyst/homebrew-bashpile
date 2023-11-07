@@ -12,7 +12,6 @@ import java.util.regex.Pattern;
 /**
  * Helper class for BashpileLexer.
  */
-// TODO move DenterHelper here
 public class Lexers {
 
     /**
@@ -28,7 +27,7 @@ public class Lexers {
     /**
      * Checks if the command portion of the input Bash line is a valid Bash command.
      * <br>
-     * Running 'which' to verify is expensive so we both check if the command is valid with a Regex and cache results.
+     * Running 'type' to verify is expensive so we both check if the command is valid with a Regex and cache results.
      *
      * @param bashLine A line of Bash script to check.
      * @return Checks if the parsed command is valid.
@@ -43,7 +42,9 @@ public class Lexers {
 
         try {
             if (COMMAND_PATTERN.matcher(command).matches()) {
-                boolean ret = BashShell.runAndJoin("which " + command).exitCode() == ExecutionResults.SUCCESS;
+                ExecutionResults results = BashShell.runAndJoin("type " + command);
+                // exclude keywords like 'function'
+                boolean ret = results.exitCode() == ExecutionResults.SUCCESS && !results.stdout().contains("keyword");
                 COMMAND_TO_VALIDITY_CACHE.put(command, ret);
                 return ret;
             } else {

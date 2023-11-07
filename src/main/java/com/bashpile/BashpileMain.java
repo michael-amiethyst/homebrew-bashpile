@@ -103,12 +103,13 @@ public class BashpileMain implements Callable<Integer> {
         Files.writeString(transpiledFilename, bashScript);
         // last line must be the filename we created
         LOG.info("Created file is:");
-        System.out.println(transpiledFilename);
+        System.out.println(transpiledFilename.toAbsolutePath());
         return 0;
     }
 
     // helpers
 
+    /** Returns the translation */
     @VisibleForTesting
     public @Nonnull String transpile() throws IOException {
         final Pair<String, InputStream> namedInputStream = getNameAndInputStream();
