@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.InputStream;
 import java.util.stream.IntStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
@@ -20,8 +19,6 @@ import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
  * Antlr4 calls these methods.
- * 
- * @see com.bashpile.AntlrUtils#parse(String, InputStream) 
  */
 public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
@@ -212,5 +209,10 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public Translation visitShellString(BashpileParser.ShellStringContext ctx) {
         return translator.shellString(ctx);
+    }
+
+    @Override
+    public Translation visitShellLineStatement(BashpileParser.ShellLineStatementContext ctx) {
+        return visit(ctx.ShellLine()).add(NEWLINE);
     }
 }

@@ -4,6 +4,7 @@ tokens { INDENT, DEDENT }
 
 @lexer::header {
   import com.yuvalshavit.antlr4.DenterHelper;
+  import com.bashpile.Lexers;
 }
 
 @lexer::members {
@@ -16,6 +17,10 @@ tokens { INDENT, DEDENT }
   @Override
   public Token nextToken() {
     return denter.nextToken();
+  }
+
+  private boolean isLinuxCommand(String input) {
+    return Lexers.isLinuxCommand(input);
   }
 }
 
@@ -54,6 +59,9 @@ NotEmpty: 'isNotEmpty';
 And     : 'and';
 Or      : 'or';
 
+// shell lines using Semantic Predicate
+ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
+
 // ID and Numbers
 
 Id: ID_START ID_CONTINUE*;
@@ -73,7 +81,6 @@ Comment      : '//' ~[\r\n\f]* -> skip;
 BlockComment : '/*' ( BlockComment | . )*? '*/' -> skip;
 
 // small tokens
-
 
 Equals  : '=';
 Colon   : ':';
@@ -114,11 +121,13 @@ ShellStringCParen        : ')' -> type(CParen), popMode;
 
 // fragments
 
-fragment ID_START: [a-zA-Z_];
+fragment SHELL_LINE_WORD: ( StringEscapeSequence | ~[\\\r\n\f] )+;
+
+fragment ID_START   : [a-zA-Z_];
 fragment ID_CONTINUE: [a-zA-Z0-9_];
 
 fragment NON_ZERO_DIGIT: [1-9];
-fragment DIGIT: [0-9];
+fragment DIGIT         : [0-9];
 
 fragment INT_PART: DIGIT+;
 fragment FRACTION: '.' DIGIT+;

@@ -197,7 +197,7 @@ abstract public class BashpileTest {
         if (e.getMessage() != null) {
             msg += " because of:\n`%s`".formatted(e.getMessage().trim());
         }
-        if (e.getCause() != null) {
+        if (e.getCause() != null && e.getCause().getMessage() != null) {
             msg += "\n caused by `%s`".formatted(e.getCause().getMessage().trim());
         }
         return new BashpileUncheckedException(msg, e);

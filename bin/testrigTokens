@@ -1,7 +1,7 @@
 #!/usr/bin/env bpr
 
 /**
- * Usage: testrig src/test/resources/testrigData.bps
+ * Usage: testrigTokens src/test/resources/currTest
 */
 
 #(mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt) creates "cpath.txt":

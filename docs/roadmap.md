@@ -1,12 +1,13 @@
 # 1.0 features
-1. Shell Strings default on command ('e.g. `which ls` without #())
-2. Change bpt output from `export` to `declare -x` (and type)
-3. Use bashpile.rb test section
-4. Arrays, Hashes, Refs
-5. Loops
-6. String interpolation with $[]
-   1. have bpr use arguments, arguments[all]
-7. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+1. Change bpt output from `export` to `declare -x` (and type)
+2. Change syntax from function name: type() to standard function name(): type
+3. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"`
+4. Use bashpile.rb test section
+5. Arrays, Hashes, Refs
+6. Loops
+7. String interpolation with $[]
+   1. have bpr use arguments, arguments[all] (args/argv alias?)
+8. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
 
 # Later
 (Not ordered)

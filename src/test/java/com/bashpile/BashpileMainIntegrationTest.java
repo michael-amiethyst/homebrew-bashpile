@@ -29,15 +29,22 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void bprDeploysSuccessfully() throws IOException {
         log.info("In bprDeploysSuccessfully");
 
+        // ensure bin/bpr is using /n instead of /r/n
         final String translatedFilename = "bin/bpr";
+        // from https://superuser.com/a/1066353/1850749
+        final String awkCommand = """
+                awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' %s""".formatted(translatedFilename);
+        ExecutionResults results = runAndJoin(awkCommand);
+        assertSuccessfulExitCode(results);
+
         final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
-        final ExecutionResults results = runAndJoin(command);
+        results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
         bprDeployed = true;
         final List<String> lines = results.stdoutLines();
-        assertEquals(translatedFilename, lines.get(lines.size() - 1));
+        assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
     }
 
     @Test @Timeout(10) @Order(10)
@@ -53,7 +60,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -85,7 +92,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -117,13 +124,13 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             List<String> lines = results.stdoutLines();
-            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
 
             // 2nd run to verify overwrites OK
             results = runAndJoin(command);
             assertSuccessfulExitCode(results);
             lines = results.stdoutLines();
-            assertEquals(translatedFilename, lines.get(lines.size() - 1));
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
