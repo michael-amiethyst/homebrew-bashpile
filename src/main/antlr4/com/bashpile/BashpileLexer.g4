@@ -59,7 +59,7 @@ NotEmpty: 'isNotEmpty';
 And     : 'and';
 Or      : 'or';
 
-// shell lines
+// shell lines using Semantic Predicate
 ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
 
 // ID and Numbers

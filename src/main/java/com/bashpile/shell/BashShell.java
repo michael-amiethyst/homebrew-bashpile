@@ -51,7 +51,6 @@ public class BashShell implements Closeable {
      * @see #sendTerminationSignal()
      * @see #join()
      */
-    // TODO make a way to spam commands better
     public static @Nonnull BashShell runAsync(@Nonnull final String bashString) throws IOException {
         // info for large runs, trace for small commands
         final String message = "Executing bash text:\n" + bashString;
