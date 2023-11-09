@@ -22,10 +22,15 @@ public class LexersTest {
                 awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' filename"""));
     }
 
-    // TODO uncomment and make pass
-//    @Test @Order(30)
-//    public void awkWithPreambleIsLinuxCommand() {
-//        assertTrue(Lexers.isLinuxCommand("""
-//                a=36 TEST='true' awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' filename"""));
-//    }
+    @Test @Order(30)
+    public void awkWithPreambleIsLinuxCommand() {
+        assertTrue(Lexers.isLinuxCommand("""
+                a=36 TEST='true' _test4="yes" awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' filename
+                """));
+    }
+
+    @Test @Order(40)
+    public void functionIsNotLinuxCommand() {
+        assertFalse(Lexers.isLinuxCommand("function times2point5:float(x:float):"));
+    }
 }

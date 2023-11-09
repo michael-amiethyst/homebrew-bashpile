@@ -60,7 +60,7 @@ And     : 'and';
 Or      : 'or';
 
 // shell lines
-ShellLine   : {isLinuxCommand(_input.toString())}? Id SHELL_LINE_WORD*;
+ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
 
 // ID and Numbers
 
@@ -81,7 +81,6 @@ Comment      : '//' ~[\r\n\f]* -> skip;
 BlockComment : '/*' ( BlockComment | . )*? '*/' -> skip;
 
 // small tokens
-
 
 Equals  : '=';
 Colon   : ':';
