@@ -1,8 +1,8 @@
 # 1.0 features
 1. Change bpt output from `export` to `declare -x` (and type)
 2. Change syntax from function name: type() to standard function name(): type
-3. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"`
-4. Use bashpile.rb test section
+3. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"` - accept STDIN pipes
+4. Use bashpile.rb test section, Terraform + docker for multi-OS tests
 5. Arrays, Hashes, Refs
 6. Loops
 7. String interpolation with $[]
