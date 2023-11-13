@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2023-11-06T16:05:23.936819841-08:00[America/Los_Angeles] (timestamp 1699315523936)
+# Generated from bin/bpr.bps on 2023-11-13T14:49:22.246330431-08:00[America/Los_Angeles] (timestamp 1699915762246)
 #
 # strict mode header
 set -eEuo pipefail -o posix
-export IFS=$'\n\t'
-declare s
+declare -x IFS=$'\n\t'
+declare -i s
 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
 # assign statement, Bashpile line 8
-export jarPath
+declare jarPath
 jarPath=$(dirname "${BASH_SOURCE[0]}")/bashpile.jar
 if [ -z "${1+default}" ]; then
     # expression statement, Bashpile line 12
@@ -20,7 +20,7 @@ if [ -z "${1+default}" ]; then
     exit $?
 fi
 # creates statement, Bashpile line 17
-export  translatedFilename
+declare translatedFilename
 if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail -1) 2> /dev/null; then
     trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
     ## wrapped body of creates statement

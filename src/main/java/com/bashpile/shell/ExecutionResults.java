@@ -11,6 +11,9 @@ public record ExecutionResults(@Nonnull String stdin, int exitCode, @Nonnull Str
     /** The Linux exit code indicating success -- 0 */
     public static final int SUCCESS = 0;
 
+    /** Unknown or non-specific failure */
+    public static final int GENERIC_FAILURE = 1;
+
     /** The Linux errored exit code indicating a command not found -- 127 */
     public static final int COMMAND_NOT_FOUND = 127;
 

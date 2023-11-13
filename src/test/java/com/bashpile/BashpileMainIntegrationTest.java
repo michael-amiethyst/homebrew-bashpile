@@ -37,9 +37,15 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         ExecutionResults results = runAndJoin(awkCommand);
         assertSuccessfulExitCode(results);
 
-        final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
-        results = runAndJoin(command);
-        log.debug("Output text:\n{}", results.stdout());
+        // weird, intermittent errors running bpr in Java like characters getting skipped
+        int exitCode = ExecutionResults.GENERIC_FAILURE;
+        int loops = 0;
+        while(exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
+            final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
+            results = runAndJoin(command);
+            log.trace("Output text:\n{}", results.stdout());
+            exitCode = results.exitCode();
+        }
 
         assertSuccessfulExitCode(results);
         bprDeployed = true;

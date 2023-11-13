@@ -125,11 +125,10 @@ class ExpressionBashpileTest extends BashpileTest {
         // confirm string is unquoted on typecast
         assertFalse(results.stdin().contains("\".7\""));
 
-        // initial PATH may have 1 export, header has 1 export, definitions of i and j have one export each
-        // reassigns should not have exports
+        // two declares in the header, definitions of i and j have one declare each
+        // reassigns should not have declares
         final List<String> stdinLines = results.stdinLines();
-        final int expectedExports = stdinLines.get(0).startsWith("export") ? 4 : 3;
-        assertEquals(expectedExports, stdinLines.stream().filter(x -> x.contains("export")).count());
+        assertEquals(4, stdinLines.stream().filter(x -> x.contains("declare")).count());
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "7.0");
         assertEquals(2, lines.size());

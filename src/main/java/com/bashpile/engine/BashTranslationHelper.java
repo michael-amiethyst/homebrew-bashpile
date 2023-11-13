@@ -96,8 +96,8 @@ public class BashTranslationHelper {
         String variableName = null;
         if (ctx.typedId() != null) {
             variableName = ctx.typedId().Id().getText();
-            ifGuard = "%s %s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null%s".formatted(
-                    getLocalText(ctx), variableName, variableName, preamble, check, thenFragment);
+            ifGuard = "declare %s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null%s".formatted(
+                    variableName, variableName, preamble, check, thenFragment);
         } else {
             ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null%s".formatted(preamble, check, thenFragment);
         }
@@ -155,21 +155,6 @@ public class BashTranslationHelper {
 
     /* package */ static @Nonnull Translation createCommentTranslation(@Nonnull final String name, final int lineNumber) {
         return toLineTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
-    }
-
-    /* package */ static @Nonnull String getLocalText(@Nonnull final RuleContext ctx) {
-        return getLocalText(ctx, false);
-    }
-
-    /* package */ static @Nonnull String getLocalText(@Nonnull final RuleContext ctx, final boolean reassignment) {
-        final boolean block = inBlock(ctx);
-        if (block && !reassignment) {
-            return "local ";
-        } else if (!block && !reassignment) {
-            return "export ";
-        } else { // reassignment
-            return "";
-        }
     }
 
     /* package */ static @Nonnull Translation subcommentTranslationOrDefault(
