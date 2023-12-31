@@ -14,3 +14,4 @@
 * 0.12.0 - Redesign of the logic, favor Translations with flags over checking state/context
 * 0.12.1 - bpr.bps uses POSIX compliant `tail` options
 * 0.13.0 - Reduced need for #() shell string syntax
+* 0.14.0 - Using the Bash type system with `declare` instead of `export`

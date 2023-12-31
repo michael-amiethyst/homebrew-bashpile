@@ -38,6 +38,8 @@ Else     : 'else';
 Pass     : 'pass';
 Arguments: 'arguments';
 All      : 'all';
+Exported : 'exported';
+Readonly : 'readonly';
 
 // operators, in precidence order
 // opening parenthesis

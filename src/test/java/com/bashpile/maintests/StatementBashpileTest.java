@@ -52,6 +52,17 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("4\n", results.stdout());
     }
 
+    @Test @Order(31)
+    public void assignExportedReadonlyIntExpressionWorks() {
+        final ExecutionResults results = runText("""
+                exportedFinal: exported readonly int = 1 + 1
+                print(exportedFinal + 2)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("4\n", results.stdout());
+        assertTrue(results.stdin().contains("declare -x"));
+    }
+
     /**
      * References an undeclared variable.
      */

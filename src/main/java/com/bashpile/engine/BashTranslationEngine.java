@@ -108,8 +108,8 @@ public class BashTranslationEngine implements TranslationEngine {
         // we need to declare s to avoid a false positive for a shellcheck warning
         final String strictMode = """
                 set -eEuo pipefail -o posix
-                export IFS=$'\\n\\t'
-                declare s
+                declare -x IFS=$'\\n\\t'
+                declare -i s
                 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
                 """;
         return toParagraphTranslation("# strict mode header\n%s".formatted(strictMode));
@@ -231,8 +231,13 @@ public class BashTranslationEngine implements TranslationEngine {
                 final String paramDeclarations = ctx.paramaters().typedId().stream()
                         .map(BashpileParser.TypedIdContext::Id)
                         .map(visitor::visit)
-                        .map(Translation::body)
-                        .map(str -> "local %s=$%s;".formatted(str, i.getAndIncrement()))
+                        .map(x -> {
+                            String opts = "-r";
+                            if (x.type() == INT) {
+                                opts += "i";
+                            }
+                            return "declare %s %s=$%s;".formatted(opts, x.body(), i.getAndIncrement());
+                        })
                         .collect(Collectors.joining(" "));
                 namedParams = TAB + paramDeclarations + "\n";
             }
@@ -316,7 +321,13 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = createCommentTranslation("assign statement", lineNumber(ctx));
         final Translation subcomment =
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "assign statement body");
-        final Translation variableDeclaration = toLineTranslation(getLocalText(ctx) + variableName + "\n");
+        // 'readonly' not enforced
+        String declareOptions = "";
+        if (ctx.typedId().Exported() != null) {
+            declareOptions = "-x ";
+        }
+        final Translation variableDeclaration =
+                toLineTranslation("declare %s%s\n".formatted(declareOptions, variableName));
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
         final Translation assignment =
@@ -348,8 +359,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation subcomment =
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "reassignment statement body");
         // merge exprTranslation into reassignment
-        final String reassignmentBody = "%s%s=%s\n".formatted(
-                getLocalText(ctx, true), variableName, exprTranslation.body());
+        final String reassignmentBody = "%s=%s\n".formatted(variableName, exprTranslation.body());
         final Translation reassignment =
                 toLineTranslation(reassignmentBody).addPreamble(exprTranslation.preamble());
 
