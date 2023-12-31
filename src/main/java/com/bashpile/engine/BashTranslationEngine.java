@@ -321,7 +321,13 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = createCommentTranslation("assign statement", lineNumber(ctx));
         final Translation subcomment =
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "assign statement body");
-        final Translation variableDeclaration = toLineTranslation("declare " + variableName + "\n");
+        // 'readonly' not enforced
+        String declareOptions = "";
+        if (ctx.typedId().Exported() != null) {
+            declareOptions = "-x ";
+        }
+        final Translation variableDeclaration =
+                toLineTranslation("declare %s%s\n".formatted(declareOptions, variableName));
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
         final Translation assignment =

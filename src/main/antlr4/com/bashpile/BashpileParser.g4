@@ -25,7 +25,7 @@ statement
 tags        : OBracket (String*) CBracket;
 // like (x: str, y: str)
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
-typedId     : Id Colon Type;
+typedId     : Id Colon Exported? Readonly? Type;
 argumentList: expression (Comma expression)*;
 elseBody    : INDENT statement+ DEDENT;
 

@@ -1,13 +1,14 @@
 # 1.0 features
-1. Change bpt output from `export` to `declare -x` (and type)
-2. Change syntax from function name: type() to standard function name(): type
-3. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"` - accept STDIN pipes
-4. Use bashpile.rb test section, Terraform + docker for multi-OS tests
-5. Arrays, Hashes, Refs
-6. Loops
-7. String interpolation with $[]
+1. Change syntax from function name: type() to standard function name(): type
+2. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"` - accept STDIN pipes
+3. Use bashpile.rb test section, Terraform + docker for multi-OS tests
+4. Arrays, Hashes, Refs
+5. Loops
+6. String interpolation with $[]
    1. have bpr use arguments, arguments[all] (args/argv alias?)
-8. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+7. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+8. Enforce 'readonly' 
+   1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # Later
 (Not ordered)
