@@ -323,7 +323,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
         String declareOptions = "";
-        if (ctx.typedId().Exported() != null) {
+        if (ctx.typedId().modifier().stream().anyMatch(it -> it.Exported() != null)) {
             declareOptions = "-x ";
         }
         final Translation variableDeclaration =

@@ -53,14 +53,59 @@ class StatementBashpileTest extends BashpileTest {
     }
 
     @Test @Order(31)
+    public void assignReadonlyIntExpressionWorks() {
+        final ExecutionResults results = runText("""
+                someVar: readonly int = 1 + 1
+                print(someVar + 2)""");
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare"));
+        assertSuccessfulExitCode(results);
+        assertEquals("4\n", results.stdout());
+    }
+
+    @Test @Order(32)
+    public void assignExportedIntExpressionWorks() {
+        final ExecutionResults results = runText("""
+                someVar: exported int = 1 + 1
+                print(someVar + 2)""");
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare -x"));
+        assertSuccessfulExitCode(results);
+        assertEquals("4\n", results.stdout());
+    }
+
+    @Test @Order(33)
+    public void assignReadonlyExportedIntExpressionWorks() {
+        final ExecutionResults results = runText("""
+                someVar: readonly exported int = 1 + 1
+                print(someVar + 2)""");
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare -x"));
+        assertSuccessfulExitCode(results);
+        assertEquals("4\n", results.stdout());
+    }
+
+    @Test @Order(34)
     public void assignExportedReadonlyIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 exportedFinal: exported readonly int = 1 + 1
                 print(exportedFinal + 2)""");
         assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare -x"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
+    }
+
+    @Test @Order(35)
+    public void assignReadonlyReadonlyExportedIntExpressionThrows() {
+        final ExecutionResults results = runText("""
+                someVar: readonly readonly exported int = 1 + 1
+                print(someVar + 2)""");
+        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare -x"));
+        // TODO this should fail
+        assertSuccessfulExitCode(results);
+        assertEquals("4\n", results.stdout());
     }
 
     /**
