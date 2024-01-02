@@ -5,10 +5,7 @@ import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.BashShell;
 import com.bashpile.shell.ExecutionResults;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,14 +50,54 @@ class StatementBashpileTest extends BashpileTest {
     }
 
     @Test @Order(31)
+    public void assignReadonlyIntExpressionWorks() {
+        final ExecutionResults results = runText("""
+                someVar: readonly int = 1 + 1
+                print(someVar + 2)""");
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare"));
+        assertSuccessfulExitCode(results);
+        assertEquals("4\n", results.stdout());
+    }
+
+    @Test @Order(32)
+    public void assignExportedIntExpressionWorks() {
+        final ExecutionResults results = runText("""
+                someVar: exported int = 1 + 1
+                print(someVar + 2)""");
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare -x someVar"));
+        assertSuccessfulExitCode(results);
+        assertEquals("4\n", results.stdout());
+    }
+
+    @Test @Order(33)
+    public void assignReadonlyExportedIntExpressionWorks() {
+        final ExecutionResults results = runText("""
+                someVar: readonly exported int = 1 + 1
+                print(someVar + 2)""");
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare -x someVar"));
+        assertSuccessfulExitCode(results);
+        assertEquals("4\n", results.stdout());
+    }
+
+    @Test @Order(34)
     public void assignExportedReadonlyIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 exportedFinal: exported readonly int = 1 + 1
                 print(exportedFinal + 2)""");
         assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare -x exportedFinal"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
-        assertTrue(results.stdin().contains("declare -x"));
+    }
+
+    @Test() @Order(35)
+    public void assignReadonlyReadonlyExportedIntExpressionThrows() {
+        Assertions.assertThrows(BashpileUncheckedException.class, () -> runText("""
+                someVar: readonly readonly exported int = 1 + 1
+                print(someVar + 2)"""));
     }
 
     /**
@@ -482,6 +519,33 @@ class StatementBashpileTest extends BashpileTest {
         try {
             final ExecutionResults results = runText(bashpileScript);
             assertCorrectFormatting(results);
+            assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
+            assertSuccessfulExitCode(results);
+            assertTrue(results.stdoutLines().get(0).matches("\\d+\\.txt"));
+            log = Path.of(results.stdoutLines().get(0));
+            assertFalse(Files.exists(log), "trap file not deleted");
+        } finally {
+            if (log != null) {
+                Files.deleteIfExists(log);
+            }
+        }
+    }
+
+    @Test @Order(220)
+    public void multilineExportedCreateStatementWorks() throws IOException {
+        final String bashpileScript = """
+                log: readonly exported str = #(
+                    filename="$(printf "%d.txt" $$)"
+                    printf "%s" "$filename" > "$filename"
+                    printf "%s" "$filename"
+                ) creates log:
+                    #(cat "$log")
+                """;
+        Path log = null;
+        try {
+            final ExecutionResults results = runText(bashpileScript);
+            assertCorrectFormatting(results);
+            assertTrue(results.stdin().contains("declare -x log"));
             assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
             assertSuccessfulExitCode(results);
             assertTrue(results.stdoutLines().get(0).matches("\\d+\\.txt"));

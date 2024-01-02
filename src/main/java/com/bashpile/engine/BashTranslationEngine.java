@@ -322,12 +322,9 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation subcomment =
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
-        String declareOptions = "";
-        if (ctx.typedId().Exported() != null) {
-            declareOptions = "-x ";
-        }
+        final Translation modifiers = visitModifiers(ctx.typedId().modifier());
         final Translation variableDeclaration =
-                toLineTranslation("declare %s%s\n".formatted(declareOptions, variableName));
+                toLineTranslation("declare %s%s\n".formatted(modifiers.body(), variableName));
         // merge expr into the assignment
         final String assignmentBody = exprExists ? "%s=%s\n".formatted(variableName, exprTranslation.body()) : "";
         final Translation assignment =
