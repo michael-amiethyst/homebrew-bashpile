@@ -1,5 +1,6 @@
 package com.bashpile.engine;
 
+import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.Type;
@@ -13,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -96,8 +98,9 @@ public class BashTranslationHelper {
         String variableName = null;
         if (ctx.typedId() != null) {
             variableName = ctx.typedId().Id().getText();
-            ifGuard = "declare %s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null%s".formatted(
-                    variableName, variableName, preamble, check, thenFragment);
+            final String modifiers = visitModifiers(ctx.typedId().modifier()).body();
+            ifGuard = "declare %s%s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null%s".formatted(
+                    modifiers, variableName, variableName, preamble, check, thenFragment);
         } else {
             ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null%s".formatted(preamble, check, thenFragment);
         }
@@ -141,6 +144,29 @@ public class BashTranslationHelper {
                 declare -i __bp_exitCode=$?
                 if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
                 """.formatted(ifGuard, ifBody, elseBody);
+    }
+
+    /**
+     * Ensures there is only one copy of a given modifier.  Returns "-x " or "" as a Translation.
+     */
+    /* package */ static @Nonnull Translation visitModifiers(@Nullable List<BashpileParser.ModifierContext> ctx) {
+        if (ctx == null || ctx.isEmpty()) {
+            return EMPTY_TRANSLATION;
+        }
+        final long lineNumber = lineNumber(ctx.get(0));
+
+        // check readonly declarations
+        final long readonlys = ctx.stream().filter(typeCtx -> typeCtx.Readonly() != null).count();
+        Asserts.assertNotOver(
+                1, readonlys, "Can only have one readonly statement, line " + lineNumber);
+
+        // check declare declarations
+        final long exports = ctx.stream().filter(typeCtx -> typeCtx.Exported() != null).count();
+        Asserts.assertNotOver(1, exports, "Can only have one export statement, line " + lineNumber);
+        if (exports >= 1) {
+            return new Translation("-x ");
+        }
+        return EMPTY_TRANSLATION;
     }
 
     /* package */ static @Nonnull Translation visitBodyStatements(
@@ -467,4 +493,5 @@ public class BashTranslationHelper {
             return Stream.concat(Stream.of(parentNode), children.flatMap(BashTranslationHelper::stream));
         }
     }
+
 }

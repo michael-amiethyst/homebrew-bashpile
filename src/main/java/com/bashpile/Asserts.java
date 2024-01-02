@@ -143,6 +143,17 @@ public class Asserts {
     }
 
     /**
+     * Asserts that {@code actual} isn't more than {@code max}.
+     */
+    public static void assertNotOver(
+            final long max, final long actual, @Nullable final String message) {
+        if (actual > max) {
+            throw new BashpileUncheckedAssertionException(
+                    requireNonNullElse(message, "Expected nothing over %d but found %d".formatted(max, actual)));
+        }
+    }
+
+    /**
      * Throws {@code uncheckedException} or an {@link AssertionError} on failure.
      */
     public static <K, V> void assertMapDoesNotContainKey(
