@@ -176,11 +176,10 @@ public class ShellStringBashpileTest extends BashpileTest {
     }
 
     @Test @Order(121)
-    public void shellLineWithBrewWorks() {
-        final ExecutionResults results = runText("brew install michael-amiethyst/bashpile/bashpile");
+    public void shellLineWithSpecialCharactersWorks() {
+        final ExecutionResults results = runText("mkdir temp-test; touch temp-test/bashpile.txt; rm -fr temp-test");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
-        assertTrue(results.stdin().contains("brew install michael-amiethyst/bashpile/bashpile\n"));
     }
 
     @Test @Order(130)

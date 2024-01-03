@@ -3,6 +3,7 @@ package com.bashpile.engine;
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
 import com.bashpile.engine.strongtypes.Type;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.RuleNode;
@@ -65,9 +66,10 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         if (optional.isPresent()) {
             return optional.get();
         } else {
-            log.error("Exception during visitChildren for node [" + node.getText() + "] with " + node.getChildCount() + " children");
-            System.exit(1);
-            return null;
+            // throw custom exception
+            final String message = "Exception during visitChildren for node [%s] with %d children"
+                    .formatted(node.getText(), node.getChildCount());
+            throw new BashpileUncheckedException(message);
         }
     }
 
