@@ -229,7 +229,7 @@ public class BashTranslationHelper {
     /* package */ static @Nonnull ParserRuleContext getFunctionDeclCtx(
             @Nonnull final BashpileVisitor visitor,
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
-        final String functionName = ctx.typedId().Id().getText();
+        final String functionName = ctx.Id().getText();
         assert visitor.getContextRoot() != null;
         final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
         final Predicate<ParserRuleContext> namesMatch =
@@ -241,7 +241,7 @@ public class BashTranslationHelper {
                     }
                     final BashpileParser.FunctionDeclarationStatementContext decl =
                             (BashpileParser.FunctionDeclarationStatementContext) context;
-                    final boolean nameMatches = decl.typedId().Id().getText().equals(functionName);
+                    final boolean nameMatches = decl.Id().getText().equals(functionName);
                     return nameMatches && paramsMatch(decl.paramaters(), ctx.paramaters());
                 };
         return allContexts

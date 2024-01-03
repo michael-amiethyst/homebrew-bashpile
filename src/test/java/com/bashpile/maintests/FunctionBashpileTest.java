@@ -22,7 +22,7 @@ class FunctionBashpileTest extends BashpileTest {
     public void functionDeclarationWorks() {
         final ExecutionResults results = runText("""
                 print((38. + 5) * .3)
-                function functionName: int ():
+                function functionName() -> int:
                     x: float = 5.5
                     return x * x
                 x: float = 7.7
@@ -42,7 +42,7 @@ class FunctionBashpileTest extends BashpileTest {
     public void functionDeclarationParamsWork() {
         final ExecutionResults results = runText("""
                 print((38. + 5) * .3)
-                function functionName:int(x:int, y:int):
+                function functionName(x:int, y:int) -> int:
                     return x * y
                 x:float = 7.7
                 print(x * x)
@@ -61,7 +61,7 @@ class FunctionBashpileTest extends BashpileTest {
     public void functionDeclarationBadParamsThrows() {
         assertThrows(TypeError.class, () -> runText("""
                 (38. + 5) * .3
-                function functionName:int(x:int, y:int):
+                function functionName(x:int, y:int) -> int:
                     return x * y
                 x:float = 7.
                 functionName(x,x)
@@ -73,11 +73,11 @@ class FunctionBashpileTest extends BashpileTest {
     public void functionDeclarationDoubleDeclThrows() {
         assertThrows(UserError.class, () -> runText("""
                 (38. + 5) * .3
-                function functionName:int(x1:int, y2:int):
+                function functionName(x1:int, y2:int)->int:
                     return x * y
                 x:int = 7
                 functionName(x,x)
-                function functionName: float (z: float) ["double declaration not allowed"]:
+                function functionName(z: float) ["double declaration not allowed"] -> float:
                     return z * 3
                 x * x"""));
     }
@@ -86,7 +86,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(50)
     public void functionCallWorks() {
         final ExecutionResults results = runText("""
-                function circleArea:float(r:float):
+                function circleArea(r:float) -> float:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
@@ -102,7 +102,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(60)
     public void functionCallMultipleParamsWorks() {
         final ExecutionResults results = runText("""
-                function rectArea: float (w: float, l: float):
+                function rectArea (w: float, l: float) -> float:
                     return w * l
                 print(rectArea(3, 4))
                 """);
@@ -115,7 +115,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(70)
     public void functionCallReturnStringWorks() {
         final ExecutionResults results = runText("""
-                function world: str ():
+                function world() -> str:
                     return "hello world"
                 print(world())""");
         assertCorrectFormatting(results);
@@ -127,7 +127,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(71)
     public void functionCallIgnoreReturnStringWorks() {
         final ExecutionResults results = runText("""
-                function world: str ():
+                function world() -> str:
                     return "hello world"
                 world()""");
         assertCorrectFormatting(results);
@@ -139,7 +139,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(80)
     public void functionCallTagsWork() {
         final ExecutionResults results = runText("""
-                function circleArea: float (r: float) ["math" "test" "function test"]:
+                function circleArea(r: float) ["math" "test" "function test"] -> float:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
@@ -152,7 +152,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(90)
     public void functionCallReturnStringBadTypeThrows() {
         assertThrows(TypeError.class, () -> runText("""
-                function world: empty ():
+                function world() -> empty:
                     return "hello world"
                 print(world())"""));
     }
@@ -161,7 +161,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(100)
     public void functionCallReturnEmptyBadTypeThrows() {
         assertThrows(TypeError.class, () -> runText("""
-                function world: str ():
+                function world() -> str:
                     return
                 print(world())"""));
     }
@@ -170,12 +170,12 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(130)
     public void functionForwardDeclarationWorks() {
         final ExecutionResults results = runText("""
-                function circleArea: float (r: float)
+                function circleArea(r: float) -> float
                                 
-                function twoCircleArea: float (r1: float, r2: float):
+                function twoCircleArea(r1: float, r2: float) -> float:
                     return circleArea(r1) + circleArea(r2)
                                 
-                function circleArea: float (r:float) ["helper"]:
+                function circleArea(r:float) ["helper"] -> float:
                     return 3.14 * r * r
                                 
                 print(twoCircleArea(1, -1))""");
@@ -206,7 +206,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(150)
     public void functionDeclTypesWork() {
         final ExecutionResults results = runText("""
-                function circleArea: float(r: float) ["need to remove the quotes"]:
+                function circleArea(r: float) ["need to remove the quotes"] -> float:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
@@ -222,7 +222,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(160)
     public void badFunctionDeclTypesThrow() {
         assertThrows(TypeError.class, () -> runText("""
-                function circleArea: float(r: float) ["need to remove the quotes"]:
+                function circleArea(r: float) ["need to remove the quotes"] -> float:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea("Hello World"))"""));
@@ -232,7 +232,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(170)
     public void functionDeclTypesCalcExpressionsWork() {
         final ExecutionResults results = runText("""
-                function circleArea: float(r: float) ["need to remove the quotes"]:
+                function circleArea(r: float) ["need to remove the quotes"] -> float:
                     return 3.14 * r * r
                 print(circleArea(.5 + .5))""");
         assertCorrectFormatting(results);
@@ -244,7 +244,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(180)
     public void functionDeclTypesBadCalcExpressionThrows() {
         assertThrows(UserError.class, () -> runText("""
-                function circleArea: float(r: float) ["need to remove the quotes"]:
+                function circleArea(r: float) ["need to remove the quotes"] -> float:
                     return 3.14 * r * r
                 print(circleArea(.5 + x))"""));
     }
@@ -253,8 +253,8 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(190)
     public void functionDeclTypesBadCalcExpressionNestedThrows() {
         assertThrows(TypeError.class, () -> runText("""
-                function circleArea: float(r: int) ["need to remove the quotes"]:
-                    function circleAreaHelper: float(r: float):
+                function circleArea(r: int) ["need to remove the quotes"] -> float:
+                    function circleAreaHelper(r: float) -> float:
                         return 3.14 * r * r
                     r = circleAreaHelper(r)
                     return r
