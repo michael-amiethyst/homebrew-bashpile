@@ -57,11 +57,16 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public @Nonnull Translation visitChildren(RuleNode node) {
         final RuleContext ctx = node.getRuleContext();
-        return IntStream.range(0, ctx.getChildCount())
-                .mapToObj(ctx::getChild)
-                .map(this::visit)
-                .reduce(Translation::add)
-                .orElseThrow();
+        try {
+            return IntStream.range(0, ctx.getChildCount())
+                    .mapToObj(ctx::getChild)
+                    .map(this::visit)
+                    .reduce(Translation::add)
+                    .orElseThrow(); // TODO figure why this crashes
+        } catch (Exception e) {
+            log.error("Exception during visitChildren for node [" + node.getText() + "] with " + node.getChildCount() + " children");
+            throw e;
+        }
     }
 
     @Override

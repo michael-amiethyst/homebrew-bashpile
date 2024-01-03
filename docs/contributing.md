@@ -12,7 +12,7 @@ Java JRE on WSL, Modify Settings to get Environment variables, set JAVA_HOME=Lin
 
 Just run bin/deploy to redeploy from the release.
 
-Install with local formula with `brew unlink bashpile; brew install Formula/bashpile.rb`.
+Install local formula with `brew unlink bashpile; brew install Formula/bashpile.rb`.
 
 Fresh pull: `brew cleanup --prune=all && brew reinstall Formula/bashpile.rb`
 Audit: `brew audit --new bashpile`
