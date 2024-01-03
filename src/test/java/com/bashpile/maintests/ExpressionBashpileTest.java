@@ -138,7 +138,7 @@ class ExpressionBashpileTest extends BashpileTest {
     @Test @Order(120)
     public void boolTypecastsWork() {
         final String bashpile = """
-                function times2point5:float(x:float):
+                function times2point5(x:float) -> float:
                     return x * 2.5
                 print(false:int * 38)
                 print(times2point5(true: float))
@@ -155,7 +155,7 @@ class ExpressionBashpileTest extends BashpileTest {
     @Test @Order(130)
     public void intTypecastsWork() {
         final String bashpile = """
-                function times2point5:float(x:float):
+                function times2point5(x:float) -> float:
                     return x * 2.5
                 b1: bool = 8000000000 : bool
                 b2: bool = -1 : bool
@@ -181,7 +181,7 @@ class ExpressionBashpileTest extends BashpileTest {
     @Test @Order(140)
     public void floatTypecastsWork() {
         final String bashpile = """
-                function times2point5:float(x:int):
+                function times2point5(x:int) -> float:
                     return x * 2.5
                 b1: bool = 8000000000.9999 : bool
                 b2: bool = -1.0 : bool
@@ -207,9 +207,9 @@ class ExpressionBashpileTest extends BashpileTest {
     @Test @Order(150)
     public void strTypecastsWork() {
         final String bashpile = """
-                function times2point5:float(x:int):
+                function times2point5(x:int) -> float:
                     return x * 2.5
-                function times2point5ForFloats:float(x:float):
+                function times2point5ForFloats(x:float) -> float:
                     return x * 2.5
                 b1: bool = "true" : bool
                 b2: bool = "TRUE" : bool
@@ -255,7 +255,7 @@ class ExpressionBashpileTest extends BashpileTest {
     @Test @Order(150)
     public void badStrTypecastsFloatToIntThrow() {
         final String bashpile = """
-                function times2point5:float(x:int):
+                function times2point5(x:int) -> float:
                     return x * 2.5
                 print(times2point5("2.5" : int))""";
         assertThrows(TypeError.class, () -> runText(bashpile));
@@ -264,7 +264,7 @@ class ExpressionBashpileTest extends BashpileTest {
     @Test @Order(160)
     public void badStrTypecastsTextToFloatThrow() {
         final String bashpile = """
-                function times2point5:float(x:float):
+                function times2point5(x:float) -> float:
                     return x * 2.5
                 print(times2point5("NCC-1701" : float))""";
         assertThrows(TypeError.class, () -> runText(bashpile));

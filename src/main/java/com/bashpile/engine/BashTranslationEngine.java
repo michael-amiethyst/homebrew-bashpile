@@ -185,7 +185,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
 
         // register that this forward declaration has been handled
-        foundForwardDeclarations.add(ctx.typedId().Id().getText());
+        foundForwardDeclarations.add(ctx.Id().getText());
 
         // add translations
         return comment.add(hoistedFunction.assertEmptyPreamble());
@@ -195,7 +195,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation functionDeclarationStatement(
             @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
         // avoid translating twice if was part of a forward declaration
-        final String functionName = ctx.typedId().Id().getText();
+        final String functionName = ctx.Id().getText();
         if (foundForwardDeclarations.contains(functionName)) {
             return EMPTY_TRANSLATION;
         }
@@ -211,7 +211,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // register function param types and return type
         final List<Type> typeList = ctx.paramaters().typedId()
                 .stream().map(Type::valueOf).collect(Collectors.toList());
-        final Type retType = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
+        final Type retType = Type.valueOf(ctx.Type().getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
         try (var ignored2 = typeStack.pushFrame()) {
@@ -407,7 +407,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // check return matches with function declaration
         final BashpileParser.FunctionDeclarationStatementContext enclosingFunction =
                 (BashpileParser.FunctionDeclarationStatementContext) ctx.parent.parent;
-        final String functionName = enclosingFunction.typedId().Id().getText();
+        final String functionName = enclosingFunction.Id().getText();
         final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
         Translation exprTranslation =
                 exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_TYPE;

@@ -8,8 +8,8 @@ statement
     : ShellLine Newline                   # shellLineStatement
     | (typedId Equals)? shellString Creates (String|Id)
            Colon INDENT statement+ DEDENT # createsStatement
-    | Function typedId paramaters         # functionForwardDeclarationStatement
-    | Function typedId paramaters tags?
+    | Function Id paramaters (Arrow Type)?# functionForwardDeclarationStatement
+    | Function Id paramaters tags? (Arrow Type)?
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon functionBlock     # anonymousBlockStatement
     | If Not? expression Colon INDENT statement+

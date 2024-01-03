@@ -175,6 +175,14 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertTrue(results.stdin().contains("ls\n"));
     }
 
+    @Test @Order(121)
+    public void shellLineWithBrewWorks() {
+        final ExecutionResults results = runText("brew install michael-amiethyst/bashpile/bashpile");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("brew install michael-amiethyst/bashpile/bashpile\n"));
+    }
+
     @Test @Order(130)
     public void complexShellLineWorks() {
         final ExecutionResults results = runText("find . -maxdepth 1 -print0 | xargs ls 2>&1");

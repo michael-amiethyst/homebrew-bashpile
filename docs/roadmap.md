@@ -1,7 +1,7 @@
 # 1.0 features
-1. Change syntax from function name: type() to standard function name(): type
-2. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"` - accept STDIN pipes
-3. Use bashpile.rb test section, Terraform + docker for multi-OS tests
+1. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"` - accept STDIN pipes
+2. Use bashpile.rb test section, Terraform + docker for multi-OS tests
+3. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
 4. Arrays, Hashes, Refs
 5. Loops
 6. String interpolation with $[]

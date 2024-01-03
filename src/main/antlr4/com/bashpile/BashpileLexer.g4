@@ -48,6 +48,7 @@ OParen  : '(';
 CParen  : ')';
 // unary minus (minus defiend below)
 Not     : 'not';
+Arrow   : '->';
 // cast in parser
 Multiply: '*';
 Divide  : '/';

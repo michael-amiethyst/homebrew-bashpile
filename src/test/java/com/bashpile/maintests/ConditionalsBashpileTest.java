@@ -167,7 +167,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(110)
     public void ifFunctionWorks() {
         final ExecutionResults results = runText("""
-                function retT: bool():
+                function retT() -> bool:
                     return true
                 if retT():
                     print("true")""");
@@ -180,7 +180,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(120)
     public void ifFunctionCanFail() {
         final ExecutionResults results = runText("""
-                function retF: bool():
+                function retF() -> bool:
                     return false
                 if retF():
                     print("true")
@@ -195,7 +195,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(121)
     public void ifFunctionWithIntWorks() {
         final ExecutionResults results = runText("""
-                function ret0: int():
+                function ret0() -> int:
                     return 0
                 if ret0():
                     print("true")""");
@@ -208,7 +208,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(122)
     public void ifFunctionWithIntCanFail() {
         final ExecutionResults results = runText("""
-                function ret1: int():
+                function ret1() -> int:
                     return 1
                 if ret1():
                     print("true")
@@ -223,7 +223,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(123)
     public void ifFunctionWithParenthesisWorks() {
         final ExecutionResults results = runText("""
-                function ret42: int():
+                function ret42() -> int:
                     return 42
                 if (ret42() * 0):
                     print("true")
@@ -238,7 +238,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
     @Order(124)
     public void ifFunctionWithParenthesisCanFail() {
         final ExecutionResults results = runText("""
-                function ret1: int():
+                function ret1() -> int:
                     return 1
                 if (ret1() + 0):
                     print("true")
