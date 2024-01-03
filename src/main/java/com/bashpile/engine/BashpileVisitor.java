@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
@@ -57,15 +58,16 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public @Nonnull Translation visitChildren(RuleNode node) {
         final RuleContext ctx = node.getRuleContext();
-        try {
-            return IntStream.range(0, ctx.getChildCount())
-                    .mapToObj(ctx::getChild)
-                    .map(this::visit)
-                    .reduce(Translation::add)
-                    .orElseThrow(); // TODO figure why this crashes
-        } catch (Exception e) {
+        final Optional<Translation> optional = IntStream.range(0, ctx.getChildCount())
+                .mapToObj(ctx::getChild)
+                .map(this::visit)
+                .reduce(Translation::add);
+        if (optional.isPresent()) {
+            return optional.get();
+        } else {
             log.error("Exception during visitChildren for node [" + node.getText() + "] with " + node.getChildCount() + " children");
-            throw e;
+            System.exit(1);
+            return null;
         }
     }
 
