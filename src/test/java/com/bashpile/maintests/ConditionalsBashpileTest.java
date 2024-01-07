@@ -387,7 +387,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
 
     @Test
     @Order(230)
-    public void ifStringsStrictEqualWithBashTypecastWorks() {
+    public void ifStringsStrictlyEqualWithBashTypecastWorks() {
         final ExecutionResults results = runText("""
                 hello: int = 1234
                 if hello === "1234":
@@ -397,5 +397,33 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("nah\n", results.stdout());
+    }
+
+    @Test
+    @Order(240)
+    public void ifStringsNotEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello == "1235":
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+    }
+
+    @Test
+    @Order(250)
+    public void ifStringsNotStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello !== "1234":
+                    print('not equal')
+                else:
+                    print('ya')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not equal\n", results.stdout());
     }
 }

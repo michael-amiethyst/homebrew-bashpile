@@ -586,11 +586,10 @@ public class BashTranslationEngine implements TranslationEngine {
                 visitor.visit(ctx.expression(1)).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
         // we do some checks for strict equals and strict not equals
-        final boolean strictEqualsOperator = ctx.binaryPrimary().IsStrictlyEqual() != null;
         final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
-        if (strictEqualsOperator && noTypeMatch) {
+        if (ctx.binaryPrimary().IsStrictlyEqual() != null && noTypeMatch) {
             return toStringTranslation("false");
-        } else if (ctx.binaryPrimary().IsStrictlyNotEqual() != null && noTypeMatch) {
+        } else if (ctx.binaryPrimary().InNotStrictlyEqual() != null && noTypeMatch) {
             return toStringTranslation("true");
         } // else
 
