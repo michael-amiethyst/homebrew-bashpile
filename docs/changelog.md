@@ -16,3 +16,4 @@
 * 0.13.0 - Reduced need for #() shell string syntax
 * 0.14.0 - Using the Bash type system with `declare` instead of `export`
 * 0.15.0 - Changed function syntax
+* 0.16.0 - Implemented `bpr -c <COMMAND>` for running from command line directly
