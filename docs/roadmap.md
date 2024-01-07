@@ -1,10 +1,10 @@
 # 1.0 features
-1. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"` - accept STDIN pipes
-2. Update intro docs to sell the idea 
+1. Update intro docs to sell the idea 
    1. (abstract shell, awk and sed)
    2. Bash iceburg
    3. Floating point arithmatic as an example
-3. Use bashpile.rb test section, Terraform + docker for multi-OS tests
+2. Use bashpile.rb test section
+3. Terraform + docker for multi-OS tests
 4. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
 5. Arrays, Hashes, Refs
 6. Loops

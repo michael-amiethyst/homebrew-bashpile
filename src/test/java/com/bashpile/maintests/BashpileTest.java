@@ -25,6 +25,7 @@ import static com.bashpile.engine.BashTranslationHelper.NESTED_COMMAND_SUBSTITUT
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+/** Base class for Bashpile Tests */
 abstract public class BashpileTest {
 
     protected static final Pattern END_OF_LINE_COMMENT = Pattern.compile("^[^ #]+#.*$");
