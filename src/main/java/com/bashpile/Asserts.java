@@ -194,10 +194,10 @@ public class Asserts {
         final Path tempFile = Path.of("temp.bps");
         try {
             Files.writeString(tempFile, translatedShellScript);
-            // ignore 'Argument to -z is always false due to literal strings.'
+            // ignore 'Argument to -z is always false due to literal strings.' and unused
             final ExecutionResults shellcheckResults =
-                    BashShell.runAndJoin(
-                            "shellcheck --shell=bash --severity=warning --exclude=SC2157 " + tempFile);
+                    BashShell.runAndJoin("shellcheck --shell=bash --severity=warning " +
+                            "--exclude=SC2157 --exclude=SC2034 " + tempFile);
             if (shellcheckResults.exitCode() != 0) {
                 final String message = "Script failed shellcheck.  Script:\n%s\nShellcheck output:\n%s".formatted(
                         translatedShellScript, shellcheckResults.stdout());

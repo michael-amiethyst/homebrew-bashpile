@@ -1,5 +1,6 @@
 package com.bashpile.engine;
 
+import com.bashpile.Asserts;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
@@ -77,6 +78,15 @@ public record Translation(
      */
     public static @Nonnull Translation toLineTranslation(@Nonnull final String text) {
         return new Translation(assertIsLine(text), Type.STR, TranslationMetadata.NORMAL);
+    }
+
+    /**
+     * Asserts text has no linebreaks at all
+     * @return A NORMAL STR Translation.
+     */
+    public static @Nonnull Translation toStringTranslation(@Nonnull final String text) {
+        Asserts.assertNoMatch(text, Pattern.compile("[^\n]*\n"));
+        return new Translation(text, Type.STR, TranslationMetadata.NORMAL);
     }
 
     // toPhraseTranslation not used/needed

@@ -44,6 +44,8 @@ public class BashTranslationEngine implements TranslationEngine {
             "isEmpty", "-z",
             "isNotEmpty", "-n",
             // for Strings
+            "===", "==",
+            "!==", "!=",
             "==", "==",
             "!=", "!=");
 
@@ -276,7 +278,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         final Translation guard;
-        final Translation not = ctx.Not() != null ? new Translation("! ", STR, NORMAL) : EMPTY_TRANSLATION;
+        final Translation not = ctx.Not() != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
         Translation expressionTranslation = visitor.visit(ctx.expression());
         expressionTranslation = unwindAll(expressionTranslation);
         if (expressionTranslation.type().isNumeric()) {
@@ -413,7 +415,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String functionName = enclosingFunction.Id().getText();
         final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
         Translation exprTranslation =
-                exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_TYPE;
+                exprExists ? visitor.visit(ctx.expression()) : EMPTY_TYPE;
         assertTypesCoerce(functionTypes.returnType(), exprTranslation.type(), functionName, lineNumber(ctx));
 
         if (!exprExists) {
@@ -484,7 +486,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // empty list or ' arg1Text arg2Text etc.'
         Translation argumentTranslations = EMPTY_TRANSLATION;
         if (hasArgs) {
-            argumentTranslations = new Translation(" ", STR, NORMAL).add(argumentTranslationsList.stream()
+            argumentTranslations = toStringTranslation(" ").add(argumentTranslationsList.stream()
                     .map(Translation::quoteBody)
                     .reduce((left, right) -> new Translation(
                             left.preamble() + right.preamble(),
@@ -583,9 +585,19 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation secondTranslation =
                 visitor.visit(ctx.expression(1)).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
+        // we do some checks for strict equals and strict not equals
+        final boolean strictEqualsOperator = ctx.binaryPrimary().IsStrictlyEqual() != null;
+        final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
+        if (strictEqualsOperator && noTypeMatch) {
+            return toStringTranslation("false");
+        } else if (ctx.binaryPrimary().IsStrictlyNotEqual() != null && noTypeMatch) {
+            return toStringTranslation("true");
+        } // else
+
         final String body = "[ \"%s\" %s \"%s\" ]".formatted(firstTranslation.unquoteBody().body(),
                 primaryTranslations.get(primary), secondTranslation.unquoteBody().body());
-        return new Translation(firstTranslation.preamble(), body, STR, List.of(NORMAL));
+        return toStringTranslation(body).addPreamble(firstTranslation.preamble())
+                .addPreamble(secondTranslation.preamble());
     }
 
     @Override

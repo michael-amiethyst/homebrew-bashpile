@@ -57,6 +57,8 @@ Minus   : '-';
 Unset   : 'unset';
 Empty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';
+IsStrictlyEqual: '===';
+InNotStrictlyEqual: '!==';
 IsEqual : '==';
 IsNotEqual : '!=';
 And     : 'and';
