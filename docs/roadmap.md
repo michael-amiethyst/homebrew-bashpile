@@ -1,17 +1,23 @@
 # 1.0 features
 1. Implement `bashpile -c` to run command right there e.g. `bashpile -c "print('hello')"` - accept STDIN pipes
-2. Use bashpile.rb test section, Terraform + docker for multi-OS tests
-3. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
-4. Arrays, Hashes, Refs
-5. Loops
-6. String interpolation with $[]
+2. Update intro docs to sell the idea 
+   1. (abstract shell, awk and sed)
+   2. Bash iceburg
+   3. Floating point arithmatic as an example
+3. Use bashpile.rb test section, Terraform + docker for multi-OS tests
+4. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
+5. Arrays, Hashes, Refs
+6. Loops
+7. String interpolation with $[]
    1. have bpr use arguments, arguments[all] (args/argv alias?)
-7. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
-8. Enforce 'readonly' 
+8. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+9. Enforce 'readonly' 
    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # Later
 (Not ordered)
+* 'Gnuize' the utilities used (ls?, sed, etc)
+* Implement int / float (built-in or `expr` vs `bc`)
 * OOP (use / be inspired by bash infinity?)
 * Factor out text for future localization and consistent end-user feel.
 * Regexes for Strings, files
