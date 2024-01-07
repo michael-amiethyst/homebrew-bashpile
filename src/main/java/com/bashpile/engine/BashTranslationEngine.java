@@ -42,7 +42,10 @@ public class BashTranslationEngine implements TranslationEngine {
     private static final Map<String, String> primaryTranslations = Map.of(
             "unset", "-z",
             "isEmpty", "-z",
-            "isNotEmpty", "-n");
+            "isNotEmpty", "-n",
+            // for Strings
+            "==", "==",
+            "!=", "!=");
 
     // instance variables
 
@@ -552,8 +555,8 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
-        final String primary = ctx.primary().getText();
+    public @Nonnull Translation unaryPrimaryExpression(BashpileParser.UnaryPrimaryExpressionContext ctx) {
+        final String primary = ctx.unaryPrimary().getText();
         Translation valueBeingTested;
         // right now all implemented primaries are string tests
         valueBeingTested = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
@@ -568,6 +571,21 @@ public class BashTranslationEngine implements TranslationEngine {
         final String body = "[ %s \"%s\" ]".formatted(
                 primaryTranslations.get(primary), valueBeingTested.unquoteBody().body());
         return new Translation(valueBeingTested.preamble(), body, STR, List.of(NORMAL));
+    }
+
+    @Override
+    public @Nonnull Translation binaryPrimaryExpression(BashpileParser.BinaryPrimaryExpressionContext ctx) {
+        Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
+        final String primary = ctx.binaryPrimary().getText();
+        // right now all implemented primaries are string tests
+        Translation firstTranslation =
+                visitor.visit(ctx.expression(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+        Translation secondTranslation =
+                visitor.visit(ctx.expression(1)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+
+        final String body = "[ \"%s\" %s \"%s\" ]".formatted(firstTranslation.unquoteBody().body(),
+                primaryTranslations.get(primary), secondTranslation.unquoteBody().body());
+        return new Translation(firstTranslation.preamble(), body, STR, List.of(NORMAL));
     }
 
     @Override

@@ -173,8 +173,13 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public @Nonnull Translation visitPrimaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
-        return translator.primaryExpression(ctx);
+    public @Nonnull Translation visitUnaryPrimaryExpression(BashpileParser.UnaryPrimaryExpressionContext ctx) {
+        return translator.unaryPrimaryExpression(ctx);
+    }
+
+    @Override
+    public Translation visitBinaryPrimaryExpression(BashpileParser.BinaryPrimaryExpressionContext ctx) {
+        return translator.binaryPrimaryExpression(ctx);
     }
 
     // visit type expressions

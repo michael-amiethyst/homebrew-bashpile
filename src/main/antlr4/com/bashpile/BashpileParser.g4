@@ -37,7 +37,7 @@ elseBody    : INDENT statement+ DEDENT;
 functionBlock       : INDENT statement* (returnPsudoStatement | statement) DEDENT;
 returnPsudoStatement: Return expression? Newline;
 
-// in operator precedence order?
+// in operator precedence order
 expression
     : expression Colon Type             # typecastExpression
     | shellString                       # shellStringExpression
@@ -47,7 +47,9 @@ expression
     | expression
          op=(Multiply|Divide|Add|Minus)
                              expression # calculationExpression
-    | primary expression                # primaryExpression
+    | unaryPrimary expression           # unaryPrimaryExpression
+    | expression binaryPrimary
+                             expression # binaryPrimaryExpression
     | argumentsBuiltin                  # argumentsBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
@@ -64,6 +66,8 @@ shellStringContents: shellString
                    | ShellStringEscapeSequence;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-primary: Unset | Empty | NotEmpty;
+unaryPrimary: Unset | Empty | NotEmpty;
+
+binaryPrimary: IsEqual | IsNotEqual;
 
 argumentsBuiltin: Arguments OBracket Number CBracket;

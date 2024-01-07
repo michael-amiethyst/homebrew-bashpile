@@ -356,4 +356,18 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
+
+    @Test
+    @Order(210)
+    public void ifStringsEqualWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "hello"
+                if hello == "hello":
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
 }

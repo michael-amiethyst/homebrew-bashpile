@@ -54,11 +54,11 @@ Multiply: '*';
 Divide  : '/';
 Add     : '+';
 Minus   : '-';
-// TODO FEATURE feature/relationalOperators relationals here
 Unset   : 'unset';
 Empty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';
-// TODO FEATURE feature/equalityOperators equality here with == and ===
+IsEqual : '==';
+IsNotEqual : '!=';
 And     : 'and';
 Or      : 'or';
 

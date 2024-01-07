@@ -130,6 +130,22 @@ public class Asserts {
      * Checks that expected {@link #equals(Object)} actual.
      * Throws {@link BashpileUncheckedAssertionException} on failed assert.
      *
+     * @param expected The expected int.
+     * @param actual The actually found int.
+     * @param message The optional message for a failed assert.
+     */
+    public static void assertEquals(
+            int expected, int actual, @Nullable final String message) {
+        if (expected != actual) {
+            throw new BashpileUncheckedAssertionException(
+                    requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
+        }
+    }
+
+    /**
+     * Checks that expected {@link #equals(Object)} actual.
+     * Throws {@link BashpileUncheckedAssertionException} on failed assert.
+     *
      * @param expected The expected String.
      * @param actual The actually found String.
      * @param message The optional message for a failed assert.
