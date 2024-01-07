@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
-        description = "Converts Bashpile lines to Bash"
+        description = "Bashpilec/bpc - Converts Bashpile lines to Bash OR Bashpile/bpr runs Bashpile directly"
 )
 public class BashpileMain implements Callable<Integer> {
 
@@ -56,19 +56,27 @@ public class BashpileMain implements Callable<Integer> {
     @Nullable @SuppressWarnings("UnusedDeclaration")
     private Path outputFile;
 
-    @CommandLine.Parameters(arity = "1..1",
+    @CommandLine.Option(names = {"-c", "--command"}, arity = "0..1",
+            description = "Run the command")
+    @Nullable
+    private String command;
+
+    @CommandLine.Parameters(arity = "0..1",
             description = "Use the specified bashpile file.")
     @Nullable
     private Path inputFile;
 
     private CommandLine picocliCommandLine;
 
+    /** Command line call uses this */
     public BashpileMain() {}
 
+    @VisibleForTesting
     public BashpileMain(@Nullable final Path inputFile) {
         this.inputFile = inputFile;
     }
 
+    @VisibleForTesting
     public BashpileMain(@Nullable final String bashpileScript) {
         this.bashpileScript = bashpileScript;
     }
@@ -78,16 +86,27 @@ public class BashpileMain implements Callable<Integer> {
         this.picocliCommandLine = picocliCommandLine;
     }
 
-    /** Saves transpiled input file to inputFile.bpt */
+    /**
+     * Front-door after the PicoCLI framework does command-line option / argument processing.
+     * Saves transpiled input file to inputFile.bpt OR runs command.
+     */
     @Override
     public @Nonnull Integer call() throws IOException {
-        final String filename = inputFile != null ? inputFile.toString() : "";
-        if (Strings.isEmpty(filename)) {
-            System.out.println("Input file must be specified.");
+        // guard
+        String filename = inputFile != null ? inputFile.toString() : "";
+        if (Strings.isEmpty(filename) && Strings.isEmpty(command)) {
+            // bad input
+            System.out.println("Input file or -c/--command option must be specified.");
             picocliCommandLine.usage(System.out);
             return 1;
+        } else if (Strings.isNotEmpty(command)) {
+            // massage command into a file
+            filename = "command.bps";
+            inputFile = Path.of(filename);
+            Files.writeString(inputFile, command);
         }
 
+        // transpile
         Path transpiledFilename;
         if (outputFile != null) {
             transpiledFilename = outputFile;
@@ -112,6 +131,7 @@ public class BashpileMain implements Callable<Integer> {
     /** Returns the translation */
     @VisibleForTesting
     public @Nonnull String transpile() throws IOException {
+        // TODO use params for getNameAndInputStream?
         final Pair<String, InputStream> namedInputStream = getNameAndInputStream();
         try (final InputStream inputStream = namedInputStream.getRight()) {
             final String parsed = parse(namedInputStream.getLeft(), inputStream);
@@ -119,6 +139,7 @@ public class BashpileMain implements Callable<Integer> {
         }
     }
 
+    // TODO break into getName and getInputStream?
     private @Nonnull Pair<String, InputStream> getNameAndInputStream() throws IOException {
         if (inputFile != null) {
             final List<String> lines = Files.readAllLines(findFile(inputFile));

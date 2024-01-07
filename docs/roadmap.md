@@ -17,6 +17,7 @@
 # Later
 (Not ordered)
 * 'Gnuize' the utilities used (ls?, sed, etc)
+* getopts
 * Implement int / float (built-in or `expr` vs `bc`)
 * OOP (use / be inspired by bash infinity?)
 * Factor out text for future localization and consistent end-user feel.

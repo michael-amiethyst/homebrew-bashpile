@@ -15,15 +15,19 @@ if unset arguments[1]:
     #(exit $?)
 
 // last line of the jar's output is the generated Bash script
-translatedFilename: str = #(
-    java -jar "$jarPath" "$1" | tail -1
-) creates translatedFilename:
-    // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
-    #(sleep .2)
-    #(shift)
-    print("Start of " + translatedFilename)
-    #(chmod 755 $translatedFilename)
-    // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
-    #("$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
-        if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
-            #("$translatedFilename" "$@")
+if arguments[1] != "-c" and arguments[1] != "--command":
+    translatedFilename: str = #(
+        java -jar "$jarPath" "$1" | tail -1
+    ) creates translatedFilename:
+        // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
+        #(sleep .2)
+        #(shift)
+        print("Start of " + translatedFilename)
+        #(chmod 755 $translatedFilename)
+        // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
+        #("$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
+            if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
+                #("$translatedFilename" "$@")
+else:
+    // command mode
+    // TODO

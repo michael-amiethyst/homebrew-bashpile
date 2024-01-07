@@ -162,4 +162,18 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             Files.deleteIfExists(generatedFile);
         }
     }
+
+    @Test @Timeout(20) @Order(50)
+    public void bprDashCWorks() throws IOException {
+        log.info("In bpr -c works");
+        Assumptions.assumeTrue(bprDeployed);
+
+        // run with our local (not installed) bpr
+        final String command = "bin/bpr -c \"print('Hello World')\"";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello World\n", results.stdout());
+    }
 }
