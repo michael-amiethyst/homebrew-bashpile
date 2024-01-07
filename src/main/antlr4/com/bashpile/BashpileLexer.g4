@@ -71,7 +71,7 @@ ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))
 
 Id: ID_START ID_CONTINUE*;
 
-Number: Integer | Float;
+Number: Float | Integer;
 
 // future proof for octals to start with '0' like in C
 Integer: NON_ZERO_DIGIT DIGIT* | '0';

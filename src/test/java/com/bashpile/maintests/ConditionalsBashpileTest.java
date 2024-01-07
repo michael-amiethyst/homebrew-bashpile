@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -426,4 +425,63 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("not equal\n", results.stdout());
     }
+
+    @Test
+    @Order(260)
+    public void ifIntsEqualWithWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello == 1234:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(270)
+    public void ifIntsStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello === 1234.0:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+        assertFalse(results.stdin().contains("== \"1234\""));
+    }
+
+    @Test
+    @Order(280)
+    public void ifIntsNotEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234"
+                if hello != 1234:
+                    print('not equals')
+                else:
+                    print('equals')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(290)
+    public void ifIntsNotStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234"
+                if hello !== 1234:
+                    print('not equal')
+                else:
+                    print('ya')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not equal\n", results.stdout());
+    }
+
+    // TODO make a bunch of tests for floats
 }

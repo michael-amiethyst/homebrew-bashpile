@@ -581,9 +581,9 @@ public class BashTranslationEngine implements TranslationEngine {
         final String primary = ctx.binaryPrimary().getText();
         // right now all implemented primaries are string tests
         Translation firstTranslation =
-                visitor.visit(ctx.expression(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+                visitor.visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
         Translation secondTranslation =
-                visitor.visit(ctx.expression(1)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+                visitor.visit(ctx.getChild(2)).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
         // we do some checks for strict equals and strict not equals
         final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
