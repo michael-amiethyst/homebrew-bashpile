@@ -593,7 +593,7 @@ public class BashTranslationEngine implements TranslationEngine {
         } // else make a non-trivial string or numeric primary
 
         String body;
-        final boolean numeric = firstTranslation.type().isNumeric() || secondTranslation.type().isNumeric();
+        final boolean numeric = firstTranslation.type().isNumeric() && secondTranslation.type().isNumeric();
         if (numeric) {
             // use bc to handle floats and avoid silly Bash operators (e.g. `-eq`) entirely
             body = "[ $(bc <<< \"%s %s %s\") -eq 1 ]";

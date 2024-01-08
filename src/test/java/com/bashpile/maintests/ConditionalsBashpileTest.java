@@ -470,6 +470,21 @@ public class ConditionalsBashpileTest extends BashpileTest {
     }
 
     @Test
+    @Order(281)
+    public void ifIntAndFloatNotEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234five"
+                numbers: float = 1234.
+                if hello != numbers:
+                    print('not equals')
+                else:
+                    print('equals')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not equals\n", results.stdout());
+    }
+
+    @Test
     @Order(290)
     public void ifIntsNotStrictlyEqualWithBashTypecastWorks() {
         final ExecutionResults results = runText("""
