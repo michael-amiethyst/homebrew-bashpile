@@ -30,8 +30,7 @@ import java.util.stream.Stream;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.Translation.EMPTY_TRANSLATION;
-import static com.bashpile.engine.Translation.toLineTranslation;
+import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 import static com.bashpile.engine.strongtypes.Type.INT;
 import static com.bashpile.engine.strongtypes.Type.STR;
@@ -164,7 +163,7 @@ public class BashTranslationHelper {
         final long exports = ctx.stream().filter(typeCtx -> typeCtx.Exported() != null).count();
         Asserts.assertNotOver(1, exports, "Can only have one export statement, line " + lineNumber);
         if (exports >= 1) {
-            return new Translation("-x ");
+            return toStringTranslation("-x ");
         }
         return EMPTY_TRANSLATION;
     }

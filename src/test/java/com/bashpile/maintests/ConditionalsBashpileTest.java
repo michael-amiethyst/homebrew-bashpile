@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -355,5 +354,261 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(210)
+    public void ifStringsEqualWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "hello"
+                if hello == "hello":
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(220)
+    public void ifStringsEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello == "1234":
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(230)
+    public void ifStringsStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello === "1234":
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+    }
+
+    @Test
+    @Order(240)
+    public void ifStringsNotEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello == "1235":
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+    }
+
+    @Test
+    @Order(250)
+    public void ifStringsNotStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello !== "1234":
+                    print('not equal')
+                else:
+                    print('ya')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not equal\n", results.stdout());
+    }
+
+    @Test
+    @Order(260)
+    public void ifIntsEqualWithWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello == 1234:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(270)
+    public void ifIntsStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: int = 1234
+                if hello === 1234.0:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+        assertFalse(results.stdin().contains("== \"1234\""));
+    }
+
+    @Test
+    @Order(280)
+    public void ifIntsNotEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234"
+                if hello != 1234:
+                    print('not equals')
+                else:
+                    print('equals')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(281)
+    public void ifIntAndFloatNotEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234five"
+                numbers: float = 1234.
+                if hello != numbers:
+                    print('not equals')
+                else:
+                    print('equals')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(290)
+    public void ifIntsNotStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234"
+                if hello !== 1234:
+                    print('not equal')
+                else:
+                    print('ya')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not equal\n", results.stdout());
+    }
+
+    @Test
+    @Order(300)
+    public void ifFloatsEqualWithWorks() {
+        final ExecutionResults results = runText("""
+                hello: float = 1234.
+                if hello == 1234:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(310)
+    public void ifFloatsStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: float = 1234.
+                if hello === 1234:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+        assertFalse(results.stdin().contains("== \"1234\""));
+    }
+
+    @Test
+    @Order(320)
+    public void ifFloatsNotEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello != 1234.0:
+                    print('not equals')
+                else:
+                    print('equals')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(330)
+    public void ifFloatsNotStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello !== 1234.0:
+                    print('not equal')
+                else:
+                    print('ya')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not equal\n", results.stdout());
+    }
+
+    @Test
+    @Order(340)
+    public void ifLessThanWorks() {
+        final ExecutionResults results = runText("""
+                hello: float = 1234.
+                if hello < 1234:
+                    print('less')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+    }
+
+    @Test
+    @Order(350)
+    public void ifLessThanOrEqualsWorks() {
+        final ExecutionResults results = runText("""
+                hello: float = 1234.
+                if hello <= 1234:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+        assertFalse(results.stdin().contains("== \"1234\""));
+    }
+
+    @Test
+    @Order(360)
+    public void ifMoreThanWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello > 1234.0:
+                    print('more than')
+                else:
+                    print('not')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not\n", results.stdout());
+    }
+
+    @Test
+    @Order(330)
+    public void ifMoreThanOrEqualsWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello >= 1234.0:
+                    print('equal')
+                else:
+                    print('no')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equal\n", results.stdout());
     }
 }

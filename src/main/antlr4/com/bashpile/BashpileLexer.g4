@@ -54,11 +54,17 @@ Multiply: '*';
 Divide  : '/';
 Add     : '+';
 Minus   : '-';
-// TODO FEATURE feature/relationalOperators relationals here
 Unset   : 'unset';
 Empty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';
-// TODO FEATURE feature/equalityOperators equality here with == and ===
+LessThan: '<';
+LessThanOrEquals: '<=';
+MoreThan: '>';
+MoreThanOrEquals: '>=';
+IsStrictlyEqual: '===';
+InNotStrictlyEqual: '!==';
+IsEqual : '==';
+IsNotEqual : '!=';
 And     : 'and';
 Or      : 'or';
 
@@ -69,7 +75,7 @@ ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))
 
 Id: ID_START ID_CONTINUE*;
 
-Number: Integer | Float;
+Number: Float | Integer;
 
 // future proof for octals to start with '0' like in C
 Integer: NON_ZERO_DIGIT DIGIT* | '0';

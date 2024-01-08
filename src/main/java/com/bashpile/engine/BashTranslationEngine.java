@@ -42,7 +42,9 @@ public class BashTranslationEngine implements TranslationEngine {
     private static final Map<String, String> primaryTranslations = Map.of(
             "unset", "-z",
             "isEmpty", "-z",
-            "isNotEmpty", "-n");
+            "isNotEmpty", "-n",
+            "===", "==",
+            "!==", "!=");
 
     // instance variables
 
@@ -273,7 +275,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         final Translation guard;
-        final Translation not = ctx.Not() != null ? new Translation("! ", STR, NORMAL) : EMPTY_TRANSLATION;
+        final Translation not = ctx.Not() != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
         Translation expressionTranslation = visitor.visit(ctx.expression());
         expressionTranslation = unwindAll(expressionTranslation);
         if (expressionTranslation.type().isNumeric()) {
@@ -410,7 +412,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String functionName = enclosingFunction.Id().getText();
         final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
         Translation exprTranslation =
-                exprExists ? visitor.visit(ctx.expression()) : Translation.EMPTY_TYPE;
+                exprExists ? visitor.visit(ctx.expression()) : EMPTY_TYPE;
         assertTypesCoerce(functionTypes.returnType(), exprTranslation.type(), functionName, lineNumber(ctx));
 
         if (!exprExists) {
@@ -481,7 +483,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // empty list or ' arg1Text arg2Text etc.'
         Translation argumentTranslations = EMPTY_TRANSLATION;
         if (hasArgs) {
-            argumentTranslations = new Translation(" ", STR, NORMAL).add(argumentTranslationsList.stream()
+            argumentTranslations = toStringTranslation(" ").add(argumentTranslationsList.stream()
                     .map(Translation::quoteBody)
                     .reduce((left, right) -> new Translation(
                             left.preamble() + right.preamble(),
@@ -552,8 +554,8 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public @Nonnull Translation primaryExpression(BashpileParser.PrimaryExpressionContext ctx) {
-        final String primary = ctx.primary().getText();
+    public @Nonnull Translation unaryPrimaryExpression(BashpileParser.UnaryPrimaryExpressionContext ctx) {
+        final String primary = ctx.unaryPrimary().getText();
         Translation valueBeingTested;
         // right now all implemented primaries are string tests
         valueBeingTested = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
@@ -566,8 +568,56 @@ public class BashTranslationEngine implements TranslationEngine {
                     argumentsCtx.argumentsBuiltin().Number().getText(), parameterExpansion));
         }
         final String body = "[ %s \"%s\" ]".formatted(
-                primaryTranslations.get(primary), valueBeingTested.unquoteBody().body());
+                primaryTranslations.getOrDefault(primary, primary), valueBeingTested.unquoteBody().body());
         return new Translation(valueBeingTested.preamble(), body, STR, List.of(NORMAL));
+    }
+
+    @Override
+    public @Nonnull Translation binaryPrimaryExpression(BashpileParser.BinaryPrimaryExpressionContext ctx) {
+        Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
+        String primary = ctx.binaryPrimary().getText();
+        // right now all implemented primaries are string tests
+        Translation firstTranslation =
+                visitor.visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+        Translation secondTranslation =
+                visitor.visit(ctx.getChild(2)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+
+        // we do some checks for strict equals and strict not equals
+        final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
+        if (ctx.binaryPrimary().IsStrictlyEqual() != null && noTypeMatch) {
+            return toStringTranslation("false");
+        } else if (ctx.binaryPrimary().InNotStrictlyEqual() != null && noTypeMatch) {
+            return toStringTranslation("true");
+        } // else make a non-trivial string or numeric primary
+
+        String body;
+        primary = primaryTranslations.getOrDefault(primary, primary);
+        String not = "";
+        final boolean numeric = firstTranslation.type().isNumeric() && secondTranslation.type().isNumeric();
+        if (numeric) {
+            // use bc to handle floats and avoid silly Bash operators (e.g. `-eq`) entirely
+            body = "[ $(bc <<< \"%s%s %s %s\") -eq 1 ]";
+        } else {
+            // string
+            body = "[ %s\"%s\" %s \"%s\" ]";
+            // <= and >= not supported, so need to do ! > and ! <
+            // all < and > must be escaped, so they will not be interpreted as redirects
+            switch (primary) {
+                case "<=" -> {
+                    not = "! ";
+                    primary = "\\>";
+                }
+                case ">=" -> {
+                    not = "! ";
+                    primary = "\\<";
+                }
+                case "<", ">" -> primary = "\\" + primary;
+            }
+        }
+        body = body.formatted(not, firstTranslation.unquoteBody().body(), primary,
+                secondTranslation.unquoteBody().body());
+        return toStringTranslation(body).addPreamble(firstTranslation.preamble())
+                .addPreamble(secondTranslation.preamble());
     }
 
     @Override

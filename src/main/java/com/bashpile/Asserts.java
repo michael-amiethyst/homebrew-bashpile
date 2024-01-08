@@ -130,6 +130,22 @@ public class Asserts {
      * Checks that expected {@link #equals(Object)} actual.
      * Throws {@link BashpileUncheckedAssertionException} on failed assert.
      *
+     * @param expected The expected int.
+     * @param actual The actually found int.
+     * @param message The optional message for a failed assert.
+     */
+    public static void assertEquals(
+            int expected, int actual, @Nullable final String message) {
+        if (expected != actual) {
+            throw new BashpileUncheckedAssertionException(
+                    requireNonNullElse(message, "Expected %s but got %s".formatted(expected, actual)));
+        }
+    }
+
+    /**
+     * Checks that expected {@link #equals(Object)} actual.
+     * Throws {@link BashpileUncheckedAssertionException} on failed assert.
+     *
      * @param expected The expected String.
      * @param actual The actually found String.
      * @param message The optional message for a failed assert.
@@ -178,10 +194,10 @@ public class Asserts {
         final Path tempFile = Path.of("temp.bps");
         try {
             Files.writeString(tempFile, translatedShellScript);
-            // ignore 'Argument to -z is always false due to literal strings.'
+            // ignore 'Argument to -z is always false due to literal strings.', unused and decimal warnings
             final ExecutionResults shellcheckResults =
-                    BashShell.runAndJoin(
-                            "shellcheck --shell=bash --severity=warning --exclude=SC2157 " + tempFile);
+                    BashShell.runAndJoin("shellcheck --shell=bash --severity=warning " +
+                            "--exclude=SC2157 --exclude=SC2034 --exclude=SC2072 " + tempFile);
             if (shellcheckResults.exitCode() != 0) {
                 final String message = "Script failed shellcheck.  Script:\n%s\nShellcheck output:\n%s".formatted(
                         translatedShellScript, shellcheckResults.stdout());

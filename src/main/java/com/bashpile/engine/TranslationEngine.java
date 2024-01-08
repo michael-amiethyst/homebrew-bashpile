@@ -80,10 +80,16 @@ public interface TranslationEngine {
     Translation calculationExpression(final BashpileParser.CalculationExpressionContext ctx);
 
     /**
-     * Translates a relational or equality, called a primary in Bash
+     * Translates a relational or equality with a single argument (e.g. 'not'), called a primary in Bash
      * @see <a href=https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html>Primaries</a>
      */
-    Translation primaryExpression(final BashpileParser.PrimaryExpressionContext ctx);
+    Translation unaryPrimaryExpression(final BashpileParser.UnaryPrimaryExpressionContext ctx);
+
+    /**
+     * Translates a relational or equality with two arguments (e.g. '=='), called a primary in Bash
+     * @see <a href=https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html>Primaries</a>
+     */
+    Translation binaryPrimaryExpression(final BashpileParser.BinaryPrimaryExpressionContext ctx);
 
     /** Translates IDs */
     Translation idExpression(final BashpileParser.IdExpressionContext ctx);
