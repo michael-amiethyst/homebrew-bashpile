@@ -43,7 +43,6 @@ public class BashTranslationEngine implements TranslationEngine {
             "unset", "-z",
             "isEmpty", "-z",
             "isNotEmpty", "-n",
-            // for Strings
             "===", "==",
             "!==", "!=",
             "==", "==",
@@ -591,10 +590,19 @@ public class BashTranslationEngine implements TranslationEngine {
             return toStringTranslation("false");
         } else if (ctx.binaryPrimary().InNotStrictlyEqual() != null && noTypeMatch) {
             return toStringTranslation("true");
-        } // else
+        } // else make a non-trivial string or numeric primary
 
-        final String body = "[ \"%s\" %s \"%s\" ]".formatted(firstTranslation.unquoteBody().body(),
-                primaryTranslations.get(primary), secondTranslation.unquoteBody().body());
+        String body;
+        final boolean numeric = firstTranslation.type().isNumeric() || secondTranslation.type().isNumeric();
+        if (numeric) {
+            // use bc to handle floats and avoid silly Bash operators (e.g. `-eq`) entirely
+            body = "[ $(bc <<< \"%s %s %s\") -eq 1 ]";
+        } else {
+            // string
+            body = "[ \"%s\" %s \"%s\" ]";
+        }
+        body = body.formatted(firstTranslation.unquoteBody().body(), primaryTranslations.get(primary),
+                secondTranslation.unquoteBody().body());
         return toStringTranslation(body).addPreamble(firstTranslation.preamble())
                 .addPreamble(secondTranslation.preamble());
     }

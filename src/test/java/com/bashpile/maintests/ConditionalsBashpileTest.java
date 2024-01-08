@@ -483,5 +483,62 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("not equal\n", results.stdout());
     }
 
-    // TODO make a bunch of tests for floats
+    @Test
+    @Order(300)
+    public void ifFloatsEqualWithWorks() {
+        final ExecutionResults results = runText("""
+                hello: float = 1234.
+                if hello == 1234:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+    }
+
+    @Test
+    @Order(310)
+    public void ifFloatsStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: float = 1234.
+                if hello === 1234:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+        assertFalse(results.stdin().contains("== \"1234\""));
+    }
+
+    @Test
+    @Order(320)
+    public void ifFloatsNotEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello != 1234.0:
+                    print('not equals')
+                else:
+                    print('equals')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+        // TODO uncomment and remove redundant unwind
+//        assertFalse(results.stdin().contains("__bp_subshellReturn"));
+    }
+
+    @Test
+    @Order(330)
+    public void ifFloatsNotStrictlyEqualWithBashTypecastWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello !== 1234.0:
+                    print('not equal')
+                else:
+                    print('ya')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not equal\n", results.stdout());
+    }
 }
