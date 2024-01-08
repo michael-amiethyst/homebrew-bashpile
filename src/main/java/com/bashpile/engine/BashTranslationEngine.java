@@ -592,30 +592,29 @@ public class BashTranslationEngine implements TranslationEngine {
 
         String body;
         primary = primaryTranslations.getOrDefault(primary, primary);
+        String not = "";
         final boolean numeric = firstTranslation.type().isNumeric() && secondTranslation.type().isNumeric();
-        // TODO refactor
         if (numeric) {
             // use bc to handle floats and avoid silly Bash operators (e.g. `-eq`) entirely
-            body = "[ $(bc <<< \"%s %s %s\") -eq 1 ]";
-        } else if (!List.of("<=", "<", ">=", ">").contains(primary)) {
-            // string
-            body = "[ \"%s\" %s \"%s\" ]";
-        } else if (primary.equals("<=")) {
-            // <= not supported, so ! >
-            body = "[ ! \"%s\" %s \"%s\" ]";
-            // escaped >
-            primary = "\\>";
-        } else if (primary.equals(">=")){
-            // >= not supported, so ! <
-            body = "[ ! \"%s\" %s \"%s\" ]";
-            // escaped <
-            primary = "\\<";
+            body = "[ $(bc <<< \"%s%s %s %s\") -eq 1 ]";
         } else {
-            body = "[ \"%s\" %s \"%s\" ]";
-            // <, > must be escaped to not be interpreted as redirects
-            primary = "\\" + primary;
+            // string
+            body = "[ %s\"%s\" %s \"%s\" ]";
+            // <= and >= not supported, so need to do ! > and ! <
+            // all < and > must be escaped, so they will not be interpreted as redirects
+            switch (primary) {
+                case "<=" -> {
+                    not = "! ";
+                    primary = "\\>";
+                }
+                case ">=" -> {
+                    not = "! ";
+                    primary = "\\<";
+                }
+                case "<", ">" -> primary = "\\" + primary;
+            }
         }
-        body = body.formatted(firstTranslation.unquoteBody().body(), primary,
+        body = body.formatted(not, firstTranslation.unquoteBody().body(), primary,
                 secondTranslation.unquoteBody().body());
         return toStringTranslation(body).addPreamble(firstTranslation.preamble())
                 .addPreamble(secondTranslation.preamble());
