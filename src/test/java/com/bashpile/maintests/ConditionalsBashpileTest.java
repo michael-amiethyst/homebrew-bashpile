@@ -554,4 +554,61 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("not equal\n", results.stdout());
     }
+
+    @Test
+    @Order(340)
+    public void ifLessThanWorks() {
+        final ExecutionResults results = runText("""
+                hello: float = 1234.
+                if hello < 1234:
+                    print('less')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("nah\n", results.stdout());
+    }
+
+    @Test
+    @Order(350)
+    public void ifLessThanOrEqualsWorks() {
+        final ExecutionResults results = runText("""
+                hello: float = 1234.
+                if hello <= 1234:
+                    print('equals')
+                else:
+                    print('nah')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equals\n", results.stdout());
+        assertFalse(results.stdin().contains("== \"1234\""));
+    }
+
+    @Test
+    @Order(360)
+    public void ifMoreThanWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello > 1234.0:
+                    print('more than')
+                else:
+                    print('not')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("not\n", results.stdout());
+    }
+
+    @Test
+    @Order(330)
+    public void ifMoreThanOrEqualsWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello >= 1234.0:
+                    print('equal')
+                else:
+                    print('no')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equal\n", results.stdout());
+    }
 }

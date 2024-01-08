@@ -44,9 +44,7 @@ public class BashTranslationEngine implements TranslationEngine {
             "isEmpty", "-z",
             "isNotEmpty", "-n",
             "===", "==",
-            "!==", "!=",
-            "==", "==",
-            "!=", "!=");
+            "!==", "!=");
 
     // instance variables
 
@@ -570,14 +568,14 @@ public class BashTranslationEngine implements TranslationEngine {
                     argumentsCtx.argumentsBuiltin().Number().getText(), parameterExpansion));
         }
         final String body = "[ %s \"%s\" ]".formatted(
-                primaryTranslations.get(primary), valueBeingTested.unquoteBody().body());
+                primaryTranslations.getOrDefault(primary, primary), valueBeingTested.unquoteBody().body());
         return new Translation(valueBeingTested.preamble(), body, STR, List.of(NORMAL));
     }
 
     @Override
     public @Nonnull Translation binaryPrimaryExpression(BashpileParser.BinaryPrimaryExpressionContext ctx) {
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
-        final String primary = ctx.binaryPrimary().getText();
+        String primary = ctx.binaryPrimary().getText();
         // right now all implemented primaries are string tests
         Translation firstTranslation =
                 visitor.visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
@@ -593,15 +591,31 @@ public class BashTranslationEngine implements TranslationEngine {
         } // else make a non-trivial string or numeric primary
 
         String body;
+        primary = primaryTranslations.getOrDefault(primary, primary);
         final boolean numeric = firstTranslation.type().isNumeric() && secondTranslation.type().isNumeric();
+        // TODO refactor
         if (numeric) {
             // use bc to handle floats and avoid silly Bash operators (e.g. `-eq`) entirely
             body = "[ $(bc <<< \"%s %s %s\") -eq 1 ]";
-        } else {
+        } else if (!List.of("<=", "<", ">=", ">").contains(primary)) {
             // string
             body = "[ \"%s\" %s \"%s\" ]";
+        } else if (primary.equals("<=")) {
+            // <= not supported, so ! >
+            body = "[ ! \"%s\" %s \"%s\" ]";
+            // escaped >
+            primary = "\\>";
+        } else if (primary.equals(">=")){
+            // >= not supported, so ! <
+            body = "[ ! \"%s\" %s \"%s\" ]";
+            // escaped <
+            primary = "\\<";
+        } else {
+            body = "[ \"%s\" %s \"%s\" ]";
+            // <, > must be escaped to not be interpreted as redirects
+            primary = "\\" + primary;
         }
-        body = body.formatted(firstTranslation.unquoteBody().body(), primaryTranslations.get(primary),
+        body = body.formatted(firstTranslation.unquoteBody().body(), primary,
                 secondTranslation.unquoteBody().body());
         return toStringTranslation(body).addPreamble(firstTranslation.preamble())
                 .addPreamble(secondTranslation.preamble());

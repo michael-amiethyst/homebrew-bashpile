@@ -68,6 +68,7 @@ shellStringContents: shellString
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
 unaryPrimary: Unset | Empty | NotEmpty;
 
-binaryPrimary: IsStrictlyEqual | InNotStrictlyEqual | IsEqual | IsNotEqual;
+binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
+             | IsStrictlyEqual | InNotStrictlyEqual | IsEqual | IsNotEqual;
 
 argumentsBuiltin: Arguments OBracket Number CBracket;

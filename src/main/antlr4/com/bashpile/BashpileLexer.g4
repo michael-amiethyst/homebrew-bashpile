@@ -57,7 +57,10 @@ Minus   : '-';
 Unset   : 'unset';
 Empty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';
-// TODO relational operators here (<, <=, >, >=)
+LessThan: '<';
+LessThanOrEquals: '<=';
+MoreThan: '>';
+MoreThanOrEquals: '>=';
 IsStrictlyEqual: '===';
 InNotStrictlyEqual: '!==';
 IsEqual : '==';
