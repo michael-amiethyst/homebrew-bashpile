@@ -524,8 +524,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equals\n", results.stdout());
-        // TODO uncomment and remove redundant unwind
-//        assertFalse(results.stdin().contains("__bp_subshellReturn"));
     }
 
     @Test
