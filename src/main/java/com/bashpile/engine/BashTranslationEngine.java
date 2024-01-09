@@ -576,10 +576,9 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation binaryPrimaryExpression(BashpileParser.BinaryPrimaryExpressionContext ctx) {
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
         String primary = ctx.binaryPrimary().getText();
-        // right now all implemented primaries are string tests
-        Translation firstTranslation =
+        final Translation firstTranslation =
                 visitor.visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
-        Translation secondTranslation =
+        final Translation secondTranslation =
                 visitor.visit(ctx.getChild(2)).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
         // we do some checks for strict equals and strict not equals
@@ -615,6 +614,20 @@ public class BashTranslationEngine implements TranslationEngine {
             }
         }
         body = body.formatted(not, firstTranslation.unquoteBody().body(), primary,
+                secondTranslation.unquoteBody().body());
+        return toStringTranslation(body).addPreamble(firstTranslation.preamble())
+                .addPreamble(secondTranslation.preamble());
+    }
+
+    @Override
+    public Translation combiningExpression(BashpileParser.CombiningExpressionContext ctx) {
+        final String operator = ctx.combiningOperator().getText().equals("and") ? "&&" : "||";
+        final Translation firstTranslation =
+                visitor.visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+        final Translation secondTranslation =
+                visitor.visit(ctx.getChild(2)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+
+        final String body = "%s %s %s".formatted(firstTranslation.unquoteBody().body(), operator,
                 secondTranslation.unquoteBody().body());
         return toStringTranslation(body).addPreamble(firstTranslation.preamble())
                 .addPreamble(secondTranslation.preamble());

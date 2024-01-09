@@ -50,6 +50,8 @@ expression
     | unaryPrimary expression           # unaryPrimaryExpression
     | expression binaryPrimary
                              expression # binaryPrimaryExpression
+    | expression combiningOperator
+                             expression # combiningExpression
     | argumentsBuiltin                  # argumentsBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
@@ -68,7 +70,10 @@ shellStringContents: shellString
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
 unaryPrimary: Unset | Empty | NotEmpty;
 
+// one line means logically equal precidence (e.g. LessThan in the same as MoreThanOrEquals)
 binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
              | IsStrictlyEqual | InNotStrictlyEqual | IsEqual | IsNotEqual;
+
+combiningOperator: And | Or;
 
 argumentsBuiltin: Arguments OBracket Number CBracket;

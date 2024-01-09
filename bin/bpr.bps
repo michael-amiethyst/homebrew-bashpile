@@ -29,5 +29,6 @@ if arguments[1] != "-c": // and arguments[1] != "--command":
             if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
                 #("$translatedFilename" "$@")
 else:
+    print("Command mode!")
     // command mode
     // TODO

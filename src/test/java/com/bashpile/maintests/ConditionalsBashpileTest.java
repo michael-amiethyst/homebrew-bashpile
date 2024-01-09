@@ -599,11 +599,25 @@ public class ConditionalsBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(330)
+    @Order(370)
     public void ifMoreThanOrEqualsWorks() {
         final ExecutionResults results = runText("""
                 hello: str = "1234.0"
                 if hello >= 1234.0:
+                    print('equal')
+                else:
+                    print('no')""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("equal\n", results.stdout());
+    }
+
+    @Test
+    @Order(380)
+    public void ifAndWorks() {
+        final ExecutionResults results = runText("""
+                hello: str = "1234.0"
+                if hello >= 0 and hello == 1234.0:
                     print('equal')
                 else:
                     print('no')""");

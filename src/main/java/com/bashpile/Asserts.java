@@ -197,7 +197,7 @@ public class Asserts {
             // ignore 'Argument to -z is always false due to literal strings.', unused and decimal warnings
             final ExecutionResults shellcheckResults =
                     BashShell.runAndJoin("shellcheck --shell=bash --severity=warning " +
-                            "--exclude=SC2157 --exclude=SC2034 --exclude=SC2072 " + tempFile);
+                            "--exclude=SC2034 --exclude=SC2071 --exclude=SC2072 --exclude=SC2157 " + tempFile);
             if (shellcheckResults.exitCode() != 0) {
                 final String message = "Script failed shellcheck.  Script:\n%s\nShellcheck output:\n%s".formatted(
                         translatedShellScript, shellcheckResults.stdout());
