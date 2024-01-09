@@ -15,7 +15,7 @@ if unset arguments[1]:
     #(exit $?)
 
 // last line of the jar's output is the generated Bash script
-if arguments[1] != "-c" and arguments[1] != "--command":
+if arguments[1] != "-c": // and arguments[1] != "--command":
     translatedFilename: str = #(
         java -jar "$jarPath" "$1" | tail -1
     ) creates translatedFilename:
