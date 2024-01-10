@@ -9,7 +9,6 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
@@ -58,7 +57,7 @@ public class BashpileMain implements Callable<Integer> {
 
     @CommandLine.Option(names = {"-c", "--command"}, arity = "0..1",
             description = "Run the command")
-    @Nullable
+    @Nullable @SuppressWarnings("UnusedDeclaration")
     private String command;
 
     @CommandLine.Parameters(arity = "0..1",
@@ -92,6 +91,7 @@ public class BashpileMain implements Callable<Integer> {
      */
     @Override
     public @Nonnull Integer call() throws IOException {
+        // TODO support piping (e.g. "echo 'print()' | bpr")
         // guard
         String filename = inputFile != null ? inputFile.toString() : "";
         if (Strings.isEmpty(filename) && Strings.isEmpty(command)) {
@@ -131,32 +131,28 @@ public class BashpileMain implements Callable<Integer> {
     /** Returns the translation */
     @VisibleForTesting
     public @Nonnull String transpile() throws IOException {
-        // TODO use params for getNameAndInputStream?
-        final Pair<String, InputStream> namedInputStream = getNameAndInputStream();
-        try (final InputStream inputStream = namedInputStream.getRight()) {
-            final String parsed = parse(namedInputStream.getLeft(), inputStream);
-            return Asserts.assertNoShellcheckWarnings(parsed);
-        }
+        final InputStream inputStream = getSourceInputStream(inputFile, bashpileScript);
+        final String sourceName = inputFile != null ? inputFile.toString() : bashpileScript;
+        assert sourceName != null;
+        final String parsed = parse(sourceName, inputStream);
+        return Asserts.assertNoShellcheckWarnings(parsed);
     }
 
-    // TODO break into getName and getInputStream?
-    private @Nonnull Pair<String, InputStream> getNameAndInputStream() throws IOException {
+    /** Returns an input stream of inputFile (without a Shebang line) or defaults to the bashpileScript as an IS */
+    private @Nonnull InputStream getSourceInputStream(@Nullable final Path inputFile,
+                                                      @Nullable final String bashpileScript) throws IOException {
+        // process inputFile if present
         if (inputFile != null) {
-            final List<String> lines = Files.readAllLines(findFile(inputFile));
-            InputStream is;
+            List<String> lines = Files.readAllLines(findFile(inputFile));
             if (SHEBANG.matcher(lines.get(0)).matches()) {
-                final String removedShebang = String.join("\n", lines.subList(1, lines.size()));
-                LOG.trace("Removed shebang to get:\n" + removedShebang);
-                is = IOUtils.toInputStream(removedShebang, StandardCharsets.UTF_8);
-            } else {
-                is = Files.newInputStream(inputFile);
+                lines = lines.subList(1, lines.size());
             }
-            return Pair.of(inputFile.toString(), is);
-        } else if (bashpileScript != null) {
-            return Pair.of(bashpileScript, IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8));
-        } else {
-            throw new BashpileUncheckedException("Neither inputFile nor bashpileScript supplied.");
-        }
+            return IOUtils.toInputStream(String.join("\n", lines), StandardCharsets.UTF_8);
+        } // else use the bashpile script
+        if (bashpileScript != null) {
+            return IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
+        } // else throw
+        throw new BashpileUncheckedException("Neither inputFile nor bashpileScript supplied.");
     }
 
     private @Nonnull Path findFile(@Nonnull final Path find) {
