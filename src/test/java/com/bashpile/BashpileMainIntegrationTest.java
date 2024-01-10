@@ -31,15 +31,13 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // ensure bin/bpr is using /n instead of /r/n
         final String translatedFilename = "bin/bpr";
-        // from https://superuser.com/a/1066353/1850749
-        final String awkCommand = """
-                awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' %s""".formatted(translatedFilename);
-        ExecutionResults results = runAndJoin(awkCommand);
-        assertSuccessfulExitCode(results);
+        ensureLinuxLineEndings(translatedFilename);
+        ensureLinuxLineEndings("bin/bpc");
 
         // weird, intermittent errors running bpr in Java like characters getting skipped
         int exitCode = ExecutionResults.GENERIC_FAILURE;
         int loops = 0;
+        ExecutionResults results = null;
         while(exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
             final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
             results = runAndJoin(command);
@@ -51,6 +49,14 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         bprDeployed = true;
         final List<String> lines = results.stdoutLines();
         assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
+    }
+
+    private static void ensureLinuxLineEndings(String translatedFilename) throws IOException {
+        // from https://superuser.com/a/1066353/1850749
+        final String awkCommand = """
+                awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' %s""".formatted(translatedFilename);
+        ExecutionResults results1 = runAndJoin(awkCommand);
+        assertSuccessfulExitCode(results1);
     }
 
     @Test @Timeout(10) @Order(10)
@@ -175,5 +181,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         assertSuccessfulExitCode(results);
         assertEquals("Hello World\n", results.stdout());
+        assertFalse(Files.exists(Path.of("command.bps")));
     }
 }

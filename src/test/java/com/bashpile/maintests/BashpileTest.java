@@ -1,6 +1,6 @@
 package com.bashpile.maintests;
 
-import com.bashpile.BashpileMain;
+import com.bashpile.BashpileMainProcessor;
 import com.bashpile.Strings;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -147,28 +148,35 @@ abstract public class BashpileTest {
 
     protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
         LOG.debug("Start of:\n{}", bashText);
-        BashpileMain bashpile = new BashpileMain(bashText);
-        return execute(bashpile);
+        try {
+            return execute(BashpileMainProcessor.transpileScript(bashText));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
     }
 
     protected @Nonnull BashShell runTextAsync(@Nonnull final String bashText) {
         LOG.debug("Starting background threads for:\n{}", bashText);
-        BashpileMain bashpile = new BashpileMain(bashText);
-        return executeAsync(bashpile);
+        try {
+            return executeAsync(BashpileMainProcessor.transpileScript(bashText));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
     }
 
     protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
         final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
         LOG.debug("Start of {}", filename);
-        final BashpileMain bashpile = new BashpileMain(filename);
-        return execute(bashpile);
+        try {
+            return execute(BashpileMainProcessor.transpileNioFile(filename));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
     }
 
-    private @Nonnull ExecutionResults execute(@Nonnull final BashpileMain bashpile) {
+    private @Nonnull ExecutionResults execute(@Nonnull final String bashScript) {
         LOG.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = null;
         try {
-            bashScript = bashpile.transpile();
             return BashShell.runAndJoin(bashScript);
         } catch (UserError | AssertionError e) {
             throw e;
@@ -177,11 +185,9 @@ abstract public class BashpileTest {
         }
     }
 
-    private @Nonnull BashShell executeAsync(@Nonnull final BashpileMain bashpile) {
+    private @Nonnull BashShell executeAsync(@Nonnull final String bashScript) {
         LOG.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = null;
         try {
-            bashScript = bashpile.transpile();
             return BashShell.runAsync(bashScript);
         } catch (UserError | AssertionError e) {
             throw e;
