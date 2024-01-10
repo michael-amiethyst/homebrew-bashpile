@@ -8,7 +8,8 @@ public class UserError extends BashpileUncheckedException {
         super(message);
     }
 
-    public UserError(@Nonnull final String message, final int lineNumber) {
-        super("Syntax error on line %d: %s".formatted(lineNumber, message));
+    public UserError(@Nonnull final String message, int lineNumber) {
+        // convert lineNumber from 0 to 1 based
+        super("Syntax error on line %d: %s".formatted(++lineNumber, message));
     }
 }

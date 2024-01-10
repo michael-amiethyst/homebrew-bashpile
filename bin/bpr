@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-01-07T14:01:55.643271288-08:00[America/Los_Angeles] (timestamp 1704664915643)
+# Generated from bin/bpr.bps on 2024-01-09T19:17:03.025923581-08:00[America/Los_Angeles] (timestamp 1704856623025)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -19,44 +19,88 @@ if [ -z "${1+default}" ]; then
     # expression statement, Bashpile line 14
     exit $?
 fi
-# creates statement, Bashpile line 17
-declare translatedFilename
-if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail -1) 2> /dev/null; then
-    trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
-    ## wrapped body of creates statement
-    # expression statement, Bashpile line 21
-    sleep .2
-    # expression statement, Bashpile line 22
-    shift
-    # print statement, Bashpile line 23
-    printf "Start of ${translatedFilename}\n"
-    # expression statement, Bashpile line 24
-    chmod 755 $translatedFilename
-    # creates statement, Bashpile line 26
-    if (set -o noclobber; "$translatedFilename" "$@" 2>&1 | tee "bpr.log") 2> /dev/null; then
-        trap 'rm -f "$translatedFilename" bpr.log; exit 10' INT TERM EXIT
+if [ "$1" != "-c" ] && [ "$1" != "--command" ]; then
+    # creates statement, Bashpile line 18
+    declare translatedFilename
+    if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail -1) 2> /dev/null; then
+        trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
         ## wrapped body of creates statement
-        if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1; then
-            # expression statement, Bashpile line 28
-            "$translatedFilename" "$@"
+        # expression statement, Bashpile line 22
+        sleep .2
+        # expression statement, Bashpile line 23
+        shift
+        # print statement, Bashpile line 24
+        printf "Start of ${translatedFilename}\n"
+        # expression statement, Bashpile line 25
+        chmod 755 $translatedFilename
+        # creates statement, Bashpile line 27
+        if (set -o noclobber; "$translatedFilename" "$@" 2>&1 | tee "bpr.log") 2> /dev/null; then
+            trap 'rm -f "$translatedFilename" bpr.log; exit 10' INT TERM EXIT
+            ## wrapped body of creates statement
+            if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1; then
+                # expression statement, Bashpile line 29
+                "$translatedFilename" "$@"
+            fi
+            ## end of wrapped body of creates statement
+            rm -f bpr.log
+            trap - INT TERM EXIT
+        else
+            printf "Failed to create pr.log correctly."
+            rm -f bpr.log
+            exit 1
         fi
+        declare -i __bp_exitCode=$?
+        if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
         ## end of wrapped body of creates statement
-        rm -f bpr.log
+        rm -f "$translatedFilename"
         trap - INT TERM EXIT
     else
-        printf "Failed to create pr.log correctly."
-        rm -f bpr.log
+        printf "Failed to create translatedFilename correctly.  Output from attempted creation:\n$translatedFilename"
+        rm -f "$translatedFilename"
         exit 1
     fi
     declare -i __bp_exitCode=$?
     if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-    ## end of wrapped body of creates statement
-    rm -f "$translatedFilename"
-    trap - INT TERM EXIT
 else
-    printf "Failed to create translatedFilename correctly.  Output from attempted creation:\n$translatedFilename"
-    rm -f "$translatedFilename"
-    exit 1
+    # creates statement, Bashpile line 32
+    declare translationFilename
+    if translationFilename=$(set -o noclobber; java -jar "$jarPath" -c "$2" | tail -1) 2> /dev/null; then
+        trap 'rm -f "$translationFilename"; exit 10' INT TERM EXIT
+        ## wrapped body of creates statement
+        # expression statement, Bashpile line 36
+        sleep .2
+        # expression statement, Bashpile line 37
+        shift
+        # expression statement, Bashpile line 38
+        shift
+        # expression statement, Bashpile line 39
+        chmod 755 $translationFilename
+        # creates statement, Bashpile line 41
+        if (set -o noclobber; "$translationFilename" "$@" 2>&1 | tee "bpr.log") 2> /dev/null; then
+            trap 'rm -f "$translationFilename" bpr.log; exit 10' INT TERM EXIT
+            ## wrapped body of creates statement
+            if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1; then
+                # expression statement, Bashpile line 43
+                "$translationFilename" "$@"
+            fi
+            ## end of wrapped body of creates statement
+            rm -f bpr.log
+            trap - INT TERM EXIT
+        else
+            printf "Failed to create pr.log correctly."
+            rm -f bpr.log
+            exit 1
+        fi
+        declare -i __bp_exitCode=$?
+        if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+        ## end of wrapped body of creates statement
+        rm -f "$translationFilename"
+        trap - INT TERM EXIT
+    else
+        printf "Failed to create translationFilename correctly.  Output from attempted creation:\n$translationFilename"
+        rm -f "$translationFilename"
+        exit 1
+    fi
+    declare -i __bp_exitCode=$?
+    if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
 fi
-declare -i __bp_exitCode=$?
-if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi

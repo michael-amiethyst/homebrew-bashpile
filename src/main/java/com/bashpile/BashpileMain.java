@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
+// TODO factor out BashpileMainProcessor for helpers / logic
 /** Entry point into the program */
 @CommandLine.Command(
         name = "bashpile",
@@ -100,10 +101,7 @@ public class BashpileMain implements Callable<Integer> {
             picocliCommandLine.usage(System.out);
             return 1;
         } else if (Strings.isNotEmpty(command)) {
-            // massage command into a file
-            filename = "command.bps";
-            inputFile = Path.of(filename);
-            Files.writeString(inputFile, command);
+            bashpileScript = command;
         }
 
         // transpile

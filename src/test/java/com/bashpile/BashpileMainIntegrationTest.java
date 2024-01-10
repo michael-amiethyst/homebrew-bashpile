@@ -174,7 +174,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
-        // TODO uncomment and make pass
-        // assertEquals("Hello World\n", results.stdout());
+        assertEquals("Hello World\n", results.stdout());
     }
 }

@@ -74,7 +74,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         }
     }
 
-    // TODO see TODO in bpr.bps
     @Override
     public @Nonnull Translation visitProgram(@Nonnull final BashpileParser.ProgramContext ctx) {
         // save root for later usage
