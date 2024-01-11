@@ -335,7 +335,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 exprTranslation = exprTranslation
                         .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
                         .metadata(INLINE);
-            } // TODO same for reassign
+            }
             exprTranslation = exprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
             exprTranslation = unwindNested(exprTranslation);
         }

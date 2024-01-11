@@ -61,7 +61,6 @@ public class BashpileMain implements Callable<Integer> {
      */
     @Override
     public @Nonnull Integer call() throws IOException {
-        // TODO support piping (e.g. "echo 'print()' | bpr")
         // guard
         if (inputFile == null && command == null) {
             // bad input
