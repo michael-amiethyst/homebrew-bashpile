@@ -24,8 +24,7 @@ import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
-import static com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING_OFTEN;
-import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static com.google.common.collect.Iterables.getLast;
 
@@ -274,9 +273,10 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
+        // handle `if $guard: ifBlockStatements`
         final Translation guard;
-        final Translation not = ctx.Not() != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
-        Translation expressionTranslation = visitor.visit(ctx.expression());
+        final Translation not = ctx.Not(0) != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
+        Translation expressionTranslation = visitor.visit(ctx.expression(0));
         expressionTranslation = unwindAll(expressionTranslation);
         if (expressionTranslation.type().isNumeric()) {
             // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
@@ -288,13 +288,20 @@ public class BashTranslationEngine implements TranslationEngine {
 
         Translation ifBlockStatements;
         try (var ignored = typeStack.pushFrame()) {
-            ifBlockStatements = visitBodyStatements(ctx.statement(), visitor);
+            ifBlockStatements = visitBodyStatements(ctx.indentedStatements(0).statement(), visitor);
         }
+
+        // handle else ifs
+        // TODO else if
+        String elseIfBlock = "";
+
+        // handle `else: $elseBlock`
         String elseBlock = "";
-        if (ctx.elseBody() != null) {
+        if (ctx.Else() != null) {
             Translation elseBlockStatements;
             try (var ignored = typeStack.pushFrame()) {
-                elseBlockStatements = visitBodyStatements(ctx.elseBody().statement(), visitor);
+                final int lastIndex = ctx.indentedStatements().size() - 1;
+                elseBlockStatements = visitBodyStatements(ctx.indentedStatements(lastIndex).statement(), visitor);
             }
             elseBlock = """
                     
@@ -318,11 +325,17 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
-        Translation exprTranslation;
-        exprTranslation = exprExists
-                ? visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested)
-                : EMPTY_TRANSLATION;
-        exprTranslation = unwindNested(exprTranslation);
+        Translation exprTranslation = EMPTY_TRANSLATION;
+        if (exprExists) {
+            exprTranslation = visitor.visit(ctx.expression());
+            if (exprTranslation.metadata().contains(CONDITIONAL)) {
+                exprTranslation = exprTranslation
+                        .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
+                        .metadata(INLINE);
+            } // TODO same for reassign
+            exprTranslation = exprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
+            exprTranslation = unwindNested(exprTranslation);
+        }
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
@@ -621,7 +634,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
         body = body.formatted(not, firstTranslation.unquoteBody().body(), primary,
                 secondTranslation.unquoteBody().body());
-        return toStringTranslation(body).addPreamble(firstTranslation.preamble())
+        return new Translation(body, BOOL, CONDITIONAL).addPreamble(firstTranslation.preamble())
                 .addPreamble(secondTranslation.preamble());
     }
 
