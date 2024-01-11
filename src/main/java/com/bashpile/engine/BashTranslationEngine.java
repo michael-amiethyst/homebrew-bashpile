@@ -286,10 +286,16 @@ public class BashTranslationEngine implements TranslationEngine {
         }
         guard = not.add(expressionTranslation);
 
-        final Translation ifBlockStatements = visitBodyStatements(ctx.statement(), visitor);
+        Translation ifBlockStatements;
+        try (var ignored = typeStack.pushFrame()) {
+            ifBlockStatements = visitBodyStatements(ctx.statement(), visitor);
+        }
         String elseBlock = "";
         if (ctx.elseBody() != null) {
-            final Translation elseBlockStatements = visitBodyStatements(ctx.elseBody().statement(), visitor);
+            Translation elseBlockStatements;
+            try (var ignored = typeStack.pushFrame()) {
+                elseBlockStatements = visitBodyStatements(ctx.elseBody().statement(), visitor);
+            }
             elseBlock = """
                     
                     else

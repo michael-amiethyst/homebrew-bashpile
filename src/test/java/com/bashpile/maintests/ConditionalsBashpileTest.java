@@ -625,4 +625,20 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("equal\n", results.stdout());
     }
+
+    @Test @Order(390)
+    public void ifStatementGoesOutOfScopeCorrectly() {
+        final String bashpileScript = """
+                b: bool = true
+                if b:
+                    log: readonly exported str = "log"
+                else:
+                    log: str = "log2"
+                """;
+        final ExecutionResults results = runText(bashpileScript);
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare -x log"));
+        assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
+        assertSuccessfulExitCode(results);
+    }
 }

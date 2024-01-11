@@ -558,5 +558,5 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    // TODO creates statement variable goes out-of-scope correctly, then fix bpr.bps
+    // TODO creates statement variable goes out-of-scope correctly
 }

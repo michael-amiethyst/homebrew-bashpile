@@ -3,16 +3,17 @@
    1. (abstract shell, awk and sed)
    2. Bash iceburg
    3. Floating point arithmatic as an example
-2. Use bashpile.rb test section
-3. Terraform + docker for multi-OS tests
-4. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
-5. Arrays, Hashes, Refs
-6. Loops
-7. String interpolation with $[]
+2. implement else-if
+3. Use bashpile.rb test section
+4. Terraform + docker for multi-OS tests
+5. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
+6. Arrays, Hashes, Refs
+7. Loops
+8. String interpolation with $[]
    1. have bpr use arguments, arguments[all] (args/argv alias?)
-8. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
-9. Enforce 'readonly' 
-   1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
+9. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+10. Enforce 'readonly' 
+    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # Later
 (Not ordered)
