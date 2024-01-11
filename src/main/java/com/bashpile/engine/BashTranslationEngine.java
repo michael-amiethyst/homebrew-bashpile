@@ -319,20 +319,6 @@ public class BashTranslationEngine implements TranslationEngine {
         return toParagraphTranslation(guard.preamble() + conditional);
     }
 
-//    /** Visits {@code expression} and preforms any munging needed */
-//    private Translation getGuardTranslation(TerminalNode notNode, BashpileParser.ExpressionContext expression) {
-//        final Translation not = notNode != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
-//        Translation expressionTranslation = visitor.visit(expression);
-//        expressionTranslation = unwindAll(expressionTranslation);
-//        if (expressionTranslation.type().isNumeric()) {
-//            // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
-//            expressionTranslation = expressionTranslation
-//                    .inlineAsNeeded(BashTranslationHelper::unwindAll)
-//                    .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
-//        }
-//        return not.add(expressionTranslation);
-//    }
-
     @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         // add this variable to the type map
@@ -384,7 +370,13 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get expression and it's type
         Translation exprTranslation;
-        exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
+        exprTranslation = visitor.visit(ctx.expression());
+        if (exprTranslation.metadata().contains(CONDITIONAL)) {
+            exprTranslation = exprTranslation
+                    .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
+                    .metadata(INLINE);
+        }
+        exprTranslation = exprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
         exprTranslation = unwindNested(exprTranslation);
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));

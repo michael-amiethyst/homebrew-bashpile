@@ -136,6 +136,17 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("5\n", results.stdout());
     }
 
+    @Test @Order(61)
+    public void reassignPrimaryExpressionWorks() {
+        final ExecutionResults results = runText("""
+                someVar: bool = true
+                someVar = "b" <= "a"
+                print(someVar)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
     @Test @Order(70)
     public void floatWorks() {
         final ExecutionResults results = runText("""
