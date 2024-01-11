@@ -68,7 +68,7 @@ abstract public class BashpileTest {
             // check for increments
             final boolean isStartOfFunctionBlock =
                     firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
-            final boolean isNestedIf = line.contains("if") && lastToken.equals("then");
+            final boolean isNestedIf = line.contains("if") && !line.contains("elif") && lastToken.equals("then");
             if (firstToken.equals("if") || isStartOfFunctionBlock || isNestedIf) {
                 if (tabs != indentLevel.get()) {
                     erroredLines.get().add(i);
@@ -81,7 +81,7 @@ abstract public class BashpileTest {
             } // else
 
             // check for middle statements (e.g. else in an if-then-else statement)
-            if (firstToken.equals("else")) {
+            if (List.of("elif", "else").contains(firstToken)) {
                 if (tabs != indentLevel.get() - 1) {
                     erroredLines.get().add(i);
                 }
@@ -110,6 +110,7 @@ abstract public class BashpileTest {
             return line;
         }).toList();
 
+        // TODO change to forEachOrdered with manual index
         // check for nested command substitutions
         var ignored2 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
             if (line.trim().charAt(0) != '#'

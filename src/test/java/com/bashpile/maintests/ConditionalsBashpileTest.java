@@ -649,7 +649,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 check: bool = 4 < 5
                 if b:
                     log: readonly exported str = "log"
-                else if check:
+                else-if check:
                     log: str = "third path"
                     print(log)
                 else:
@@ -660,8 +660,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare -x log"));
         assertSuccessfulExitCode(results);
-        // TODO uncomment
-//        assertEquals("third path\n", results.stdout());
+        assertEquals("third path\n", results.stdout());
     }
 
     // TODO write test for multiple else if clauses

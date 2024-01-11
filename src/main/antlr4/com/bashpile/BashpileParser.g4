@@ -13,7 +13,7 @@ statement
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon functionBlock     # anonymousBlockStatement
     | If Not? expression Colon indentedStatements
-    (ElseIf Not? expression Colon indentedStatements)*
+         (elseIfClauses)*
          (Else Colon indentedStatements)? # conditionalStatement
     | typedId (Equals expression)? Newline# assignmentStatement
     | Id Equals expression Newline        # reassignmentStatement
@@ -29,6 +29,7 @@ paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
 typedId     : Id Colon modifier* Type;
 modifier    : Exported | Readonly;
 argumentList: expression (Comma expression)*;
+elseIfClauses: ElseIf Not? expression Colon indentedStatements;
 indentedStatements: INDENT statement+ DEDENT;
 
 // Force the final statement to be a return.
