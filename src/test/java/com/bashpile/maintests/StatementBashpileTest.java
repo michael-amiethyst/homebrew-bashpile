@@ -558,5 +558,32 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    // TODO creates statement variable goes out-of-scope correctly
+    @Test @Order(230)
+    public void createStatementHandlesScopesCorrectly() throws IOException {
+        final String bashpileScript = """
+                log: readonly exported str = #(
+                    filename="$(printf "%d.txt" $$)"
+                    printf "%s" "$filename" > "$filename"
+                    printf "%s" "$filename"
+                ) creates log:
+                    cat: str = #(cat "$log")
+                    print(cat)
+                cat: int = 0
+                """;
+        Path log = null;
+        try {
+            final ExecutionResults results = runText(bashpileScript);
+            assertCorrectFormatting(results);
+            assertTrue(results.stdin().contains("declare -x log"));
+            assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
+            assertSuccessfulExitCode(results);
+            assertTrue(results.stdoutLines().get(0).matches("\\d+\\.txt"));
+            log = Path.of(results.stdoutLines().get(0));
+            assertFalse(Files.exists(log), "trap file not deleted");
+        } finally {
+            if (log != null) {
+                Files.deleteIfExists(log);
+            }
+        }
+    }
 }

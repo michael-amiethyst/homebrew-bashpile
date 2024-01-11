@@ -161,7 +161,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create our final translation and pop the stack
         createFilenamesStack.push(filename);
-        try {
+        try (var ignored = typeStack.pushFrame()){
             // create other translations
             final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
             final Translation subcomment =
