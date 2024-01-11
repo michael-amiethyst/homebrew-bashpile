@@ -275,7 +275,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         // handle initial if
-        Translation guard = getGuardTranslation(ctx.Not(), ctx.expression());
+        Translation guard = visitGuardingExpression(ctx.Not(), visitor.visit(ctx.expression()));
         Translation ifBlockStatements;
         try (var ignored = typeStack.pushFrame()) {
             ifBlockStatements = visitBodyStatements(ctx.indentedStatements(0).statement(), visitor);
@@ -285,7 +285,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final AtomicReference<String> elseIfBlock = new AtomicReference<>();
         elseIfBlock.set("");
         ctx.elseIfClauses().forEach(elseIfCtx -> {
-            Translation guard2 = getGuardTranslation(elseIfCtx.Not(), elseIfCtx.expression());
+            Translation guard2 = visitGuardingExpression(elseIfCtx.Not(), visitor.visit(elseIfCtx.expression()));
             Translation ifBlockStatements2;
             try (var ignored = typeStack.pushFrame()) {
                 ifBlockStatements2 = visitBodyStatements(elseIfCtx.indentedStatements().statement(), visitor);
@@ -319,21 +319,19 @@ public class BashTranslationEngine implements TranslationEngine {
         return toParagraphTranslation(guard.preamble() + conditional);
     }
 
-    // TODO move to helper
-    private Translation getGuardTranslation(TerminalNode not, BashpileParser.ExpressionContext expression) {
-        final Translation not2 = not != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
-        Translation expressionTranslation2 = visitor.visit(expression);
-        expressionTranslation2 = unwindAll(expressionTranslation2);
-        if (expressionTranslation2.type().isNumeric()) {
-            // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
-            expressionTranslation2 = expressionTranslation2
-                    .inlineAsNeeded(BashTranslationHelper::unwindAll)
-                    .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
-        }
-        return not2.add(expressionTranslation2);
-
-//        Translation ifBlockStatements2;
-    }
+//    /** Visits {@code expression} and preforms any munging needed */
+//    private Translation getGuardTranslation(TerminalNode notNode, BashpileParser.ExpressionContext expression) {
+//        final Translation not = notNode != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
+//        Translation expressionTranslation = visitor.visit(expression);
+//        expressionTranslation = unwindAll(expressionTranslation);
+//        if (expressionTranslation.type().isNumeric()) {
+//            // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
+//            expressionTranslation = expressionTranslation
+//                    .inlineAsNeeded(BashTranslationHelper::unwindAll)
+//                    .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
+//        }
+//        return not.add(expressionTranslation);
+//    }
 
     @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
