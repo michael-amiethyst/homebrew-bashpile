@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-01-07T14:01:55.643271288-08:00[America/Los_Angeles] (timestamp 1704664915643)
+# Generated from bin/bpr.bps on 2024-01-10T22:25:10.139124318-08:00[America/Los_Angeles] (timestamp 1704954310139)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -19,44 +19,104 @@ if [ -z "${1+default}" ]; then
     # expression statement, Bashpile line 14
     exit $?
 fi
-# creates statement, Bashpile line 17
-declare translatedFilename
-if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail -1) 2> /dev/null; then
-    trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
-    ## wrapped body of creates statement
-    # expression statement, Bashpile line 21
-    sleep .2
-    # expression statement, Bashpile line 22
-    shift
-    # print statement, Bashpile line 23
-    printf "Start of ${translatedFilename}\n"
-    # expression statement, Bashpile line 24
-    chmod 755 $translatedFilename
-    # creates statement, Bashpile line 26
-    if (set -o noclobber; "$translatedFilename" "$@" 2>&1 | tee "bpr.log") 2> /dev/null; then
-        trap 'rm -f "$translatedFilename" bpr.log; exit 10' INT TERM EXIT
+if [ "$1" != "-c" ] && [ "$1" != "--command" ]; then
+    # creates statement, Bashpile line 18
+    declare translatedFilename
+    if translatedFilename=$(set -o noclobber; java -jar "$jarPath" "$1" | tail -1) 2> /dev/null; then
+        trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
         ## wrapped body of creates statement
-        if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1; then
-            # expression statement, Bashpile line 28
-            "$translatedFilename" "$@"
+        # expression statement, Bashpile line 22
+        sleep .2
+        # expression statement, Bashpile line 23
+        shift
+        # print statement, Bashpile line 24
+        printf "Start of ${translatedFilename}\n"
+        # expression statement, Bashpile line 25
+        chmod 755 $translatedFilename
+        # creates statement, Bashpile line 27
+        if (set -o noclobber; "$translatedFilename" "$@" 2>&1 | tee "bpr.log") 2> /dev/null; then
+            trap 'rm -f "$translatedFilename" bpr.log; exit 10' INT TERM EXIT
+            ## wrapped body of creates statement
+            if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1; then
+                # expression statement, Bashpile line 29
+                "$translatedFilename" "$@"
+            fi
+            ## end of wrapped body of creates statement
+            rm -f bpr.log
+            trap - INT TERM EXIT
+        else
+            printf "Failed to create pr.log correctly."
+            rm -f bpr.log
+            exit 1
         fi
+        declare -i __bp_exitCode=$?
+        if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
         ## end of wrapped body of creates statement
-        rm -f bpr.log
+        rm -f "$translatedFilename"
         trap - INT TERM EXIT
     else
-        printf "Failed to create pr.log correctly."
-        rm -f bpr.log
+        printf "Failed to create translatedFilename correctly.  Output from attempted creation:\n$translatedFilename"
+        rm -f "$translatedFilename"
         exit 1
     fi
     declare -i __bp_exitCode=$?
     if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-    ## end of wrapped body of creates statement
-    rm -f "$translatedFilename"
-    trap - INT TERM EXIT
 else
-    printf "Failed to create translatedFilename correctly.  Output from attempted creation:\n$translatedFilename"
-    rm -f "$translatedFilename"
-    exit 1
+    # assign statement, Bashpile line 32
+    declare command
+    # assign statement, Bashpile line 33
+    declare doubleShift
+    doubleShift=false
+    if ! [ -z "${2+default}" ]; then
+        # reassign statement, Bashpile line 35
+        command=$(echo $2)
+        # reassign statement, Bashpile line 36
+        doubleShift=true
+    else
+        # reassign statement, Bashpile line 38
+        command=$(cat -)
+    fi
+    # creates statement, Bashpile line 39
+    declare translatedFilename
+    if translatedFilename=$(set -o noclobber; java -jar "$jarPath" -c "$command" | tail -1) 2> /dev/null; then
+        trap 'rm -f "$translatedFilename"; exit 10' INT TERM EXIT
+        ## wrapped body of creates statement
+        # expression statement, Bashpile line 43
+        sleep .2
+        # expression statement, Bashpile line 44
+        shift
+        if ${doubleShift}; then
+            # expression statement, Bashpile line 46
+            shift
+        fi
+        # expression statement, Bashpile line 47
+        chmod 755 $translatedFilename
+        # creates statement, Bashpile line 49
+        if (set -o noclobber; "$translatedFilename" "$@" 2>&1 | tee "bpr.log") 2> /dev/null; then
+            trap 'rm -f "$translatedFilename" bpr.log; exit 10' INT TERM EXIT
+            ## wrapped body of creates statement
+            if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1; then
+                # expression statement, Bashpile line 51
+                "$translatedFilename" "$@"
+            fi
+            ## end of wrapped body of creates statement
+            rm -f bpr.log
+            trap - INT TERM EXIT
+        else
+            printf "Failed to create pr.log correctly."
+            rm -f bpr.log
+            exit 1
+        fi
+        declare -i __bp_exitCode=$?
+        if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
+        ## end of wrapped body of creates statement
+        rm -f "$translatedFilename"
+        trap - INT TERM EXIT
+    else
+        printf "Failed to create translatedFilename correctly.  Output from attempted creation:\n$translatedFilename"
+        rm -f "$translatedFilename"
+        exit 1
+    fi
+    declare -i __bp_exitCode=$?
+    if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
 fi
-declare -i __bp_exitCode=$?
-if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi

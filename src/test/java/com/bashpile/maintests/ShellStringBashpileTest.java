@@ -175,6 +175,13 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertTrue(results.stdin().contains("ls\n"));
     }
 
+    @Test @Order(121)
+    public void shellLineWithSpecialCharactersWorks() {
+        final ExecutionResults results = runText("mkdir temp-test; touch temp-test/bashpile.txt; rm -fr temp-test");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+    }
+
     @Test @Order(130)
     public void complexShellLineWorks() {
         final ExecutionResults results = runText("find . -maxdepth 1 -print0 | xargs ls 2>&1");

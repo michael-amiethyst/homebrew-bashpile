@@ -136,6 +136,17 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("5\n", results.stdout());
     }
 
+    @Test @Order(61)
+    public void reassignPrimaryExpressionWorks() {
+        final ExecutionResults results = runText("""
+                someVar: bool = true
+                someVar = "b" <= "a"
+                print(someVar)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
     @Test @Order(70)
     public void floatWorks() {
         final ExecutionResults results = runText("""
@@ -540,6 +551,35 @@ class StatementBashpileTest extends BashpileTest {
                     printf "%s" "$filename"
                 ) creates log:
                     #(cat "$log")
+                """;
+        Path log = null;
+        try {
+            final ExecutionResults results = runText(bashpileScript);
+            assertCorrectFormatting(results);
+            assertTrue(results.stdin().contains("declare -x log"));
+            assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
+            assertSuccessfulExitCode(results);
+            assertTrue(results.stdoutLines().get(0).matches("\\d+\\.txt"));
+            log = Path.of(results.stdoutLines().get(0));
+            assertFalse(Files.exists(log), "trap file not deleted");
+        } finally {
+            if (log != null) {
+                Files.deleteIfExists(log);
+            }
+        }
+    }
+
+    @Test @Order(230)
+    public void createStatementHandlesScopesCorrectly() throws IOException {
+        final String bashpileScript = """
+                log: readonly exported str = #(
+                    filename="$(printf "%d.txt" $$)"
+                    printf "%s" "$filename" > "$filename"
+                    printf "%s" "$filename"
+                ) creates log:
+                    cat: str = #(cat "$log")
+                    print(cat)
+                cat: int = 0
                 """;
         Path log = null;
         try {

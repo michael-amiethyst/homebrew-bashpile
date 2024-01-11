@@ -10,6 +10,7 @@ import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -257,6 +258,19 @@ public class BashTranslationHelper {
         // map of x to x needed for upcasting to parent type
         final Stream<ParserRuleContext> statementStream = statements.stream().map(x -> x);
         return Stream.concat(statementStream, Stream.of(returnPsudoStatementContext));
+    }
+
+    /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
+    /* package */ static Translation visitGuardingExpression(TerminalNode notNode, Translation expressionTranslation) {
+        final Translation not = notNode != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
+        expressionTranslation = unwindAll(expressionTranslation);
+        if (expressionTranslation.type().isNumeric()) {
+            // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
+            expressionTranslation = expressionTranslation
+                    .inlineAsNeeded(BashTranslationHelper::unwindAll)
+                    .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
+        }
+        return not.add(expressionTranslation);
     }
 
     // unwind static methods

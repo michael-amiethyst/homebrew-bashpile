@@ -33,7 +33,7 @@ Print    : 'print';
 Creates  : 'creates';
 Bool     : 'true' | 'false';
 If       : 'if';
-ElseIf   : 'else if';
+ElseIf   : 'else-if';
 Else     : 'else';
 Pass     : 'pass';
 Arguments: 'arguments';

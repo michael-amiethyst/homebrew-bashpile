@@ -91,6 +91,8 @@ public interface TranslationEngine {
      */
     Translation binaryPrimaryExpression(final BashpileParser.BinaryPrimaryExpressionContext ctx);
 
+    Translation combiningExpression(final BashpileParser.CombiningExpressionContext ctx);
+
     /** Translates IDs */
     Translation idExpression(final BashpileParser.IdExpressionContext ctx);
 

@@ -1,17 +1,17 @@
 package com.bashpile.maintests;
 
-import com.bashpile.BashpileMain;
+import com.bashpile.BashpileMainHelper;
 import com.bashpile.Strings;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.BashShell;
 import com.bashpile.shell.ExecutionResults;
-import com.google.common.collect.Streams;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +25,7 @@ import static com.bashpile.engine.BashTranslationHelper.NESTED_COMMAND_SUBSTITUT
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+/** Base class for Bashpile Tests */
 abstract public class BashpileTest {
 
     protected static final Pattern END_OF_LINE_COMMENT = Pattern.compile("^[^ #]+#.*$");
@@ -46,17 +47,18 @@ abstract public class BashpileTest {
     /**
      * Couldn't find an off the shelf linter to check for correct indents.  Maybe a Bash parser would be better?
      */
+    @SuppressWarnings("all") // Intellij doesn't like .forEachOrdered for some reason
     protected static void assertCorrectFormatting(@Nonnull final ExecutionResults executionResults) {
-        // track if, else, fi for now
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
         final AtomicLong indentLevel = new AtomicLong(0);
+        final AtomicLong i = new AtomicLong(1);
 
         // check for correct indents
-        var ignored = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+        executionResults.stdinLines().stream().forEachOrdered(line -> {
             final int spaces = line.length() - line.stripLeading().length();
             if (spaces % 4 != 0 || Strings.isBlank(line)) {
-                erroredLines.get().add(i);
-                return line;
+                erroredLines.get().add(i.get());
+                return;
             }
             final long tabs = spaces / 4;
             final String[] tokens = line.stripLeading().split(" ");
@@ -66,76 +68,76 @@ abstract public class BashpileTest {
             // check for increments
             final boolean isStartOfFunctionBlock =
                     firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
-            final boolean isNestedIf = line.contains("if") && lastToken.equals("then");
+            final boolean isNestedIf = line.contains("if") && !line.contains("elif") && lastToken.equals("then");
             if (firstToken.equals("if") || isStartOfFunctionBlock || isNestedIf) {
                 if (tabs != indentLevel.get()) {
-                    erroredLines.get().add(i);
+                    erroredLines.get().add(i.get());
                 }
                 // generated code uses a Bash if all on one line (e.g. starts with if and ends with fi)
                 if (!line.endsWith("fi")) {
                     indentLevel.getAndIncrement();
                 }
-                return line;
+                return;
             } // else
 
             // check for middle statements (e.g. else in an if-then-else statement)
-            if (firstToken.equals("else")) {
+            if (List.of("elif", "else").contains(firstToken)) {
                 if (tabs != indentLevel.get() - 1) {
-                    erroredLines.get().add(i);
+                    erroredLines.get().add(i.get());
                 }
-                return line;
+                return;
             } // else
 
             // check for decrements
             if (List.of("fi", "}", "};").contains(firstToken) || firstToken.startsWith("fi)")) {
                 indentLevel.getAndDecrement();
                 if (tabs != indentLevel.get()) {
-                    erroredLines.get().add(i);
+                    erroredLines.get().add(i.get());
                 }
-                return line;
+                return;
             }
             if (firstToken.equals(")") || firstToken.equals("then")) {
                 if (tabs != indentLevel.get() - 1) {
-                    erroredLines.get().add(i);
+                    erroredLines.get().add(i.get());
                 }
-                return line;
+                return;
             }
 
             // check for 'regular' lines
             if (tabs != indentLevel.get()) {
-                erroredLines.get().add(i);
+                erroredLines.get().add(i.getAndIncrement());
             }
-            return line;
-        }).toList();
+            return;
+        });
 
         // check for nested command substitutions
-        var ignored2 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+        i.set(1);
+        executionResults.stdinLines().stream().forEachOrdered(line -> {
             if (line.trim().charAt(0) != '#'
                     && !line.contains("(set -o noclobber")
                     && NESTED_COMMAND_SUBSTITUTION.matcher(line).find()) {
                 LOG.error("Found nested command substitution, line {}, text {}", i, line);
-                erroredLines.get().add(i);
+                erroredLines.get().add(i.getAndIncrement());
             }
-            return line;
-        }).toList();
+        });
 
         // check for unnecessary unnested command substitutions
-        var ignored3 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+        i.set(1);
+        executionResults.stdinLines().stream().forEachOrdered(line -> {
             if (line.trim().startsWith("__bp_subshellReturn") && !COMMAND_SUBSTITUTION.matcher(line).find()) {
                 LOG.error("Unneeded unnest, line {}, text {}", i, line);
-                erroredLines.get().add(i);
+                erroredLines.get().add(i.getAndIncrement());
             }
-            return line;
-        }).toList();
+        });
 
         // check for missing ifs
-        var ignored4 = Streams.mapWithIndex(executionResults.stdinLines().stream(), (line, i) -> {
+        i.set(1);
+        executionResults.stdinLines().stream().forEachOrdered(line -> {
             if (!line.trim().contains("if") && line.endsWith("; then") ) {
                 LOG.error("Mangled if-then found, line {}, text {}", i, line);
-                erroredLines.get().add(i);
+                erroredLines.get().add(i.getAndIncrement());
             }
-            return line;
-        }).toList();
+        });
 
         if (!erroredLines.get().isEmpty()) {
             throw new BashpileUncheckedAssertionException("Bad formatting on lines " + erroredLines.get().stream()
@@ -146,28 +148,35 @@ abstract public class BashpileTest {
 
     protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
         LOG.debug("Start of:\n{}", bashText);
-        BashpileMain bashpile = new BashpileMain(bashText);
-        return execute(bashpile);
+        try {
+            return execute(BashpileMainHelper.transpileScript(bashText));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
     }
 
     protected @Nonnull BashShell runTextAsync(@Nonnull final String bashText) {
         LOG.debug("Starting background threads for:\n{}", bashText);
-        BashpileMain bashpile = new BashpileMain(bashText);
-        return executeAsync(bashpile);
+        try {
+            return executeAsync(BashpileMainHelper.transpileScript(bashText));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
     }
 
     protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
         final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
         LOG.debug("Start of {}", filename);
-        final BashpileMain bashpile = new BashpileMain(filename);
-        return execute(bashpile);
+        try {
+            return execute(BashpileMainHelper.transpileNioFile(filename));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
     }
 
-    private @Nonnull ExecutionResults execute(@Nonnull final BashpileMain bashpile) {
+    private @Nonnull ExecutionResults execute(@Nonnull final String bashScript) {
         LOG.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = null;
         try {
-            bashScript = bashpile.transpile();
             return BashShell.runAndJoin(bashScript);
         } catch (UserError | AssertionError e) {
             throw e;
@@ -176,11 +185,9 @@ abstract public class BashpileTest {
         }
     }
 
-    private @Nonnull BashShell executeAsync(@Nonnull final BashpileMain bashpile) {
+    private @Nonnull BashShell executeAsync(@Nonnull final String bashScript) {
         LOG.debug("In {}", System.getProperty("user.dir"));
-        String bashScript = null;
         try {
-            bashScript = bashpile.transpile();
             return BashShell.runAsync(bashScript);
         } catch (UserError | AssertionError e) {
             throw e;

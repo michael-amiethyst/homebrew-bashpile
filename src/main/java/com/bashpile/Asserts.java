@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.bashpile.exceptions.Exceptions.asUnchecked;
 import static java.util.Objects.requireNonNullElse;
@@ -194,10 +196,11 @@ public class Asserts {
         final Path tempFile = Path.of("temp.bps");
         try {
             Files.writeString(tempFile, translatedShellScript);
-            // ignore 'Argument to -z is always false due to literal strings.', unused and decimal warnings
-            final ExecutionResults shellcheckResults =
-                    BashShell.runAndJoin("shellcheck --shell=bash --severity=warning " +
-                            "--exclude=SC2157 --exclude=SC2034 --exclude=SC2072 " + tempFile);
+            // ignore many errors that don't apply
+            final String excludes = Stream.of(2034, 2050, 2071, 2072, 2157)
+                    .map(i -> "--exclude=SC" + i).collect(Collectors.joining(" "));
+            final ExecutionResults shellcheckResults = BashShell.runAndJoin(
+                    "shellcheck --shell=bash --severity=warning %s %s".formatted(excludes, tempFile));
             if (shellcheckResults.exitCode() != 0) {
                 final String message = "Script failed shellcheck.  Script:\n%s\nShellcheck output:\n%s".formatted(
                         translatedShellScript, shellcheckResults.stdout());

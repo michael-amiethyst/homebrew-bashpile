@@ -16,6 +16,7 @@ import javax.annotation.Nonnull;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,8 +25,7 @@ import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
-import static com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING_OFTEN;
-import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static com.google.common.collect.Iterables.getLast;
 
@@ -161,7 +161,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create our final translation and pop the stack
         createFilenamesStack.push(filename);
-        try {
+        try (var ignored = typeStack.pushFrame()){
             // create other translations
             final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
             final Translation subcomment =
@@ -274,32 +274,48 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
-        final Translation guard;
-        final Translation not = ctx.Not() != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
-        Translation expressionTranslation = visitor.visit(ctx.expression());
-        expressionTranslation = unwindAll(expressionTranslation);
-        if (expressionTranslation.type().isNumeric()) {
-            // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
-            expressionTranslation = expressionTranslation
-                    .inlineAsNeeded(BashTranslationHelper::unwindAll)
-                    .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
+        // handle initial if
+        Translation guard = visitGuardingExpression(ctx.Not(), visitor.visit(ctx.expression()));
+        Translation ifBlockStatements;
+        try (var ignored = typeStack.pushFrame()) {
+            ifBlockStatements = visitBodyStatements(ctx.indentedStatements(0).statement(), visitor);
         }
-        guard = not.add(expressionTranslation);
 
-        final Translation ifBlockStatements = visitBodyStatements(ctx.statement(), visitor);
+        // handle else ifs
+        final AtomicReference<String> elseIfBlock = new AtomicReference<>();
+        elseIfBlock.set("");
+        ctx.elseIfClauses().forEach(elseIfCtx -> {
+            Translation guard2 = visitGuardingExpression(elseIfCtx.Not(), visitor.visit(elseIfCtx.expression()));
+            Translation ifBlockStatements2;
+            try (var ignored = typeStack.pushFrame()) {
+                ifBlockStatements2 = visitBodyStatements(elseIfCtx.indentedStatements().statement(), visitor);
+            }
+            final String prev = elseIfBlock.get();
+            elseIfBlock.set(prev + """
+
+                    elif %s; then
+                    %s""".formatted(guard2, ifBlockStatements2).stripTrailing());
+        });
+
+        // handle else
         String elseBlock = "";
-        if (ctx.elseBody() != null) {
-            final Translation elseBlockStatements = visitBodyStatements(ctx.elseBody().statement(), visitor);
+        if (ctx.Else() != null) {
+            Translation elseBlockStatements;
+            try (var ignored = typeStack.pushFrame()) {
+                final int lastIndex = ctx.indentedStatements().size() - 1;
+                elseBlockStatements = visitBodyStatements(ctx.indentedStatements(lastIndex).statement(), visitor);
+            }
             elseBlock = """
                     
                     else
                     %s""".formatted(elseBlockStatements).stripTrailing();
         }
+        final String ifBlock = ifBlockStatements.mergePreamble().body().stripTrailing();
         final String conditional = """
                 if %s; then
-                %s%s
+                %s%s%s
                 fi
-                """.formatted(guard.body(), ifBlockStatements.mergePreamble().body().stripTrailing(), elseBlock);
+                """.formatted(guard.body(), ifBlock, elseIfBlock, elseBlock);
         return toParagraphTranslation(guard.preamble() + conditional);
     }
 
@@ -312,11 +328,17 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // visit the right hand expression
         final boolean exprExists = ctx.expression() != null;
-        Translation exprTranslation;
-        exprTranslation = exprExists
-                ? visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested)
-                : EMPTY_TRANSLATION;
-        exprTranslation = unwindNested(exprTranslation);
+        Translation exprTranslation = EMPTY_TRANSLATION;
+        if (exprExists) {
+            exprTranslation = visitor.visit(ctx.expression());
+            if (exprTranslation.metadata().contains(CONDITIONAL)) {
+                exprTranslation = exprTranslation
+                        .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
+                        .metadata(INLINE);
+            }
+            exprTranslation = exprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
+            exprTranslation = unwindNested(exprTranslation);
+        }
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
@@ -348,7 +370,13 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get expression and it's type
         Translation exprTranslation;
-        exprTranslation = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
+        exprTranslation = visitor.visit(ctx.expression());
+        if (exprTranslation.metadata().contains(CONDITIONAL)) {
+            exprTranslation = exprTranslation
+                    .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
+                    .metadata(INLINE);
+        }
+        exprTranslation = exprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
         exprTranslation = unwindNested(exprTranslation);
         final Type actualType = exprTranslation.type();
         Asserts.assertTypesCoerce(expectedType, actualType, variableName, lineNumber(ctx));
@@ -576,10 +604,9 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation binaryPrimaryExpression(BashpileParser.BinaryPrimaryExpressionContext ctx) {
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
         String primary = ctx.binaryPrimary().getText();
-        // right now all implemented primaries are string tests
-        Translation firstTranslation =
+        final Translation firstTranslation =
                 visitor.visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
-        Translation secondTranslation =
+        final Translation secondTranslation =
                 visitor.visit(ctx.getChild(2)).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
         // we do some checks for strict equals and strict not equals
@@ -615,6 +642,20 @@ public class BashTranslationEngine implements TranslationEngine {
             }
         }
         body = body.formatted(not, firstTranslation.unquoteBody().body(), primary,
+                secondTranslation.unquoteBody().body());
+        return new Translation(body, BOOL, CONDITIONAL).addPreamble(firstTranslation.preamble())
+                .addPreamble(secondTranslation.preamble());
+    }
+
+    @Override
+    public Translation combiningExpression(BashpileParser.CombiningExpressionContext ctx) {
+        final String operator = ctx.combiningOperator().getText().equals("and") ? "&&" : "||";
+        final Translation firstTranslation =
+                visitor.visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+        final Translation secondTranslation =
+                visitor.visit(ctx.getChild(2)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+
+        final String body = "%s %s %s".formatted(firstTranslation.unquoteBody().body(), operator,
                 secondTranslation.unquoteBody().body());
         return toStringTranslation(body).addPreamble(firstTranslation.preamble())
                 .addPreamble(secondTranslation.preamble());

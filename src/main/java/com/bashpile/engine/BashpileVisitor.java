@@ -3,6 +3,7 @@ package com.bashpile.engine;
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
 import com.bashpile.engine.strongtypes.Type;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.RuleNode;
@@ -12,9 +13,11 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
+import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
@@ -57,11 +60,18 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public @Nonnull Translation visitChildren(RuleNode node) {
         final RuleContext ctx = node.getRuleContext();
-        return IntStream.range(0, ctx.getChildCount())
+        final Optional<Translation> optional = IntStream.range(0, ctx.getChildCount())
                 .mapToObj(ctx::getChild)
                 .map(this::visit)
-                .reduce(Translation::add)
-                .orElseThrow();
+                .reduce(Translation::add);
+        if (optional.isPresent()) {
+            return optional.get();
+        } else {
+            // throw custom exception
+            final String message = "Exception during visitChildren for node [%s] with %d children"
+                    .formatted(node.getText(), node.getChildCount());
+            throw new BashpileUncheckedException(message);
+        }
     }
 
     @Override
@@ -180,6 +190,16 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public Translation visitBinaryPrimaryExpression(BashpileParser.BinaryPrimaryExpressionContext ctx) {
         return translator.binaryPrimaryExpression(ctx);
+    }
+
+    @Override
+    public Translation visitCombiningExpression(BashpileParser.CombiningExpressionContext ctx) {
+        return translator.combiningExpression(ctx);
+    }
+
+    @Override
+    public Translation visitArgumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx) {
+        return toStringTranslation("$" + ctx.argumentsBuiltin().Number().getText());
     }
 
     // visit type expressions

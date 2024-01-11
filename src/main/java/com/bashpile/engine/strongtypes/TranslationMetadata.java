@@ -20,5 +20,7 @@ public enum TranslationMetadata {
      * Our name for Bash command substitution, i.e. $(commands).
      * An inline translation may need the inline logic to be moved into the preamble still.
      */
-    INLINE
+    INLINE,
+    /** Something like "[ 4 < 5 ]" */
+    CONDITIONAL
 }

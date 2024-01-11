@@ -12,8 +12,9 @@ statement
     | Function Id paramaters tags? (Arrow Type)?
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon functionBlock     # anonymousBlockStatement
-    | If Not? expression Colon INDENT statement+
-            DEDENT (Else Colon elseBody)? # conditionalStatement
+    | If Not? expression Colon indentedStatements
+         (elseIfClauses)*
+         (Else Colon indentedStatements)? # conditionalStatement
     | typedId (Equals expression)? Newline# assignmentStatement
     | Id Equals expression Newline        # reassignmentStatement
     | Print OParen argumentList? CParen
@@ -28,7 +29,8 @@ paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
 typedId     : Id Colon modifier* Type;
 modifier    : Exported | Readonly;
 argumentList: expression (Comma expression)*;
-elseBody    : INDENT statement+ DEDENT;
+elseIfClauses: ElseIf Not? expression Colon indentedStatements;
+indentedStatements: INDENT statement+ DEDENT;
 
 // Force the final statement to be a return.
 // This is a work around for Bash not allawing the return keyword with a string.
@@ -50,6 +52,8 @@ expression
     | unaryPrimary expression           # unaryPrimaryExpression
     | expression binaryPrimary
                              expression # binaryPrimaryExpression
+    | expression combiningOperator
+                             expression # combiningExpression
     | argumentsBuiltin                  # argumentsBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
@@ -68,7 +72,10 @@ shellStringContents: shellString
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
 unaryPrimary: Unset | Empty | NotEmpty;
 
+// one line means logically equal precidence (e.g. LessThan in the same as MoreThanOrEquals)
 binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
              | IsStrictlyEqual | InNotStrictlyEqual | IsEqual | IsNotEqual;
+
+combiningOperator: And | Or;
 
 argumentsBuiltin: Arguments OBracket Number CBracket;
