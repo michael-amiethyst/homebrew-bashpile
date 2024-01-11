@@ -17,4 +17,5 @@
 * 0.14.0 - Using the Bash type system with `declare` instead of `export`
 * 0.15.0 - Changed function syntax
 * 0.16.0 - Equality and comparison Operators
-* 0.17.0 - Implemented `bpr -c <COMMAND>` for running from command line directly
+* 0.17.0 - Implemented `bpr -c <COMMAND>` for running from command line directly.
+    Also implemented many primaries, else-if clauses and combining expressions.  Also bugfixes.

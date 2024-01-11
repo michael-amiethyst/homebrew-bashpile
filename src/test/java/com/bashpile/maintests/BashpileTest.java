@@ -1,6 +1,6 @@
 package com.bashpile.maintests;
 
-import com.bashpile.BashpileMainProcessor;
+import com.bashpile.BashpileMainHelper;
 import com.bashpile.Strings;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
@@ -149,7 +149,7 @@ abstract public class BashpileTest {
     protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
         LOG.debug("Start of:\n{}", bashText);
         try {
-            return execute(BashpileMainProcessor.transpileScript(bashText));
+            return execute(BashpileMainHelper.transpileScript(bashText));
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }
@@ -158,7 +158,7 @@ abstract public class BashpileTest {
     protected @Nonnull BashShell runTextAsync(@Nonnull final String bashText) {
         LOG.debug("Starting background threads for:\n{}", bashText);
         try {
-            return executeAsync(BashpileMainProcessor.transpileScript(bashText));
+            return executeAsync(BashpileMainHelper.transpileScript(bashText));
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }
@@ -168,7 +168,7 @@ abstract public class BashpileTest {
         final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
         LOG.debug("Start of {}", filename);
         try {
-            return execute(BashpileMainProcessor.transpileNioFile(filename));
+            return execute(BashpileMainHelper.transpileNioFile(filename));
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }

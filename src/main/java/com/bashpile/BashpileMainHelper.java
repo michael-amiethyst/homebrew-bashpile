@@ -3,6 +3,7 @@ package com.bashpile;
 import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.engine.BashpileVisitor;
 import com.bashpile.exceptions.BashpileUncheckedException;
+import com.google.common.annotations.VisibleForTesting;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -21,17 +22,18 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class BashpileMainProcessor {
+public class BashpileMainHelper {
 
     // statics
 
     private static final Pattern SHEBANG = Pattern.compile("^#!.*$");
 
-    private static final Logger LOG = LogManager.getLogger(BashpileMainProcessor.class);
+    private static final Logger LOG = LogManager.getLogger(BashpileMainHelper.class);
 
     // class methods
 
     /** Returns the translation */
+    @VisibleForTesting
     public static @Nonnull String transpileNioFile(@Nonnull Path inputFile) throws IOException {
         final InputStream inputStream = getSourceInputStream(inputFile);
         final String sourceName = inputFile.toString();
@@ -40,6 +42,7 @@ public class BashpileMainProcessor {
     }
 
     /** Returns the translation */
+    @VisibleForTesting
     public static @Nonnull String transpileScript(@Nonnull String bashpileScript) throws IOException {
         final InputStream inputStream = IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
         final String parsed = parse(bashpileScript, inputStream);

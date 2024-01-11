@@ -187,7 +187,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Test @Timeout(20) @Order(60)
     public void bprDashCWithStdinWorks() throws IOException {
         log.info("In bpr -c works");
-//        Assumptions.assumeTrue(bprDeployed);
+        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
         final String command = "echo \"print('Hello World')\" | bin/bpr -c ";

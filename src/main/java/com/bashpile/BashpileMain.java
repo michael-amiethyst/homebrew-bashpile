@@ -83,8 +83,8 @@ public class BashpileMain implements Callable<Integer> {
             }
         }
         LOG.info("Transpiling to {}", transpiledFilename);
-        String translation = inputFile != null ? BashpileMainProcessor.transpileNioFile(inputFile)
-                : BashpileMainProcessor.transpileScript(Objects.requireNonNull(command));
+        String translation = inputFile != null ? BashpileMainHelper.transpileNioFile(inputFile)
+                : BashpileMainHelper.transpileScript(Objects.requireNonNull(command));
         final String bashScript = "#!/usr/bin/env bash\n\n" + translation;
         Files.writeString(transpiledFilename, bashScript);
         // last line must be the filename we created
