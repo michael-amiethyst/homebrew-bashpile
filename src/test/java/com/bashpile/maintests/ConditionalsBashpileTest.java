@@ -663,5 +663,26 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("third path\n", results.stdout());
     }
 
-    // TODO write test for multiple else if clauses
+    @Test @Order(410)
+    public void elseIfsWork() {
+        final String bashpileScript = """
+                b: bool = false
+                check: bool = 4 < 5
+                if b:
+                    log: readonly exported str = "log"
+                else-if false:
+                    print('red herring')
+                else-if check:
+                    log: str = "third path"
+                    print(log)
+                else:
+                    log: str = "log2"
+                log: str = "so many log variables!"
+                """;
+        final ExecutionResults results = runText(bashpileScript);
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("declare -x log"));
+        assertSuccessfulExitCode(results);
+        assertEquals("third path\n", results.stdout());
+    }
 }
