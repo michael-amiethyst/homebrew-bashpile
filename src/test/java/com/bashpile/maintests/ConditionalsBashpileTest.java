@@ -47,8 +47,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("true\n", results.stdout());
     }
 
-    // TODO isset and redo bpr.bps
-
     @Test
     @Order(30)
     public void ifIsEmptyWorks() {
