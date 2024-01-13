@@ -54,6 +54,7 @@ Multiply: '*';
 Divide  : '/';
 Add     : '+';
 Minus   : '-';
+Isset   : 'isset';
 Unset   : 'unset';
 Empty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';

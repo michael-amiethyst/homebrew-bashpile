@@ -32,7 +32,7 @@ else:
     // command mode
     command: str
     doubleShift: bool = false
-    if not unset arguments[2]:
+    if isset arguments[2]:
         command = #(echo $2)
         doubleShift = true
     else:

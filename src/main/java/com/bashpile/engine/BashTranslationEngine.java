@@ -41,6 +41,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private static final Map<String, String> primaryTranslations = Map.of(
             "unset", "-z",
+            "isset", "-n",
             "isEmpty", "-z",
             "isNotEmpty", "-n",
             "===", "==",
@@ -589,11 +590,11 @@ public class BashTranslationEngine implements TranslationEngine {
         valueBeingTested = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
         if (ctx.expression() instanceof BashpileParser.ArgumentsBuiltinExpressionContext argumentsCtx) {
-            // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
+            // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
             // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
-            final String parameterExpansion = primary.equals("unset") ? "+default" : "";
-            valueBeingTested = valueBeingTested.body("${%s%s}".formatted(
-                    argumentsCtx.argumentsBuiltin().Number().getText(), parameterExpansion));
+            final String parameterExpansion = List.of("isset", "unset").contains(primary) ? "+default" : "";
+            final String argNumber = argumentsCtx.argumentsBuiltin().Number().getText();
+            valueBeingTested = valueBeingTested.body("${%s%s}".formatted(argNumber, parameterExpansion));
         }
         final String body = "[ %s \"%s\" ]".formatted(
                 primaryTranslations.getOrDefault(primary, primary), valueBeingTested.unquoteBody().body());

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-01-10T22:25:10.139124318-08:00[America/Los_Angeles] (timestamp 1704954310139)
+# Generated from bin/bpr.bps on 2024-01-13T10:20:57.338150827-08:00[America/Los_Angeles] (timestamp 1705170057338)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -67,7 +67,7 @@ else
     # assign statement, Bashpile line 33
     declare doubleShift
     doubleShift=false
-    if ! [ -z "${2+default}" ]; then
+    if [ -n "${2+default}" ]; then
         # reassign statement, Bashpile line 35
         command=$(echo $2)
         # reassign statement, Bashpile line 36

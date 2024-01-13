@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * If we invoke bpc directly it uses the shebang to find the brew installed bpr and the installed jar.
- * However, we want the local bpr and the local jar so we call `bin/bpr bin/bpc ...`.
+ * However, we want the local bpr and the local jar, so we call `bin/bpr bin/bpc ...`.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BashpileMainIntegrationTest extends BashpileTest {

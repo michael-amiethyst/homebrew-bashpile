@@ -25,6 +25,19 @@ public class ConditionalsBashpileTest extends BashpileTest {
 
     @Test
     @Order(20)
+    public void ifIssetArgumentsWorks() {
+        final ExecutionResults results = runText("""
+                if isset arguments[1]:
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(21)
     public void ifUnsetArgumentsWorks() {
         final ExecutionResults results = runText("""
                 if unset arguments[1]:

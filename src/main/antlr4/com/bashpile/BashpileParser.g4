@@ -70,7 +70,7 @@ shellStringContents: shellString
                    | ShellStringEscapeSequence;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-unaryPrimary: Unset | Empty | NotEmpty;
+unaryPrimary: Isset | Unset | Empty | NotEmpty;
 
 // one line means logically equal precidence (e.g. LessThan in the same as MoreThanOrEquals)
 binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals

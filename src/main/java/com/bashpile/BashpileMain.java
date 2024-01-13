@@ -13,10 +13,11 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 // TODO update bashpile.rb after brew install test but before PR
+// TODO install Ruby plugin to have bash.rb TODOs
+// TODO do a screencast, powerpoint?  OOOOH, let Perun know!
 // TODO test forward declaration new syntax
 // TODO pull named create, use specified output filename instead in bpr
 // TODO implement Brew install tests
-// TODO install Ruby plugin to have bash.rb TODOs
 /** Entry point into the program.  Only spins up the transpiler and parses the command line with PicoCLI. */
 @CommandLine.Command(
         name = "bashpile",
