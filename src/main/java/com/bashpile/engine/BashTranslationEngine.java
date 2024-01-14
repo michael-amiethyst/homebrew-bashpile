@@ -41,6 +41,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     private static final Map<String, String> primaryTranslations = Map.of(
             "unset", "-z",
+            "isset", "-n",
             "isEmpty", "-z",
             "isNotEmpty", "-n",
             "===", "==",
@@ -134,26 +135,9 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
         final boolean fileNameIsId = ctx.String() == null;
 
-        // handle the initial variable declaration and type, if applicable
-        String variableName;
-        if (ctx.typedId() != null) {
-            variableName = ctx.typedId().Id().getText();
-            if (fileNameIsId) {
-                Asserts.assertEquals(variableName, ctx.Id().getText(),
-                        "Create Statements must have matching Ids at the start and end.");
-            }
-            // add this variable to the type map
-            final Type type = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
-            typeStack.putVariableType(variableName, type, lineNumber(ctx));
-        }
-
         // create child translations and other variables
         Translation shellString;
-        final boolean addingCommandSubstitution = ctx.typedId() != null;
         shellString = visitor.visit(ctx.shellString());
-        if (addingCommandSubstitution) {
-            shellString = unwindAll(shellString);
-        }
         final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
         String filename =  visitor.visit(filenameNode).unquoteBody().body();
         // convert ID to "$ID"
@@ -589,11 +573,11 @@ public class BashTranslationEngine implements TranslationEngine {
         valueBeingTested = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
         if (ctx.expression() instanceof BashpileParser.ArgumentsBuiltinExpressionContext argumentsCtx) {
-            // for unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
+            // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
             // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
-            final String parameterExpansion = primary.equals("unset") ? "+default" : "";
-            valueBeingTested = valueBeingTested.body("${%s%s}".formatted(
-                    argumentsCtx.argumentsBuiltin().Number().getText(), parameterExpansion));
+            final String parameterExpansion = List.of("isset", "unset").contains(primary) ? "+default" : "";
+            final String argNumber = argumentsCtx.argumentsBuiltin().Number().getText();
+            valueBeingTested = valueBeingTested.body("${%s%s}".formatted(argNumber, parameterExpansion));
         }
         final String body = "[ %s \"%s\" ]".formatted(
                 primaryTranslations.getOrDefault(primary, primary), valueBeingTested.unquoteBody().body());

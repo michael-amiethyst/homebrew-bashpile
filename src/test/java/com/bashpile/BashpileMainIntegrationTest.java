@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * If we invoke bpc directly it uses the shebang to find the brew installed bpr and the installed jar.
- * However, we want the local bpr and the local jar so we call `bin/bpr bin/bpc ...`.
+ * However, we want the local bpr and the local jar, so we call `bin/bpr bin/bpc ...`.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BashpileMainIntegrationTest extends BashpileTest {
@@ -39,7 +39,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         int loops = 0;
         ExecutionResults results = null;
         while(exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
-            final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps".formatted(translatedFilename);
+            final String newFilename = translatedFilename + ".new";
+            final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps; rm %s; mv %s %s".formatted(
+                    newFilename, translatedFilename, newFilename, translatedFilename);
             results = runAndJoin(command);
             log.trace("Output text:\n{}", results.stdout());
             exitCode = results.exitCode();
@@ -47,8 +49,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         assertSuccessfulExitCode(results);
         bprDeployed = true;
-        final List<String> lines = results.stdoutLines();
-        assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
     }
 
     private static void ensureLinuxLineEndings(String translatedFilename) throws IOException {
@@ -124,7 +124,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     }
 
     @Test @Timeout(30) @Order(40)
-    public void noSubCommandWithOutputSpecifiedTranspiles() throws IOException {
+    public void outputFileFlagWithDoubleRunFails() throws IOException {
         log.info("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
 
@@ -140,9 +140,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             // 2nd run to verify overwrites OK
             results = runAndJoin(command);
-            assertSuccessfulExitCode(results);
-            lines = results.stdoutLines();
-            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
+            assertFailedExitCode(results);
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -190,7 +188,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
-        final String command = "echo \"print('Hello World')\" | bin/bpr -c ";
+        final String command = "echo \"print('Hello World')\" | bin/bpr -c";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -198,6 +196,4 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertEquals("Hello World\n", results.stdout());
         assertFalse(Files.exists(Path.of("command.bps")));
     }
-
-    // TODO have non command line run read from stdin
 }

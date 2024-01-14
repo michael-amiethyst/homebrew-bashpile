@@ -25,6 +25,19 @@ public class ConditionalsBashpileTest extends BashpileTest {
 
     @Test
     @Order(20)
+    public void ifIssetArgumentsWorks() {
+        final ExecutionResults results = runText("""
+                if isset arguments[1]:
+                    print("true")
+                else:
+                    print("false")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(21)
     public void ifUnsetArgumentsWorks() {
         final ExecutionResults results = runText("""
                 if unset arguments[1]:
@@ -33,8 +46,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
-
-    // TODO isset and redo bpr.bps
 
     @Test
     @Order(30)
@@ -293,7 +304,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 #(rm -f error.log)
                 #(trap 'cat error.log; exit 1' INT)
-                ret: str = #(printf "errorLog" > error.log; kill -INT $$) creates "error.log":
+                #(printf "errorLog" > error.log; kill -INT $$) creates "error.log":
                     if isEmpty ret:
                         print("true")
                     else:

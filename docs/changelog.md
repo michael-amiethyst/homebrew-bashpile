@@ -19,3 +19,4 @@
 * 0.16.0 - Equality and comparison Operators
 * 0.17.0 - Implemented `bpr -c <COMMAND>` for running from command line directly.
     Also implemented many primaries, else-if clauses and combining expressions.  Also bugfixes.
+* 0.18.0 - Implemented Bashpile Brew test section, started Docker testing

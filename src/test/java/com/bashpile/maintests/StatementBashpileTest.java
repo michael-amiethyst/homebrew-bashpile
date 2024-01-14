@@ -519,12 +519,12 @@ class StatementBashpileTest extends BashpileTest {
     @Test @Order(210)
     public void multilineCreateStatementWorks() throws IOException {
         final String bashpileScript = """
-                log: str = #(
-                    filename="$(printf "%d.txt" $$)"
-                    printf "%s" "$filename" > "$filename"
-                    printf "%s" "$filename"
+                log: str = #(printf "%d.txt" $$)
+                #(
+                    echo "Hello" > "$log"
+                    echo " World" >> "$log"
                 ) creates log:
-                    #(cat "$log")
+                    #(echo "$log")
                 """;
         Path log = null;
         try {
@@ -545,12 +545,12 @@ class StatementBashpileTest extends BashpileTest {
     @Test @Order(220)
     public void multilineExportedCreateStatementWorks() throws IOException {
         final String bashpileScript = """
-                log: readonly exported str = #(
-                    filename="$(printf "%d.txt" $$)"
-                    printf "%s" "$filename" > "$filename"
-                    printf "%s" "$filename"
+                log: readonly exported str = #(printf "%d.txt" $$)
+                #(
+                    echo "Hello" > "$log"
+                    echo " World" >> "$log"
                 ) creates log:
-                    #(cat "$log")
+                    #(echo "$log")
                 """;
         Path log = null;
         try {
@@ -572,12 +572,12 @@ class StatementBashpileTest extends BashpileTest {
     @Test @Order(230)
     public void createStatementHandlesScopesCorrectly() throws IOException {
         final String bashpileScript = """
-                log: readonly exported str = #(
-                    filename="$(printf "%d.txt" $$)"
-                    printf "%s" "$filename" > "$filename"
-                    printf "%s" "$filename"
+                log: readonly exported str = #(printf "%d.txt" $$)
+                #(
+                    echo "Hello" > "$log"
+                    echo " World" >> "$log"
                 ) creates log:
-                    cat: str = #(cat "$log")
+                    cat: str = #(echo "$log")
                     print(cat)
                 cat: int = 0
                 """;
@@ -588,7 +588,6 @@ class StatementBashpileTest extends BashpileTest {
             assertTrue(results.stdin().contains("declare -x log"));
             assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
             assertSuccessfulExitCode(results);
-            assertTrue(results.stdoutLines().get(0).matches("\\d+\\.txt"));
             log = Path.of(results.stdoutLines().get(0));
             assertFalse(Files.exists(log), "trap file not deleted");
         } finally {
