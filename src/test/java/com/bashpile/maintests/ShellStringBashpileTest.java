@@ -189,4 +189,8 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertTrue(results.stdin().contains("xargs"));
     }
+
+    // TODO make test for bpc
+//    jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
+//    java -jar "$jarPath" "$@" // no #() syntax
 }

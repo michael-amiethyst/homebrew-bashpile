@@ -202,6 +202,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         return toStringTranslation("$" + ctx.argumentsBuiltin().Number().getText());
     }
 
+    @Override
+    public Translation visitListOfBuiltinExpression(BashpileParser.ListOfBuiltinExpressionContext ctx) {
+        return translator.listOfBuiltinExpression(ctx);
+    }
+
     // visit type expressions
 
     @Override

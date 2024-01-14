@@ -16,10 +16,10 @@ public class ListTest extends BashpileTest {
     @Order(10)
     public void emptyListDeclarationWorks() {
         // TODO
-        final ExecutionResults results = runText("#(ls)");
+        final ExecutionResults results = runText("emptyList: list = listOf()");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
-        assertTrue(results.stdout().contains("pom.xml\n"));
+        assertTrue(results.stdin().contains("declare -a"));
     }
 
     // TODO non-empty list, add to list with memory left, add to list with no memory left, add wrong type

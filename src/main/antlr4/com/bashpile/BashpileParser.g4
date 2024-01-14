@@ -55,6 +55,7 @@ expression
     | expression combiningOperator
                              expression # combiningExpression
     | argumentsBuiltin                  # argumentsBuiltinExpression
+    | ListOf OParen expression* CParen  # listOfBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
     | <assoc=right> Minus? Number       # numberExpression

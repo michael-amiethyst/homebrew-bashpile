@@ -195,6 +195,11 @@ public record Translation(
         return lambdaBody("(%s)"::formatted);
     }
 
+    /** Adds to the start of the current options or creates the option at the start */
+    public @Nonnull Translation addOption(final String additionalOption) { return lambdaBody(str ->
+        str.contains("-") ? str.replace("-", "-" + additionalOption) : "-" + additionalOption + str);
+    }
+
     /** Apply arbitrary function to body.  E.g. `str -> str`. */
     public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
         return new Translation(preamble, lambda.apply(body), type, metadata);

@@ -31,8 +31,8 @@ public enum Type {
     NUMBER,
     /** A String */
     STR,
-    /** An array */
-    ARRAY,
+    /** A Bash array */
+    LIST,
     /** A map */
     MAP,
     /** A Bash reference */

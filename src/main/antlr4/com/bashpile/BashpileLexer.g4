@@ -25,7 +25,7 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
-Type     : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
+Type     : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
 Function : 'function';
 Block    : 'block';
 Return   : 'return';
@@ -40,6 +40,7 @@ Arguments: 'arguments';
 All      : 'all';
 Exported : 'exported';
 Readonly : 'readonly';
+ListOf   : 'listOf';
 
 // operators, in precidence order
 // opening parenthesis

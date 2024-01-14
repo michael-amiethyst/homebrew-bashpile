@@ -330,7 +330,12 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation subcomment =
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
-        final Translation modifiers = visitModifiers(ctx.typedId().modifier());
+        Translation modifiers = visitModifiers(ctx.typedId().modifier());
+        final boolean isList = ctx.typedId().Type().getText().toUpperCase().equals(LIST.name());
+        if (isList) {
+            modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
+            modifiers = modifiers.addOption("a");
+        }
         final Translation variableDeclaration =
                 toLineTranslation("declare %s%s\n".formatted(modifiers.body(), variableName));
         // merge expr into the assignment
@@ -643,6 +648,13 @@ public class BashTranslationEngine implements TranslationEngine {
                 secondTranslation.unquoteBody().body());
         return toStringTranslation(body).addPreamble(firstTranslation.preamble())
                 .addPreamble(secondTranslation.preamble());
+    }
+
+    @Override
+    public Translation listOfBuiltinExpression(BashpileParser.ListOfBuiltinExpressionContext ctx) {
+        // TODO implement this listOf stub
+        // empty array
+        return new Translation("()", LIST, NORMAL);
     }
 
     @Override

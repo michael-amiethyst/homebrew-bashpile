@@ -93,6 +93,8 @@ public interface TranslationEngine {
 
     Translation combiningExpression(final BashpileParser.CombiningExpressionContext ctx);
 
+    Translation listOfBuiltinExpression(final BashpileParser.ListOfBuiltinExpressionContext ctx);
+
     /** Translates IDs */
     Translation idExpression(final BashpileParser.IdExpressionContext ctx);
 
