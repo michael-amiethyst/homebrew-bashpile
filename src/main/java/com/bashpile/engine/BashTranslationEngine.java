@@ -135,26 +135,9 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
         final boolean fileNameIsId = ctx.String() == null;
 
-        // handle the initial variable declaration and type, if applicable
-        String variableName;
-        if (ctx.typedId() != null) {
-            variableName = ctx.typedId().Id().getText();
-            if (fileNameIsId) {
-                Asserts.assertEquals(variableName, ctx.Id().getText(),
-                        "Create Statements must have matching Ids at the start and end.");
-            }
-            // add this variable to the type map
-            final Type type = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
-            typeStack.putVariableType(variableName, type, lineNumber(ctx));
-        }
-
         // create child translations and other variables
         Translation shellString;
-        final boolean addingCommandSubstitution = ctx.typedId() != null;
         shellString = visitor.visit(ctx.shellString());
-        if (addingCommandSubstitution) {
-            shellString = unwindAll(shellString);
-        }
         final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
         String filename =  visitor.visit(filenameNode).unquoteBody().body();
         // convert ID to "$ID"

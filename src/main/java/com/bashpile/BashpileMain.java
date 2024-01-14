@@ -13,8 +13,6 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 // TODO do a screencast, powerpoint?  OOOOH, let Perun know!
-// TODO test forward declaration new syntax
-// TODO pull named create, use specified output filename instead in bpr
 // TODO implement Brew install tests
 /** Entry point into the program.  Only spins up the transpiler and parses the command line with PicoCLI. */
 @CommandLine.Command(
@@ -81,10 +79,12 @@ public class BashpileMain implements Callable<Integer> {
             String filename = inputFile != null ? inputFile.toString() : "command";
             LOG.debug("Input file is: {}", filename);
             transpiledFilename = Path.of(filename + ".bpt");
-            if (Files.exists(transpiledFilename)) {
-                System.out.println(transpiledFilename + " already exists.  Will not overwrite.");
-                return 2;
-            }
+        }
+        if (Files.exists(transpiledFilename.toAbsolutePath())) {
+            System.out.println(transpiledFilename + " already exists.  Will not overwrite.");
+            return 2;
+        } else {
+            LOG.info("In directory {} and file {} does not exist -- will create", System.getProperty("user.dir"), transpiledFilename);
         }
         LOG.info("Transpiling to {}", transpiledFilename);
         String translation = inputFile != null ? BashpileMainHelper.transpileNioFile(inputFile)

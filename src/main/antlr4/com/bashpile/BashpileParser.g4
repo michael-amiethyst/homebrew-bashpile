@@ -6,7 +6,7 @@ program: statement+;
 // statements, in descending order of complexity
 statement
     : ShellLine Newline                   # shellLineStatement
-    | (typedId Equals)? shellString Creates (String|Id)
+    | shellString Creates (String|Id)
            Colon INDENT statement+ DEDENT # createsStatement
     | Function Id paramaters (Arrow Type)?# functionForwardDeclarationStatement
     | Function Id paramaters tags? (Arrow Type)?

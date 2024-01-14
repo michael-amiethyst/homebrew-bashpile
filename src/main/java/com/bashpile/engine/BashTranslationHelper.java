@@ -94,16 +94,7 @@ public class BashTranslationHelper {
         }
 
         // set noclobber avoids some race conditions
-        String ifGuard;
-        String variableName = null;
-        if (ctx.typedId() != null) {
-            variableName = ctx.typedId().Id().getText();
-            final String modifiers = visitModifiers(ctx.typedId().modifier()).body();
-            ifGuard = "declare %s%s\nif %s=$(set -o noclobber; %s%s) 2> /dev/null%s".formatted(
-                    modifiers, variableName, variableName, preamble, check, thenFragment);
-        } else {
-            ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null%s".formatted(preamble, check, thenFragment);
-        }
+        String ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null%s".formatted(preamble, check, thenFragment);
 
         // create our statements translation
         final Translation statements = ctx.statement().stream()
@@ -128,11 +119,10 @@ public class BashTranslationHelper {
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
         final String exitOrReturn = inBlock(ctx) ? "return" : "exit";
         final String plainFilename = Strings.unquote(filename).substring(1);
-        final String errorDetails = variableName != null ? "  Output from attempted creation:\\n$" + variableName : "";
         String elseBody = """
-                printf "Failed to create %s correctly.%s"
+                printf "Failed to create %s correctly."
                 rm -f %s
-                %s 1""".formatted(plainFilename, errorDetails, filename, exitOrReturn);
+                %s 1""".formatted(plainFilename, filename, exitOrReturn);
         elseBody = lambdaAllLines(elseBody, str -> TAB + str);
         elseBody = lambdaFirstLine(elseBody, String::stripLeading);
         return """

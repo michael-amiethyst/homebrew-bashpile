@@ -304,7 +304,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 #(rm -f error.log)
                 #(trap 'cat error.log; exit 1' INT)
-                ret: str = #(printf "errorLog" > error.log; kill -INT $$) creates "error.log":
+                #(printf "errorLog" > error.log; kill -INT $$) creates "error.log":
                     if isEmpty ret:
                         print("true")
                     else:
