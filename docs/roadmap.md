@@ -1,12 +1,11 @@
 # 1.0 features
-1. Terraform + docker for multi-OS tests
-2. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
-3. Arrays, Hashes, Refs
-4. Loops
-5. String interpolation with $[]
+1. Arrays, Hashes, Refs
+2. Loops
+3. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
+4. String interpolation with $[]
    1. have bpr use arguments, arguments[all] (args/argv alias?)
-6. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
-7. Enforce 'readonly' 
+5. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+6. Enforce 'readonly' 
    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # Later
