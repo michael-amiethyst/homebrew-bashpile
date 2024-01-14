@@ -149,7 +149,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Test @Timeout(20) @Order(50)
     public void bprCreateErrorMessagesPropagate() throws IOException {
         log.info("In bprCreateErrorMessagesPropagate");
-        //Assumptions.assumeTrue(bprDeployed);
+        Assumptions.assumeTrue(bprDeployed);
 
         final String bashpileFilename = "src/test/resources/scripts/bprShebang.bps";
         final Path generatedFile = Path.of(bashpileFilename + ".bpt");
