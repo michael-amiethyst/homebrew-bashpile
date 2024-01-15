@@ -197,15 +197,15 @@ public class BashTranslationEngine implements TranslationEngine {
         // register function param types and return type
         final List<Type> typeList = ctx.paramaters().typedId()
                 .stream().map(Type::valueOf).collect(Collectors.toList());
-        final Type retType = Type.valueOf(ctx.Type().getText().toUpperCase());
+        // TODO edit for lists?
+        final Type retType = Type.valueOf(ctx.type().Type(0).getText().toUpperCase());
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
         try (var ignored2 = typeStack.pushFrame()) {
 
             // register local variable types
-            ctx.paramaters().typedId().forEach(
-                    x -> typeStack.putVariableType(
-                            x.Id().getText(), Type.valueOf(x.Type().getText().toUpperCase()), lineNumber(ctx)));
+            ctx.paramaters().typedId().forEach(x -> typeStack.putVariableType(x.Id().getText(),
+                    Type.valueOf(x.type().Type(0).getText().toUpperCase()), lineNumber(ctx)));
 
             // create Translations
             final Translation comment = createCommentTranslation("function declaration", lineNumber(ctx));
@@ -307,7 +307,8 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         // add this variable to the type map
         final String variableName = ctx.typedId().Id().getText();
-        final Type type = Type.valueOf(ctx.typedId().Type().getText().toUpperCase());
+        // TODO edit for lists?
+        final Type type = Type.valueOf(ctx.typedId().type().Type(0).getText().toUpperCase());
         typeStack.putVariableType(variableName, type, lineNumber(ctx));
 
         // visit the right hand expression
@@ -331,7 +332,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
         Translation modifiers = visitModifiers(ctx.typedId().modifier());
-        final boolean isList = ctx.typedId().Type().getText().toUpperCase().equals(LIST.name());
+        final boolean isList = ctx.typedId().type().Type(0).getText().toUpperCase().equals(LIST.name());
         if (isList) {
             modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
             modifiers = modifiers.addOption("a");
@@ -456,7 +457,8 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     @Override
     public @Nonnull Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
-        final Type castTo = Type.valueOf(ctx.Type().getText().toUpperCase());
+        // TODO edit for lists?
+        final Type castTo = Type.valueOf(ctx.type().Type(0).getText().toUpperCase());
         Translation expression = visitor.visit(ctx.expression());
         final int lineNumber = lineNumber(ctx);
         final TypeError typecastError = new TypeError(

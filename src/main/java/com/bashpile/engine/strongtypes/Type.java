@@ -42,9 +42,10 @@ public enum Type {
 
     /** Gets the type specified in <code>ctx</code>. */
     public static @Nonnull Type valueOf(@Nonnull final BashpileParser.TypedIdContext ctx) {
-        final boolean hasTypeInfo = ctx.Type() != null && Strings.isNotBlank(ctx.Type().getText());
+        // TODO edit for Lists?
+        final boolean hasTypeInfo = ctx.type().Type(0) != null && Strings.isNotBlank(ctx.type().Type(0).getText());
         if (hasTypeInfo) {
-            return valueOf(ctx.Type().getText().toUpperCase());
+            return valueOf(ctx.type().Type(0).getText().toUpperCase());
         }
         throw new TypeError("No type info for " + ctx.Id(), ctx.start.getLine());
     }

@@ -8,8 +8,8 @@ statement
     : ShellLine Newline                   # shellLineStatement
     | shellString Creates (String|Id)
            Colon INDENT statement+ DEDENT # createsStatement
-    | Function Id paramaters (Arrow Type)?# functionForwardDeclarationStatement
-    | Function Id paramaters tags? (Arrow Type)?
+    | Function Id paramaters (Arrow type)?# functionForwardDeclarationStatement
+    | Function Id paramaters tags? (Arrow type)?
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon functionBlock     # anonymousBlockStatement
     | If Not? expression Colon indentedStatements
@@ -26,10 +26,11 @@ statement
 tags        : OBracket (String*) CBracket;
 // like (x: str, y: str)
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
-typedId     : Id Colon modifier* Type;
+typedId     : Id Colon modifier* type;
+type        : Type (LessThan Type MoreThan)?;
 modifier    : Exported | Readonly;
 argumentList: expression (Comma expression)*;
-elseIfClauses: ElseIf Not? expression Colon indentedStatements;
+elseIfClauses     : ElseIf Not? expression Colon indentedStatements;
 indentedStatements: INDENT statement+ DEDENT;
 
 // Force the final statement to be a return.
@@ -41,7 +42,7 @@ returnPsudoStatement: Return expression? Newline;
 
 // in operator precedence order
 expression
-    : expression Colon Type             # typecastExpression
+    : expression Colon type             # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
