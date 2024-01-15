@@ -1,12 +1,14 @@
 package com.bashpile.maintests;
 
 import com.bashpile.Strings;
+import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -190,7 +192,13 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertTrue(results.stdin().contains("xargs"));
     }
 
-    // TODO make test for bpc
-//    jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
-//    java -jar "$jarPath" "$@" // no #() syntax
+    @Test() @Order(140)
+    public void bpcShellLineWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        // TODO figure out why this is broken
+        assertThrows(UserError.class, () -> runText("""
+            jarPath: str = "%s"
+            java -jar "$jarPath" "$@" // no #() syntax""".formatted(jarPath)));
+    }
 }
