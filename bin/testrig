@@ -1,7 +1,7 @@
 #!/usr/bin/env bpr
 
 /**
- * Usage: testrig src/test/resources/currTest
+ * Usage: bin/testrig src/test/resources/currTest
 */
 
 #(mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt) creates "cpath.txt":

@@ -59,6 +59,7 @@ expression
     | ListOf OParen expression* CParen  # listOfBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
+    | Id OBracket Number CBracket       # listExpression
     | <assoc=right> Minus? Number       # numberExpression
     | String                            # stringExpression
     | Id                                # idExpression

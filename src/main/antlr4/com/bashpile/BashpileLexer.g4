@@ -75,6 +75,8 @@ ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))
 
 // ID and Numbers
 
+// must start with a letter or underscore, then may have numbers
+// TODO allow dashes for snake-case
 Id: ID_START ID_CONTINUE*;
 
 Number: Float | Integer;
