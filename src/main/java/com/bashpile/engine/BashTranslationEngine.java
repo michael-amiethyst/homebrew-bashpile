@@ -6,10 +6,12 @@ import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 
 import javax.annotation.Nonnull;
@@ -19,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.*;
@@ -324,6 +327,7 @@ public class BashTranslationEngine implements TranslationEngine {
             exprTranslation = exprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
             exprTranslation = unwindNested(exprTranslation);
         }
+        // TODO check type for lists
         assertTypesCoerce(type, exprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
 
         // create translations
@@ -654,9 +658,30 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation listOfBuiltinExpression(BashpileParser.ListOfBuiltinExpressionContext ctx) {
-        // TODO implement this listOf stub
-        // empty array
-        return new Translation("()", LIST, NORMAL);
+        // guard, empty list
+        if (ctx.expression().isEmpty()) {
+            return new ListTranslation(UNKNOWN);
+        }
+
+        // guard, checks types
+        final List<Pair<Integer, Translation>> translations = IntStream.range(0, ctx.expression().size())
+                .mapToObj(it -> Pair.of(it, visitor.visit(ctx.expression(it)))).toList();
+        final Type listType = translations.get(0).getRight().type();
+        final AtomicReference<List<BashpileUncheckedException>> errors = new AtomicReference<>();
+        errors.set(List.of());
+        translations.stream().skip(1).forEachOrdered(tr -> {
+            if (!tr.getRight().type().equals(listType)) {
+                String message = "Bad type %s in %s list at index %s"
+                        .formatted(tr.getRight().type(), listType, tr.getLeft());
+                errors.get().add(new BashpileUncheckedException(message));
+            }
+        });
+        if (!errors.get().isEmpty()) {
+            throw errors.get().get(0);
+        }
+
+        // body
+        return ListTranslation.of(translations.stream().map(Pair::getRight).toList());
     }
 
     @Override
@@ -665,6 +690,16 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type type = typeStack.getVariableType(variableName);
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
         return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
+    }
+
+    @Override
+    public Translation listExpression(BashpileParser.ListExpressionContext ctx) {
+        final String variableName = ctx.Id().getText();
+        final Type type = typeStack.getVariableType(variableName);
+        // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
+        Integer index = Integer.parseInt(ctx.Number().getText());
+        Asserts.assertTrue(index >= 0, "Invalid index: %d".formatted(index));
+        return new Translation("${%s[%d]}".formatted(variableName, index), type, NORMAL);
     }
 
     // expression helper rules

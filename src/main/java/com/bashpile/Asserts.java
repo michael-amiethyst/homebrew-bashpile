@@ -34,6 +34,20 @@ public class Asserts {
 
     private static final Pattern BLANK_LINE = Pattern.compile("(?m)^ *$");
 
+    public static boolean assertTrue(final boolean test, @Nullable final String message) {
+        if (!test) {
+            throw new BashpileUncheckedAssertionException(message != null ? message : "True assert wasn't true");
+        } // else
+        return true;
+    }
+
+    public static <T> @Nonnull List<T> assertNotEmpty(@Nonnull final List<T> list) {
+        if (list.isEmpty()) {
+            throw new BashpileUncheckedAssertionException("List was empty");
+        }
+        return list;
+    }
+
     /**
      * A text block is a group of text lines.  Each line ends with a newline.
      *

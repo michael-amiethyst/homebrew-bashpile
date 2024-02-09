@@ -227,6 +227,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         return translator.idExpression(ctx);
     }
 
+    @Override
+    public Translation visitListExpression(BashpileParser.ListExpressionContext ctx) {
+        return translator.listExpression(ctx);
+    }
+
     /** Default type is STR */
     @Override
     public @Nonnull Translation visitTerminal(@Nonnull final TerminalNode node) {

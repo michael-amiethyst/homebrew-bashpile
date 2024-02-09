@@ -98,6 +98,9 @@ public interface TranslationEngine {
     /** Translates IDs */
     Translation idExpression(final BashpileParser.IdExpressionContext ctx);
 
+    /** List access like listName[num] */
+    Translation listExpression(final BashpileParser.ListExpressionContext ctx);
+
     // expression helper translations
 
     /** Translates shell strings */

@@ -40,8 +40,7 @@ public class ListTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertTrue(results.stdin().contains("declare -a"));
-        // TODO uncomment and implement
-//        assertEquals(results.stdout(), "0\n");
+        assertEquals("1\n", results.stdout());
     }
 
     // TODO many item'd list, add to list with memory left, add to list with no memory left, add wrong type
