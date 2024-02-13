@@ -5,100 +5,86 @@ import com.bashpile.Strings;
 import com.bashpile.exceptions.TypeError;
 
 import javax.annotation.Nonnull;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 
-/** The type of variable */
-public enum Type {
-    /** Not Found */
-    NOT_FOUND,
-    /** Not applicable -- as in for statements */
-    NA,
+/**
+ * Basically a pair of SimpleTypes.  The secondary type is for the type of the contents for a list, hash or ref.
+ */
+public record Type(SimpleType mainType, SimpleType contentsType) {
+
+    /** Not applicable -- usually used instead of NULL */
+    public static final Type NA_TYPE = Type.of(SimpleType.NA);
+
     /**
      *  Type could not be determined (e.g. shell string results),
      *  coerces to any regular type (BOOL, INT, FLOAT, STR)
      */
-    UNKNOWN,
-    /** Instead of NIL or null we have the empty String or an empty object */
-    EMPTY,
-    /** A boolean */
-    BOOL,
-    /** An integer, for all non-fractional numbers */
-    INT,
-    /** A float, for all fractional numbers */
-    FLOAT,
-    /** For when INT or FLOAT cannot be determined. */
-    NUMBER,
-    /** A String */
-    STR,
-    /** A Bash array */
-    LIST,
-    /** A map */
-    MAP,
-    /** A Bash reference */
-    REF;
+    public static final Type UNKNOWN_TYPE = Type.of(SimpleType.UNKNOWN);
 
-    // static methods
+    /** Similar to the empty string ("") */
+    public static final Type EMPTY_TYPE = Type.of(SimpleType.EMPTY);
 
-    /** Gets the type specified in <code>ctx</code>. */
-    public static @Nonnull Type valueOf(@Nonnull final BashpileParser.TypedIdContext ctx) {
-        // TODO edit for Lists?
-        final boolean hasTypeInfo = ctx.type().Type(0) != null && Strings.isNotBlank(ctx.type().Type(0).getText());
-        if (hasTypeInfo) {
-            return valueOf(ctx.type().Type(0).getText().toUpperCase());
-        }
-        throw new TypeError("No type info for " + ctx.Id(), ctx.start.getLine());
+    /** For when a search returns no results */
+    public static final Type NOT_FOUND_TYPE = Type.of(SimpleType.NOT_FOUND);
+
+    public static final Type BOOL_TYPE = Type.of(SimpleType.BOOL);
+
+    /** All Integers (unlimited size) */
+    public static final Type INT_TYPE = Type.of(SimpleType.INT);
+
+    /** All floats (to 10 decimals) */
+    public static final Type FLOAT_TYPE = Type.of(SimpleType.FLOAT);
+
+    /** INT or FLOAT */
+    public static final Type NUMBER_TYPE = Type.of(SimpleType.NUMBER);
+
+    /** Strings */
+    public static final Type STR_TYPE = Type.of(SimpleType.STR);
+
+    public static @Nonnull Type of(@Nonnull SimpleType simpleType) {
+        return new Type(simpleType, SimpleType.EMPTY);
     }
 
-    /** True if <code>text</code> holds a number. */
-    public static boolean isNumberString(@Nonnull final String text) {
-        try {
-            parseNumberString(text);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
+    /** Gets the Type with mainType and contentsType info */
+    public static @Nonnull Type valueOf(@Nonnull BashpileParser.TypedIdContext ctx) {
+        return valueOf(ctx.type());
     }
 
-    /** Throws NumberFormatException on bad parse. */
-    public static @Nonnull Type parseNumberString(@Nonnull final String text) {
-        Type type;
-        try {
-            new BigInteger(text);
-            type = Type.INT;
-        } catch (NumberFormatException ignored) {
-            new BigDecimal(text);
-            type = Type.FLOAT;
+    /** Gets the Type with mainType and contentsType info */
+    public static Type valueOf(@Nonnull BashpileParser.TypeContext ctx) {
+        final boolean hasTypeInfo = ctx.Type(0) != null && Strings.isNotBlank(ctx.Type(0).getText());
+        final String mainTypeName = ctx.Type(0).getText().toUpperCase();
+        final SimpleType mainType = SimpleType.valueOf(mainTypeName);
+        if (hasTypeInfo && mainType.isBasic()) {
+            return of(mainType);
+        } else if (hasTypeInfo) /* and not basic */ {
+            final SimpleType contentsType = SimpleType.valueOf(ctx.Type(1).getText().toUpperCase());
+            return new Type(mainType, contentsType);
         }
-        return type;
+        throw new TypeError("No type info for " + mainTypeName, ctx.start.getLine());
     }
 
-    // class/enum methods
+    public @Nonnull String name() {
+        if (contentsType.isEmpty()) {
+            return mainType.name();
+        } // else
+        return "%s<%s>".formatted(mainType.name(), contentsType.name());
+    }
 
     /** Check if this type is unknown or numeric */
     public boolean isPossiblyNumeric() {
-        return this.equals(UNKNOWN) || this.isNumeric();
+        return mainType.isPossiblyNumeric();
     }
 
     /** Check if this type is a number, int or float */
     public boolean isNumeric() {
-        return this.equals(NUMBER) || this.equals(INT) || this.equals(FLOAT);
+        return mainType.isNumeric();
     }
 
     /**
      * Checks if this type can coerce to <code>other</code>.
      * @see <a href=https://developer.mozilla.org/en-US/docs/Glossary/Type_coercion>Type Coercion</a>
      */
-    public boolean coercesTo(@Nonnull final Type other) {
-        // the types match if they are equal
-        return this.equals(other)
-                // unknown coerces to everything
-                || this.equals(Type.UNKNOWN) || other.equals(Type.UNKNOWN)
-                // an INT coerces to a FLOAT
-                || (this.equals(Type.INT) && other.equals(Type.FLOAT))
-                // a NUMBER coerces to an INT or a FLOAT
-                || (this.equals(Type.NUMBER) && other.isNumeric())
-                // an INT or a FLOAT coerces to a NUMBER
-                || (this.isNumeric() && other.equals(Type.NUMBER));
+    public boolean coercesTo(@Nonnull Type other) {
+        return mainType.coercesTo(other.mainType) && contentsType.coercesTo(other.contentsType);
     }
 }

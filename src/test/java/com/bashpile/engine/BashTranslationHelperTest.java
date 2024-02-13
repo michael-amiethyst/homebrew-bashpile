@@ -1,6 +1,7 @@
 package com.bashpile.engine;
 
 import com.bashpile.engine.strongtypes.TranslationMetadata;
+import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -23,7 +24,7 @@ public class BashTranslationHelperTest {
     @Test @Order(20)
     public void unwindAllWithParenthesisWorks() {
         Translation tr =
-                new Translation("(which ls 1>/dev/null)", Type.BOOL, TranslationMetadata.NEEDS_INLINING_OFTEN);
+                new Translation("(which ls 1>/dev/null)", Type.of(SimpleType.BOOL), TranslationMetadata.NEEDS_INLINING_OFTEN);
         tr = tr.inlineAsNeeded(BashTranslationHelper::unwindAll);
         assertFalse(tr.body().contains("})"), "Bad parenthesis found");
     }

@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
-import static com.bashpile.engine.strongtypes.Type.LIST;
 
 public class ListTranslation extends Translation {
 
@@ -27,12 +27,12 @@ public class ListTranslation extends Translation {
 
     private List<Translation> translations = new ArrayList<>();
 
-    // TODO use
-    private final Type listType;
-
     public ListTranslation(@Nonnull Type type) {
-        super("()", LIST, NORMAL);
-        listType = type;
+        super(
+                "()",
+                new Type(LIST, type.mainType().isBasic() ? type.mainType() : type.contentsType()),
+                NORMAL
+        );
     }
 
     @Nonnull @Override
@@ -44,7 +44,6 @@ public class ListTranslation extends Translation {
     @Nonnull
     @Override
     public Translation add(@Nonnull Translation other) {
-        // TODO
         translations.add(other);
         return this;
     }

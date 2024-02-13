@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.lambdaAllLines;
+import static com.bashpile.engine.strongtypes.Type.*;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 /**
@@ -27,12 +28,14 @@ public class Translation {
     /**
      * The Bashpile version of NIL or NULL
      */
-    public static final Translation EMPTY_TYPE = new Translation("", Type.EMPTY, TranslationMetadata.NORMAL);
+    public static final Translation EMPTY_TRANSLATION =
+            new Translation("", EMPTY_TYPE, TranslationMetadata.NORMAL);
 
     /**
      * An empty translation with an empty string an UNKNOWN type
      */
-    public static final Translation EMPTY_TRANSLATION = new Translation("", Type.UNKNOWN, TranslationMetadata.NORMAL);
+    public static final Translation UNKNOWN_TRANSLATION =
+            new Translation("", UNKNOWN_TYPE, TranslationMetadata.NORMAL);
 
     /**
      * A '\n' as a Translation
@@ -77,7 +80,9 @@ public class Translation {
      */
     public static boolean areStringExpressions(@Nonnull final Translation... translations) {
         // if all strings the stream of not-strings will be empty
-        return Stream.of(translations).map(Translation::parseUnknown).allMatch(x -> x.type() == Type.STR);
+        return Stream.of(translations)
+                .map(Translation::parseUnknown)
+                .allMatch(x -> x.type().equals(STR_TYPE));
     }
 
     /**
@@ -96,7 +101,7 @@ public class Translation {
      * @return A NORMAL STR Translation.
      */
     public static @Nonnull Translation toParagraphTranslation(@Nonnull final String text) {
-        return new Translation(assertIsParagraph(text), Type.STR, TranslationMetadata.NORMAL);
+        return new Translation(assertIsParagraph(text), STR_TYPE, TranslationMetadata.NORMAL);
     }
 
     /**
@@ -105,7 +110,7 @@ public class Translation {
      * @return A NORMAL STR Translation.
      */
     public static @Nonnull Translation toLineTranslation(@Nonnull final String text) {
-        return new Translation(assertIsLine(text), Type.STR, TranslationMetadata.NORMAL);
+        return new Translation(assertIsLine(text), STR_TYPE, TranslationMetadata.NORMAL);
     }
 
     /**
@@ -115,7 +120,7 @@ public class Translation {
      */
     public static @Nonnull Translation toStringTranslation(@Nonnull final String text) {
         assertNoMatch(text, Pattern.compile("[^\n]*\n"));
-        return new Translation(text, Type.STR, TranslationMetadata.NORMAL);
+        return new Translation(text, STR_TYPE, TranslationMetadata.NORMAL);
     }
 
     // toPhraseTranslation not used/needed
@@ -123,7 +128,7 @@ public class Translation {
     // constructors
 
     public Translation(@Nonnull final String text) {
-        this(text, Type.UNKNOWN, List.of());
+        this(text, UNKNOWN_TYPE, List.of());
     }
 
     public Translation(
@@ -167,9 +172,9 @@ public class Translation {
         final List<TranslationMetadata> nextMetadata =
                 Streams.concat(metadata.stream(), other.metadata.stream()).toList();
         // favor anything over UNKNOWN
-        Type nextType = type.equals(Type.UNKNOWN) ? other.type : Type.UNKNOWN;
+        Type nextType = type.equals(UNKNOWN_TYPE) ? other.type : UNKNOWN_TYPE;
         // favor INT or FLOAT over NUMBER
-        nextType = type.equals(Type.NUMBER) && other.type.isNumeric() ? other.type : nextType;
+        nextType = type.equals(NUMBER_TYPE) && other.type.isNumeric() ? other.type : nextType;
         return new Translation(preamble + other.preamble, body + other.body, nextType, nextMetadata);
     }
 
@@ -338,10 +343,10 @@ public class Translation {
     // helpers
 
     private static @Nonnull Translation parseUnknown(Translation tr) {
-        if (tr.type.equals(Type.UNKNOWN) && NUMBER.matcher(tr.body).matches()) {
-            return tr.type(Type.NUMBER);
-        } else if (tr.type.equals(Type.UNKNOWN)) {
-            return tr.type(Type.STR);
+        if (tr.type.equals(UNKNOWN_TYPE) && NUMBER.matcher(tr.body).matches()) {
+            return tr.type(NUMBER_TYPE);
+        } else if (tr.type.equals(UNKNOWN_TYPE)) {
+            return tr.type(STR_TYPE);
         } else {
             return tr;
         }

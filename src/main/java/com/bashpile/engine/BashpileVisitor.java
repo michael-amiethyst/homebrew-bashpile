@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
+import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -211,12 +212,13 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
-        return new Translation(ctx.Bool().getText(), Type.BOOL, NORMAL);
+        return new Translation(ctx.Bool().getText(), Type.BOOL_TYPE, NORMAL);
     }
 
     @Override
     public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
-        return new Translation(ctx.getText(), Type.parseNumberString(ctx.Number().getText()), NORMAL);
+        final SimpleType simpleType = SimpleType.parseNumberString(ctx.Number().getText());
+        return new Translation(ctx.getText(), Type.of(simpleType), NORMAL);
     }
 
     /**
@@ -236,7 +238,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public @Nonnull Translation visitTerminal(@Nonnull final TerminalNode node) {
         // may or may not be multi-line
-        return new Translation(node.getText(), Type.STR, NORMAL);
+        return new Translation(node.getText(), Type.STR_TYPE, NORMAL);
     }
 
     // expression helper rules

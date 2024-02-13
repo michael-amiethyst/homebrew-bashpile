@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Stack;
 
 import static com.bashpile.Asserts.assertMapDoesNotContainKey;
+import static com.bashpile.engine.strongtypes.Type.NOT_FOUND_TYPE;
 
 /**
  * A call stack but just for Type information to implement strong typing.
@@ -46,13 +47,13 @@ public class TypeStack {
         if (topmostOptional.isPresent()) {
             return topmostOptional.get().get(variableName);
         } // else
-        return Type.NOT_FOUND;
+        return NOT_FOUND_TYPE;
     }
 
     /** Checks if the variable is defined */
     public boolean containsVariable(@Nonnull final String variableName) {
         final Type foundType = getVariableType(variableName);
-        return foundType != Type.NOT_FOUND;
+        return !foundType.equals(NOT_FOUND_TYPE);
     }
 
     /** Puts the function's type information into the current stackframe */
