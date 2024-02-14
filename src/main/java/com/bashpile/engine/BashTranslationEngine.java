@@ -403,9 +403,18 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(visitor::visit)
                 .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
                 .map(BashTranslationHelper::unwindNested)
-                .map(tr -> tr.body("""
-                        printf "%s\\n"
-                        """.formatted(tr.unquoteBody().body())))
+                .map(tr -> {
+                    if (tr.isBasicType()) {
+                        return tr.body("""
+                                printf "%s\\n"
+                                """.formatted(tr.unquoteBody().body()));
+                    } else {
+                        // list.  Change the Internal Field Separator to a space just for this subshell (parens)
+                        return tr.body("""
+                                (declare -x IFS=$' '; printf "%%s\\n" "%s")
+                                """.formatted(tr.unquoteBody().body()));
+                    }
+                })
                 .reduce(Translation::add)
                 .orElseThrow();
         final Translation subcomment =
@@ -688,12 +697,15 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation idExpression(BashpileParser.IdExpressionContext ctx) {
         final String variableName = ctx.Id().getText();
         final Type type = typeStack.getVariableType(variableName);
+        // list syntax is `listName[*]`
+        // see https://www.masteringunixshell.net/qa35/bash-how-to-print-array.html
+        final String allIndexes = type.mainType().isBasic() ? "" : /* list */ "[*]";
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
-        return new Translation("${%s}".formatted(ctx.getText()), type, NORMAL);
+        return new Translation("${%s%s}".formatted(ctx.getText(), allIndexes), type, NORMAL);
     }
 
     @Override
-    public Translation listExpression(BashpileParser.ListExpressionContext ctx) {
+    public Translation listIndexExpression(BashpileParser.ListIndexExpressionContext ctx) {
         final String variableName = ctx.Id().getText();
         final Type type = typeStack.getVariableType(variableName);
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`

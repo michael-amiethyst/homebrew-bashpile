@@ -56,13 +56,14 @@ expression
     | expression combiningOperator
                              expression # combiningExpression
     | argumentsBuiltin                  # argumentsBuiltinExpression
-    | ListOf OParen expression* CParen  # listOfBuiltinExpression
+    | ListOf (OParen CParen | OParen expression (Comma expression)* CParen)
+                                        # listOfBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
     | <assoc=right> Minus? Number       # numberExpression
     | String                            # stringExpression
     | Id                                # idExpression
-    | Id OBracket Number CBracket       # listExpression
+    | Id OBracket Number CBracket       # listIndexExpression
     ;
 
 shellString        : HashOParen shellStringContents* CParen;

@@ -70,6 +70,11 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
         return "%s<%s>".formatted(mainType.name(), contentsType.name());
     }
 
+    /** Is the type basic (e.g. not a List, Hash or Ref)? */
+    public boolean isBasic() {
+        return mainType.isBasic();
+    }
+
     /** Check if this type is unknown or numeric */
     public boolean isPossiblyNumeric() {
         return mainType.isPossiblyNumeric();

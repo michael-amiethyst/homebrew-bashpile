@@ -302,6 +302,11 @@ public class Translation {
         return new Translation(preamble, body, typecastType, metadata);
     }
 
+    /** Is the type basic (e.g. not a List, Hash or Ref)? */
+    public boolean isBasicType() {
+        return type.isBasic();
+    }
+
     /**
      * Replaces the type metadata
      */

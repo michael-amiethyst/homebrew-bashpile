@@ -170,13 +170,15 @@ public class ListTranslation extends Translation {
 
     @Override
     public String toString() {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
+        return "ListTranslation{" +
+                "translations=" + translations +
+                '}';
     }
 
     @Nonnull
     @Override
     public String preamble() {
-        return translations.stream().map(Translation::preamble).collect(Collectors.joining("\n"));
+        return translations.stream().map(Translation::preamble).collect(Collectors.joining("\n")).trim();
     }
 
     @Override

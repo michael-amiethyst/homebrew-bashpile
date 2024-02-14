@@ -1,13 +1,13 @@
 package com.bashpile.maintests;
 
-import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -24,10 +24,14 @@ public class ListTest extends BashpileTest {
 
     @Test
     @Order(20)
-    public void printingAnEmptyListFails() {
-        assertThrows(BashpileUncheckedAssertionException.class, () -> runText("""
+    public void printingAnEmptyListSucceeds() {
+        final ExecutionResults results = runText("""
                 emptyList: list<str> = listOf()
-                print(emptyList)"""));
+                print(emptyList)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("declare -a"));
+        assertEquals("\n", results.stdout());
     }
 
     /** Single int list */
@@ -43,5 +47,20 @@ public class ListTest extends BashpileTest {
         assertEquals("1\n", results.stdout());
     }
 
-    // TODO many item'd list, add to list with memory left, add to list with no memory left, add wrong type
+    /** Multistring list */
+    @Test
+    @Order(40)
+    public void multiItemListDeclarationWorks() {
+        final ExecutionResults results = runText("""
+                intList: list<str> = listOf("one", "two", "three")
+                print(intList)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("declare -a"));
+        assertEquals("one two three\n", results.stdout());
+    }
+
+    // TODO many item'd list, add item to list, add list to list, add wrong type
+
+    // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)
 }

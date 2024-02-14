@@ -230,8 +230,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public Translation visitListExpression(BashpileParser.ListExpressionContext ctx) {
-        return translator.listExpression(ctx);
+    public Translation visitListIndexExpression(BashpileParser.ListIndexExpressionContext ctx) {
+        return translator.listIndexExpression(ctx);
     }
 
     /** Default type is STR */
