@@ -62,7 +62,7 @@ public class ListTest extends BashpileTest {
 
     @Test
     @Order(50)
-    public void listAddItemWorks() {
+    public void addItemToListWorks() {
         final ExecutionResults results = runText("""
                 strList: list<str> = listOf("one", "two", "three")
                 strList += "four"
@@ -73,7 +73,20 @@ public class ListTest extends BashpileTest {
         assertEquals("one two three four\n", results.stdout());
     }
 
-    // TODO add list to list, add wrong type (item and list)
+    @Test
+    @Order(60)
+    public void addListToListWorks() {
+        final ExecutionResults results = runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                strList += listOf("four", "five")
+                print(strList)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("declare -a"));
+        assertEquals("one two three four five\n", results.stdout());
+    }
+
+    // TODO add wrong type (item and list)
 
     // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)
 }

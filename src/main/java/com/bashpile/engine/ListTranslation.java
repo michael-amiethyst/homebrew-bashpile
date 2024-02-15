@@ -107,10 +107,10 @@ public class ListTranslation extends Translation {
         throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
 
-    @Nonnull
     @Override
-    public Translation parenthesizeBody() {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
+    public @Nonnull Translation parenthesizeBody() {
+        // always parenthesized
+        return this;
     }
 
     @Nonnull
