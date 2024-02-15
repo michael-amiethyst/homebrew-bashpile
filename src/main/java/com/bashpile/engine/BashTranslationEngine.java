@@ -381,7 +381,11 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation subcomment =
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "reassignment statement body");
         // merge exprTranslation into reassignment
-        final String reassignmentBody = "%s=%s\n".formatted(variableName, exprTranslation.body());
+        final String assignOperator = ctx.assignmentOperator().getText();
+        if (expectedType.mainType().equals(LIST)) {
+            exprTranslation = exprTranslation.parenthesizeBody();
+        }
+        final String reassignmentBody = "%s%s%s\n".formatted(variableName, assignOperator, exprTranslation.body());
         final Translation reassignment =
                 toLineTranslation(reassignmentBody).addPreamble(exprTranslation.preamble());
 

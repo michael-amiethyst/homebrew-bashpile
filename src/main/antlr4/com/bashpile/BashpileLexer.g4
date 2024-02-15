@@ -69,6 +69,8 @@ IsEqual : '==';
 IsNotEqual : '!=';
 And     : 'and';
 Or      : 'or';
+Equals  : '=';
+PlusEquals: '+=';
 
 // shell lines using Semantic Predicate
 ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
@@ -95,7 +97,6 @@ BlockComment : '/*' ( BlockComment | . )*? '*/' -> skip;
 
 // small tokens
 
-Equals  : '=';
 Colon   : ':';
 Comma   : ',';
 // opening square bracket

@@ -15,8 +15,10 @@ statement
     | If Not? expression Colon indentedStatements
          (elseIfClauses)*
          (Else Colon indentedStatements)? # conditionalStatement
-    | typedId (Equals expression)? Newline# assignmentStatement
-    | Id Equals expression Newline        # reassignmentStatement
+    | <assoc=right> typedId
+             (Equals expression)? Newline # assignmentStatement
+    | <assoc=right> Id assignmentOperator
+                       expression Newline # reassignmentStatement
     | Print OParen argumentList? CParen
                                   Newline # printStatement
     | expression Newline                  # expressionStatement
@@ -32,6 +34,7 @@ modifier    : Exported | Readonly;
 argumentList: expression (Comma expression)*;
 elseIfClauses     : ElseIf Not? expression Colon indentedStatements;
 indentedStatements: INDENT statement+ DEDENT;
+assignmentOperator: Equals | PlusEquals;
 
 // Force the final statement to be a return.
 // This is a work around for Bash not allawing the return keyword with a string.
@@ -82,4 +85,5 @@ binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
 
 combiningOperator: And | Or;
 
+// translates to $1, $2, etc
 argumentsBuiltin: Arguments OBracket Number CBracket;

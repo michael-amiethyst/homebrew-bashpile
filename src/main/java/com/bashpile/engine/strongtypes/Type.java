@@ -92,4 +92,13 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
     public boolean coercesTo(@Nonnull Type other) {
         return mainType.coercesTo(other.mainType) && contentsType.coercesTo(other.contentsType);
     }
+
+    /** Returns the Type of the contents (e.g. a List&lt;str&gt; would return a str type) */
+    public @Nonnull Type asContentsType() {
+        if (isBasic()) {
+            return this;
+        } else {
+            return Type.of(contentsType);
+        }
+    }
 }
