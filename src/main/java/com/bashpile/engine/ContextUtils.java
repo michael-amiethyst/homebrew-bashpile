@@ -22,6 +22,7 @@ public class ContextUtils {
         if (ctx.listAccess() == null) {
             return null;
         }
-        return ctx.listAccess().Number().getText();
+        final String minus = ctx.listAccess().Minus() != null ? "-" : "";
+        return minus + ctx.listAccess().Number().getText();
     }
 }

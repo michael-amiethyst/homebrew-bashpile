@@ -99,6 +99,32 @@ public class ListTest extends BashpileTest {
         assertEquals("1 two three\n", results.stdout());
     }
 
+    @Test
+    @Order(80)
+    public void newIndexOnListWorks() {
+        final ExecutionResults results = runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                strList[3] = "four"
+                print(strList)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("declare -a"));
+        assertEquals("one two three four\n", results.stdout());
+    }
+
+    @Test
+    @Order(90)
+    public void negativeIndexOnListWorks() {
+        final ExecutionResults results = runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                strList[-1] = "3"
+                print(strList)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("declare -a"));
+        assertEquals("one two 3\n", results.stdout());
+    }
+
     // TODO add wrong type (item and list)
 
     // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)

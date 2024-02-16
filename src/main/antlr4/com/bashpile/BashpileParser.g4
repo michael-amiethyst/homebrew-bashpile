@@ -88,4 +88,4 @@ combiningOperator: And | Or;
 // translates to $1, $2, etc
 argumentsBuiltin: Arguments OBracket Number CBracket;
 
-listAccess: Id OBracket Number CBracket;
+listAccess: Id OBracket Minus? Number CBracket;

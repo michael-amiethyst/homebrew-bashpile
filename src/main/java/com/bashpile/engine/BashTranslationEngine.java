@@ -402,6 +402,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
         return comment.add(preambleToReassignment).assertParagraphBody().type(NA_TYPE).metadata(NORMAL);
     }
+
     @Override
     public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
         // guard
