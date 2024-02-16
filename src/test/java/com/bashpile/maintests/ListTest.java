@@ -125,6 +125,19 @@ public class ListTest extends BashpileTest {
         assertEquals("one two 3\n", results.stdout());
     }
 
+    @Test
+    @Order(100)
+    public void largeNegativeIndexOnListFails () {
+        final ExecutionResults results = runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                strList[-10] = "3"
+                print(strList)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("declare -a"));
+        assertTrue(results.stdout().contains("bad"));
+    }
+
     // TODO add wrong type (item and list)
 
     // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)
