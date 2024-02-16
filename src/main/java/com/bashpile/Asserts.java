@@ -138,8 +138,18 @@ public class Asserts {
         }
 
         if (!typesCoerce) {
-            throw new TypeError("Expected %s %s but was %s %s"
-                    .formatted(functionName, expectedTypes, functionName, actualTypes), contextStartLine);
+            i--; // cancel out last i++
+            final Type expectedType = expectedTypes.get(i);
+            final Type actualType = actualTypes.get(i);
+            String message;
+            if (expectedType.isBasic()) {
+                message = "Expected %s %s but was %s %s".formatted(
+                        functionName, expectedType, functionName, actualType);
+            } else {
+                message = "Tried to add %s to %s with contents of type %s".formatted(
+                        actualType, expectedType.mainType(), expectedType.contentsType());
+            }
+            throw new TypeError(message, contextStartLine);
         }
     }
 

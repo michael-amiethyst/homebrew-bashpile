@@ -1,13 +1,13 @@
 package com.bashpile.maintests;
 
+import com.bashpile.exceptions.TypeError;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Order(60)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -22,8 +22,7 @@ public class ListTest extends BashpileTest {
         assertEquals("", results.stdout());
     }
 
-    @Test
-    @Order(20)
+    @Test @Order(20)
     public void printingAnEmptyListSucceeds() {
         final ExecutionResults results = runText("""
                 emptyList: list<str> = listOf()
@@ -35,8 +34,7 @@ public class ListTest extends BashpileTest {
     }
 
     /** Single int list */
-    @Test
-    @Order(30)
+    @Test @Order(30)
     public void singleItemListDeclarationWorks() {
         final ExecutionResults results = runText("""
                 intList: list<int> = listOf(1)
@@ -48,8 +46,7 @@ public class ListTest extends BashpileTest {
     }
 
     /** Multistring list */
-    @Test
-    @Order(40)
+    @Test @Order(40)
     public void multiItemListDeclarationWorks() {
         final ExecutionResults results = runText("""
                 intList: list<str> = listOf("one", "two", "three")
@@ -60,8 +57,7 @@ public class ListTest extends BashpileTest {
         assertEquals("one two three\n", results.stdout());
     }
 
-    @Test
-    @Order(50)
+    @Test @Order(50)
     public void addItemToListWorks() {
         final ExecutionResults results = runText("""
                 strList: list<str> = listOf("one", "two", "three")
@@ -73,8 +69,7 @@ public class ListTest extends BashpileTest {
         assertEquals("one two three four\n", results.stdout());
     }
 
-    @Test
-    @Order(60)
+    @Test @Order(60)
     public void addListToListWorks() {
         final ExecutionResults results = runText("""
                 strList: list<str> = listOf("one", "two", "three")
@@ -86,8 +81,7 @@ public class ListTest extends BashpileTest {
         assertEquals("one two three four five\n", results.stdout());
     }
 
-    @Test
-    @Order(70)
+    @Test @Order(70)
     public void mutateIndexOnListWorks() {
         final ExecutionResults results = runText("""
                 strList: list<str> = listOf("one", "two", "three")
@@ -99,8 +93,7 @@ public class ListTest extends BashpileTest {
         assertEquals("1 two three\n", results.stdout());
     }
 
-    @Test
-    @Order(80)
+    @Test @Order(80)
     public void newIndexOnListWorks() {
         final ExecutionResults results = runText("""
                 strList: list<str> = listOf("one", "two", "three")
@@ -112,8 +105,7 @@ public class ListTest extends BashpileTest {
         assertEquals("one two three four\n", results.stdout());
     }
 
-    @Test
-    @Order(90)
+    @Test @Order(90)
     public void negativeIndexOnListWorks() {
         final ExecutionResults results = runText("""
                 strList: list<str> = listOf("one", "two", "three")
@@ -125,9 +117,8 @@ public class ListTest extends BashpileTest {
         assertEquals("one two 3\n", results.stdout());
     }
 
-    @Test
-    @Order(100)
-    public void largeNegativeIndexOnListFails () {
+    @Test @Order(100)
+    public void largeNegativeIndexOnListFails() {
         final ExecutionResults results = runText("""
                 strList: list<str> = listOf("one", "two", "three")
                 strList[-10] = "3"
@@ -138,7 +129,15 @@ public class ListTest extends BashpileTest {
         assertTrue(results.stdout().contains("bad"));
     }
 
-    // TODO add wrong type (item and list)
+    @Test @Order(110)
+    public void addWrongItemTypeOnListFails() {
+        assertThrows(TypeError.class, () -> runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                strList[0] = 1
+                print(strList)"""));
+    }
+
+    // TODO add wrong type list
 
     // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)
 }
