@@ -137,7 +137,13 @@ public class ListTest extends BashpileTest {
                 print(strList)"""));
     }
 
-    // TODO add wrong type list
+    @Test @Order(120)
+    public void addWrongListTypeOnListFails() {
+        assertThrows(TypeError.class, () -> runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                strList += listOf(1, 2)
+                print(strList)"""));
+    }
 
     // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)
 }
