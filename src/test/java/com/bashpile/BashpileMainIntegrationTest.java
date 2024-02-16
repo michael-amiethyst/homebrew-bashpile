@@ -196,4 +196,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertEquals("Hello World\n", results.stdout());
         assertFalse(Files.exists(Path.of("command.bps")));
     }
+
+    // TODO test bpc Dash c
 }

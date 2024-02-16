@@ -230,7 +230,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
-    public Translation visitListIndexExpression(BashpileParser.ListIndexExpressionContext ctx) {
+    public Translation visitListAccessExpression(BashpileParser.ListAccessExpressionContext ctx) {
         return translator.listIndexExpression(ctx);
     }
 

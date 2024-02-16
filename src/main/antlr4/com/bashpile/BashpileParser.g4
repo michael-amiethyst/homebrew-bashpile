@@ -17,7 +17,7 @@ statement
          (Else Colon indentedStatements)? # conditionalStatement
     | <assoc=right> typedId
              (Equals expression)? Newline # assignmentStatement
-    | <assoc=right> Id assignmentOperator
+    | <assoc=right> (Id | listAccess) assignmentOperator
                        expression Newline # reassignmentStatement
     | Print OParen argumentList? CParen
                                   Newline # printStatement
@@ -45,7 +45,8 @@ returnPsudoStatement: Return expression? Newline;
 
 // in operator precedence order
 expression
-    : expression Colon type             # typecastExpression
+    : listAccess                        # listAccessExpression
+    | expression Colon type             # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
@@ -66,7 +67,6 @@ expression
     | <assoc=right> Minus? Number       # numberExpression
     | String                            # stringExpression
     | Id                                # idExpression
-    | Id OBracket Number CBracket       # listIndexExpression
     ;
 
 shellString        : HashOParen shellStringContents* CParen;
@@ -87,3 +87,5 @@ combiningOperator: And | Or;
 
 // translates to $1, $2, etc
 argumentsBuiltin: Arguments OBracket Number CBracket;
+
+listAccess: Id OBracket Number CBracket;

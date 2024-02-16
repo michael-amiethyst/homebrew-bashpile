@@ -99,7 +99,7 @@ public interface TranslationEngine {
     Translation idExpression(final BashpileParser.IdExpressionContext ctx);
 
     /** List access like listName[num] */
-    Translation listIndexExpression(final BashpileParser.ListIndexExpressionContext ctx);
+    Translation listIndexExpression(final BashpileParser.ListAccessExpressionContext ctx);
 
     // expression helper translations
 

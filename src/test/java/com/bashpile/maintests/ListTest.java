@@ -86,6 +86,19 @@ public class ListTest extends BashpileTest {
         assertEquals("one two three four five\n", results.stdout());
     }
 
+    @Test
+    @Order(70)
+    public void mutateIndexOnListWorks() {
+        final ExecutionResults results = runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                strList[0] = "1"
+                print(strList)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("declare -a"));
+        assertEquals("1 two three\n", results.stdout());
+    }
+
     // TODO add wrong type (item and list)
 
     // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)

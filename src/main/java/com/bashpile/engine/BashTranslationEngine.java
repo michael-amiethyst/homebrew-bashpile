@@ -12,6 +12,7 @@ import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -357,7 +358,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReassignmentStatementContext ctx) {
         // get name and type
-        final String variableName = ctx.Id().getText();
+        final String variableName = ContextUtils.getIdText(ctx);
         final Type expectedType = typeStack.getVariableType(variableName);
         if (expectedType.equals(NOT_FOUND_TYPE)) {
             throw new TypeError(variableName + " has not been declared", lineNumber(ctx));
@@ -380,12 +381,20 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation comment = createCommentTranslation("reassign statement", lineNumber(ctx));
         final Translation subcomment =
                 subcommentTranslationOrDefault(exprTranslation.hasPreamble(), "reassignment statement body");
-        // merge exprTranslation into reassignment
         final String assignOperator = ctx.assignmentOperator().getText();
+        String listAccessor = "";
         if (expectedType.mainType().equals(LIST)) {
-            exprTranslation = exprTranslation.parenthesizeBody();
+            final String indexText = ContextUtils.getListAccessorIndexText(ctx);
+            if (StringUtils.isBlank(indexText)) {
+                // no indexing, so we are adding a list to a list
+                exprTranslation = exprTranslation.parenthesizeBody();
+            } else /* indexing */ {
+                listAccessor = "[%s]".formatted(indexText);
+            }
         }
-        final String reassignmentBody = "%s%s%s\n".formatted(variableName, assignOperator, exprTranslation.body());
+        // merge exprTranslation into reassignment
+        final String reassignmentBody = "%s%s%s%s\n"
+                .formatted(variableName, listAccessor, assignOperator, exprTranslation.body());
         final Translation reassignment =
                 toLineTranslation(reassignmentBody).addPreamble(exprTranslation.preamble());
 
@@ -709,11 +718,12 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation listIndexExpression(BashpileParser.ListIndexExpressionContext ctx) {
-        final String variableName = ctx.Id().getText();
+    public Translation listIndexExpression(BashpileParser.ListAccessExpressionContext ctx) {
+        // TODO make a ContextUtils for the Law of Demeter
+        final String variableName = ctx.listAccess().Id().getText();
         final Type type = typeStack.getVariableType(variableName);
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
-        Integer index = Integer.parseInt(ctx.Number().getText());
+        Integer index = Integer.parseInt(ctx.listAccess().Number().getText());
         Asserts.assertTrue(index >= 0, "Invalid index: %d".formatted(index));
         return new Translation("${%s[%d]}".formatted(variableName, index), type, NORMAL);
     }
