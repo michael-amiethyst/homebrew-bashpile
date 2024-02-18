@@ -145,5 +145,16 @@ public class ListTest extends BashpileTest {
                 print(strList)"""));
     }
 
+    @Test @Order(130)
+    public void assignFromListAccessWorks() {
+        final ExecutionResults results = runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                indexed: str = strList[-1]
+                print(indexed)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("three\n", results.stdout());
+    }
+
     // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)
 }

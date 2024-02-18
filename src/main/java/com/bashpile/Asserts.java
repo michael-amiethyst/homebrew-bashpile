@@ -143,8 +143,8 @@ public class Asserts {
             final Type actualType = actualTypes.get(i);
             String message;
             if (expectedType.isBasic()) {
-                message = "Expected %s %s but was %s %s".formatted(
-                        functionName, expectedType, functionName, actualType);
+                message = "'%s' expected %s but found %s".formatted(
+                        functionName, expectedType, actualType);
             } else {
                 message = "Tried to add %s to %s with contents of type %s".formatted(
                         actualType, expectedType.mainType(), expectedType.contentsType());

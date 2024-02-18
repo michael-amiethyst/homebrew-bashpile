@@ -720,13 +720,11 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation listIndexExpression(BashpileParser.ListAccessExpressionContext ctx) {
-        // TODO make a ContextUtils for the Law of Demeter
-        final String variableName = ctx.listAccess().Id().getText();
-        final Type type = typeStack.getVariableType(variableName);
+        final String variableName = ContextUtils.getIdText(ctx);
+        final Type type = typeStack.getVariableType(Objects.requireNonNull(variableName));
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
-        Integer index = Integer.parseInt(ctx.listAccess().Number().getText());
-        Asserts.assertTrue(index >= 0, "Invalid index: %d".formatted(index));
-        return new Translation("${%s[%d]}".formatted(variableName, index), type, NORMAL);
+        Integer index = ContextUtils.getListAccessorIndex(ctx);
+        return new Translation("${%s[%d]}".formatted(variableName, index), type.asContentsType(), NORMAL);
     }
 
     // expression helper rules
