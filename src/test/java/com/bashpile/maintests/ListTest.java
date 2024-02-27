@@ -156,5 +156,37 @@ public class ListTest extends BashpileTest {
         assertEquals("three\n", results.stdout());
     }
 
-    // TODO typecasts from list to int?, different list types (e.g. list<string> to list<int>)
+    @Test @Order(140)
+    public void assignFromDifferentListTypeThrows() {
+        assertThrows(TypeError.class, () -> runText("""
+                strList: list<str> = listOf("one", "two", "three")
+                intList: list<int> = strList
+                print(strList)"""));
+    }
+
+    @Test @Order(150)
+    public void assignFromDifferentListTypeWithCastWorks() {
+        var results = runText("""
+                strList: list<str> = listOf("1", "2", "3")
+                intList: list<int> = strList: list<int>
+                print(intList)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("1 2 3\n", results.stdout());
+    }
+
+    @Test @Order(160)
+    public void assignFromDifferentListTypeWithCastThenAddWorks() {
+        var results = runText("""
+                strList: list<str> = listOf("1", "2", "3")
+                intList: list<int> = strList: list<int>
+                print(intList[0] + intList[1])""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("3\n", results.stdout());
+    }
+
+    // TODO test to ensure str addition is "12" instead of "3"
+
+    // TODO reassign tests
 }

@@ -40,6 +40,8 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
     /** Strings */
     public static final Type STR_TYPE = Type.of(SimpleType.STR);
 
+    // DO NOT USE LIST_TYPE, use isList() instead
+
     public static @Nonnull Type of(@Nonnull SimpleType simpleType) {
         return new Type(simpleType, SimpleType.EMPTY);
     }
@@ -73,6 +75,11 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
     /** Is the type basic (e.g. not a List, Hash or Ref)? */
     public boolean isBasic() {
         return mainType.isBasic();
+    }
+
+    /** Is the main type LIST? */
+    public boolean isList() {
+        return mainType.equals(SimpleType.LIST);
     }
 
     /** Check if this type is unknown or numeric */

@@ -307,6 +307,11 @@ public class Translation {
         return type.isBasic();
     }
 
+    /** Is the type the testType? */
+    public boolean isList() {
+        return type.isList();
+    }
+
     /**
      * Replaces the type metadata
      */

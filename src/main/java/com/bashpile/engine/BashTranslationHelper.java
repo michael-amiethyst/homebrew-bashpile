@@ -34,6 +34,7 @@ import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.SimpleType.INT;
+import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
@@ -455,9 +456,21 @@ public class BashTranslationHelper {
         return expression;
     }
 
+    /* package */ static @Nonnull Translation typecastList(
+            @Nonnull final Type castTo,
+            @Nonnull Translation expression,
+            final int lineNumber,
+            @Nonnull final TypeError typecastError) {
+        if (castTo.mainType().equals(LIST)) {
+            return expression;
+        } else {
+            throw typecastError;
+        }
+    }
+
     /* package */ static void typecastUnknown(@Nonnull final SimpleType castTo, @Nonnull final TypeError typecastError) {
         switch (castTo) {
-            case BOOL, INT, FLOAT, STR -> {}
+            case BOOL, INT, FLOAT, STR, LIST -> {}
             default -> throw typecastError;
         }
     }

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
+// TODO figure out why some expressions are type LIST but not a ListTranslation
 public class ListTranslation extends Translation {
 
     // static section
@@ -25,7 +26,11 @@ public class ListTranslation extends Translation {
 
     // class section
 
+    /** For our Bash array elements */
     private List<Translation> translations = new ArrayList<>();
+
+    /** We convert data to body at the time of the .body() call, so this determines if we quote it then or not. */
+    private boolean quoteBody = false;
 
     public ListTranslation(@Nonnull Type type) {
         super(
@@ -35,21 +40,22 @@ public class ListTranslation extends Translation {
         );
     }
 
-    @Nonnull @Override
-    public String body() {
-        final String data = translations.stream().map(Translation::body).collect(Collectors.joining(" "));
+    @Override
+    public @Nonnull String body() {
+        String data = translations.stream().map(Translation::body).collect(Collectors.joining(" "));
+        if (quoteBody) {
+            data = "\"%s\"".formatted(data);
+        }
         return "(%s)".formatted(data);
     }
 
-    @Nonnull
     @Override
-    public Translation add(@Nonnull Translation other) {
+    public @Nonnull Translation add(@Nonnull Translation other) {
         translations.add(other);
         return this;
     }
 
-    @Nonnull
-    public ListTranslation addAll(@Nonnull List<Translation> other) {
+    public @Nonnull ListTranslation addAll(@Nonnull List<Translation> other) {
         translations.addAll(other);
         return this;
     }
@@ -95,16 +101,16 @@ public class ListTranslation extends Translation {
         throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
 
-    @Nonnull
     @Override
-    public Translation quoteBody() {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
+    public @Nonnull Translation quoteBody() {
+        quoteBody = true;
+        return this;
     }
 
-    @Nonnull
     @Override
-    public Translation unquoteBody() {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
+    public @Nonnull Translation unquoteBody() {
+        quoteBody = false;
+        return this;
     }
 
     @Override
@@ -175,9 +181,8 @@ public class ListTranslation extends Translation {
                 '}';
     }
 
-    @Nonnull
     @Override
-    public String preamble() {
+    public @Nonnull String preamble() {
         return translations.stream().map(Translation::preamble).collect(Collectors.joining("\n")).trim();
     }
 
