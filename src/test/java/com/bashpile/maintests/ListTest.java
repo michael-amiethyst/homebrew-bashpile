@@ -186,7 +186,25 @@ public class ListTest extends BashpileTest {
         assertEquals("3\n", results.stdout());
     }
 
-    // TODO test to ensure str addition is "12" instead of "3"
+    @Test @Order(170)
+    public void additionOfStringElementsWorks() {
+        var results = runText("""
+                strList: list<str> = listOf("1", "2", "3")
+                print(strList[0] + strList[1])""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("12\n", results.stdout());
+    }
+
+    @Test @Order(180)
+    public void additionOfIntElementsWorks() {
+        var results = runText("""
+                strList: list<int> = listOf(1, 2, 3)
+                print(strList[0] + strList[1])""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("3\n", results.stdout());
+    }
 
     // TODO reassign tests
 }
