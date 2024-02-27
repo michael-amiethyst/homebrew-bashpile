@@ -13,14 +13,14 @@ import java.util.stream.Collectors;
 import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
-// TODO figure out why some expressions are type LIST but not a ListTranslation
-public class ListTranslation extends Translation {
+/** Subclass for listOf(...) where we have the translations of the list elements */
+public class ListOfTranslation extends Translation {
 
     // static section
 
-    public static @Nonnull ListTranslation of(@Nonnull final List<Translation> listIn) {
+    public static @Nonnull ListOfTranslation of(@Nonnull final List<Translation> listIn) {
         Asserts.assertNotEmpty(listIn);
-        final ListTranslation ret = new ListTranslation(listIn.get(0).type());
+        final ListOfTranslation ret = new ListOfTranslation(listIn.get(0).type());
         return ret.addAll(listIn);
     }
 
@@ -32,7 +32,7 @@ public class ListTranslation extends Translation {
     /** We convert data to body at the time of the .body() call, so this determines if we quote it then or not. */
     private boolean quoteBody = false;
 
-    public ListTranslation(@Nonnull Type type) {
+    public ListOfTranslation(@Nonnull Type type) {
         super(
                 "()",
                 new Type(LIST, type.mainType().isBasic() ? type.mainType() : type.contentsType()),
@@ -55,7 +55,7 @@ public class ListTranslation extends Translation {
         return this;
     }
 
-    public @Nonnull ListTranslation addAll(@Nonnull List<Translation> other) {
+    public @Nonnull ListOfTranslation addAll(@Nonnull List<Translation> other) {
         translations.addAll(other);
         return this;
     }

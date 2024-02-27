@@ -264,6 +264,18 @@ public class Translation {
     }
 
     /**
+     * Change index from one string with all data to a true array.
+     * @see <a href="https://stackoverflow.com/questions/52590446/bash-array-using-vs-difference-between-the-two">StackOverflow, Bash Arrays -- * vs @</a>
+     * @return this
+     */
+    public @Nonnull Translation toTrueArray() {
+        if (type.isList()) {
+            return lambdaBody(x -> x.replace("[*]", "[@]"));
+        } // else
+        return this;
+    }
+
+    /**
      * Apply arbitrary function to body.  E.g. `str -> str`.
      */
     public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
@@ -307,9 +319,14 @@ public class Translation {
         return type.isBasic();
     }
 
-    /** Is the type the testType? */
+    /** Is this a list / Bash Array? */
     public boolean isList() {
         return type.isList();
+    }
+
+    /** Is this a ListOf translation?  (E.g. created by the syntax `listOf(...)`)*/
+    public boolean isListOf() {
+        return this instanceof ListOfTranslation;
     }
 
     /**

@@ -347,12 +347,9 @@ public class BashTranslationEngine implements TranslationEngine {
                 toLineTranslation("declare %s%s\n".formatted(modifiers.body(), lhsVariableName));
 
         final boolean isListAssignment = lhsType.isList() && rhsExprTranslation.isList();
-        if (isListAssignment && !(rhsExprTranslation instanceof ListTranslation)) {
+        if (isListAssignment && !rhsExprTranslation.isListOf()) {
             // only quote body when we're assigning a list reference (not 'listOf')
-            rhsExprTranslation = rhsExprTranslation.quoteBody().parenthesizeBody();
-            // change index from one string with all data to a true array
-            // see https://stackoverflow.com/questions/52590446/bash-array-using-vs-difference-between-the-two
-            rhsExprTranslation = rhsExprTranslation.lambdaBody(x -> x.replace("[*]", "[@]"));
+            rhsExprTranslation = rhsExprTranslation.quoteBody().parenthesizeBody().toTrueArray();
         }
         // merge expr into the assignment
         final String assignmentBody = rhsExprExists ? "%s=%s\n".formatted(lhsVariableName, rhsExprTranslation.body()) : "";
@@ -392,11 +389,16 @@ public class BashTranslationEngine implements TranslationEngine {
                 subcommentTranslationOrDefault(rhsExprTranslation.hasPreamble(), "reassignment statement body");
         final String assignOperator = ctx.assignmentOperator().getText();
         String listAccessor = "";
-        if (lhsExpectedType.mainType().equals(LIST)) {
+        if (lhsExpectedType.isList()) {
             final String indexText = ContextUtils.getListAccessorIndexText(ctx);
             if (StringUtils.isBlank(indexText)) {
-                // no indexing, so we are adding a list to a list
-                rhsExprTranslation = rhsExprTranslation.parenthesizeBody();
+                // no indexing, so we are adding to a list
+                final boolean addingListToList = rhsExprTranslation.isList();
+                if (addingListToList && !rhsExprTranslation.isListOf()) {
+                    rhsExprTranslation = rhsExprTranslation.quoteBody().parenthesizeBody().toTrueArray();
+                } else {
+                    rhsExprTranslation = rhsExprTranslation.parenthesizeBody();
+                }
             } else /* indexing */ {
                 listAccessor = "[%s]".formatted(indexText);
             }
@@ -503,7 +505,7 @@ public class BashTranslationEngine implements TranslationEngine {
             case INT -> expression = typecastInt(castTo.mainType(), expression, lineNumber, typecastError);
             case FLOAT -> expression = typecastFloat(castTo.mainType(), expression, lineNumber, typecastError);
             case STR -> expression = typecastStr(castTo.mainType(), expression, lineNumber, typecastError);
-            case LIST -> expression = typecastList(castTo, expression, lineNumber, typecastError);
+            case LIST -> expression = typecastList(castTo, expression, typecastError);
             case UNKNOWN -> typecastUnknown(castTo.mainType(), typecastError);
             default -> throw typecastError;
         }
@@ -692,7 +694,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation listOfBuiltinExpression(BashpileParser.ListOfBuiltinExpressionContext ctx) {
         // guard, empty list
         if (ctx.expression().isEmpty()) {
-            return new ListTranslation(UNKNOWN_TYPE);
+            return new ListOfTranslation(UNKNOWN_TYPE);
         }
 
         // guard, checks types
@@ -713,7 +715,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // body
-        return ListTranslation.of(translations.stream().map(Pair::getRight).toList());
+        return ListOfTranslation.of(translations.stream().map(Pair::getRight).toList());
     }
 
     @Override

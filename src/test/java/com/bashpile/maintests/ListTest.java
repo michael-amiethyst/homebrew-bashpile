@@ -206,5 +206,15 @@ public class ListTest extends BashpileTest {
         assertEquals("3\n", results.stdout());
     }
 
-    // TODO reassign tests
+    @Test @Order(190)
+    public void reassignFromDifferentListTypeWithCastThenAddWorks() {
+        var results = runText("""
+                strList: list<str> = listOf("1", "2", "3")
+                intList: list<int> = listOf(1,2,3)
+                intList = strList: list<int>
+                print(intList[0] + intList[1])""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("3\n", results.stdout());
+    }
 }

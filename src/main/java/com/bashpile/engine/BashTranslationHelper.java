@@ -459,11 +459,11 @@ public class BashTranslationHelper {
     /* package */ static @Nonnull Translation typecastList(
             @Nonnull final Type castTo,
             @Nonnull Translation expression,
-            final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        if (castTo.mainType().equals(LIST)) {
-            return expression;
+        if (castTo.isList()) {
+            return expression.type(castTo);
         } else {
+            // cannot cast to bool, int, float or str
             throw typecastError;
         }
     }
