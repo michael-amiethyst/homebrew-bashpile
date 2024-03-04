@@ -34,7 +34,6 @@ import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.SimpleType.INT;
-import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
@@ -341,8 +340,7 @@ public class BashTranslationHelper {
 
     // typecast static methods
 
-    // TODO check typecasts for lists
-    /* package */ static @Nonnull Translation typecastBool(
+    /* package */ static @Nonnull Translation typecastToBool(
             @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             @Nonnull final TypeError typecastError) {
@@ -353,12 +351,13 @@ public class BashTranslationHelper {
             case FLOAT -> expression =
                     expression.body(expression.body().equalsIgnoreCase("true") ? "1.0" : "0.0");
             case STR -> expression = expression.quoteBody();
+            // no cast to list
             default -> throw typecastError;
         }
         return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastInt(
+    /* package */ static @Nonnull Translation typecastToInt(
             @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
@@ -379,12 +378,13 @@ public class BashTranslationHelper {
                     expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
             case INT, FLOAT -> {}
             case STR -> expression = expression.quoteBody();
+            // no list to int conversion
             default -> throw typecastError;
         }
         return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastFloat(
+    /* package */ static @Nonnull Translation typecastToFloat(
             @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
@@ -404,6 +404,7 @@ public class BashTranslationHelper {
             case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
             case FLOAT -> {}
             case STR -> expression = expression.quoteBody();
+            // no list to float conversion
             default -> throw typecastError;
         }
         return expression;
@@ -418,7 +419,7 @@ public class BashTranslationHelper {
             case BOOL -> {
                 expression = expression.unquoteBody();
                 if (SimpleType.isNumberString(expression.body())) {
-                    expression = typecastFloat(castTo, expression, lineNumber, typecastError);
+                    expression = typecastToFloat(castTo, expression, lineNumber, typecastError);
                 } else if (expression.body().equalsIgnoreCase("true")
                         || expression.body().equalsIgnoreCase("false")) {
                     expression = expression.body(expression.body().toLowerCase());
@@ -451,12 +452,14 @@ public class BashTranslationHelper {
                 }
             }
             case STR -> {}
+            // no list to str conversion
             default -> throw typecastError;
         }
         return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastList(
+    /** Casts to a different kind of list (i.e. a different subtype), but no other conversions */
+    /* package */ static @Nonnull Translation typecastToList(
             @Nonnull final Type castTo,
             @Nonnull Translation expression,
             @Nonnull final TypeError typecastError) {
@@ -468,7 +471,8 @@ public class BashTranslationHelper {
         }
     }
 
-    /* package */ static void typecastUnknown(@Nonnull final SimpleType castTo, @Nonnull final TypeError typecastError) {
+    /* package */ static void typecastToUnknown(
+            @Nonnull final SimpleType castTo, @Nonnull final TypeError typecastError) {
         switch (castTo) {
             case BOOL, INT, FLOAT, STR, LIST -> {}
             default -> throw typecastError;

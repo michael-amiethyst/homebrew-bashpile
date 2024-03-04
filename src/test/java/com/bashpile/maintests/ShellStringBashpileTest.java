@@ -1,7 +1,6 @@
 package com.bashpile.maintests;
 
 import com.bashpile.Strings;
-import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -196,13 +195,37 @@ public class ShellStringBashpileTest extends BashpileTest {
     public void bpcShellLineWorks() {
         String jarPath = "bin/bashpile.jar";
         assertTrue(Files.exists(Path.of(jarPath)));
-        // TODO figure out why this is broken, both lines form one token with '\n'
-//        assertThrows(UserError.class, () -> runText("""
-//            jarPath: str = "%s"
-//            java -jar "$jarPath" "$@" // no #() syntax""".formatted(jarPath)));
-        assertThrows(BashpileUncheckedAssertionException.class, () -> runText("""
-            print(1)
-            java
-            """.formatted(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            java -help""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("java"));
     }
+
+    @Test() @Order(150)
+    public void bpcShellLineWithVariableWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            __bp_test=y java -help""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("java"));
+    }
+
+    @Test() @Order(160)
+    public void bpcShellLineWithDoubleQuotedVariableWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            __bp_test="yes yes" java -help""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("java"));
+    }
+
+    // TODO create single quote test
 }

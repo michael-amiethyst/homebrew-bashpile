@@ -501,12 +501,12 @@ public class BashTranslationEngine implements TranslationEngine {
         final TypeError typecastError = new TypeError(
                 "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber);
         switch (expression.type().mainType()) {
-            case BOOL -> expression = typecastBool(castTo.mainType(), expression, typecastError);
-            case INT -> expression = typecastInt(castTo.mainType(), expression, lineNumber, typecastError);
-            case FLOAT -> expression = typecastFloat(castTo.mainType(), expression, lineNumber, typecastError);
+            case BOOL -> expression = typecastToBool(castTo.mainType(), expression, typecastError);
+            case INT -> expression = typecastToInt(castTo.mainType(), expression, lineNumber, typecastError);
+            case FLOAT -> expression = typecastToFloat(castTo.mainType(), expression, lineNumber, typecastError);
             case STR -> expression = typecastStr(castTo.mainType(), expression, lineNumber, typecastError);
-            case LIST -> expression = typecastList(castTo, expression, typecastError);
-            case UNKNOWN -> typecastUnknown(castTo.mainType(), typecastError);
+            case LIST -> expression = typecastToList(castTo, expression, typecastError);
+            case UNKNOWN -> typecastToUnknown(castTo.mainType(), typecastError);
             default -> throw typecastError;
         }
         expression = expression.type(castTo);

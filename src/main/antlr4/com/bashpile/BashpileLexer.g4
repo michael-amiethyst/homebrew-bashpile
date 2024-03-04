@@ -19,7 +19,7 @@ tokens { INDENT, DEDENT }
     return denter.nextToken();
   }
 
-  private boolean isLinuxCommand(String input) {
+  private boolean isLinuxCommand(CharStream input) {
     return Lexers.isLinuxCommand(input);
   }
 }
@@ -73,7 +73,7 @@ Equals  : '=';
 PlusEquals: '+=';
 
 // shell lines using Semantic Predicate
-ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
+ShellLine   : {isLinuxCommand(_input)}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
 
 // ID and Numbers
 
