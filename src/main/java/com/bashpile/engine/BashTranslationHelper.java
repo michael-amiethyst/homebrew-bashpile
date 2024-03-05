@@ -3,6 +3,7 @@ package com.bashpile.engine;
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
+import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
@@ -32,9 +33,8 @@ import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.strongtypes.SimpleType.INT;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
-import static com.bashpile.engine.strongtypes.Type.INT;
-import static com.bashpile.engine.strongtypes.Type.STR;
 
 /**
  * Helper methods to {@link BashTranslationEngine}.
@@ -141,7 +141,7 @@ public class BashTranslationHelper {
      */
     /* package */ static @Nonnull Translation visitModifiers(@Nullable List<BashpileParser.ModifierContext> ctx) {
         if (ctx == null || ctx.isEmpty()) {
-            return EMPTY_TRANSLATION;
+            return UNKNOWN_TRANSLATION;
         }
         final long lineNumber = lineNumber(ctx.get(0));
 
@@ -156,7 +156,7 @@ public class BashTranslationHelper {
         if (exports >= 1) {
             return toStringTranslation("-x ");
         }
-        return EMPTY_TRANSLATION;
+        return UNKNOWN_TRANSLATION;
     }
 
     /* package */ static @Nonnull Translation visitBodyStatements(
@@ -178,7 +178,7 @@ public class BashTranslationHelper {
         if (subcommentNeeded) {
             return toLineTranslation("## %s\n".formatted(name));
         }
-        return EMPTY_TRANSLATION;
+        return UNKNOWN_TRANSLATION;
     }
 
     /**
@@ -252,7 +252,7 @@ public class BashTranslationHelper {
 
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
     /* package */ static Translation visitGuardingExpression(TerminalNode notNode, Translation expressionTranslation) {
-        final Translation not = notNode != null ? toStringTranslation("! ") : EMPTY_TRANSLATION;
+        final Translation not = notNode != null ? toStringTranslation("! ") : UNKNOWN_TRANSLATION;
         expressionTranslation = unwindAll(expressionTranslation);
         if (expressionTranslation.type().isNumeric()) {
             // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
@@ -288,7 +288,7 @@ public class BashTranslationHelper {
         if (!bodyMatcher.find()) {
             return ret;
         }
-        final Translation unnested = unwindBody(new Translation(bodyMatcher.group(2), STR, NORMAL));
+        final Translation unnested = unwindBody(new Translation(bodyMatcher.group(2), Type.STR_TYPE, NORMAL));
         // replace group
         final String unnestedBody = Matcher.quoteReplacement(unnested.body());
         LOG.debug("Replacing with {}", unnestedBody);
@@ -340,8 +340,8 @@ public class BashTranslationHelper {
 
     // typecast static methods
 
-    /* package */ static @Nonnull Translation typecastBool(
-            @Nonnull final Type castTo,
+    /* package */ static @Nonnull Translation typecastToBool(
+            @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             @Nonnull final TypeError typecastError) {
         switch (castTo) {
@@ -351,13 +351,14 @@ public class BashTranslationHelper {
             case FLOAT -> expression =
                     expression.body(expression.body().equalsIgnoreCase("true") ? "1.0" : "0.0");
             case STR -> expression = expression.quoteBody();
+            // no cast to list
             default -> throw typecastError;
         }
         return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastInt(
-            @Nonnull final Type castTo,
+    /* package */ static @Nonnull Translation typecastToInt(
+            @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
@@ -377,13 +378,14 @@ public class BashTranslationHelper {
                     expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
             case INT, FLOAT -> {}
             case STR -> expression = expression.quoteBody();
+            // no list to int conversion
             default -> throw typecastError;
         }
         return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastFloat(
-            @Nonnull final Type castTo,
+    /* package */ static @Nonnull Translation typecastToFloat(
+            @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
@@ -402,21 +404,22 @@ public class BashTranslationHelper {
             case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
             case FLOAT -> {}
             case STR -> expression = expression.quoteBody();
+            // no list to float conversion
             default -> throw typecastError;
         }
         return expression;
     }
 
     /* package */ static @Nonnull Translation typecastStr(
-            @Nonnull final Type castTo,
+            @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
         switch (castTo) {
             case BOOL -> {
                 expression = expression.unquoteBody();
-                if (Type.isNumberString(expression.body())) {
-                    expression = typecastFloat(castTo, expression, lineNumber, typecastError);
+                if (SimpleType.isNumberString(expression.body())) {
+                    expression = typecastToFloat(castTo, expression, lineNumber, typecastError);
                 } else if (expression.body().equalsIgnoreCase("true")
                         || expression.body().equalsIgnoreCase("false")) {
                     expression = expression.body(expression.body().toLowerCase());
@@ -430,7 +433,7 @@ public class BashTranslationHelper {
             case INT -> {
                 // no automatic rounding for things like `"2.5":int`
                 expression = expression.unquoteBody();
-                final Type foundType = Type.parseNumberString(expression.body());
+                final SimpleType foundType = SimpleType.parseNumberString(expression.body());
                 if (!INT.equals(foundType)) {
                     throw new TypeError("""
                         Could not cast FLOAT value in STR to INT.  Try casting to float first.  Text was %s."""
@@ -441,7 +444,7 @@ public class BashTranslationHelper {
                 expression = expression.unquoteBody();
                 // verify the body parses as a valid number
                 try {
-                    Type.parseNumberString(expression.body());
+                    SimpleType.parseNumberString(expression.body());
                 } catch (NumberFormatException e) {
                     throw new TypeError("""
                         Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
@@ -449,14 +452,29 @@ public class BashTranslationHelper {
                 }
             }
             case STR -> {}
+            // no list to str conversion
             default -> throw typecastError;
         }
         return expression;
     }
 
-    /* package */ static void typecastUnknown(@Nonnull final Type castTo, @Nonnull final TypeError typecastError) {
+    /** Casts to a different kind of list (i.e. a different subtype), but no other conversions */
+    /* package */ static @Nonnull Translation typecastToList(
+            @Nonnull final Type castTo,
+            @Nonnull Translation expression,
+            @Nonnull final TypeError typecastError) {
+        if (castTo.isList()) {
+            return expression.type(castTo);
+        } else {
+            // cannot cast to bool, int, float or str
+            throw typecastError;
+        }
+    }
+
+    /* package */ static void typecastToUnknown(
+            @Nonnull final SimpleType castTo, @Nonnull final TypeError typecastError) {
         switch (castTo) {
-            case BOOL, INT, FLOAT, STR -> {}
+            case BOOL, INT, FLOAT, STR, LIST -> {}
             default -> throw typecastError;
         }
     }

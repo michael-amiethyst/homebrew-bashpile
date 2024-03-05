@@ -19,13 +19,13 @@ tokens { INDENT, DEDENT }
     return denter.nextToken();
   }
 
-  private boolean isLinuxCommand(String input) {
+  private boolean isLinuxCommand(CharStream input) {
     return Lexers.isLinuxCommand(input);
   }
 }
 
 // keywords
-Type     : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'array' | 'map' | 'ref';
+Type     : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
 Function : 'function';
 Block    : 'block';
 Return   : 'return';
@@ -40,6 +40,7 @@ Arguments: 'arguments';
 All      : 'all';
 Exported : 'exported';
 Readonly : 'readonly';
+ListOf   : 'listOf';
 
 // operators, in precidence order
 // opening parenthesis
@@ -68,12 +69,16 @@ IsEqual : '==';
 IsNotEqual : '!=';
 And     : 'and';
 Or      : 'or';
+Equals  : '=';
+PlusEquals: '+=';
 
 // shell lines using Semantic Predicate
-ShellLine   : {isLinuxCommand(_input.toString())}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
+ShellLine   : {isLinuxCommand(_input)}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
 
 // ID and Numbers
 
+// must start with a letter or underscore, then may have numbers
+// TODO allow dashes for snake-case
 Id: ID_START ID_CONTINUE*;
 
 Number: Float | Integer;
@@ -92,7 +97,6 @@ BlockComment : '/*' ( BlockComment | . )*? '*/' -> skip;
 
 // small tokens
 
-Equals  : '=';
 Colon   : ':';
 Comma   : ',';
 // opening square bracket

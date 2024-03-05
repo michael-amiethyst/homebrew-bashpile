@@ -34,6 +34,22 @@ public class Asserts {
 
     private static final Pattern BLANK_LINE = Pattern.compile("(?m)^ *$");
 
+    /** Throws up test isn't true with optional message */
+    public static boolean assertTrue(final boolean test, @Nullable final String message) {
+        if (!test) {
+            throw new BashpileUncheckedAssertionException(message != null ? message : "True assert wasn't true");
+        } // else
+        return true;
+    }
+
+    /** Throws {@code BashpileUncheckedAssertionException} if the Java list has any elements */
+    public static <T> @Nonnull List<T> assertNotEmpty(@Nonnull final List<T> list) {
+        if (list.isEmpty()) {
+            throw new BashpileUncheckedAssertionException("List was empty");
+        }
+        return list;
+    }
+
     /**
      * A text block is a group of text lines.  Each line ends with a newline.
      *
@@ -119,12 +135,23 @@ public class Asserts {
         while (typesCoerce && i < actualTypes.size()) {
             final Type expected = expectedTypes.get(i);
             final Type actual = actualTypes.get(i++);
-            typesCoerce = actual.coercesTo(expected);
+            // &= operator not needed
+            typesCoerce = actual.coercesTo(expected) || actual.coercesTo(expected.asContentsType());
         }
 
         if (!typesCoerce) {
-            throw new TypeError("Expected %s %s but was %s %s"
-                    .formatted(functionName, expectedTypes, functionName, actualTypes), contextStartLine);
+            i--; // cancel out last i++
+            final Type expectedType = expectedTypes.get(i);
+            final Type actualType = actualTypes.get(i);
+            String message;
+            if (expectedType.isBasic()) {
+                message = "'%s' expected %s but found %s".formatted(
+                        functionName, expectedType, actualType);
+            } else {
+                message = "Tried to add %s to %s with contents of type %s".formatted(
+                        actualType, expectedType.mainType(), expectedType.contentsType());
+            }
+            throw new TypeError(message, contextStartLine);
         }
     }
 

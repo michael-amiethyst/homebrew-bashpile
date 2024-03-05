@@ -26,53 +26,55 @@ class TypeStackTest {
 
     @Test
     void getVariableTest() {
-        fixture.putVariableType("var1", EMPTY, 0);
-        assertEquals(EMPTY, fixture.getVariableType("var1"));
+        fixture.putVariableType("var1", EMPTY_TYPE, 0);
+        assertEquals(EMPTY_TYPE, fixture.getVariableType("var1"));
     }
 
     @Test
     void getBuriedVariableTest() {
-        fixture.putVariableType("var1", EMPTY, 0);
+        fixture.putVariableType("var1", EMPTY_TYPE, 0);
         fixture.push();
-        fixture.putVariableType("v2", EMPTY, 0);
-        assertEquals(EMPTY, fixture.getVariableType("var1"));
+        fixture.putVariableType("v2", EMPTY_TYPE, 0);
+        assertEquals(EMPTY_TYPE, fixture.getVariableType("var1"));
     }
 
     @Test
     void getReusedVariableTest() {
-        fixture.putVariableType("var1", EMPTY, 0);
-        assertEquals(EMPTY, fixture.getVariableType("var1"));
+        fixture.putVariableType("var1", EMPTY_TYPE, 0);
+        assertEquals(EMPTY_TYPE, fixture.getVariableType("var1"));
         fixture.push();
-        fixture.putVariableType("var1", INT, 0);
-        assertEquals(INT, fixture.getVariableType("var1"));
+        fixture.putVariableType("var1", INT_TYPE, 0);
+        assertEquals(INT_TYPE, fixture.getVariableType("var1"));
         fixture.pop();
-        assertEquals(EMPTY, fixture.getVariableType("var1"));
+        assertEquals(EMPTY_TYPE, fixture.getVariableType("var1"));
     }
 
     @Test
     void containsVariable() {
-        fixture.putVariableType("var1", EMPTY, 0);
+        fixture.putVariableType("var1", EMPTY_TYPE, 0);
         fixture.push();
-        fixture.putVariableType("v2", EMPTY, 0);
+        fixture.putVariableType("v2", EMPTY_TYPE, 0);
         assertTrue(fixture.containsVariable("v2"));
     }
 
     @Test
     void getFunctionTest() {
-        fixture.putFunctionTypes("f1", new FunctionTypeInfo(List.of(FLOAT, FLOAT, FLOAT), FLOAT));
-        assertEquals(FLOAT, fixture.getFunctionTypes("f1").returnType());
+        List<Type> paramTypes = List.of(FLOAT_TYPE, FLOAT_TYPE, FLOAT_TYPE);
+        fixture.putFunctionTypes("f1", new FunctionTypeInfo(paramTypes, FLOAT_TYPE));
+        assertEquals(FLOAT_TYPE, fixture.getFunctionTypes("f1").returnType());
     }
 
     @Test
     void getPoppedFunctionTest() {
-        fixture.putFunctionTypes("f1", new FunctionTypeInfo(List.of(FLOAT, FLOAT, FLOAT), FLOAT));
+        List<Type> paramTypes = List.of(FLOAT_TYPE, FLOAT_TYPE, FLOAT_TYPE);
+        fixture.putFunctionTypes("f1", new FunctionTypeInfo(paramTypes, FLOAT_TYPE));
         fixture.push();
-        fixture.putFunctionTypes("f2", new FunctionTypeInfo(List.of(FLOAT, FLOAT, FLOAT), INT));
+        fixture.putFunctionTypes("f2", new FunctionTypeInfo(paramTypes, INT_TYPE));
         fixture.push();
-        fixture.putFunctionTypes("f3", new FunctionTypeInfo(List.of(FLOAT, FLOAT, FLOAT), STR));
-        assertEquals(STR, fixture.getFunctionTypes("f3").returnType());
+        fixture.putFunctionTypes("f3", new FunctionTypeInfo(paramTypes, STR_TYPE));
+        assertEquals(STR_TYPE, fixture.getFunctionTypes("f3").returnType());
         fixture.pop();
         assertEquals(FunctionTypeInfo.EMPTY, fixture.getFunctionTypes("f3"));
-        assertEquals(FLOAT, fixture.getFunctionTypes("f1").returnType());
+        assertEquals(FLOAT_TYPE, fixture.getFunctionTypes("f1").returnType());
     }
 }

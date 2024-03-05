@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -146,6 +147,8 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertEquals("NCC\n1701\n", results.stdout());
     }
 
+    // TODO add test for shell string with escaped newline
+
     @Test @Order(100)
     public void shellStringErrorExitCodesTriggerStrictModeTrap() {
         final ExecutionResults results = runText("""
@@ -188,5 +191,53 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertTrue(results.stdin().contains("xargs"));
+    }
+
+    @Test() @Order(140)
+    public void bpcShellLineWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            java -help""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("java"));
+    }
+
+    @Test() @Order(150)
+    public void bpcShellLineWithVariableWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            __bp_test=y java -help""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("java"));
+    }
+
+    @Test() @Order(160)
+    public void bpcShellLineWithDoubleQuotedVariableWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            __bp_test="yes yes" java -help""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("java"));
+    }
+
+    @Test() @Order(170)
+    public void bpcShellLineWithSingleQuotedVariableWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            __bp_test='yes yes' java -help""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("java"));
     }
 }

@@ -8,15 +8,17 @@ statement
     : ShellLine Newline                   # shellLineStatement
     | shellString Creates (String|Id)
            Colon INDENT statement+ DEDENT # createsStatement
-    | Function Id paramaters (Arrow Type)?# functionForwardDeclarationStatement
-    | Function Id paramaters tags? (Arrow Type)?
+    | Function Id paramaters (Arrow type)?# functionForwardDeclarationStatement
+    | Function Id paramaters tags? (Arrow type)?
                       Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon functionBlock     # anonymousBlockStatement
     | If Not? expression Colon indentedStatements
          (elseIfClauses)*
          (Else Colon indentedStatements)? # conditionalStatement
-    | typedId (Equals expression)? Newline# assignmentStatement
-    | Id Equals expression Newline        # reassignmentStatement
+    | <assoc=right> typedId
+             (Equals expression)? Newline # assignmentStatement
+    | <assoc=right> (Id | listAccess) assignmentOperator
+                       expression Newline # reassignmentStatement
     | Print OParen argumentList? CParen
                                   Newline # printStatement
     | expression Newline                  # expressionStatement
@@ -26,11 +28,13 @@ statement
 tags        : OBracket (String*) CBracket;
 // like (x: str, y: str)
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
-typedId     : Id Colon modifier* Type;
+typedId     : Id Colon modifier* type;
+type        : Type (LessThan Type MoreThan)?;
 modifier    : Exported | Readonly;
 argumentList: expression (Comma expression)*;
-elseIfClauses: ElseIf Not? expression Colon indentedStatements;
+elseIfClauses     : ElseIf Not? expression Colon indentedStatements;
 indentedStatements: INDENT statement+ DEDENT;
+assignmentOperator: Equals | PlusEquals;
 
 // Force the final statement to be a return.
 // This is a work around for Bash not allawing the return keyword with a string.
@@ -41,7 +45,8 @@ returnPsudoStatement: Return expression? Newline;
 
 // in operator precedence order
 expression
-    : expression Colon Type             # typecastExpression
+    : listAccess                        # listAccessExpression
+    | expression Colon type             # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
@@ -55,6 +60,8 @@ expression
     | expression combiningOperator
                              expression # combiningExpression
     | argumentsBuiltin                  # argumentsBuiltinExpression
+    | ListOf (OParen CParen | OParen expression (Comma expression)* CParen)
+                                        # listOfBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
     | <assoc=right> Minus? Number       # numberExpression
@@ -78,4 +85,7 @@ binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
 
 combiningOperator: And | Or;
 
+// translates to $1, $2, etc
 argumentsBuiltin: Arguments OBracket Number CBracket;
+
+listAccess: Id OBracket Minus? Number CBracket;

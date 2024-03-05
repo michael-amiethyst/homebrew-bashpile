@@ -1,17 +1,37 @@
 # 1.0 features
-1. Arrays, Hashes, Refs
-2. Loops
-3. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
-4. String interpolation with $[]
+1. Loops
+   1. while
+   2. do while
+   3. for
+   4. foreach
+2. switch/case
+3. Hashes
+4. Refs
+5. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
+6. String interpolation with $[]
    1. have bpr use arguments, arguments[all] (args/argv alias?)
-5. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
-6. Enforce 'readonly' 
+7. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+8. Enforce 'readonly' 
    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
+
+# getopts example
+After while and switch/case impl, bpr.bps will have:
+```
+// getopts
+opts: str = "o:c"
+translatedFilename: str = "command.bpt"
+commandMode: bool = false
+while #(getopts ${opts} option):
+    switch option:
+        case o:
+            translatedFilename = #($OPTARG)
+        case c:
+            commandMode = true
+```
 
 # Later
 (Not ordered)
 * 'Gnuize' the utilities used (ls?, sed, etc)
-* getopts
 * Implement int / float (built-in or `expr` vs `bc`)
 * OOP (use / be inspired by bash infinity?)
 * Factor out text for future localization and consistent end-user feel.
