@@ -147,6 +147,8 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertEquals("NCC\n1701\n", results.stdout());
     }
 
+    // TODO add test for shell string with escaped newline
+
     @Test @Order(100)
     public void shellStringErrorExitCodesTriggerStrictModeTrap() {
         final ExecutionResults results = runText("""

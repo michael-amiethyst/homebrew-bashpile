@@ -181,8 +181,25 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertEquals("Hello World\n", results.stdout());
         assertFalse(Files.exists(Path.of("command.bps")));
     }
+    // TODO uncomment for bpc -c test
+//
+//    @Test @Timeout(20) @Order(60)
+//    public void bpcDashCWithStdinWorks() throws IOException {
+//        log.info("In bpc -c with stdin works");
+//        Assumptions.assumeTrue(bprDeployed);
+//
+//        // run with our local (not installed) bpr
+//        final String command = "echo \"print('Hello World')\" | bin/bpc -c";
+//        final ExecutionResults results = runAndJoin(command);
+//        log.debug("Output text:\n{}", results.stdout());
+//
+//        assertSuccessfulExitCode(results);
+//        // last line is the created filename
+//        final String filename = results.stdoutLines().get(results.stdoutLines().size() - 1);
+//        Files.deleteIfExists(Path.of(filename));
+//    }
 
-    @Test @Timeout(20) @Order(60)
+    @Test @Timeout(20) @Order(70)
     public void bprDashCWithStdinWorks() throws IOException {
         log.info("In bpr -c with stdin works");
         Assumptions.assumeTrue(bprDeployed);
@@ -197,5 +214,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("command.bps")));
     }
 
-    // TODO test bpc Dash c
+    // TODO create test for
+//        final String command = "echo \"print('Hello World')\" | bin/bpr -c --outputFile command2.bpt ";
 }
