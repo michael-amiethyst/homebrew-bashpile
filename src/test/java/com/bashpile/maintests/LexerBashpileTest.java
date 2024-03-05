@@ -1,5 +1,6 @@
 package com.bashpile.maintests;
 
+import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -10,6 +11,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Technically "print()" is a statement, but we need it to get any output at all.
@@ -47,6 +49,14 @@ class LexerBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(31)
+    public void snakeCaseBoolFails() {
+        assertThrows(BashpileUncheckedAssertionException.class, () -> runText("""
+                bool-var: bool = false
+                print(bool-var)"""));
     }
 
     @Test
