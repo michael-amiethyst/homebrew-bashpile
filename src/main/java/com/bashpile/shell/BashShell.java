@@ -19,6 +19,8 @@ public class BashShell implements Closeable {
     private static final Pattern BOGUS_SCREEN_LINE = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r?\n");
 
+    private static final Pattern CLEAR_CONTROL_CODE = Pattern.compile(".+?\\[3J.+?\\[H.+?\\[2J\r?\n");
+
     private static final Logger LOG = LogManager.getLogger(BashShell.class);
 
     @Nonnull
@@ -103,6 +105,7 @@ public class BashShell implements Closeable {
         String stdout = ret.getValue();
         LOG.trace("Shell output before processing: [{}]", stdout);
         stdout = BOGUS_SCREEN_LINE.matcher(stdout).replaceAll("");
+        stdout = CLEAR_CONTROL_CODE.matcher(stdout).replaceAll("");
 
         return new ExecutionResults(bashScript, ret.getKey(), stdout);
     }
