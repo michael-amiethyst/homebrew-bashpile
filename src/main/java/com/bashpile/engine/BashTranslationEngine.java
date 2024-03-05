@@ -341,6 +341,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean isList = ctx.typedId().type().Type(0).getText().toUpperCase().equals(LIST.name());
         if (isList) {
             modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
+            // make the declaration for a Bash non-associative array
             modifiers = modifiers.addOption("a");
         }
         final Translation variableDeclaration =

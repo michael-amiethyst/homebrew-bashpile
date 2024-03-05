@@ -34,6 +34,7 @@ public class Asserts {
 
     private static final Pattern BLANK_LINE = Pattern.compile("(?m)^ *$");
 
+    /** Throws up test isn't true with optional message */
     public static boolean assertTrue(final boolean test, @Nullable final String message) {
         if (!test) {
             throw new BashpileUncheckedAssertionException(message != null ? message : "True assert wasn't true");
@@ -41,6 +42,7 @@ public class Asserts {
         return true;
     }
 
+    /** Throws {@code BashpileUncheckedAssertionException} if the Java list has any elements */
     public static <T> @Nonnull List<T> assertNotEmpty(@Nonnull final List<T> list) {
         if (list.isEmpty()) {
             throw new BashpileUncheckedAssertionException("List was empty");

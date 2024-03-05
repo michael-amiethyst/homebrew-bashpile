@@ -32,7 +32,7 @@ public class Lexers {
 
     /** A regex for a Bash assignment */
     private static final Pattern ASSIGN_PATTERN =
-            Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*=(\"[^\"]*\"|'[^']*'|[^ ]|[0-9]+)+\\s*");
+            Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*=(\"[^\"]*\"|'[^']*'|[^ ]+|[0-9]+)+\\s*");
 
     /** File is really a command */
     private static final List<String> COMMAND_TYPES = List.of("alias", "function", "builtin", "file");
