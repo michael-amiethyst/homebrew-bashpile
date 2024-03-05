@@ -21,3 +21,4 @@
     Also implemented many primaries, else-if clauses and combining expressions.  Also bugfixes.
 * 0.18.0 - Implemented Bashpile Brew test section, started Docker testing
 * 0.19.0 - Lists
+* 0.20.0 - while loops

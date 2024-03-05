@@ -1,9 +1,8 @@
 # 1.0 features
 1. Loops
-   1. while
-   2. do while
-   3. for
-   4. foreach
+   1. do while
+   2. for
+   3. foreach
 2. switch/case
 3. Hashes
 4. Refs
