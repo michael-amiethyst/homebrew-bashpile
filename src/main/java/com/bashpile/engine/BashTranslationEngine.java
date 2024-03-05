@@ -30,8 +30,8 @@ import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
-import static com.bashpile.engine.strongtypes.SimpleType.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static com.google.common.collect.Iterables.getLast;
 
