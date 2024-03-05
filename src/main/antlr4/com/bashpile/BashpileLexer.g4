@@ -41,6 +41,7 @@ All      : 'all';
 Exported : 'exported';
 Readonly : 'readonly';
 ListOf   : 'listOf';
+While    : 'while';
 
 // operators, in precidence order
 // opening parenthesis
@@ -48,6 +49,8 @@ OParen  : '(';
 // closing parenthesis
 CParen  : ')';
 // unary minus (minus defiend below)
+Increment: '++';
+Decrement: '--';
 Not     : 'not';
 Arrow   : '->';
 // cast in parser
@@ -78,7 +81,6 @@ ShellLine   : {isLinuxCommand(_input)}? (Id Equals (Number | String))* Id SHELL_
 // ID and Numbers
 
 // must start with a letter or underscore, then may have numbers
-// TODO allow dashes for snake-case
 Id: ID_START ID_CONTINUE*;
 
 Number: Float | Integer;
@@ -138,6 +140,7 @@ ShellStringCParen        : ')' -> type(CParen), popMode;
 fragment SHELL_LINE_WORD: ( StringEscapeSequence | ~[\\\r\n\f] )+;
 
 fragment ID_START   : [a-zA-Z_];
+// same as Bash ID rules -- no '-' for snake-case
 fragment ID_CONTINUE: [a-zA-Z0-9_];
 
 fragment NON_ZERO_DIGIT: [1-9];

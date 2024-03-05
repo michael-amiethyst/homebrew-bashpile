@@ -136,7 +136,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     }
 
     @Test @Order(90)
-    public void shellStringWithEscapesInCalcWorks() {
+    public void shellStringWithEscapesWorks() {
         final String bashpile = """
                 #(export IFS=$'\t')
                 print(#(printf "NCC\\n1701"))
@@ -147,7 +147,18 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertEquals("NCC\n1701\n", results.stdout());
     }
 
-    // TODO add test for shell string with escaped newline
+    @Test @Order(91)
+    public void shellStringWithEscapedNewlineWorks() {
+        final String bashpile = """
+                #(export IFS=$'\t')
+                print(#(printf "NCC-\\
+                    1701"))
+                """;
+        final ExecutionResults results = runText(bashpile);
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("NCC-1701\n", results.stdout());
+    }
 
     @Test @Order(100)
     public void shellStringErrorExitCodesTriggerStrictModeTrap() {

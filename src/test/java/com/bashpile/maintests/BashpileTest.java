@@ -1,8 +1,8 @@
 package com.bashpile.maintests;
 
+import com.bashpile.Asserts;
 import com.bashpile.BashpileMainHelper;
 import com.bashpile.Strings;
-import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.BashShell;
@@ -49,67 +49,11 @@ abstract public class BashpileTest {
      */
     @SuppressWarnings("all") // Intellij doesn't like .forEachOrdered for some reason
     protected static void assertCorrectFormatting(@Nonnull final ExecutionResults executionResults) {
+        assertCorrectIndents(executionResults);
+
+        // TODO break other loops into their own methods
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
-        final AtomicLong indentLevel = new AtomicLong(0);
         final AtomicLong i = new AtomicLong(1);
-
-        // check for correct indents
-        executionResults.stdinLines().stream().forEachOrdered(line -> {
-            final int spaces = line.length() - line.stripLeading().length();
-            if (spaces % 4 != 0 || Strings.isBlank(line)) {
-                erroredLines.get().add(i.get());
-                return;
-            }
-            final long tabs = spaces / 4;
-            final String[] tokens = line.stripLeading().split(" ");
-            final String firstToken = tokens[0];
-            final String lastToken = tokens[tokens.length - 1];
-
-            // check for increments
-            final boolean isStartOfFunctionBlock =
-                    firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
-            final boolean isNestedIf = line.contains("if") && !line.contains("elif") && lastToken.equals("then");
-            if (firstToken.equals("if") || isStartOfFunctionBlock || isNestedIf) {
-                if (tabs != indentLevel.get()) {
-                    erroredLines.get().add(i.get());
-                }
-                // generated code uses a Bash if all on one line (e.g. starts with if and ends with fi)
-                if (!line.endsWith("fi")) {
-                    indentLevel.getAndIncrement();
-                }
-                return;
-            } // else
-
-            // check for middle statements (e.g. else in an if-then-else statement)
-            if (List.of("elif", "else").contains(firstToken)) {
-                if (tabs != indentLevel.get() - 1) {
-                    erroredLines.get().add(i.get());
-                }
-                return;
-            } // else
-
-            // check for decrements
-            if (List.of("fi", "}", "};").contains(firstToken) || firstToken.startsWith("fi)")) {
-                indentLevel.getAndDecrement();
-                if (tabs != indentLevel.get()) {
-                    erroredLines.get().add(i.get());
-                }
-                return;
-            }
-            if (firstToken.equals(")") || firstToken.equals("then")) {
-                if (tabs != indentLevel.get() - 1) {
-                    erroredLines.get().add(i.get());
-                }
-                return;
-            }
-
-            // check for 'regular' lines
-            if (tabs != indentLevel.get()) {
-                erroredLines.get().add(i.getAndIncrement());
-            }
-            return;
-        });
-
         // check for nested command substitutions
         i.set(1);
         executionResults.stdinLines().stream().forEachOrdered(line -> {
@@ -139,11 +83,10 @@ abstract public class BashpileTest {
             }
         });
 
-        if (!erroredLines.get().isEmpty()) {
-            throw new BashpileUncheckedAssertionException("Bad formatting on lines " + erroredLines.get().stream()
-                    .map(Object::toString)
-                    .collect(Collectors.joining(", ")));
-        }
+        final String message = "Bad formatting on lines " + erroredLines.get().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+        Asserts.assertEmpty(erroredLines.get(), message);
     }
 
     protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
@@ -172,6 +115,75 @@ abstract public class BashpileTest {
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }
+    }
+
+    // helpers
+
+    protected static void assertCorrectIndents(@Nonnull final ExecutionResults executionResults) {
+        final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
+        final AtomicLong indentLevel = new AtomicLong(0);
+        final AtomicLong i = new AtomicLong(1);
+
+        // check for correct indents
+        executionResults.stdinLines().stream().forEachOrdered(line -> {
+            final int spaces = line.length() - line.stripLeading().length();
+            if (spaces % 4 != 0 || Strings.isBlank(line)) {
+                erroredLines.get().add(i.get());
+                return;
+            }
+            final long tabs = spaces / 4;
+            final String[] tokens = line.stripLeading().split(" ");
+            final String firstToken = tokens[0];
+            final String lastToken = tokens[tokens.length - 1];
+
+            // check for increments
+            final boolean isStartOfFunctionBlock =
+                    firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
+            final boolean isNestedIf = line.contains("if") && !line.contains("elif") && lastToken.equals("then");
+            if (firstToken.equals("if") || firstToken.equals("while") || isStartOfFunctionBlock || isNestedIf) {
+                if (tabs != indentLevel.get()) {
+                    erroredLines.get().add(i.get());
+                }
+                // generated code uses a Bash if all on one line (e.g. starts with if and ends with fi)
+                if (!line.endsWith("fi")) {
+                    indentLevel.getAndIncrement();
+                }
+                return;
+            } // else
+
+            // check for middle statements (e.g. else in an if-then-else statement)
+            if (List.of("elif", "else").contains(firstToken)) {
+                if (tabs != indentLevel.get() - 1) {
+                    erroredLines.get().add(i.get());
+                }
+                return;
+            } // else
+
+            // check for decrements
+            if (List.of("fi", "done", "}", "};").contains(firstToken) || firstToken.startsWith("fi)")) {
+                indentLevel.getAndDecrement();
+                if (tabs != indentLevel.get()) {
+                    erroredLines.get().add(i.get());
+                }
+                return;
+            }
+            if (firstToken.equals(")") || firstToken.equals("then")) {
+                if (tabs != indentLevel.get() - 1) {
+                    erroredLines.get().add(i.get());
+                }
+                return;
+            }
+
+            // check for 'regular' lines
+            if (tabs != indentLevel.get()) {
+                erroredLines.get().add(i.getAndIncrement());
+            }
+        });
+
+        final String message = "Bad indenting on lines " + erroredLines.get().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+        Asserts.assertEmpty(erroredLines.get(), message);
     }
 
     private @Nonnull ExecutionResults execute(@Nonnull final String bashScript) {

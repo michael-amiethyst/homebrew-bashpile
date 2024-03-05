@@ -5,24 +5,24 @@ program: statement+;
 
 // statements, in descending order of complexity
 statement
-    : ShellLine Newline                   # shellLineStatement
+    : ShellLine Newline                         # shellLineStatement
     | shellString Creates (String|Id)
-           Colon INDENT statement+ DEDENT # createsStatement
-    | Function Id paramaters (Arrow type)?# functionForwardDeclarationStatement
+           Colon INDENT statement+ DEDENT       # createsStatement
+    | While expression Colon indentedStatements # whileStatement
+    | Function Id paramaters (Arrow type)?      # functionForwardDeclarationStatement
     | Function Id paramaters tags? (Arrow type)?
-                      Colon functionBlock # functionDeclarationStatement
-    | Block tags? Colon functionBlock     # anonymousBlockStatement
+                            Colon functionBlock # functionDeclarationStatement
+    | Block tags? Colon functionBlock           # anonymousBlockStatement
     | If Not? expression Colon indentedStatements
          (elseIfClauses)*
-         (Else Colon indentedStatements)? # conditionalStatement
+         (Else Colon indentedStatements)?       # conditionalStatement
     | <assoc=right> typedId
-             (Equals expression)? Newline # assignmentStatement
+             (Equals expression)? Newline       # assignmentStatement
     | <assoc=right> (Id | listAccess) assignmentOperator
-                       expression Newline # reassignmentStatement
-    | Print OParen argumentList? CParen
-                                  Newline # printStatement
-    | expression Newline                  # expressionStatement
-    | Newline                             # blankStmt
+                             expression Newline # reassignmentStatement
+    | Print OParen argumentList? CParen Newline # printStatement
+    | expression Newline                        # expressionStatement
+    | Newline                                   # blankStmt
     ;
 
 tags        : OBracket (String*) CBracket;

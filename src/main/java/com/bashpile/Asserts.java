@@ -42,7 +42,16 @@ public class Asserts {
         return true;
     }
 
-    /** Throws {@code BashpileUncheckedAssertionException} if the Java list has any elements */
+    /** Throws {@code BashpileUncheckedAssertionException} is the Java list has elements */
+     public static <T> @Nonnull List<T> assertEmpty(@Nonnull final List<T> list, @Nullable String message) {
+        if (!list.isEmpty()) {
+            message = message != null ? message : "List had elements when it was expected to be empty";
+            throw new BashpileUncheckedAssertionException(message);
+        }
+        return list;
+    }
+
+    /** Throws {@code BashpileUncheckedAssertionException} if the Java list is empty */
     public static <T> @Nonnull List<T> assertNotEmpty(@Nonnull final List<T> list) {
         if (list.isEmpty()) {
             throw new BashpileUncheckedAssertionException("List was empty");

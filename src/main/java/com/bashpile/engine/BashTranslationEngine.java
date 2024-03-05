@@ -30,8 +30,8 @@ import static com.bashpile.Asserts.*;
 import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
-import static com.bashpile.engine.strongtypes.SimpleType.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static com.google.common.collect.Iterables.getLast;
 
@@ -166,6 +166,20 @@ public class BashTranslationEngine implements TranslationEngine {
         } finally {
             createFilenamesStack.pop();
         }
+    }
+
+    @Override
+    public Translation whileStatement(BashpileParser.WhileStatementContext ctx) {
+        final Translation comment = createCommentTranslation("while statement", lineNumber(ctx));
+        final Translation gate = visitor.visit(ctx.expression());
+        final Translation bodyStatements = ctx.indentedStatements().statement().stream()
+                .map(visitor::visit).reduce(Translation::add).orElseThrow().lambdaBodyLines(x -> "    " + x);
+        final Translation whileTranslation = Translation.toParagraphTranslation("""
+                while %s; do
+                %sdone
+                """.formatted(gate.body(), bodyStatements.body()))
+                .addPreamble(gate.preamble()).addPreamble(bodyStatements.preamble());
+        return comment.add(whileTranslation);
     }
 
     @Override
@@ -653,7 +667,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean numeric = firstTranslation.type().isNumeric() && secondTranslation.type().isNumeric();
         if (numeric) {
             // use bc to handle floats and avoid silly Bash operators (e.g. `-eq`) entirely
-            body = "[ $(bc <<< \"%s%s %s %s\") -eq 1 ]";
+            body = "[ \"$(bc <<< \"%s%s %s %s\")\" -eq 1 ]";
         } else {
             // string
             body = "[ %s\"%s\" %s \"%s\" ]";
@@ -743,13 +757,18 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
-        Translation contentsTranslation;
-        final Stream<Translation> contentsStream = ctx.shellStringContents().stream()
-                .map(visitor::visit).map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested));
-        contentsTranslation = toTranslation(contentsStream, UNKNOWN_TYPE, NORMAL).lambdaBody(Strings::dedent);
+        Translation contentsTranslation = ctx.shellStringContents().stream()
+                .map(visitor::visit)
+                .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
+                .reduce(Translation::add)
+                .map(x -> x.lambdaBody(Strings::dedent))
+                .map(BashTranslationHelper::joinEscapedNewlines)
+                .orElseThrow()
+                .type(UNKNOWN_TYPE);
+
+        // a subshell does NOT need inlining often, see conditionalStatement
         if (!Strings.inParentheses(contentsTranslation.body())) {
             contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
-            // a subshell does NOT need inlining often, see conditionalStatement
         }
 
         contentsTranslation = unwindNested(contentsTranslation);

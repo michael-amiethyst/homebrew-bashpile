@@ -61,6 +61,8 @@ public class BashTranslationHelper {
     public static final Pattern NESTED_COMMAND_SUBSTITUTION =
             Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
 
+    private static final Pattern escapedNewline = Pattern.compile("\\\\\\r?\\n\\s*");
+
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
 
     /** Used to ensure variable names are unique */
@@ -261,6 +263,11 @@ public class BashTranslationHelper {
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
         return not.add(expressionTranslation);
+    }
+
+    /** Removes escaped newlines and trailing spaces */
+    /* package */ static @Nonnull Translation joinEscapedNewlines(@Nonnull final Translation tr) {
+        return tr.lambdaBody(x -> escapedNewline.matcher(x).replaceAll(""));
     }
 
     // unwind static methods

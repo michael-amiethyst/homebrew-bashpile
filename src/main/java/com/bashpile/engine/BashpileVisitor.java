@@ -4,6 +4,7 @@ import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
 import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
+import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
@@ -98,6 +99,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public @Nonnull Translation visitCreatesStatement(BashpileParser.CreatesStatementContext ctx) {
         return translator.createsStatement(ctx);
+    }
+
+    @Override
+    public Translation visitWhileStatement(BashpileParser.WhileStatementContext ctx) {
+        return translator.whileStatement(ctx);
     }
 
     @Override
@@ -217,7 +223,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
-        final SimpleType simpleType = SimpleType.parseNumberString(ctx.Number().getText());
+        final TerminalNode number = ctx.Number();
+        if (number == null) {
+            throw new BashpileUncheckedAssertionException("No number in number expression.  Bad parse?");
+        }
+        final SimpleType simpleType = SimpleType.parseNumberString(number.getText());
         return new Translation(ctx.getText(), Type.of(simpleType), NORMAL);
     }
 

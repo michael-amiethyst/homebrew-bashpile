@@ -2,6 +2,7 @@ package com.bashpile.shell;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,6 +19,11 @@ public class BashShell implements Closeable {
 
     private static final Pattern BOGUS_SCREEN_LINE = Pattern.compile(
             "your \\d+x\\d+ screen size is bogus. expect trouble\r?\n");
+
+    /**
+     * @see <a href="https://unix.stackexchange.com/questions/564981/what-is-this-3jh2j">Stack Exchange</a>
+     */
+    private static final Pattern CLEAR_CONTROL_CODE = Pattern.compile(".\\[3J.\\[H.\\[2J\r?\n");
 
     private static final Logger LOG = LogManager.getLogger(BashShell.class);
 
@@ -103,6 +109,11 @@ public class BashShell implements Closeable {
         String stdout = ret.getValue();
         LOG.trace("Shell output before processing: [{}]", stdout);
         stdout = BOGUS_SCREEN_LINE.matcher(stdout).replaceAll("");
+        stdout = CLEAR_CONTROL_CODE.matcher(stdout).replaceAll("");
+        // replace trailing newline if it was stripped out earlier
+        if (!stdout.isEmpty()) {
+            stdout = StringUtils.appendIfMissing(stdout, "\n");
+        }
 
         return new ExecutionResults(bashScript, ret.getKey(), stdout);
     }
