@@ -1,16 +1,17 @@
 # 1.0 features
-1. Loops
+1. switch/case
+2. increment / decrement
+3. Loops
    1. do while
    2. for
    3. foreach
-2. switch/case
-3. Hashes
-4. Refs
-5. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
-6. String interpolation with $[]
+4. Hashes
+5. Refs
+6. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
+7. String interpolation with $[]
    1. have bpr use arguments, arguments[all] (args/argv alias?)
-7. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
-8. Enforce 'readonly' 
+8. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+9. Enforce 'readonly' 
    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # getopts example

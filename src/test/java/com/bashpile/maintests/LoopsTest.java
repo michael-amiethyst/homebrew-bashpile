@@ -26,4 +26,18 @@ public class LoopsTest extends BashpileTest {
         assertEquals("0\n1\n2\n3\n4\n", results.stdout());
     }
 
+    @Test @Order(20)
+    public void whileLoopWithShellStringWorks() {
+        final ExecutionResults results = runText("""
+                i: int = 0
+                while #([ $i -lt 5 ]):
+                    print(i)
+                    i = i + 1
+                """);
+        assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("# while statement"));
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n2\n3\n4\n", results.stdout());
+    }
+
 }

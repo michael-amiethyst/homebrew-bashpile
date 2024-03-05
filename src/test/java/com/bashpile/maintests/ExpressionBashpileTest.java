@@ -97,8 +97,6 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("21\n", results.stdout());
     }
 
-    // TODO i++ test
-
     @Test @Order(100)
     public void floatExpressionsWork() {
         final ExecutionResults results = runText("""

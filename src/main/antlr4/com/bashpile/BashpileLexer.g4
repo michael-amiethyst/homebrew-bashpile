@@ -49,6 +49,8 @@ OParen  : '(';
 // closing parenthesis
 CParen  : ')';
 // unary minus (minus defiend below)
+Increment: '++';
+Decrement: '--';
 Not     : 'not';
 Arrow   : '->';
 // cast in parser
