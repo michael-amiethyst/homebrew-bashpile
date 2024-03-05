@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -31,7 +32,7 @@ public class Lexers {
 
     /** A regex for a Bash assignment */
     private static final Pattern ASSIGN_PATTERN =
-            Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*=(\"[^\"]*\"|'[^']*'|[^ ]|[0-9]+)+");
+            Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*=(\"[^\"]*\"|'[^']*'|[^ ]|[0-9]+)+\\s*");
 
     /** File is really a command */
     private static final List<String> COMMAND_TYPES = List.of("alias", "function", "builtin", "file");
@@ -75,21 +76,21 @@ public class Lexers {
      * @return Checks if the parsed command is valid.
      */
     @VisibleForTesting
-    /* package */ static boolean isLinuxCommand(@Nonnull final String bashLine) {
+    /* package */ static boolean isLinuxCommand(@Nonnull String bashLine) {
         // guard
         if (StringUtils.isBlank(bashLine) || bashLine.startsWith(" ")) {
             return false;
         }
 
-        // split on unquoted whitespace
-        final String[] lineParts = bashLine.split("\\s(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
-
-        // check for var=value preambles
-        int partsIndex = 0;
-        while(ASSIGN_PATTERN.matcher(lineParts[partsIndex]).matches()) {
-            partsIndex++;
+        // check for var=value preambles and remove
+        Matcher match = ASSIGN_PATTERN.matcher(bashLine);
+        while (match.find()) {
+            bashLine = match.replaceFirst("");
+            match = ASSIGN_PATTERN.matcher(bashLine);
         }
-        final String command = lineParts[partsIndex];
+
+        // split on unquoted whitespace
+        final String command = bashLine.split(" ")[0];
 
         if (COMMAND_TO_VALIDITY_CACHE.containsKey(command)) {
             return COMMAND_TO_VALIDITY_CACHE.get(command);

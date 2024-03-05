@@ -227,5 +227,15 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertTrue(results.stdin().contains("java"));
     }
 
-    // TODO create single quote test
+    @Test() @Order(170)
+    public void bpcShellLineWithSingleQuotedVariableWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            __bp_test='yes yes' java -help""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("java"));
+    }
 }
