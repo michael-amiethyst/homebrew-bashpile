@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LoopsTest extends BashpileTest {
     @Test @Order(10)
-    public void emptyListDeclarationWorks() {
+    public void whileLoopWorks() {
         final ExecutionResults results = runText("""
                 i: int = 0
                 while i < 5:
@@ -21,9 +21,9 @@ public class LoopsTest extends BashpileTest {
                     i = i + 1
                 """);
         assertCorrectFormatting(results);
+        assertTrue(results.stdin().contains("# while statement"));
         assertSuccessfulExitCode(results);
-        assertTrue(results.stdin().contains("declare -a"));
-        assertEquals("", results.stdout());
+        assertEquals("0\n1\n2\n3\n4\n", results.stdout());
     }
 
 }

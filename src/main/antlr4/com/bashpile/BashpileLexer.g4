@@ -41,6 +41,7 @@ All      : 'all';
 Exported : 'exported';
 Readonly : 'readonly';
 ListOf   : 'listOf';
+While    : 'while';
 
 // operators, in precidence order
 // opening parenthesis

@@ -169,6 +169,20 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
+    public Translation whileStatement(BashpileParser.WhileStatementContext ctx) {
+        final Translation comment = createCommentTranslation("while statement", lineNumber(ctx));
+        final Translation gate = visitor.visit(ctx.expression());
+        final Translation bodyStatements = ctx.indentedStatements().statement().stream()
+                .map(visitor::visit).reduce(Translation::add).orElseThrow().lambdaBodyLines(x -> "    " + x);
+        final Translation whileTranslation = Translation.toParagraphTranslation("""
+                while %s; do
+                %sdone
+                """.formatted(gate.body(), bodyStatements.body()))
+                .addPreamble(gate.preamble()).addPreamble(bodyStatements.preamble());
+        return comment.add(whileTranslation);
+    }
+
+    @Override
     public @Nonnull Translation functionForwardDeclarationStatement(
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         // create translations
@@ -653,7 +667,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean numeric = firstTranslation.type().isNumeric() && secondTranslation.type().isNumeric();
         if (numeric) {
             // use bc to handle floats and avoid silly Bash operators (e.g. `-eq`) entirely
-            body = "[ $(bc <<< \"%s%s %s %s\") -eq 1 ]";
+            body = "[ \"$(bc <<< \"%s%s %s %s\")\" -eq 1 ]";
         } else {
             // string
             body = "[ %s\"%s\" %s \"%s\" ]";

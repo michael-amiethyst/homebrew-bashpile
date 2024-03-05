@@ -101,6 +101,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
+    public Translation visitWhileStatement(BashpileParser.WhileStatementContext ctx) {
+        return translator.whileStatement(ctx);
+    }
+
+    @Override
     public @Nonnull Translation visitFunctionForwardDeclarationStatement(
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
         return translator.functionForwardDeclarationStatement(ctx);

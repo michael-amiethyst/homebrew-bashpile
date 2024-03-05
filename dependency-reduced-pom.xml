@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.bashpile</groupId>
   <artifactId>bashpile</artifactId>
-  <version>0.19.0</version>
+  <version>0.20.0</version>
   <build>
     <finalName>bashpile</finalName>
     <plugins>

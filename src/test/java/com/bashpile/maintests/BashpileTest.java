@@ -69,7 +69,7 @@ abstract public class BashpileTest {
             final boolean isStartOfFunctionBlock =
                     firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
             final boolean isNestedIf = line.contains("if") && !line.contains("elif") && lastToken.equals("then");
-            if (firstToken.equals("if") || isStartOfFunctionBlock || isNestedIf) {
+            if (firstToken.equals("if") || firstToken.equals("while") || isStartOfFunctionBlock || isNestedIf) {
                 if (tabs != indentLevel.get()) {
                     erroredLines.get().add(i.get());
                 }
@@ -89,7 +89,7 @@ abstract public class BashpileTest {
             } // else
 
             // check for decrements
-            if (List.of("fi", "}", "};").contains(firstToken) || firstToken.startsWith("fi)")) {
+            if (List.of("fi", "done", "}", "};").contains(firstToken) || firstToken.startsWith("fi)")) {
                 indentLevel.getAndDecrement();
                 if (tabs != indentLevel.get()) {
                     erroredLines.get().add(i.get());
