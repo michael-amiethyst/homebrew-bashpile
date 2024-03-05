@@ -21,8 +21,9 @@ class Bashpile < Formula
     FileUtils.cp "#{bin}/bpr", "#{bin}/bashpile"
   end
 
-  # TODO floating point test, multiline STDIN test
+  # TODO multiline STDIN test
   test do
     assert_match "Hello Bash", shell_output("echo \"print('Hello Bash')\" | bpr -c")
+    assert_match "6.28", shell_output("echo \"print(3.14 + 3.14)\" | bpr -c")
   end
 end
