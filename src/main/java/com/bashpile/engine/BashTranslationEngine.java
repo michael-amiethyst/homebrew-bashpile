@@ -757,13 +757,18 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
-        Translation contentsTranslation;
-        final Stream<Translation> contentsStream = ctx.shellStringContents().stream()
-                .map(visitor::visit).map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested));
-        contentsTranslation = toTranslation(contentsStream, UNKNOWN_TYPE, NORMAL).lambdaBody(Strings::dedent);
+        Translation contentsTranslation = ctx.shellStringContents().stream()
+                .map(visitor::visit)
+                .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
+                .reduce(Translation::add)
+                .map(x -> x.lambdaBody(Strings::dedent))
+                .map(BashTranslationHelper::joinEscapedNewlines)
+                .orElseThrow()
+                .type(UNKNOWN_TYPE);
+
+        // a subshell does NOT need inlining often, see conditionalStatement
         if (!Strings.inParentheses(contentsTranslation.body())) {
             contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
-            // a subshell does NOT need inlining often, see conditionalStatement
         }
 
         contentsTranslation = unwindNested(contentsTranslation);
