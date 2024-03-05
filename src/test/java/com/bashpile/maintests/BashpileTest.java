@@ -1,8 +1,8 @@
 package com.bashpile.maintests;
 
+import com.bashpile.Asserts;
 import com.bashpile.BashpileMainHelper;
 import com.bashpile.Strings;
-import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.BashShell;
@@ -49,6 +49,77 @@ abstract public class BashpileTest {
      */
     @SuppressWarnings("all") // Intellij doesn't like .forEachOrdered for some reason
     protected static void assertCorrectFormatting(@Nonnull final ExecutionResults executionResults) {
+        assertCorrectIndents(executionResults);
+
+        // TODO break other loops into their own methods
+        final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
+        final AtomicLong i = new AtomicLong(1);
+        // check for nested command substitutions
+        i.set(1);
+        executionResults.stdinLines().stream().forEachOrdered(line -> {
+            if (line.trim().charAt(0) != '#'
+                    && !line.contains("(set -o noclobber")
+                    && NESTED_COMMAND_SUBSTITUTION.matcher(line).find()) {
+                LOG.error("Found nested command substitution, line {}, text {}", i, line);
+                erroredLines.get().add(i.getAndIncrement());
+            }
+        });
+
+        // check for unnecessary unnested command substitutions
+        i.set(1);
+        executionResults.stdinLines().stream().forEachOrdered(line -> {
+            if (line.trim().startsWith("__bp_subshellReturn") && !COMMAND_SUBSTITUTION.matcher(line).find()) {
+                LOG.error("Unneeded unnest, line {}, text {}", i, line);
+                erroredLines.get().add(i.getAndIncrement());
+            }
+        });
+
+        // check for missing ifs
+        i.set(1);
+        executionResults.stdinLines().stream().forEachOrdered(line -> {
+            if (!line.trim().contains("if") && line.endsWith("; then") ) {
+                LOG.error("Mangled if-then found, line {}, text {}", i, line);
+                erroredLines.get().add(i.getAndIncrement());
+            }
+        });
+
+        final String message = "Bad formatting on lines " + erroredLines.get().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+        Asserts.assertEmpty(erroredLines.get(), message);
+    }
+
+    protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
+        LOG.debug("Start of:\n{}", bashText);
+        try {
+            return execute(BashpileMainHelper.transpileScript(bashText));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
+    }
+
+    protected @Nonnull BashShell runTextAsync(@Nonnull final String bashText) {
+        LOG.debug("Starting background threads for:\n{}", bashText);
+        try {
+            return executeAsync(BashpileMainHelper.transpileScript(bashText));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
+    }
+
+    protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
+        final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
+        LOG.debug("Start of {}", filename);
+        try {
+            return execute(BashpileMainHelper.transpileNioFile(filename));
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        }
+    }
+
+    // helpers
+
+    protected static void assertCorrectIndents(@Nonnull final ExecutionResults executionResults) {
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
         final AtomicLong indentLevel = new AtomicLong(0);
         final AtomicLong i = new AtomicLong(1);
@@ -107,71 +178,12 @@ abstract public class BashpileTest {
             if (tabs != indentLevel.get()) {
                 erroredLines.get().add(i.getAndIncrement());
             }
-            return;
         });
 
-        // check for nested command substitutions
-        i.set(1);
-        executionResults.stdinLines().stream().forEachOrdered(line -> {
-            if (line.trim().charAt(0) != '#'
-                    && !line.contains("(set -o noclobber")
-                    && NESTED_COMMAND_SUBSTITUTION.matcher(line).find()) {
-                LOG.error("Found nested command substitution, line {}, text {}", i, line);
-                erroredLines.get().add(i.getAndIncrement());
-            }
-        });
-
-        // check for unnecessary unnested command substitutions
-        i.set(1);
-        executionResults.stdinLines().stream().forEachOrdered(line -> {
-            if (line.trim().startsWith("__bp_subshellReturn") && !COMMAND_SUBSTITUTION.matcher(line).find()) {
-                LOG.error("Unneeded unnest, line {}, text {}", i, line);
-                erroredLines.get().add(i.getAndIncrement());
-            }
-        });
-
-        // check for missing ifs
-        i.set(1);
-        executionResults.stdinLines().stream().forEachOrdered(line -> {
-            if (!line.trim().contains("if") && line.endsWith("; then") ) {
-                LOG.error("Mangled if-then found, line {}, text {}", i, line);
-                erroredLines.get().add(i.getAndIncrement());
-            }
-        });
-
-        if (!erroredLines.get().isEmpty()) {
-            throw new BashpileUncheckedAssertionException("Bad formatting on lines " + erroredLines.get().stream()
-                    .map(Object::toString)
-                    .collect(Collectors.joining(", ")));
-        }
-    }
-
-    protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
-        LOG.debug("Start of:\n{}", bashText);
-        try {
-            return execute(BashpileMainHelper.transpileScript(bashText));
-        } catch (IOException e) {
-            throw new BashpileUncheckedException(e);
-        }
-    }
-
-    protected @Nonnull BashShell runTextAsync(@Nonnull final String bashText) {
-        LOG.debug("Starting background threads for:\n{}", bashText);
-        try {
-            return executeAsync(BashpileMainHelper.transpileScript(bashText));
-        } catch (IOException e) {
-            throw new BashpileUncheckedException(e);
-        }
-    }
-
-    protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
-        final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
-        LOG.debug("Start of {}", filename);
-        try {
-            return execute(BashpileMainHelper.transpileNioFile(filename));
-        } catch (IOException e) {
-            throw new BashpileUncheckedException(e);
-        }
+        final String message = "Bad indenting on lines " + erroredLines.get().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+        Asserts.assertEmpty(erroredLines.get(), message);
     }
 
     private @Nonnull ExecutionResults execute(@Nonnull final String bashScript) {
