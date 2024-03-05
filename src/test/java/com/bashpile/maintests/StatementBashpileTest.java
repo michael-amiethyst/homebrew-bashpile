@@ -608,4 +608,6 @@ class StatementBashpileTest extends BashpileTest {
             }
         }
     }
+
+    // TODO write switch / case test here
 }
