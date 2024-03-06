@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -123,12 +124,13 @@ abstract public class BashpileTest {
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
         final AtomicLong indentLevel = new AtomicLong(0);
         final AtomicLong i = new AtomicLong(1);
+        final AtomicBoolean inCase = new AtomicBoolean(false);
 
         // check for correct indents
         executionResults.stdinLines().stream().forEachOrdered(line -> {
             final int spaces = line.length() - line.stripLeading().length();
             if (spaces % 4 != 0 || Strings.isBlank(line)) {
-                erroredLines.get().add(i.get());
+                erroredLines.get().add(i.getAndIncrement());
                 return;
             }
             final long tabs = spaces / 4;
@@ -140,7 +142,12 @@ abstract public class BashpileTest {
             final boolean isStartOfFunctionBlock =
                     firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
             final boolean isNestedIf = line.contains("if") && !line.contains("elif") && lastToken.equals("then");
-            if (firstToken.equals("if") || firstToken.equals("while") || isStartOfFunctionBlock || isNestedIf) {
+            final boolean casePattern = tokens.length == 1 && inCase.get() && firstToken.endsWith(")");
+            if (List.of("if", "while", "case").contains(firstToken)
+                    || isStartOfFunctionBlock || isNestedIf || casePattern) {
+                if (firstToken.equals("case")) {
+                    inCase.set(true);
+                }
                 if (tabs != indentLevel.get()) {
                     erroredLines.get().add(i.get());
                 }
@@ -148,6 +155,7 @@ abstract public class BashpileTest {
                 if (!line.endsWith("fi")) {
                     indentLevel.getAndIncrement();
                 }
+                i.getAndIncrement();
                 return;
             } // else
 
@@ -156,28 +164,43 @@ abstract public class BashpileTest {
                 if (tabs != indentLevel.get() - 1) {
                     erroredLines.get().add(i.get());
                 }
+                i.getAndIncrement();
                 return;
             } // else
 
             // check for decrements
-            if (List.of("fi", "done", "}", "};").contains(firstToken) || firstToken.startsWith("fi)")) {
+            if (List.of("fi", "done", "}", "};", "esac").contains(firstToken) || firstToken.startsWith("fi)")) {
+                if (firstToken.equals("esac")) {
+                    inCase.set(false);
+                }
                 indentLevel.getAndDecrement();
                 if (tabs != indentLevel.get()) {
                     erroredLines.get().add(i.get());
                 }
+                i.getAndIncrement();
+                return;
+            }
+            if (firstToken.equals(";;")) {
+                if (tabs != indentLevel.get()) {
+                    erroredLines.get().add(i.get());
+                }
+                indentLevel.getAndDecrement();
+                i.getAndIncrement();
                 return;
             }
             if (firstToken.equals(")") || firstToken.equals("then")) {
                 if (tabs != indentLevel.get() - 1) {
                     erroredLines.get().add(i.get());
                 }
+                i.getAndIncrement();
                 return;
             }
 
             // check for 'regular' lines
             if (tabs != indentLevel.get()) {
-                erroredLines.get().add(i.getAndIncrement());
+                erroredLines.get().add(i.get());
             }
+            i.getAndIncrement();
         });
 
         final String message = "Bad indenting on lines " + erroredLines.get().stream()

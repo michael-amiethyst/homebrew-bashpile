@@ -130,6 +130,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     }
 
     @Override
+    public Translation visitSwitchStatement(BashpileParser.SwitchStatementContext ctx) {
+        return translator.switchStatement(ctx);
+    }
+
+    @Override
     public @Nonnull Translation visitAssignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
         return translator.assignmentStatement(ctx);
     }

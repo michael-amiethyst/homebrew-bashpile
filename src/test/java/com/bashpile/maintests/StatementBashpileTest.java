@@ -609,5 +609,20 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    // TODO write switch / case test here
+    @Test @Order(250)
+    public void simpleSwitchWorks() {
+        ExecutionResults results = runText("""
+                i: int = 1
+                switch i:
+                    case -1:
+                        print('Neg')
+                    case 0:
+                        print('Zero')
+                    case 1:
+                        print('Positive')
+                """);
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("Positive\n", results.stdout());
+    }
 }

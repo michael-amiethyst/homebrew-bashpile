@@ -35,6 +35,8 @@ Bool     : 'true' | 'false';
 If       : 'if';
 ElseIf   : 'else-if';
 Else     : 'else';
+Switch   : 'switch';
+Case     : 'case';
 Pass     : 'pass';
 Arguments: 'arguments';
 All      : 'all';

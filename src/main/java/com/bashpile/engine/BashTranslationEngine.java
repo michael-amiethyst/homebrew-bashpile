@@ -10,6 +10,7 @@ import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
+import com.google.common.collect.Streams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringUtils;
@@ -322,6 +323,46 @@ public class BashTranslationEngine implements TranslationEngine {
                 fi
                 """.formatted(guard.body(), ifBlock, elseIfBlock, elseBlock);
         return toParagraphTranslation(guard.preamble() + conditional);
+    }
+
+    @Override
+    public Translation switchStatement(BashpileParser.SwitchStatementContext ctx) {
+        Translation expressionTranslation = visitor.visit(ctx.expression(0));
+        Stream<Translation> patterns = ctx.expression().stream().skip(1)
+                .map(visitor::visit);
+        Stream<List<Translation>> statementsLists = ctx.indentedStatements().stream()
+                .map(BashpileParser.IndentedStatementsContext::statement)
+                .map(x -> x.stream().map(visitor::visit).toList());
+        Translation cases = Streams.zip(patterns, statementsLists, Pair::of)
+                .map(this::toCase)
+                .reduce(Translation::add)
+                .orElseThrow();
+        String template = """
+                case %s in
+                %sesac
+                """.formatted(expressionTranslation.body(), cases.body());
+        // TODO add comment for line number
+        Translation switchTranslation = toParagraphTranslation(template)
+                .addPreamble(expressionTranslation.preamble()).addPreamble(cases.preamble());
+        return switchTranslation;
+    }
+
+    // TODO move
+    private Translation toCase(Pair<Translation, List<Translation>> patternAndStatementPair) {
+        Translation pattern = patternAndStatementPair.getLeft();
+        Translation statements = patternAndStatementPair.getRight().stream()
+                .map(tr -> tr.lambdaBodyLines(x -> "    " + x))
+                .reduce(Translation::add)
+                .orElseThrow();
+        String template = """
+                %s)
+                %s
+                    ;;
+                """.formatted(pattern.body(), statements.body());
+        return toParagraphTranslation(template)
+                .lambdaBodyLines(x -> "    " + x)
+                .addPreamble(pattern.preamble())
+                .addPreamble(statements.preamble());
     }
 
     @Override

@@ -16,6 +16,9 @@ statement
     | If Not? expression Colon indentedStatements
          (elseIfClauses)*
          (Else Colon indentedStatements)?       # conditionalStatement
+    | Switch expression Colon INDENT
+         (Case expression Colon indentedStatements)+ DEDENT
+                                                # switchStatement
     | <assoc=right> typedId
              (Equals expression)? Newline       # assignmentStatement
     | <assoc=right> (Id | listAccess) assignmentOperator
