@@ -625,4 +625,6 @@ class StatementBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("Positive\n", results.stdout());
     }
+
+    // TODO have 'or' in the case statements
 }

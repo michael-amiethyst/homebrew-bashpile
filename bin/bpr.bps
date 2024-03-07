@@ -5,44 +5,58 @@
  * Manually deploy with `bin/bpr bin/bpc --outputFile=bin/bpr bin/bpr.bps`
  */
 
+// getopts
+// TODO use getopt for long options
+opts: str = "o:c"
+translatedFilename: str = "command.bpt"
+commandMode: bool = false
+while #(getopts ${opts} option):
+    switch option:
+        case "o":
+            translatedFilename = OPTARG: str
+        case "c":
+            commandMode = true
+shift $((OPTIND - 1))
+
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 
 // if $1 is the default blank value then unset the ERR trap and trigger an error with help text from the jar
-if unset arguments[1]:
+if not commandMode and unset arguments[1]:
     #(trap - ERR)
     #(java -jar "$jarPath")
     #(exit $?)
 
 // last line of the jar's output is the generated Bash script
-if arguments[1] != "-c" and arguments[1] != "--command":
-    translatedFilename: str = arguments[1] + ".bpt"
+if not commandMode:
+    if translatedFilename == "command.bpt":
+        // TODO find why this doesn't render well
+        translatedFilename = arguments[1] + ".bpt"
     #(java -jar "$jarPath" --outputFile="$translatedFilename" "$1") creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
         #(sleep .2)
         #(shift)
         print("Start of " + translatedFilename)
+        // TODO test chmod and sleep without shell strings
         #(chmod 755 $translatedFilename)
         // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
         #(./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
             if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
+                // TODO this should not need a shell string
                 #(./"$translatedFilename" "$@")
 else:
     // command mode
     command: str
-    doubleShift: bool = false
-    if isset arguments[2]:
-        command = #(echo $2)
-        doubleShift = true
+    if isset arguments[1]:
+        command = arguments[1]
+        // TODO find why this needs a shell string
+        #(shift)
     else:
         command = #(cat -)
-    translatedFilename: str = "command.bpt"
+    // print("Creating " + translatedFilename + " with command sting: " + command)
     #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$command" 1>/dev/null) creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
         #(sleep .2)
-        #(shift)
-        if doubleShift:
-            #(shift)
         #(chmod 755 $translatedFilename)
         // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
         #(./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":

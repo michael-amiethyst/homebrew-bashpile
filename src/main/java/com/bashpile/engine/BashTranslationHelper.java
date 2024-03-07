@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -268,6 +269,25 @@ public class BashTranslationHelper {
     /** Removes escaped newlines and trailing spaces */
     /* package */ static @Nonnull Translation joinEscapedNewlines(@Nonnull final Translation tr) {
         return tr.lambdaBody(x -> escapedNewline.matcher(x).replaceAll(""));
+    }
+
+    /** Convert pair to (Java like) case translation, a pattern and statements */
+    /* package */ static Translation toCase(Pair<Translation, List<Translation>> patternAndStatementPair) {
+        final Translation pattern = patternAndStatementPair.getLeft();
+        final Translation statements = patternAndStatementPair.getRight().stream()
+                .map(tr -> tr.lambdaBodyLines(x -> "    " + x))
+                .reduce(Translation::add)
+                .orElseThrow();
+        // second string is indented so will be inline with the ';;'
+        final String template = """
+                %s)
+                %s
+                    ;;
+                """.formatted(pattern.body(), statements.body());
+        return toParagraphTranslation(template)
+                .lambdaBodyLines(x -> "    " + x)
+                .addPreamble(pattern.preamble())
+                .addPreamble(statements.preamble());
     }
 
     // unwind static methods

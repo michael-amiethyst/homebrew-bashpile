@@ -327,42 +327,23 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation switchStatement(BashpileParser.SwitchStatementContext ctx) {
-        Translation expressionTranslation = visitor.visit(ctx.expression(0));
-        Stream<Translation> patterns = ctx.expression().stream().skip(1)
+        final Translation expressionTranslation = visitor.visit(ctx.expression(0));
+        final Stream<Translation> patterns = ctx.expression().stream().skip(1)
                 .map(visitor::visit);
-        Stream<List<Translation>> statementsLists = ctx.indentedStatements().stream()
+        final Stream<List<Translation>> statementsLists = ctx.indentedStatements().stream()
                 .map(BashpileParser.IndentedStatementsContext::statement)
                 .map(x -> x.stream().map(visitor::visit).toList());
-        Translation cases = Streams.zip(patterns, statementsLists, Pair::of)
-                .map(this::toCase)
+        final Translation cases = Streams.zip(patterns, statementsLists, Pair::of)
+                .map(BashTranslationHelper::toCase)
                 .reduce(Translation::add)
                 .orElseThrow();
-        String template = """
+        final String template = """
                 case %s in
                 %sesac
                 """.formatted(expressionTranslation.body(), cases.body());
-        // TODO add comment for line number
-        Translation switchTranslation = toParagraphTranslation(template)
+        final Translation comment = createCommentTranslation("switch statement", lineNumber(ctx));
+        return comment.add(toParagraphTranslation(template))
                 .addPreamble(expressionTranslation.preamble()).addPreamble(cases.preamble());
-        return switchTranslation;
-    }
-
-    // TODO move
-    private Translation toCase(Pair<Translation, List<Translation>> patternAndStatementPair) {
-        Translation pattern = patternAndStatementPair.getLeft();
-        Translation statements = patternAndStatementPair.getRight().stream()
-                .map(tr -> tr.lambdaBodyLines(x -> "    " + x))
-                .reduce(Translation::add)
-                .orElseThrow();
-        String template = """
-                %s)
-                %s
-                    ;;
-                """.formatted(pattern.body(), statements.body());
-        return toParagraphTranslation(template)
-                .lambdaBodyLines(x -> "    " + x)
-                .addPreamble(pattern.preamble())
-                .addPreamble(statements.preamble());
     }
 
     @Override
@@ -563,6 +544,9 @@ public class BashTranslationEngine implements TranslationEngine {
             case STR -> expression = typecastStr(castTo.mainType(), expression, lineNumber, typecastError);
             case LIST -> expression = typecastToList(castTo, expression, typecastError);
             case UNKNOWN -> typecastToUnknown(castTo.mainType(), typecastError);
+            case NOT_FOUND -> {
+                // for specifying a type for a variable assigned by a command, e.g. getopts creates OPTARG
+            }
             default -> throw typecastError;
         }
         expression = expression.type(castTo);

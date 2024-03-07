@@ -14,6 +14,7 @@ import java.util.List;
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO check TODOs in bpr.bps
 /**
  * If we invoke bpc directly it uses the shebang to find the brew installed bpr and the installed jar.
  * However, we want the local bpr and the local jar, so we call `bin/bpr bin/bpc ...`.
@@ -31,7 +32,14 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // ensure bin/bpr is using /n instead of /r/n
         final String translatedFilename = "bin/bpr";
-        ensureLinuxLineEndings(translatedFilename);
+        String runner = "bin/bpr";
+        if (Files.exists(Path.of(runner))) {
+            ensureLinuxLineEndings(translatedFilename);
+        } else {
+            // use installed bpr if current in bin directory does not exist
+            // e.g. from a compilation error
+            runner = "bpr";
+        }
         ensureLinuxLineEndings("bin/bpc");
 
         // weird, intermittent errors running bpr in Java like characters getting skipped
@@ -40,8 +48,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         ExecutionResults results = null;
         while(exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
             final String newFilename = translatedFilename + ".new";
-            final String command = "bin/bpr bin/bpc --outputFile=%s bin/bpr.bps; rm %s; mv %s %s".formatted(
-                    newFilename, translatedFilename, newFilename, translatedFilename);
+            final String command = "%s bin/bpc -o %s bin/bpr.bps; rm %s || true; mv %s %s".formatted(
+                    runner, newFilename, translatedFilename, newFilename, translatedFilename);
             results = runAndJoin(command);
             log.trace("Output text:\n{}", results.stdout());
             exitCode = results.exitCode();
