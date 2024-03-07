@@ -21,11 +21,11 @@ shift $((OPTIND - 1))
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 
-// if $1 is the default blank value then unset the ERR trap and trigger an error with help text from the jar
+// if not enough arguments (commandMode may read from STDIN)
 if not commandMode and unset arguments[1]:
-    #(trap - ERR)
-    #(java -jar "$jarPath")
-    #(exit $?)
+    trap - ERR
+    java -jar "$jarPath"
+    exit $?
 
 // last line of the jar's output is the generated Bash script
 if not commandMode:
@@ -34,11 +34,11 @@ if not commandMode:
         translatedFilename = arguments[1] + ".bpt"
     #(java -jar "$jarPath" --outputFile="$translatedFilename" "$1") creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
-        #(sleep .2)
-        #(shift)
+        sleep .2
+        shift
         print("Start of " + translatedFilename)
         // TODO test chmod and sleep without shell strings
-        #(chmod 755 $translatedFilename)
+        chmod 755 $translatedFilename
         // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
         #(./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
             if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
@@ -49,15 +49,14 @@ else:
     commandString: str
     if isset arguments[1]:
         commandString = arguments[1]
-        // TODO find why this needs a shell string
-        #(shift)
+        shift
     else:
         commandString = #(cat -)
     // print("Creating " + translatedFilename + " with command sting: " + commandString)
     #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" 1>/dev/null) creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
-        #(sleep .2)
-        #(chmod 755 $translatedFilename)
+        sleep .2
+        chmod 755 $translatedFilename
         // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
         #(./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
             if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):

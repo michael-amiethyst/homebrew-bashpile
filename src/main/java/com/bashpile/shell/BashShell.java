@@ -8,8 +8,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -41,8 +45,22 @@ public class BashShell implements Closeable {
      * @throws IOException and {@link BashpileUncheckedException} wrapping
      *  ExecutionException, InterruptedException or TimeoutException.
      */
-    public static @Nonnull ExecutionResults runAndJoin(@Nonnull final String bashString) throws IOException {
-        try(final BashShell shell = runAsync(bashString)) {
+    public static @Nonnull ExecutionResults runAndJoin(@Nonnull final String bashString)
+            throws IOException {
+        return runAndJoin(bashString, null);
+    }
+
+    /**
+     * Executes @{link bashString} like it was at a Bash command prompt in spawned background threads.
+     *
+     * @param bashString We run these command(s) or text.  bashString may be large, like a whole program.
+     * @return The STDIN, STDOUT and exit code wrapped in an ExecutionResults object.
+     * @throws IOException and {@link BashpileUncheckedException} wrapping
+     *  ExecutionException, InterruptedException or TimeoutException.
+     */
+    public static @Nonnull ExecutionResults runAndJoin(@Nonnull final String bashString, @Nullable final String[] args)
+            throws IOException {
+        try(final BashShell shell = runAsync(bashString, args)) {
             return shell.join();
         }
     }
@@ -57,7 +75,9 @@ public class BashShell implements Closeable {
      * @see #sendTerminationSignal()
      * @see #join()
      */
-    public static @Nonnull BashShell runAsync(@Nonnull final String bashString) throws IOException {
+    public static @Nonnull BashShell runAsync(@Nonnull String bashString, @Nullable String[] args)
+            throws IOException {
+        args = Objects.requireNonNullElse(args, new String[0]);
         // info for large runs, trace for small commands
         final String message = "Executing bash text:\n" + bashString;
         if (bashString.length() > 20) {
@@ -75,6 +95,15 @@ public class BashShell implements Closeable {
         commandLine.writeLn("bash --login");
 
         // this is the core of the method
+        final String filename = "bashshell.bash";
+        final Path filepath = Path.of(filename);
+        if (args.length != 0) {
+            // write bashString to script file and execute script with args
+            Files.write(filepath, bashString.getBytes());
+            bashString = "chmod +x %s && ./%s %s; rm -f %s"
+                    .formatted(filename, filename, String.join(" ", args), filename);
+        }
+
         commandLine.writeLn(bashString);
 
         // exit from subshell

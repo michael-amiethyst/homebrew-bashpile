@@ -11,10 +11,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,16 +31,19 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 /** Base class for Bashpile Tests */
 abstract public class BashpileTest {
 
+    /** Full match for Bash comments ('#') */
     protected static final Pattern END_OF_LINE_COMMENT = Pattern.compile("^[^ #]+#.*$");
 
     private static final Logger LOG = LogManager.getLogger(BashpileTest.class);
 
+    /** Asserts the exit code is 0 */
     protected static void assertSuccessfulExitCode(@Nonnull final ExecutionResults executionResults) {
         assertEquals(ExecutionResults.SUCCESS, executionResults.exitCode(),
                 "Found failing (non-0) exit code: %s.  Full text results:\n%s".formatted(
                         executionResults.exitCode(), executionResults.stdout()));
     }
 
+    /** Asserts exit code is NOT zero */
     protected static void assertFailedExitCode(@Nonnull final ExecutionResults executionResults) {
         assertNotEquals(ExecutionResults.SUCCESS, executionResults.exitCode(),
                 "Found successful exit code (0) when expecting errored exit code.  Full text results:\n%s".formatted(
@@ -90,15 +95,17 @@ abstract public class BashpileTest {
         Asserts.assertEmpty(erroredLines.get(), message);
     }
 
-    protected @Nonnull ExecutionResults runText(@Nonnull final String bashText) {
+    /** Runs {@code bashText} in a Bash environment */
+    protected @Nonnull ExecutionResults runText(@Nonnull final String bashText, @Nullable String... args) {
         LOG.debug("Start of:\n{}", bashText);
         try {
-            return execute(BashpileMainHelper.transpileScript(bashText));
+            return execute(BashpileMainHelper.transpileScript(bashText), args);
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }
     }
 
+    /** Runs {@code bashText} in a Bash environment in the background */
     protected @Nonnull BashShell runTextAsync(@Nonnull final String bashText) {
         LOG.debug("Starting background threads for:\n{}", bashText);
         try {
@@ -108,11 +115,12 @@ abstract public class BashpileTest {
         }
     }
 
+    /** Runs {@code file} from src/test/resources/scripts as a script in a Bash environment. */
     protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
         final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
         LOG.debug("Start of {}", filename);
         try {
-            return execute(BashpileMainHelper.transpileNioFile(filename));
+            return execute(BashpileMainHelper.transpileNioFile(filename), null);
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }
@@ -120,7 +128,11 @@ abstract public class BashpileTest {
 
     // helpers
 
-    protected static void assertCorrectIndents(@Nonnull final ExecutionResults executionResults) {
+    /**
+     * Helper to assertCorrectFormatting.
+     * @see #assertCorrectFormatting(ExecutionResults)
+     */
+    private static void assertCorrectIndents(@Nonnull final ExecutionResults executionResults) {
         final AtomicReference<List<Long>> erroredLines = new AtomicReference<>(new ArrayList<>(10));
         final AtomicLong indentLevel = new AtomicLong(0);
         final AtomicLong i = new AtomicLong(1);
@@ -209,33 +221,40 @@ abstract public class BashpileTest {
         Asserts.assertEmpty(erroredLines.get(), message);
     }
 
-    private @Nonnull ExecutionResults execute(@Nonnull final String bashScript) {
+    private @Nonnull ExecutionResults execute(@Nonnull final String bashScript, @Nonnull final String[] args) {
         LOG.debug("In {}", System.getProperty("user.dir"));
         try {
-            return BashShell.runAndJoin(bashScript);
+            return BashShell.runAndJoin(bashScript, args);
         } catch (UserError | AssertionError e) {
             throw e;
         } catch (Throwable e) {
-            throw createExecutionException(e, bashScript);
+            throw createExecutionException(e, bashScript, args);
         }
     }
 
     private @Nonnull BashShell executeAsync(@Nonnull final String bashScript) {
         LOG.debug("In {}", System.getProperty("user.dir"));
         try {
-            return BashShell.runAsync(bashScript);
+            return BashShell.runAsync(bashScript, null);
         } catch (UserError | AssertionError e) {
             throw e;
         } catch (Throwable e) {
-            throw createExecutionException(e, bashScript);
+            throw createExecutionException(e, bashScript, null);
         }
     }
 
-    private static BashpileUncheckedException createExecutionException(Throwable e, String bashScript) {
+    private static BashpileUncheckedException createExecutionException(
+            @Nonnull final Throwable e, @Nullable final String bashScript, @Nullable String[] args) {
         if (e.getMessage() != null && e.getMessage().contains("shellcheck") && e.getMessage().contains("not found")) {
             return new BashpileUncheckedException("Please install shellcheck (e.g. via `brew install shellcheck`)");
         }
-        String msg = bashScript != null ? "\nCouldn't run `%s`".formatted(bashScript) : "\nCouldn't parse input";
+        String msg;
+        if (bashScript != null) {
+            args = Objects.requireNonNullElse(args, new String[0]);
+            msg = "\nCouldn't run Args: (%s), Script: %s".formatted(String.join(" ", args), bashScript);
+        } else {
+            msg = "\nCouldn't parse input";
+        }
         if (e.getMessage() != null) {
             msg += " because of:\n`%s`".formatted(e.getMessage().trim());
         }

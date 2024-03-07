@@ -226,4 +226,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 //        final String command = "echo \"print('Hello World')\" | bin/bpr -c --outputFile command2.bpt ";
 
     // TODO multi-line -c tests (bpc / bpr)
+
+    // TODO ensure bpr without arguments prints the help
 }

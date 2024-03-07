@@ -270,17 +270,18 @@ public class ShellStringBashpileTest extends BashpileTest {
     public void nestedShellLineInIfStatementWorks() {
         String jarPath = "bin/bashpile.jar";
         assertTrue(Files.exists(Path.of(jarPath)));
-        // TODO pass in argument to runText
         final ExecutionResults results = runText("""
             jarPath: str = "%s"
             if "*.jarr" == jarPath:
                 print("ignored")
             else:
                 if 5 == 5:
-                    shift""".formatted(jarPath));
+                    shift
+                    print(arguments[1])""".formatted(jarPath), "argument", "Hello");
         assertCorrectFormatting(results);
-        assertFailedExitCode(results);
+        assertSuccessfulExitCode(results);
         assertTrue(results.stdin().contains("shift"));
-        assertTrue(results.stdout().contains("out of range"));
+        assertTrue(results.stdout().contains("Hello"));
+        assertFalse(Files.exists(Path.of("bashshell.bash")));
     }
 }
