@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,17 +52,25 @@ public class Lexers {
     @SuppressWarnings("unused")
     public static boolean isLinuxCommand(@Nonnull final CharStream charStream) {
         // guard
-        String bashLine = charStream.toString();
-        if (bashLine.isBlank()) {
+        if (charStream.size() == 0) {
             return false;
         }
 
         // body
-        int prevIndex = charStream.index() - 1;
-        boolean startOfLine = prevIndex == -1 || charStream.getText(Interval.of(prevIndex, prevIndex)).equals("\n");
+        boolean startOfLine = true;
+        // scan backwards until at start, the last newline or a character besides space or newline
+        int i = charStream.index() - 1;
+        while(i >= 0 && !Objects.equals(charStream.getText(Interval.of(i, i)), "\n")) {
+            String curr = charStream.getText(Interval.of(i, i));
+            if (!curr.equals(" ")) {
+                startOfLine = false;
+                break;
+            }
+            i--;
+        }
         if (startOfLine) {
-            bashLine = bashLine.substring(charStream.index());
-            return isLinuxCommand(bashLine);
+            // chop off everything before charStream's index
+            return isLinuxCommand(charStream.getText(Interval.of(charStream.index(), charStream.size())));
         } else {
             return false;
         }

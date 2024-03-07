@@ -205,7 +205,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     }
 
     @Test() @Order(140)
-    public void bpcShellLineWorks() {
+    public void javaShellLineWorks() {
         String jarPath = "bin/bashpile.jar";
         assertTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
@@ -217,7 +217,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     }
 
     @Test() @Order(150)
-    public void bpcShellLineWithVariableWorks() {
+    public void javaShellLineWithVariableWorks() {
         String jarPath = "bin/bashpile.jar";
         assertTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
@@ -229,7 +229,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     }
 
     @Test() @Order(160)
-    public void bpcShellLineWithDoubleQuotedVariableWorks() {
+    public void javaShellLineWithDoubleQuotedVariableWorks() {
         String jarPath = "bin/bashpile.jar";
         assertTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
@@ -241,7 +241,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     }
 
     @Test() @Order(170)
-    public void bpcShellLineWithSingleQuotedVariableWorks() {
+    public void javaShellLineWithSingleQuotedVariableWorks() {
         String jarPath = "bin/bashpile.jar";
         assertTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
@@ -250,5 +250,37 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertTrue(results.stdin().contains("java"));
+    }
+
+    @Test() @Order(180)
+    public void shellLineInIfStatementWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            if "*.jarr" != jarPath:
+                ls""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("ls"));
+        assertTrue(results.stdout().contains("pom.xml"));
+    }
+
+    @Test() @Order(190)
+    public void nestedShellLineInIfStatementWorks() {
+        String jarPath = "bin/bashpile.jar";
+        assertTrue(Files.exists(Path.of(jarPath)));
+        // TODO pass in argument to runText
+        final ExecutionResults results = runText("""
+            jarPath: str = "%s"
+            if "*.jarr" == jarPath:
+                print("ignored")
+            else:
+                if 5 == 5:
+                    shift""".formatted(jarPath));
+        assertCorrectFormatting(results);
+        assertFailedExitCode(results);
+        assertTrue(results.stdin().contains("shift"));
+        assertTrue(results.stdout().contains("out of range"));
     }
 }

@@ -46,15 +46,15 @@ if not commandMode:
                 #(./"$translatedFilename" "$@")
 else:
     // command mode
-    command: str
+    commandString: str
     if isset arguments[1]:
-        command = arguments[1]
+        commandString = arguments[1]
         // TODO find why this needs a shell string
         #(shift)
     else:
-        command = #(cat -)
-    // print("Creating " + translatedFilename + " with command sting: " + command)
-    #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$command" 1>/dev/null) creates translatedFilename:
+        commandString = #(cat -)
+    // print("Creating " + translatedFilename + " with command sting: " + commandString)
+    #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" 1>/dev/null) creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
         #(sleep .2)
         #(chmod 755 $translatedFilename)
