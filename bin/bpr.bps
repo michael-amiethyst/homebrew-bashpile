@@ -2,25 +2,33 @@
 
 /**
  * Deployed with integration tests.
- * Manually deploy with `bin/bpr bin/bpc --outputFile=bin/bpr bin/bpr.bps`
+ * Manually deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
  */
 
-// getopts
-// TODO use getopt for long options
-//opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
-opts: str = "co:"
+// getopt
+opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
+eval set -- "$opts"
 translatedFilename: str = "command.bpt"
 commandMode: bool = false
-while #(getopts ${opts} option):
-    switch option:
-        case "c":
+while true:
+    switch arguments[1]:
+        case "-c" or "--command":
             commandMode = true
-        case "o":
-            translatedFilename = OPTARG: str
-shift $((OPTIND - 1))
+            shift
+        case "-o" or "--outputFile":
+            translatedFilename = arguments[2]
+            shift 2
+        case "--":
+            shift
+            break
+        case "*":
+            break
 
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
+// TODO make more robust
+//if not #(#(ls "$jarPath" 1>/dev/null 2>/dev/null)):
+//    jarPath= "../../../bin/bashpile.jar"
 
 // if not enough arguments (commandMode may read from STDIN)
 if not commandMode and unset arguments[1]:
@@ -33,6 +41,10 @@ if not commandMode:
     if translatedFilename == "command.bpt":
         // TODO find why this doesn't render well
         translatedFilename = arguments[1] + ".bpt"
+        // TODO add if file exists exit
+        if #((ls $translatedFilename 1>/dev/null)):
+            print("Will not overwrite " + translatedFilename)
+            exit 1
     #(java -jar "$jarPath" --outputFile="$translatedFilename" "$1") creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
         sleep .2

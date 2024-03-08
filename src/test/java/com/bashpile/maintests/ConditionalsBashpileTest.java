@@ -162,6 +162,8 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("true\n", results.stdout());
     }
 
+    // TODO test if not command
+
     @Test
     @Order(100)
     public void ifCommandCanFail() {

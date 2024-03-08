@@ -78,11 +78,12 @@ public class BashpileMain implements Callable<Integer> {
             LOG.debug("Input file is: {}", filename);
             transpiledFilename = Path.of(filename + ".bpt");
         }
-        if (Files.exists(transpiledFilename.toAbsolutePath())) {
-            System.out.println(transpiledFilename + " already exists.  Will not overwrite.");
+        // will overwrite if output is explicitly given
+        if (Files.exists(transpiledFilename.toAbsolutePath()) && outputFile == null) {
+            System.out.println(transpiledFilename + " already exists.  Will not overwrite without --outputFile option");
             return 2;
         } else {
-            LOG.info("In directory {} and file {} does not exist -- will create", System.getProperty("user.dir"), transpiledFilename);
+            LOG.info("In directory {}.  Will create or overwrite file {}", System.getProperty("user.dir"), transpiledFilename);
         }
         LOG.info("Transpiling to {}", transpiledFilename);
         String translation = inputFile != null ? BashpileMainHelper.transpileNioFile(inputFile)

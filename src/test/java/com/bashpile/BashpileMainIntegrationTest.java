@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.*;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,14 +33,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // ensure bin/bpr is using /n instead of /r/n
         final String translatedFilename = "bin/bpr";
-        String runner = "bin/bpr";
-        if (Files.exists(Path.of(runner))) {
-            ensureLinuxLineEndings(translatedFilename);
-        } else {
-            // use installed bpr if current in bin directory does not exist
-            // e.g. from a compilation error
-            runner = "bpr";
-        }
         ensureLinuxLineEndings("bin/bpc");
 
         // weird, intermittent errors running bpr in Java like characters getting skipped
@@ -47,9 +40,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         int loops = 0;
         ExecutionResults results = null;
         while(exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
-            final String newFilename = translatedFilename + ".new";
-            final String command = "%s bin/bpc -o %s bin/bpr.bps; rm %s || true; mv %s %s".formatted(
-                    runner, newFilename, translatedFilename, newFilename, translatedFilename);
+            // TODO get bpc and bpr to use same options format
+            final String command = "bin/bpc --outputFile=bin/bpr bin/bpr.bps";
             results = runAndJoin(command);
             log.trace("Output text:\n{}", results.stdout());
             exitCode = results.exitCode();
@@ -57,14 +49,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         assertSuccessfulExitCode(results);
         bprDeployed = true;
-    }
-
-    private static void ensureLinuxLineEndings(String translatedFilename) throws IOException {
-        // from https://superuser.com/a/1066353/1850749
-        final String awkCommand = """
-                awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' %s""".formatted(translatedFilename);
-        ExecutionResults results1 = runAndJoin(awkCommand);
-        assertSuccessfulExitCode(results1);
     }
 
     @Test @Timeout(10) @Order(10)
@@ -106,6 +90,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         final String command = "bin/bpr bin/bpc src/test/resources/testrigData";
         final String translatedFilename = "src/test/resources/testrigData.bpt";
+        Files.deleteIfExists(Path.of(translatedFilename));
         final ExecutionResults results = runAndJoin(command);
         try {
             log.debug("Output text:\n{}", results.stdout());
@@ -132,12 +117,12 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     }
 
     @Test @Timeout(30) @Order(40)
-    public void outputFileFlagWithDoubleRunFails() throws IOException {
-        log.info("In noSubCommandWithNoExtensionTranspiles");
+    public void outputFileFlagWithDoubleRunWorks() throws IOException {
+        log.info("In outputFileFlagWithDoubleRunFails");
         Assumptions.assumeTrue(bprDeployed);
 
         final String translatedFilename = "src/test/resources/testrigData.example.bps";
-        final String command = "bin/bpr bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
+        final String command = "bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
         ExecutionResults results = runAndJoin(command);
         try {
             log.debug("Output text:\n{}", results.stdout());
@@ -148,7 +133,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             // 2nd run to verify overwrites OK
             results = runAndJoin(command);
-            assertFailedExitCode(results);
+            assertSuccessfulExitCode(results);
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -159,20 +144,14 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In bprCreateErrorMessagesPropagate");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String bashpileFilename = "src/test/resources/scripts/bprShebang.bps";
-        final Path generatedFile = Path.of(bashpileFilename + ".bpt");
-        Files.writeString(generatedFile, "Captain James Kirk");
-        try {
-            final String command = "bin/bpr " + bashpileFilename;
-            final ExecutionResults results = runAndJoin(command);
-            log.debug("Output text:\n{}", results.stdout());
+        final String bashpileFilename = "src/test/resources/scripts/overwriteCheck.bps";
+        final Path defaultOutputFile = Path.of(bashpileFilename + ".bpt");
+        assertTrue(Files.exists(defaultOutputFile));
+        final String command = "bin/bpr " + bashpileFilename;
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
 
-            assertFailedExitCode(results);
-            final List<String> lines = results.stdoutLines();
-            assertTrue(lines.size() >= 2);
-        } finally {
-            Files.deleteIfExists(generatedFile);
-        }
+        assertFailedExitCode(results);
     }
 
     @Test @Timeout(20) @Order(50)
@@ -227,4 +206,28 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     // TODO multi-line -c tests (bpc / bpr)
 
     // TODO ensure bpr without arguments prints the help
+
+    // helpers
+
+    private static void ensureLinuxLineEndings(String translatedFilename) throws IOException {
+        // from https://superuser.com/a/1066353/1850749
+        final String awkCommand = """
+                awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' %s""".formatted(translatedFilename);
+        ExecutionResults results1 = runAndJoin(awkCommand);
+        assertSuccessfulExitCode(results1);
+    }
+
+    /** Tries to get bin/bpr, fails back to installed bpr command */
+    @Nonnull
+    private static String getBashpileRunner() throws IOException {
+        String runner = "bin/bpr";
+        if (Files.exists(Path.of(runner))) {
+            ensureLinuxLineEndings("bin/bpr");
+        } else {
+            // use installed bpr if current in bin directory does not exist
+            // e.g. from a compilation error
+            runner = "bpr";
+        }
+        return runner;
+    }
 }

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+#
+# Generated from src/test/resources/scripts/overwriteCheck.bps on 2024-03-08T15:23:45.472581444-08:00[America/Los_Angeles] (timestamp 1709940225472)
+#
+# strict mode header
+set -eEuo pipefail -o posix
+declare -x IFS=$'\n\t'
+declare -i s
+trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
+# expression statement, Bashpile line 2
+export filename=src/test/resources/testdata.txt
+# assign statement, Bashpile line 3
+## unnest for $(echo $filename)
+export __bp_subshellReturn0
+__bp_subshellReturn0=$(echo $filename)
+__bp_exitCode0=$?
+if [ "$__bp_exitCode0" -ne 0 ]; then exit "$__bp_exitCode0"; fi
+## assign statement body
+declare contents
+contents=$(cat "${__bp_subshellReturn0}")
+# print statement, Bashpile line 4
+printf "${contents}\n"
