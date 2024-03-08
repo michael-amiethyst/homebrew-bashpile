@@ -162,7 +162,18 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("true\n", results.stdout());
     }
 
-    // TODO test if not command
+    @Test
+    @Order(91)
+    public void ifNotCommandWorks() {
+        final ExecutionResults results = runText("""
+                if not #((which ls 1>/dev/null)):
+                    print("false")
+                else:
+                    print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
 
     @Test
     @Order(100)
@@ -700,4 +711,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("third path\n", results.stdout());
     }
+
+    // TODO if fileExists, regularFileExists, directoryExists (Bash -e, -f, -d)
 }
