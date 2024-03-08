@@ -7,15 +7,16 @@
 
 // getopts
 // TODO use getopt for long options
-opts: str = "o:c"
+//opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
+opts: str = "co:"
 translatedFilename: str = "command.bpt"
 commandMode: bool = false
 while #(getopts ${opts} option):
     switch option:
-        case "o":
-            translatedFilename = OPTARG: str
         case "c":
             commandMode = true
+        case "o":
+            translatedFilename = OPTARG: str
 shift $((OPTIND - 1))
 
 // get script directory and jar location

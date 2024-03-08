@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Stack;
 import java.util.function.Function;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -16,9 +15,6 @@ public class Strings extends StringUtils {
 
     /** Finds starting/ending parenthesis */
     private static final Pattern PARENTHESIS = Pattern.compile("^\\(.*\\)$");
-
-    /** A pattern of starting and ending double quotes */
-    private static final Pattern STRING_QUOTES = Pattern.compile("^([\"'])(.*)([\"'])$");
 
     /**
      * Checks if str is wrapped in parentheses like "(expr)" but not "(expr)(expr)".
@@ -33,13 +29,15 @@ public class Strings extends StringUtils {
     }
 
     /**
-     * Remove double quotes from the start and end of the string, if present.
+     * Remove quotes from the start and end of the string, if present.
      *
      * @param str The string to unquote.
      * @return The string stripped of leading and trailing quotes, if they match.
      */
     public static @Nonnull String unquote(@Nonnull final String str) {
-        return removeEndGroups(STRING_QUOTES, str);
+        String toRemove = str.startsWith("\"") ? "\"" : "'";
+        String stripped = StringUtils.removeStart(str, toRemove);
+        return StringUtils.removeEnd(stripped, toRemove);
     }
 
     /**
@@ -136,13 +134,6 @@ public class Strings extends StringUtils {
     }
 
     // helpers
-
-    private static @Nonnull String removeEndGroups(@Nonnull final Pattern pattern, @Nonnull final String str) {
-        final Matcher matcher = pattern.matcher(str);
-        return matcher.find()
-                ? matcher.replaceFirst(Matcher.quoteReplacement(matcher.group(2)))
-                : str;
-    }
 
     /** From <a href="https://www.javatpoint.com/balanced-parentheses-in-java">Java Tutorials Point</a> */
     private static boolean matchingParenthesis(@Nonnull final String str) {

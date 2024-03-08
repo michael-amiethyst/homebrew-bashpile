@@ -642,4 +642,23 @@ class StatementBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("Positive\n", results.stdout());
     }
+
+    @Test @Order(270)
+    public void catchAllSwitchWorks() {
+        ExecutionResults results = runText("""
+                i: int = 3
+                switch i:
+                    case -1:
+                        print('Neg')
+                    case 0:
+                        print('Zero')
+                    case 1 or 2:
+                        print('Positive')
+                    case "*":
+                        print('Other')
+                """);
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("Other\n", results.stdout());
+    }
 }

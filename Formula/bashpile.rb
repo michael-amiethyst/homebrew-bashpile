@@ -11,6 +11,7 @@ class Bashpile < Formula
   depends_on "bc"
   depends_on "openjdk"
   depends_on "shellcheck"
+  # TODO add gnu-getopt for OSX or FreeBSD only
 
   def install
     system "mvn", "clean", "verify", "-Dmaven.test.skip=true"

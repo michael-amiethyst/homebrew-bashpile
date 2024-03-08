@@ -331,7 +331,15 @@ public class BashTranslationEngine implements TranslationEngine {
         final Stream<Translation> patterns = ctx.expression().stream().skip(1)
                 .map(visitor::visit)
                 // change "or" to single pipe for Bash case syntax
-                .map(x -> x.lambdaBody(str -> str.replace("||", "|")));
+                .map(x -> x.lambdaBody(str -> str.replace("||", "|")))
+                .map(tr -> {
+                    // unquote a catchAll
+                    // TODO replace with regex when it's implemented
+                    if (tr.body().equals("\"*\"")) {
+                        tr = tr.unquoteBody();
+                    }
+                    return tr;
+                });
         final Stream<List<Translation>> statementsLists = ctx.indentedStatements().stream()
                 .map(BashpileParser.IndentedStatementsContext::statement)
                 .map(x -> x.stream().map(visitor::visit).toList());
