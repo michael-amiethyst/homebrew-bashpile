@@ -154,7 +154,7 @@ abstract public class BashpileTest {
             final boolean isStartOfFunctionBlock =
                     firstToken.matches("\\w(?:\\w|\\d)+") && "{".equals(lastToken);
             final boolean isNestedIf = line.contains("if") && !line.contains("elif") && lastToken.equals("then");
-            final boolean casePattern = tokens.length == 1 && inCase.get() && firstToken.endsWith(")");
+            final boolean casePattern = inCase.get() && lastToken.endsWith(")");
             if (List.of("if", "while", "case").contains(firstToken)
                     || isStartOfFunctionBlock || isNestedIf || casePattern) {
                 if (firstToken.equals("case")) {

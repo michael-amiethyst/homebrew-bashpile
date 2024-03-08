@@ -329,7 +329,9 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation switchStatement(BashpileParser.SwitchStatementContext ctx) {
         final Translation expressionTranslation = visitor.visit(ctx.expression(0));
         final Stream<Translation> patterns = ctx.expression().stream().skip(1)
-                .map(visitor::visit);
+                .map(visitor::visit)
+                // change "or" to single pipe for Bash case syntax
+                .map(x -> x.lambdaBody(str -> str.replace("||", "|")));
         final Stream<List<Translation>> statementsLists = ctx.indentedStatements().stream()
                 .map(BashpileParser.IndentedStatementsContext::statement)
                 .map(x -> x.stream().map(visitor::visit).toList());

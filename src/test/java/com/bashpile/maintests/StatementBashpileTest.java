@@ -626,5 +626,20 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("Positive\n", results.stdout());
     }
 
-    // TODO have 'or' in the case statements
+    @Test @Order(260)
+    public void orSwitchWorks() {
+        ExecutionResults results = runText("""
+                i: int = 2
+                switch i:
+                    case -1:
+                        print('Neg')
+                    case 0:
+                        print('Zero')
+                    case 1 or 2:
+                        print('Positive')
+                """);
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("Positive\n", results.stdout());
+    }
 }
