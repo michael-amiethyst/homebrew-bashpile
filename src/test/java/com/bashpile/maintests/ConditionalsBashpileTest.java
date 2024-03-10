@@ -151,6 +151,18 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("false\n", results.stdout());
     }
 
+    @Test @Order(81)
+    public void ifFileExistsWorks() {
+        final ExecutionResults results = runText("""
+                if fileExists "pom.xml":
+                    print("true")""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    // TODO if regularFileExists, directoryExists (Bash -f, -d)
+
     @Test
     @Order(90)
     public void ifCommandWorks() {
@@ -711,6 +723,4 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("third path\n", results.stdout());
     }
-
-    // TODO if fileExists, regularFileExists, directoryExists (Bash -e, -f, -d)
 }

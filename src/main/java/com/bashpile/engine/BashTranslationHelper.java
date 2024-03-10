@@ -247,10 +247,12 @@ public class BashTranslationHelper {
     /** Concatenates inputs into stream */
     /* package */ static @Nonnull Stream<ParserRuleContext> streamContexts(
             @Nonnull final List<BashpileParser.StatementContext> statements,
-            @Nonnull final BashpileParser.ReturnPsudoStatementContext returnPsudoStatementContext) {
+            @Nullable final BashpileParser.ReturnPsudoStatementContext returnPsudoStatementContext) {
         // map of x to x needed for upcasting to parent type
         final Stream<ParserRuleContext> statementStream = statements.stream().map(x -> x);
-        return Stream.concat(statementStream, Stream.of(returnPsudoStatementContext));
+        return returnPsudoStatementContext != null
+                ? Stream.concat(statementStream, Stream.of(returnPsudoStatementContext))
+                : statementStream;
     }
 
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */

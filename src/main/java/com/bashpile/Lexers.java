@@ -98,8 +98,8 @@ public class Lexers {
             match = ASSIGN_PATTERN.matcher(bashLine);
         }
 
-        // split on whitespace
-        final String command = bashLine.split("[ \n]")[0];
+        // split on whitespace or Bash command separator
+        final String command = bashLine.split("[ \n;]")[0];
 
         if (COMMAND_TO_VALIDITY_CACHE.containsKey(command)) {
             return COMMAND_TO_VALIDITY_CACHE.get(command);

@@ -27,7 +27,7 @@ while true:
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 // TODO make more robust
-//if not #(#(ls "$jarPath" 1>/dev/null 2>/dev/null)):
+// if not #((ls "$jarPath" 1>/dev/null)):
 //    jarPath= "../../../bin/bashpile.jar"
 
 // if not enough arguments (commandMode may read from STDIN)
@@ -41,18 +41,15 @@ if not commandMode:
     if translatedFilename == "command.bpt":
         // TODO find why this doesn't render well
         translatedFilename = arguments[1] + ".bpt"
-        // TODO add if file exists exit
-        if #((ls $translatedFilename 1>/dev/null)):
+        if fileExists translatedFilename:
             print("Will not overwrite " + translatedFilename)
             exit 1
     #(java -jar "$jarPath" --outputFile="$translatedFilename" "$1") creates translatedFilename:
-        // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
-        sleep .2
         shift
         print("Start of " + translatedFilename)
-        // TODO test chmod and sleep without shell strings
         chmod 755 $translatedFilename
         // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
+        // TODO figure out how to move this (with arguments / $@) into a function to fix code duplication
         #(./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
             if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
                 // TODO this should not need a shell string
@@ -65,7 +62,6 @@ else:
         shift
     else:
         commandString = #(cat -)
-    // print("Creating " + translatedFilename + " with command sting: " + commandString)
     #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" 1>/dev/null) creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
         sleep .2

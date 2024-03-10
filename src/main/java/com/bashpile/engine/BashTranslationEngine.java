@@ -51,6 +51,7 @@ public class BashTranslationEngine implements TranslationEngine {
             "isset", "-n",
             "isEmpty", "-z",
             "isNotEmpty", "-n",
+            "fileExists", "-e",
             "===", "==",
             "!==", "!=");
 
@@ -218,7 +219,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // register function param types and return type
         final List<Type> typeList = ctx.paramaters().typedId()
                 .stream().map(SimpleType::valueOf).map(Type::of).collect(Collectors.toList());
-        final Type retType = Type.valueOf(ctx.type());
+        final Type retType = ctx.type() != null ? Type.valueOf(ctx.type()) : NA_TYPE;
         typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
 
         try (var ignored2 = typeStack.pushFrame()) {
@@ -571,7 +572,6 @@ public class BashTranslationEngine implements TranslationEngine {
         // check arg types
 
         // get functionName and the argumentTranslations
-        final String functionName = ctx.Id().getText();
         final boolean hasArgs = ctx.argumentList() != null;
         final List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
@@ -582,9 +582,9 @@ public class BashTranslationEngine implements TranslationEngine {
                 : List.of();
 
         // check types
-        final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
+        final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(id);
         final List<Type> actualTypes = argumentTranslationsList.stream().map(Translation::type).toList();
-        Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, functionName, lineNumber(ctx));
+        Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, id, lineNumber(ctx));
 
         // extract argText and preambles from argumentTranslations
         // empty list or ' arg1Text arg2Text etc.'
@@ -601,13 +601,16 @@ public class BashTranslationEngine implements TranslationEngine {
         }
 
         // lookup return type of this function
-        final Type retType = typeStack.getFunctionTypes(id).returnType();
+        final Type retType = expectedTypes.returnType();
 
-        // suppress output if we are a top-level statement
-        // this covers the case of calling a function without using the return
         Translation ret = new Translation(
                 argumentTranslations.preamble(), id + argumentTranslations.body(), retType, List.of(NORMAL));
-        ret = ret.lambdaBody("%s >/dev/null"::formatted).metadata(NEEDS_INLINING_OFTEN).mergePreamble();
+        // suppress output if we are printing to output as part of a work-around to return a string
+        // this covers the case of calling a function without using the return
+        if (retType.equals(STR_TYPE)) {
+            ret = ret.lambdaBody("%s >/dev/null"::formatted);
+        }
+        ret = ret.metadata(NEEDS_INLINING_OFTEN).mergePreamble();
         return ret;
     }
 

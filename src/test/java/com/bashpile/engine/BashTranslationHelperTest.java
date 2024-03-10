@@ -28,4 +28,6 @@ public class BashTranslationHelperTest {
         tr = tr.inlineAsNeeded(BashTranslationHelper::unwindAll);
         assertFalse(tr.body().contains("})"), "Bad parenthesis found");
     }
+
+    // TODO test unwind nested '$(bc <<< "$(circleArea "${r1}") + $(circleArea "${r2}")")`, INLINE
 }

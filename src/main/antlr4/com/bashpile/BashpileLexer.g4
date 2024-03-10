@@ -64,6 +64,7 @@ Isset   : 'isset';
 Unset   : 'unset';
 Empty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';
+FileExists: 'fileExists';
 LessThan: '<';
 LessThanOrEquals: '<=';
 MoreThan: '>';
