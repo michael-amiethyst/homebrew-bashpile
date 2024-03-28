@@ -485,7 +485,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
                 .map(BashTranslationHelper::unwindNested)
                 .map(tr -> {
-                    if (tr.isBasicType() && !tr.body().contains("$@")) {
+                    if (tr.isBasicType() && !tr.body().contains("$@") && !tr.body().contains("[@]")) {
                         return tr.body("""
                                 printf "%s\\n"
                                 """.formatted(tr.unquoteBody().body()));
@@ -497,7 +497,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         // list.  Change the Internal Field Separator to a space just for this subshell (parens)
                         return tr.body("""
                                 (declare -x IFS=$' '; printf "%%s\\n" "%s")
-                                """.formatted(tr.unquoteBody().body()));
+                                """.formatted(tr.toStringArray().unquoteBody().body()));
                     }
                 })
                 .reduce(Translation::add)
@@ -811,7 +811,12 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type type = typeStack.getVariableType(Objects.requireNonNull(variableName));
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
         Integer index = ContextUtils.getListAccessorIndex(ctx);
-        return new Translation("${%s[%d]}".formatted(variableName, index), type.asContentsType(), NORMAL);
+        if (index != null) {
+            return new Translation("${%s[%d]}".formatted(variableName, index), type.asContentsType(), NORMAL);
+        } else {
+            return new Translation("${%s[@]}".formatted(variableName), type.asContentsType(), NORMAL);
+        }
+
     }
 
     // expression helper rules

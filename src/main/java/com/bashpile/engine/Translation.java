@@ -283,10 +283,7 @@ public class Translation {
      */
     public @Nonnull Translation toStringArray() {
         Translation ret = lambdaBody(x -> x.replace("$@", "$*"));
-        if (type.isList()) {
-            return ret.lambdaBody(x -> x.replace("[@]", "[*]"));
-        } // else
-        return ret;
+        return ret.lambdaBody(x -> x.replace("[@]", "[*]"));
     }
 
     /**

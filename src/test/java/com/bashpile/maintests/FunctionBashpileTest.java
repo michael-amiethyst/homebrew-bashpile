@@ -328,11 +328,12 @@ class FunctionBashpileTest extends BashpileTest {
                 function circleArea(args: list<str>, r: float) ["example tag"] -> float:
                     print(args[0])
                     print(args)
+                    print(args[all])
                     return 3.14 * r * r
                 print(circleArea(arguments[all], 1))""", "Hello World");
         assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
-        assertEquals("Hello\nHello World\n3.14\n", results.stdout());
+        assertEquals("Hello\nHello World\nHello World\n3.14\n", results.stdout());
     }
 
 }
