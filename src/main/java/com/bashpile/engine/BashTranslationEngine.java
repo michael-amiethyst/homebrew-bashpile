@@ -239,13 +239,21 @@ public class BashTranslationEngine implements TranslationEngine {
                 // local var1=$1; local var2=$2; etc
                 final String paramDeclarations = ctx.paramaters().typedId().stream()
                         .map(BashpileParser.TypedIdContext::Id)
-                        .map(visitor::visit)
+                        .map(TerminalNode::getText)
                         .map(x -> {
-                            String opts = "-r";
-                            if (x.type().equals(INT_TYPE)) {
-                                opts += "i";
+                            Type type = typeStack.getVariableType(x);
+
+                            // special handling for lists with 'read -a'
+                            if (type.isList()) {
+                                return "declare -x IFS=$' '; read -r -a %s <<< \"$%s\"; declare -x IFS=$'\\n\\t';".formatted(x, i.getAndIncrement());
                             }
-                            return "declare %s %s=$%s;".formatted(opts, x.body(), i.getAndIncrement());
+
+                            // normal processing
+                            String opts = "-r"; // read only
+                            if (type.equals(INT_TYPE)) {
+                                opts += "i"; // Bash integer
+                            }
+                            return "declare %s %s=$%s;".formatted(opts, x, i.getAndIncrement());
                         })
                         .collect(Collectors.joining(" "));
                 namedParams = TAB + paramDeclarations + "\n";

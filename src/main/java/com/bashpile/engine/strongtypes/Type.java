@@ -37,6 +37,7 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
     /** INT or FLOAT */
     public static final Type NUMBER_TYPE = Type.of(SimpleType.NUMBER);
 
+    // TODO change to isStr() instead of .equals(STR_TYPE) to match isList() call
     /** Strings */
     public static final Type STR_TYPE = Type.of(SimpleType.STR);
 

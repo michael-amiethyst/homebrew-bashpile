@@ -321,4 +321,18 @@ class FunctionBashpileTest extends BashpileTest {
         assertEquals("test\n3.14\n", results.stdout());
     }
 
+    @Test
+    @Order(210)
+    public void functionDeclWithArgumentsAllAtStartExpressionWorks() {
+        final ExecutionResults results = runText("""
+                function circleArea(args: list<str>, r: float) ["example tag"] -> float:
+                    print(args[0])
+                    print(args)
+                    return 3.14 * r * r
+                print(circleArea(arguments[all], 1))""", "Hello World");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello\nHello World\n3.14\n", results.stdout());
+    }
+
 }
