@@ -32,7 +32,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In bprDeploysSuccessfully");
 
         // ensure bin/bpr is using /n instead of /r/n
-        final String translatedFilename = "bin/bpr";
         ensureLinuxLineEndings("bin/bpc");
 
         // weird, intermittent errors running bpr in Java like characters getting skipped
@@ -40,8 +39,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         int loops = 0;
         ExecutionResults results = null;
         while(exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
-            // TODO get bpc and bpr to use same options format
-            final String command = "bin/bpc --outputFile=bin/bpr bin/bpr.bps";
+            final String command = "bin/bpc --outputFile bin/bpr bin/bpr.bps";
             results = runAndJoin(command);
             log.trace("Output text:\n{}", results.stdout());
             exitCode = results.exitCode();
@@ -215,19 +213,5 @@ public class BashpileMainIntegrationTest extends BashpileTest {
                 awk 'BEGIN{RS="\\1";ORS="";getline;gsub("\\r","");print>ARGV[1]}' %s""".formatted(translatedFilename);
         ExecutionResults results1 = runAndJoin(awkCommand);
         assertSuccessfulExitCode(results1);
-    }
-
-    /** Tries to get bin/bpr, fails back to installed bpr command */
-    @Nonnull
-    private static String getBashpileRunner() throws IOException {
-        String runner = "bin/bpr";
-        if (Files.exists(Path.of(runner))) {
-            ensureLinuxLineEndings("bin/bpr");
-        } else {
-            // use installed bpr if current in bin directory does not exist
-            // e.g. from a compilation error
-            runner = "bpr";
-        }
-        return runner;
     }
 }

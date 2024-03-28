@@ -161,8 +161,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("true\n", results.stdout());
     }
 
-    // TODO if regularFileExists, directoryExists (Bash -f, -d)
-
     @Test
     @Order(90)
     public void ifCommandWorks() {

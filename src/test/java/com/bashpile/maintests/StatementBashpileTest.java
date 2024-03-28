@@ -147,7 +147,7 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("false\n", results.stdout());
     }
 
-    // TODO implement increment and decrement pre and post operators
+    // TODO uncomment test after implementation of increment and decrement pre and post operators
 //    @Test @Order(62)
 //    public void reassignWithIncrementWorks() {
 //        final ExecutionResults results = runText("""

@@ -335,7 +335,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(x -> x.lambdaBody(str -> str.replace("||", "|")))
                 .map(tr -> {
                     // unquote a catchAll
-                    // TODO replace with regex when it's implemented
+                    // TODO replace with Bashpile regex expression when it's implemented
                     if (tr.body().equals("\"*\"")) {
                         tr = tr.unquoteBody();
                     }
