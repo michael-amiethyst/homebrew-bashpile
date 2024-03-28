@@ -138,6 +138,9 @@ public class Asserts {
 
         // check if the argument lengths match
         boolean typesCoerce = actualTypes.size() == expectedTypes.size();
+        if (!typesCoerce) {
+            throw new TypeError("Mismatch of type list lengths for " + functionName, contextStartLine);
+        }
 
         // lazily iterate over both lists looking for a non-match
         int i = 0;
@@ -149,7 +152,9 @@ public class Asserts {
         }
 
         if (!typesCoerce) {
-            i--; // cancel out last i++
+            if (i != 0) {
+                i--; // cancel out last i++
+            }
             final Type expectedType = expectedTypes.get(i);
             final Type actualType = actualTypes.get(i);
             String message;

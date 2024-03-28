@@ -463,8 +463,10 @@ public class BashTranslationHelper {
             }
             case INT -> {
                 // no automatic rounding for things like `"2.5":int`
+                // for argument variables (e.g. $1) take the user's word for it, we can't check here
                 expression = expression.unquoteBody();
-                final SimpleType foundType = SimpleType.parseNumberString(expression.body());
+                final SimpleType foundType =
+                        !expression.body().startsWith("$") ? SimpleType.parseNumberString(expression.body()) : INT;
                 if (!INT.equals(foundType)) {
                     throw new TypeError("""
                         Could not cast FLOAT value in STR to INT.  Try casting to float first.  Text was %s."""
@@ -473,13 +475,15 @@ public class BashTranslationHelper {
             }
             case FLOAT -> {
                 expression = expression.unquoteBody();
-                // verify the body parses as a valid number
-                try {
-                    SimpleType.parseNumberString(expression.body());
-                } catch (NumberFormatException e) {
-                    throw new TypeError("""
-                        Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
-                            .formatted(expression.body()), lineNumber);
+                // verify the body parses as a valid number for non-variables
+                if (!expression.body().startsWith("$")) {
+                    try {
+                        SimpleType.parseNumberString(expression.body());
+                    } catch (NumberFormatException e) {
+                            throw new TypeError("""
+                                    Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
+                                    .formatted(expression.body()), lineNumber);
+                    }
                 }
             }
             case STR -> {}

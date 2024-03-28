@@ -43,7 +43,10 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
     // DO NOT USE LIST_TYPE, use isList() instead
 
     public static @Nonnull Type of(@Nonnull SimpleType simpleType) {
-        return new Type(simpleType, SimpleType.EMPTY);
+        if (simpleType.isBasic()) {
+            return new Type(simpleType, SimpleType.EMPTY);
+        } // else
+        return new Type(simpleType, SimpleType.UNKNOWN);
     }
 
     /** Gets the Type with mainType and contentsType info */

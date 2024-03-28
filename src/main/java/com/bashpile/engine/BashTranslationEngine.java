@@ -595,7 +595,8 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation argumentTranslations = UNKNOWN_TRANSLATION;
         if (hasArgs) {
             argumentTranslations = toStringTranslation(" ").add(argumentTranslationsList.stream()
-                    .map(Translation::quoteBody)
+                    // only add quotes if needed
+                    .map(tr -> !(tr.body().startsWith("\"") && tr.body().endsWith("\"")) ? tr.quoteBody() : tr)
                     .reduce((left, right) -> new Translation(
                             left.preamble() + right.preamble(),
                             left.body() + " " + right.body(),

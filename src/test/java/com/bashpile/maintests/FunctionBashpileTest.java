@@ -251,7 +251,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(150)
     public void functionDeclTypesWork() {
         final ExecutionResults results = runText("""
-                function circleArea(r: float) ["need to remove the quotes"] -> float:
+                function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
@@ -267,7 +267,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(160)
     public void badFunctionDeclTypesThrow() {
         assertThrows(TypeError.class, () -> runText("""
-                function circleArea(r: float) ["need to remove the quotes"] -> float:
+                function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea("Hello World"))"""));
@@ -277,7 +277,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(170)
     public void functionDeclTypesCalcExpressionsWork() {
         final ExecutionResults results = runText("""
-                function circleArea(r: float) ["need to remove the quotes"] -> float:
+                function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(.5 + .5))""");
         assertCorrectFormatting(results);
@@ -289,7 +289,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(180)
     public void functionDeclTypesBadCalcExpressionThrows() {
         assertThrows(UserError.class, () -> runText("""
-                function circleArea(r: float) ["need to remove the quotes"] -> float:
+                function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(.5 + x))"""));
     }
@@ -298,11 +298,27 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(190)
     public void functionDeclTypesBadCalcExpressionNestedThrows() {
         assertThrows(TypeError.class, () -> runText("""
-                function circleArea(r: int) ["need to remove the quotes"] -> float:
+                function circleArea(r: int) ["example tag"] -> float:
                     function circleAreaHelper(r: float) -> float:
                         return 3.14 * r * r
                     r = circleAreaHelper(r)
                     return r
                 print(circleArea(.5 + 0.5))"""));
     }
+
+    @Test
+    @Order(200)
+    public void functionDeclWithArgumentsAllExpressionWorks() {
+        final ExecutionResults results = runText("""
+                function circleArea(log: str, args: list<str>) ["example tag"] -> float:
+                    shift
+                    r: int = arguments[1]: int
+                    print(log)
+                    return 3.14 * r * r
+                print(circleArea("test", arguments[all]))""", "1");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("test\n3.14\n", results.stdout());
+    }
+
 }
