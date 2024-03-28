@@ -221,7 +221,7 @@ abstract public class BashpileTest {
         Asserts.assertEmpty(erroredLines.get(), message);
     }
 
-    private @Nonnull ExecutionResults execute(@Nonnull final String bashScript, @Nonnull final String[] args) {
+    private @Nonnull ExecutionResults execute(@Nonnull final String bashScript, @Nullable final String[] args) {
         LOG.debug("In {}", System.getProperty("user.dir"));
         try {
             return BashShell.runAndJoin(bashScript, args);

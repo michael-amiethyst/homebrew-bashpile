@@ -269,10 +269,24 @@ public class Translation {
      * @return this
      */
     public @Nonnull Translation toTrueArray() {
+        Translation ret = lambdaBody(x -> x.replace("$*", "$@"));
         if (type.isList()) {
-            return lambdaBody(x -> x.replace("[*]", "[@]"));
+            return ret.lambdaBody(x -> x.replace("[*]", "[@]"));
         } // else
-        return this;
+        return ret;
+    }
+
+    /**
+     * Change index from one string with all data to a true array.
+     * @see <a href="https://stackoverflow.com/questions/52590446/bash-array-using-vs-difference-between-the-two">StackOverflow, Bash Arrays -- * vs @</a>
+     * @return this
+     */
+    public @Nonnull Translation toStringArray() {
+        Translation ret = lambdaBody(x -> x.replace("$@", "$*"));
+        if (type.isList()) {
+            return ret.lambdaBody(x -> x.replace("[@]", "[*]"));
+        } // else
+        return ret;
     }
 
     /**

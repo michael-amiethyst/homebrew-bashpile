@@ -276,4 +276,26 @@ class ExpressionBashpileTest extends BashpileTest {
                 b1: bool = (1 + 2 + 3) : bool""";
         assertThrows(TypeError.class, () -> runText(bashpile));
     }
+
+    @Test @Order(180)
+    public void argumentsExpresssionWorks() {
+        final String bashpile = """
+                print(arguments[1])""";
+        final ExecutionResults results = runText(bashpile, "Hello", "World");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        assertEquals("Hello", lines.get(0));
+    }
+
+    @Test @Order(190)
+    public void argumentsAllExpresssionWorks() {
+        final String bashpile = """
+                print(arguments[all])""";
+        final ExecutionResults results = runText(bashpile, "Hello", "World");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        assertEquals("Hello World", lines.get(0));
+    }
 }

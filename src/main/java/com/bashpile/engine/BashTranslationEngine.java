@@ -477,10 +477,14 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
                 .map(BashTranslationHelper::unwindNested)
                 .map(tr -> {
-                    if (tr.isBasicType()) {
+                    if (tr.isBasicType() && !tr.body().contains("$@")) {
                         return tr.body("""
                                 printf "%s\\n"
                                 """.formatted(tr.unquoteBody().body()));
+                    } else if (tr.isBasicType() /* and has $@ */) {
+                        return tr.body("""
+                                (declare -x IFS=$' '; printf "%s\\n")
+                                """.formatted(tr.toStringArray().unquoteBody().body()));
                     } else {
                         // list.  Change the Internal Field Separator to a space just for this subshell (parens)
                         return tr.body("""
@@ -741,6 +745,16 @@ public class BashTranslationEngine implements TranslationEngine {
                 secondTranslation.unquoteBody().body());
         return toStringTranslation(body).addPreamble(firstTranslation.preamble())
                 .addPreamble(secondTranslation.preamble());
+    }
+
+    @Override
+    public Translation argumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx) {
+        if (ctx.argumentsBuiltin().Number() != null) {
+            return toStringTranslation("$" + ctx.argumentsBuiltin().Number().getText());
+        } else {
+            // arguments[all]
+            return toStringTranslation("$@");
+        }
     }
 
     @Override

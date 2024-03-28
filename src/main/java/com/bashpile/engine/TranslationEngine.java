@@ -98,6 +98,8 @@ public interface TranslationEngine {
 
     Translation combiningExpression(final BashpileParser.CombiningExpressionContext ctx);
 
+    Translation argumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx);
+
     Translation listOfBuiltinExpression(final BashpileParser.ListOfBuiltinExpressionContext ctx);
 
     /** Translates IDs */

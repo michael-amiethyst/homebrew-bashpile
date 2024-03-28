@@ -54,6 +54,7 @@ public class BashShell implements Closeable {
      * Executes @{link bashString} like it was at a Bash command prompt in spawned background threads.
      *
      * @param bashString We run these command(s) or text.  bashString may be large, like a whole program.
+     * @param args The arguments
      * @return The STDIN, STDOUT and exit code wrapped in an ExecutionResults object.
      * @throws IOException and {@link BashpileUncheckedException} wrapping
      *  ExecutionException, InterruptedException or TimeoutException.

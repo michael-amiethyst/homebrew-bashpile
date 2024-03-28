@@ -19,7 +19,6 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
-import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
@@ -211,7 +210,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitArgumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx) {
-        return toStringTranslation("$" + ctx.argumentsBuiltin().Number().getText());
+        return translator.argumentsBuiltinExpression(ctx);
     }
 
     @Override

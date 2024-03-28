@@ -89,6 +89,6 @@ binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
 combiningOperator: And | Or;
 
 // translates to $1, $2, etc
-argumentsBuiltin: Arguments OBracket Number CBracket;
+argumentsBuiltin: Arguments OBracket (Number | All) CBracket;
 
 listAccess: Id OBracket Minus? Number CBracket;
