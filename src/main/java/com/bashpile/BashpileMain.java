@@ -86,7 +86,6 @@ public class BashpileMain implements Callable<Integer> {
             LOG.info("In directory {}.  Will create or overwrite file {}", System.getProperty("user.dir"), transpiledFilename);
         }
         LOG.info("Transpiling to {}", transpiledFilename);
-        // TODO ensure debug statements (stdout/stderr) of transpiled file are emitted on compile error
         String translation = inputFile != null ? BashpileMainHelper.transpileNioFile(inputFile)
                 : BashpileMainHelper.transpileScript(Objects.requireNonNull(command));
         final String bashScript = "#!/usr/bin/env bash\n\n" + translation;

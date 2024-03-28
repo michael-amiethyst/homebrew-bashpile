@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -121,11 +122,12 @@ public class BashTranslationHelper {
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
         final String exitOrReturn = inBlock(ctx) ? "return" : "exit";
-        final String plainFilename = Strings.unquote(filename).substring(1);
+        final String plainFilename = StringUtils.removeStart(Strings.unquote(filename), "$");
         String elseBody = """
-                printf "Failed to create %s correctly."
+                printf "Failed to create %s correctly, script output was:\\n"
+                cat %s
                 rm -f %s
-                %s 1""".formatted(plainFilename, filename, exitOrReturn);
+                %s 1""".formatted(plainFilename, filename, filename, exitOrReturn);
         elseBody = lambdaAllLines(elseBody, str -> TAB + str);
         elseBody = lambdaFirstLine(elseBody, String::stripLeading);
         return """

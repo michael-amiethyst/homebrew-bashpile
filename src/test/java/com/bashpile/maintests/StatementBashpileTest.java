@@ -403,6 +403,20 @@ class StatementBashpileTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
     }
 
+    @Test @Order(172)
+    public void createStatementsEmitCommandStdoutStderrOnError() {
+        final ExecutionResults results = runText("""
+                #(rm -f captainsLog.txt || true)
+                contents: str
+                #((echo "Hello World"; exit 1) > captainsLog.txt) creates "captainsLog.txt":
+                    contents = #(cat captainsLog.txt)
+                print(contents)""");
+        assertCorrectFormatting(results);
+        assertFailedExitCode(results);
+        assertTrue(results.stdout().contains("Hello World\n"));
+        assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
+    }
+
     @Test @Order(180)
     public void nestedCreateStatementsWithNestedInlinesWork() {
         final ExecutionResults results = runText("""
