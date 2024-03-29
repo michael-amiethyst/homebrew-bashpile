@@ -210,6 +210,7 @@ class FunctionBashpileTest extends BashpileTest {
         assertEquals("3.14\n", results.stdout(), "Wrong return");
     }
 
+    // TODO uncomment to test adding two function calls
 //    @Test
 //    @Order(132)
 //    public void functionDeclarationNoReturnWorks() {
