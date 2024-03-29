@@ -38,13 +38,7 @@ if not commandMode and unset arguments[1]:
 
 // allow for no additional args for 'arguments[all]' call
 set +u
-// TODO move to bottom with forward declaration
-function runTranslation(translatedFilename: str, args: list<str>):
-    // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
-    #(./"$translatedFilename" "${args[@]}" 2>&1 | tee "bpr.log") creates "bpr.log":
-        if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
-            // TODO this should not need a shell string
-            #(./"$translatedFilename" "${args[@]}")
+function runTranslation(translatedFilename: str, args: list<str>)
 
 // last line of the jar's output is the generated Bash script
 if not commandMode:
@@ -57,7 +51,6 @@ if not commandMode:
     #(java -jar "$jarPath" --outputFile="$translatedFilename" "$1") creates translatedFilename:
         shift
         print("Start of " + translatedFilename)
-        chmod 755 $translatedFilename
         runTranslation(translatedFilename, arguments[all])
 else:
     // command mode
@@ -70,5 +63,14 @@ else:
     #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" 1>/dev/null) creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
         sleep .2
-        chmod 755 $translatedFilename
         runTranslation(translatedFilename, arguments[all])
+
+// helpers
+
+/** Occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed */
+function runTranslation(translatedFilename: str, args: list<str>):
+    chmod 755 $translatedFilename
+    #(./"$translatedFilename" "${args[@]}" 2>&1 | tee "bpr.log") creates "bpr.log":
+        if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
+            // TODO this should not need a shell string
+            #(./"$translatedFilename" "${args[@]}")
