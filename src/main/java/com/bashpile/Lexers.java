@@ -106,6 +106,7 @@ public class Lexers {
         }
 
         try {
+            // may need a 'and not find with createsStatementRegex' when we add file path recognition to shell lines
             if (COMMAND_PATTERN.matcher(command).matches()) {
                 ExecutionResults results = BashShell.runAndJoin("type -t " + command);
                 // exclude keywords like 'function'

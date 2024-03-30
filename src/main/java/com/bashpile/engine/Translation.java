@@ -172,9 +172,10 @@ public class Translation {
         final List<TranslationMetadata> nextMetadata =
                 Streams.concat(metadata.stream(), other.metadata.stream()).toList();
         // favor anything over UNKNOWN
-        Type nextType = type.equals(UNKNOWN_TYPE) ? other.type : UNKNOWN_TYPE;
+        Type nextType = type;
+        nextType = nextType.equals(UNKNOWN_TYPE) ? other.type : nextType;
         // favor INT or FLOAT over NUMBER
-        nextType = type.equals(NUMBER_TYPE) && other.type.isNumeric() ? other.type : nextType;
+        nextType = nextType.equals(NUMBER_TYPE) && other.type.isNumeric() ? other.type : nextType;
         return new Translation(preamble + other.preamble, body + other.body, nextType, nextMetadata);
     }
 

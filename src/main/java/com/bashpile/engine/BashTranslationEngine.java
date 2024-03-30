@@ -16,6 +16,8 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.time.ZonedDateTime;
@@ -54,6 +56,8 @@ public class BashTranslationEngine implements TranslationEngine {
             "fileExists", "-e",
             "===", "==",
             "!==", "!=");
+
+    private static final Logger LOG = LogManager.getLogger(BashTranslationEngine.class);
 
     // instance variables
 
@@ -141,6 +145,7 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     @Override
     public @Nonnull Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
+        LOG.trace("In createsStatement");
         final boolean fileNameIsId = ctx.String() == null;
 
         // create child translations and other variables
@@ -172,6 +177,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation whileStatement(BashpileParser.WhileStatementContext ctx) {
+        LOG.trace("In whileStatement");
         final Translation comment = createCommentTranslation("while statement", lineNumber(ctx));
         final Translation gate = visitor.visit(ctx.expression());
         final Translation bodyStatements = ctx.indentedStatements().statement().stream()
@@ -187,6 +193,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionForwardDeclarationStatement(
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
+        LOG.trace("In functionForwardDeclarationStatement");
         // create translations
         final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(visitor, ctx);
@@ -202,6 +209,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionDeclarationStatement(
             @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
+        LOG.trace("In functionDeclarationStatement");
         // avoid translating twice if was part of a forward declaration
         final String functionName = ctx.Id().getText();
         if (foundForwardDeclarations.contains(functionName)) {
@@ -274,6 +282,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation anonymousBlockStatement(
             @Nonnull final BashpileParser.AnonymousBlockStatementContext ctx) {
+        LOG.trace("In anonymousBlockStatement");
         try (var ignored2 = typeStack.pushFrame()) {
             final Translation comment = createCommentTranslation("anonymous block", lineNumber(ctx));
             // behind the scenes we need to name the anonymous function
@@ -289,6 +298,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
+        LOG.trace("In conditionalStatement");
         // handle initial if
         Translation guard = visitGuardingExpression(ctx.Not(), visitor.visit(ctx.expression()));
         Translation ifBlockStatements;
@@ -336,6 +346,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation switchStatement(BashpileParser.SwitchStatementContext ctx) {
+        LOG.trace("In switchStatement");
         final Translation expressionTranslation = visitor.visit(ctx.expression(0));
         final Stream<Translation> patterns = ctx.expression().stream().skip(1)
                 .map(visitor::visit)
@@ -367,6 +378,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation assignmentStatement(@Nonnull final BashpileParser.AssignmentStatementContext ctx) {
+        LOG.trace("In assignmentStatement");
         // add this variable for the Left Hand Side to the type map
         final String lhsVariableName = ctx.typedId().Id().getText();
         final Type lhsType = Type.valueOf(ctx.typedId());
@@ -381,6 +393,13 @@ public class BashTranslationEngine implements TranslationEngine {
                 rhsExprTranslation = rhsExprTranslation
                         .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
                         .metadata(INLINE);
+            }
+            // add quotes if needed
+            if (rhsExprTranslation.type().equals(STR_TYPE)) {
+                rhsExprTranslation = rhsExprTranslation.lambdaBody(str -> {
+                    str = StringUtils.prependIfMissing(str, "\"");
+                    return StringUtils.appendIfMissing(str, "\"");
+                });
             }
             rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
             rhsExprTranslation = unwindNested(rhsExprTranslation);
@@ -419,6 +438,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation reassignmentStatement(@Nonnull final BashpileParser.ReassignmentStatementContext ctx) {
+        LOG.trace("In reassignmentStatement");
         // get name and type
         final String lhsVariableName = ContextUtils.getIdText(ctx);
         final Type lhsExpectedType = typeStack.getVariableType(lhsVariableName);
@@ -472,6 +492,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
+        LOG.trace("In printStatement");
         // guard
         final BashpileParser.ArgumentListContext argList = ctx.argumentList();
         if (argList == null) {
@@ -509,6 +530,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
+        LOG.trace("In expressionStatement");
         final Translation expr = visitor.visit(ctx.expression()).add(NEWLINE);
         final Translation comment = createCommentTranslation("expression statement", lineNumber(ctx));
         final Translation subcomment =
@@ -520,6 +542,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation returnPsudoStatement(@Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
+        LOG.trace("In returnPsudoStatement");
         final boolean exprExists = ctx.expression() != null;
 
         // check return matches with function declaration
@@ -555,6 +578,7 @@ public class BashTranslationEngine implements TranslationEngine {
      */
     @Override
     public @Nonnull Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
+        LOG.trace("In typecastExpression");
         final Type castTo = Type.valueOf(ctx.type());
         Translation expression = visitor.visit(ctx.expression());
         final int lineNumber = lineNumber(ctx);
@@ -579,6 +603,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
+        LOG.trace("In functionCallExpression");
         final String id = ctx.Id().getText();
 
         // check arg types
@@ -629,6 +654,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
+        LOG.trace("In parenthesisExpression");
         // drop parenthesis
         Translation ret = visitor.visit(ctx.expression());
 
@@ -641,6 +667,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
+        LOG.trace("In calculationExpression");
         // get the child translations
         List<Translation> childTranslations;
         childTranslations = ctx.children.stream()
@@ -678,6 +705,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation unaryPrimaryExpression(BashpileParser.UnaryPrimaryExpressionContext ctx) {
+        LOG.trace("In unaryPrimaryExpression");
         final String primary = ctx.unaryPrimary().getText();
         Translation valueBeingTested;
         // right now all implemented primaries are string tests
@@ -697,6 +725,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation binaryPrimaryExpression(BashpileParser.BinaryPrimaryExpressionContext ctx) {
+        LOG.trace("In binaryPrimaryExpression");
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
         String primary = ctx.binaryPrimary().getText();
         final Translation firstTranslation =
@@ -744,6 +773,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation combiningExpression(BashpileParser.CombiningExpressionContext ctx) {
+        LOG.trace("In combiningExpression");
         final String operator = ctx.combiningOperator().getText().equals("and") ? "&&" : "||";
         final Translation firstTranslation =
                 visitor.visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
@@ -758,6 +788,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation argumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx) {
+        LOG.trace("In argumentsBuiltinExpression");
         if (ctx.argumentsBuiltin().Number() != null) {
             return toStringTranslation("$" + ctx.argumentsBuiltin().Number().getText());
         } else {
@@ -768,6 +799,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation listOfBuiltinExpression(BashpileParser.ListOfBuiltinExpressionContext ctx) {
+        LOG.trace("In listOfBuiltinExpression");
         // guard, empty list
         if (ctx.expression().isEmpty()) {
             return new ListOfTranslation(UNKNOWN_TYPE);
@@ -796,6 +828,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation idExpression(BashpileParser.IdExpressionContext ctx) {
+        LOG.trace("In idExpression");
         final String variableName = ctx.Id().getText();
         final Type type = typeStack.getVariableType(variableName);
         // list syntax is `listName[*]`
@@ -807,6 +840,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation listIndexExpression(BashpileParser.ListAccessExpressionContext ctx) {
+        LOG.trace("In listIndexExpression");
         final String variableName = ContextUtils.getIdText(ctx);
         final Type type = typeStack.getVariableType(Objects.requireNonNull(variableName));
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
@@ -823,6 +857,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation shellString(@Nonnull final BashpileParser.ShellStringContext ctx) {
+        LOG.trace("In shellString helper");
         Translation contentsTranslation = ctx.shellStringContents().stream()
                 .map(visitor::visit)
                 .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))

@@ -26,9 +26,6 @@ while true:
 
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
-// TODO make more robust
-// if not #((ls "$jarPath" 1>/dev/null)):
-//    jarPath= "../../../bin/bashpile.jar"
 
 // if not enough arguments (commandMode may read from STDIN)
 if not commandMode and unset arguments[1]:
@@ -43,7 +40,6 @@ function runTranslation(translatedFilename: str, args: list<str>)
 // last line of the jar's output is the generated Bash script
 if not commandMode:
     if translatedFilename == "command.bpt":
-        // TODO find why this doesn't render well
         translatedFilename = arguments[1] + ".bpt"
         if fileExists translatedFilename:
             print("Will not overwrite " + translatedFilename)

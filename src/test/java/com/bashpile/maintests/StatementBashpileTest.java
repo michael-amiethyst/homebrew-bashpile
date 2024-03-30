@@ -190,7 +190,19 @@ class StatementBashpileTest extends BashpileTest {
     }
 
     @Test @Order(82)
-    public void stringBadOperatorWorks() {
+    public void stringConcatInAssignWorks() {
+        final ExecutionResults results = runText("""
+                world:str="hello " + "world"
+                print(world)""");
+        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("hello world\n", results.stdout());
+    }
+
+    // TODO write test for reassign and string concat, include arguments[]
+
+    @Test @Order(82)
+    public void stringBadOperatorFails() {
         assertThrows(BashpileUncheckedException.class, () -> runText("""
                 worldStr:str="world"
                 print("hello " * worldStr)"""));
