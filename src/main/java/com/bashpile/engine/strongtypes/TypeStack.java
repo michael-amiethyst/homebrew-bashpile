@@ -52,8 +52,8 @@ public class TypeStack {
 
     /** Checks if the variable is defined */
     public boolean containsVariable(@Nonnull final String variableName) {
-        final Type foundType = getVariableType(variableName);
-        return !foundType.equals(NOT_FOUND_TYPE);
+        final Type variableType = getVariableType(variableName);
+        return variableType.isFound();
     }
 
     /** Puts the function's type information into the current stackframe */

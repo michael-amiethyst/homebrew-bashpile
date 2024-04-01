@@ -258,7 +258,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
                             // normal processing
                             String opts = "-r"; // read only
-                            if (type.equals(INT_TYPE)) {
+                            if (type.isInt()) {
                                 opts += "i"; // Bash integer
                             }
                             return "declare %s %s=$%s;".formatted(opts, x, i.getAndIncrement());
@@ -395,7 +395,7 @@ public class BashTranslationEngine implements TranslationEngine {
                         .metadata(INLINE);
             }
             // add quotes if needed
-            if (rhsExprTranslation.type().equals(STR_TYPE)) {
+            if (rhsExprTranslation.isStr()) {
                 rhsExprTranslation = rhsExprTranslation.lambdaBody(str -> {
                     str = StringUtils.prependIfMissing(str, "\"");
                     return StringUtils.appendIfMissing(str, "\"");
@@ -442,7 +442,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // get name and type
         final String lhsVariableName = ContextUtils.getIdText(ctx);
         final Type lhsExpectedType = typeStack.getVariableType(lhsVariableName);
-        if (lhsExpectedType.equals(NOT_FOUND_TYPE)) {
+        if (lhsExpectedType.isNotFound()) {
             throw new TypeError(lhsVariableName + " has not been declared", lineNumber(ctx));
         }
 
@@ -560,8 +560,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         final Translation comment = createCommentTranslation("return statement", lineNumber(ctx));
         final Function<String, String> returnLineLambda = str -> {
-            if (functionTypes.returnType().equals(STR_TYPE)
-                    || ctx.expression() instanceof BashpileParser.NumberExpressionContext) {
+            if (functionTypes.returnsStr() || ctx.expression() instanceof BashpileParser.NumberExpressionContext) {
                 return "printf \"%s\"\n".formatted(Strings.unquote(str));
             } // else
             return str + "\n";
@@ -645,7 +644,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 argumentTranslations.preamble(), id + argumentTranslations.body(), retType, List.of(NORMAL));
         // suppress output if we are printing to output as part of a work-around to return a string
         // this covers the case of calling a function without using the return
-        if (retType.equals(STR_TYPE)) {
+        if (retType.isStr()) {
             ret = ret.lambdaBody("%s >/dev/null"::formatted);
         }
         ret = ret.metadata(NEEDS_INLINING_OFTEN).mergePreamble();
@@ -693,7 +692,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(Translation::unquoteBody)
                     .map(tr -> tr.lambdaBody(Strings::unparenthesize)));
         // found no matching types -- error section
-        } else if (first.type().equals(NOT_FOUND_TYPE) || second.type().equals(NOT_FOUND_TYPE)) {
+        } else if (first.isNotFound() || second.isNotFound()) {
             throw new UserError("`%s` or `%s` are undefined".formatted(
                     first.body(), second.body()), lineNumber(ctx));
         } else {

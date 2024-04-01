@@ -82,7 +82,7 @@ public class Translation {
         // if all strings the stream of not-strings will be empty
         return Stream.of(translations)
                 .map(Translation::parseUnknown)
-                .allMatch(x -> x.type().equals(STR_TYPE));
+                .allMatch(Translation::isStr);
     }
 
     /**
@@ -173,9 +173,9 @@ public class Translation {
                 Streams.concat(metadata.stream(), other.metadata.stream()).toList();
         // favor anything over UNKNOWN
         Type nextType = type;
-        nextType = nextType.equals(UNKNOWN_TYPE) ? other.type : nextType;
+        nextType = nextType.isUnknown() ? other.type : nextType;
         // favor INT or FLOAT over NUMBER
-        nextType = nextType.equals(NUMBER_TYPE) && other.type.isNumeric() ? other.type : nextType;
+        nextType = nextType.isGenericNumberType() && other.type.isNumeric() ? other.type : nextType;
         return new Translation(preamble + other.preamble, body + other.body, nextType, nextMetadata);
     }
 
@@ -320,7 +320,7 @@ public class Translation {
     // type and typeMetadata instance methods
 
     /**
-     * Replaces the type
+     * Replaces the type.
      */
     public @Nonnull Translation type(@Nonnull final Type typecastType) {
         return new Translation(preamble, body, typecastType, metadata);
@@ -339,6 +339,21 @@ public class Translation {
     /** Is this a ListOf translation?  (E.g. created by the syntax `listOf(...)`)*/
     public boolean isListOf() {
         return this instanceof ListOfTranslation;
+    }
+
+    /** Is the type UNKNOWN? */
+    public boolean isUnknown() {
+        return type.isUnknown();
+    }
+
+    /** Is the type NOT_FOUND? */
+    public boolean isNotFound() {
+        return type.isNotFound();
+    }
+
+    /** Is the type a String? */
+    public boolean isStr() {
+        return type.isStr();
     }
 
     /**
@@ -382,9 +397,9 @@ public class Translation {
     // helpers
 
     private static @Nonnull Translation parseUnknown(Translation tr) {
-        if (tr.type.equals(UNKNOWN_TYPE) && NUMBER.matcher(tr.body).matches()) {
+        if (tr.isUnknown() && NUMBER.matcher(tr.body).matches()) {
             return tr.type(NUMBER_TYPE);
-        } else if (tr.type.equals(UNKNOWN_TYPE)) {
+        } else if (tr.isUnknown()) {
             return tr.type(STR_TYPE);
         } else {
             return tr;
