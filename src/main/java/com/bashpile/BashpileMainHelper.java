@@ -2,7 +2,10 @@ package com.bashpile;
 
 import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.engine.BashpileVisitor;
+import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
+import com.bashpile.shell.BashShell;
+import com.bashpile.shell.ExecutionResults;
 import com.google.common.annotations.VisibleForTesting;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -21,6 +24,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.bashpile.exceptions.Exceptions.asUnchecked;
 
 public class BashpileMainHelper {
 
@@ -38,7 +45,8 @@ public class BashpileMainHelper {
         final InputStream inputStream = getSourceInputStream(inputFile);
         final String sourceName = inputFile.toString();
         final String parsed = parse(sourceName, inputStream);
-        return Asserts.assertNoShellcheckWarnings(parsed);
+        final String formatted = format(parsed);
+        return assertNoShellcheckWarnings(formatted);
     }
 
     /** Returns the translation */
@@ -46,7 +54,8 @@ public class BashpileMainHelper {
     public static @Nonnull String transpileScript(@Nonnull String bashpileScript) throws IOException {
         final InputStream inputStream = IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
         final String parsed = parse(bashpileScript, inputStream);
-        return Asserts.assertNoShellcheckWarnings(parsed);
+        final String formatted = format(parsed);
+        return assertNoShellcheckWarnings(formatted);
     }
 
     // helpers
@@ -102,5 +111,58 @@ public class BashpileMainHelper {
         // visitor and engine linked in visitor constructor
         final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine(origin));
         return bashpileLogic.visit(tree).body();
+    }
+
+    /**
+     * Reformats the bashScript to Google Bash formatting conventions with an external shfmt program.
+     *
+     * @param bashScript The script to reformat.
+     * @return The reformatted Bash script.
+     */
+    private static @Nonnull String format(@Nonnull final String bashScript) {
+        final Path temp = Path.of("format_temp.bash");
+        try {
+            Files.writeString(temp, bashScript);
+            final ExecutionResults shfmtResults = BashShell.runAndJoin(
+                    "shfmt -i 2 -ci -bn %s".formatted(temp.toString()));
+            if (shfmtResults.exitCode() != ExecutionResults.SUCCESS) {
+                final String message = "Script was unable to format with shfmt.  Script:\n%s\nShellcheck output:\n%s"
+                        .formatted(shfmtResults, shfmtResults.stdout());
+                throw new BashpileUncheckedAssertionException(message);
+            }
+            return shfmtResults.stdout();
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        } finally {
+            asUnchecked(() -> Files.deleteIfExists(temp));
+        }
+    }
+
+    /**
+     * Ensures that the shellcheck program can find no warnings.
+     *
+     * @param translatedShellScript The Bash script
+     * @return The translatedShellScript for chaining.
+     */
+    public static @Nonnull String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
+        final Path tempFile = Path.of("temp.bps");
+        try {
+            Files.writeString(tempFile, translatedShellScript);
+            // ignore many errors that don't apply
+            final String excludes = Stream.of(2034, 2050, 2071, 2072, 2157)
+                    .map(i -> "--exclude=SC" + i).collect(Collectors.joining(" "));
+            final ExecutionResults shellcheckResults = BashShell.runAndJoin(
+                    "shellcheck --shell=bash --severity=warning %s %s".formatted(excludes, tempFile));
+            if (shellcheckResults.exitCode() != ExecutionResults.SUCCESS) {
+                final String message = "Script failed shellcheck.  Script:\n%s\nShellcheck output:\n%s".formatted(
+                        translatedShellScript, shellcheckResults.stdout());
+                throw new BashpileUncheckedAssertionException(message);
+            }
+            return translatedShellScript;
+        } catch (IOException e) {
+            throw new BashpileUncheckedException(e);
+        } finally {
+            asUnchecked(() -> Files.deleteIfExists(tempFile));
+        }
     }
 }

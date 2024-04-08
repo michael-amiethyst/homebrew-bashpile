@@ -28,7 +28,6 @@ class FunctionBashpileTest extends BashpileTest {
                 x: float = 7.7
                 print(x * x)
                 """);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size(),
@@ -47,7 +46,6 @@ class FunctionBashpileTest extends BashpileTest {
                 x:float = 7.7
                 print(x * x)
                 """);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size(),
@@ -90,7 +88,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size());
@@ -106,7 +103,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return w * l
                 print(rectArea(3, 4))
                 """);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("12\n", results.stdout());
     }
@@ -118,7 +114,6 @@ class FunctionBashpileTest extends BashpileTest {
                 function world() -> str:
                     return "hello world"
                 print(world())""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world\n", results.stdout());
     }
@@ -130,7 +125,6 @@ class FunctionBashpileTest extends BashpileTest {
                 function world() -> str:
                     return "hello world"
                 world()""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("", results.stdout());
     }
@@ -143,7 +137,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("3.14\n3.14\n", results.stdout());
     }
@@ -179,7 +172,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                                 
                 print(twoCircleArea(1, -1))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size()
                 , "Wrong length, was: " + join(results.stdoutLines()));
@@ -196,15 +188,14 @@ class FunctionBashpileTest extends BashpileTest {
                 function printCircleArea(r: float)
                                 
                 function twoCircleArea(r1: float, r2: float) -> float:
-                    //total: float = circleArea(r1) + circleArea(r2)
-                    //print(total)
+                    // total: float = circleArea(r1) + circleArea(r2)
+                    // print(total)
                     return 3.14
                                 
                 function printCircleArea(r:float) ["helper"]:
                     print(3.14 * r * r)
                                 
                 printCircleArea(1)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size(), "Wrong length, was: " + join(results.stdoutLines()));
         assertEquals("3.14\n", results.stdout(), "Wrong return");
@@ -225,8 +216,7 @@ class FunctionBashpileTest extends BashpileTest {
 //                    return 3.14 * r * r
 //
 //                printTwoCircleArea(1, -1)""");
-//        assertCorrectFormatting(results);
-//        assertSuccessfulExitCode(results);
+//        //        assertSuccessfulExitCode(results);
 //        assertEquals(1, results.stdoutLines().size()
 //                , "Wrong length, was: " + join(results.stdoutLines()));
 //        assertEquals(1,
@@ -241,7 +231,6 @@ class FunctionBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 born: str = "to be wild"
                 print(born)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size(),
                 "Wrong length, was: " + join(results.stdoutLines()));
@@ -256,7 +245,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size());
@@ -281,7 +269,6 @@ class FunctionBashpileTest extends BashpileTest {
                 function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(.5 + .5))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("3.14\n", results.stdout());
     }
@@ -317,7 +304,6 @@ class FunctionBashpileTest extends BashpileTest {
                     print(log)
                     return 3.14 * r * r
                 print(circleArea("test", arguments[all]))""", "1");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("test\n3.14\n", results.stdout());
     }
@@ -332,7 +318,6 @@ class FunctionBashpileTest extends BashpileTest {
                     print(args[all])
                     return 3.14 * r * r
                 print(circleArea(arguments[all], 1))""", "Hello World");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Hello\nHello World\nHello World\n3.14\n", results.stdout());
     }

@@ -12,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Order(70)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LoopsTest extends BashpileTest {
-    @Test @Order(10)
+    @Test
+    @Order(10)
     public void whileLoopWorks() {
         final ExecutionResults results = runText("""
                 i: int = 0
@@ -20,13 +21,13 @@ public class LoopsTest extends BashpileTest {
                     print(i)
                     i = i + 1
                 """);
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("# while statement"));
         assertSuccessfulExitCode(results);
         assertEquals("0\n1\n2\n3\n4\n", results.stdout());
     }
 
-    @Test @Order(20)
+    @Test
+    @Order(20)
     public void whileLoopWithShellStringWorks() {
         final ExecutionResults results = runText("""
                 i: int = 0
@@ -34,13 +35,13 @@ public class LoopsTest extends BashpileTest {
                     print(i)
                     i = i + 1
                 """);
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("# while statement"));
         assertSuccessfulExitCode(results);
         assertEquals("0\n1\n2\n3\n4\n", results.stdout());
     }
 
-    @Test @Order(30)
+    @Test
+    @Order(30)
     public void whileLoopWithBreakWorks() {
         final ExecutionResults results = runText("""
                 i: int = 0
@@ -49,7 +50,6 @@ public class LoopsTest extends BashpileTest {
                     i = i + 1
                     break
                 """);
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("# while statement"));
         assertSuccessfulExitCode(results);
         assertEquals("0\n", results.stdout());

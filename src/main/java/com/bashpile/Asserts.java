@@ -2,24 +2,15 @@ package com.bashpile;
 
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
-import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
-import com.bashpile.shell.BashShell;
-import com.bashpile.shell.ExecutionResults;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static com.bashpile.exceptions.Exceptions.asUnchecked;
 import static java.util.Objects.requireNonNullElse;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
 
@@ -224,34 +215,6 @@ public class Asserts {
                 throw uncheckedException;
             }
             throw new BashpileUncheckedAssertionException("Found key %s in map %s".formatted(key, map));
-        }
-    }
-
-    /**
-     * Ensures that the shellcheck program can find no warnings.
-     *
-     * @param translatedShellScript The Bash script
-     * @return The translatedShellScript for chaining.
-     */
-    public static @Nonnull String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
-        final Path tempFile = Path.of("temp.bps");
-        try {
-            Files.writeString(tempFile, translatedShellScript);
-            // ignore many errors that don't apply
-            final String excludes = Stream.of(2034, 2050, 2071, 2072, 2157)
-                    .map(i -> "--exclude=SC" + i).collect(Collectors.joining(" "));
-            final ExecutionResults shellcheckResults = BashShell.runAndJoin(
-                    "shellcheck --shell=bash --severity=warning %s %s".formatted(excludes, tempFile));
-            if (shellcheckResults.exitCode() != 0) {
-                final String message = "Script failed shellcheck.  Script:\n%s\nShellcheck output:\n%s".formatted(
-                        translatedShellScript, shellcheckResults.stdout());
-                throw new BashpileUncheckedAssertionException(message);
-            }
-            return translatedShellScript;
-        } catch (IOException e) {
-            throw new BashpileUncheckedException(e);
-        } finally {
-            asUnchecked(() -> Files.deleteIfExists(tempFile));
         }
     }
 }

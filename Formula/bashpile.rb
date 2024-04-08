@@ -10,6 +10,7 @@ class Bashpile < Formula
   depends_on "maven" => :build
   depends_on "bc"
   depends_on "openjdk"
+  depends_on "shfmt"
   depends_on "shellcheck"
   # TODO add gnu-getopt for OSX or FreeBSD only
 
