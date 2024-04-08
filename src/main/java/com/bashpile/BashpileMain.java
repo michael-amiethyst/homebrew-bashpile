@@ -15,7 +15,8 @@ import java.util.concurrent.Callable;
 /** Entry point into the program.  Only spins up the transpiler and parses the command line with PicoCLI. */
 @CommandLine.Command(
         name = "bashpile",
-        description = "Bashpilec/bpc - Converts Bashpile lines to Bash OR Bashpile/bpr runs Bashpile directly"
+        description = "Bashpilec ('bpc' for short) - Compiles Bashpile to Bash\n" +
+                "Bashpile ('bpr' for short) - Runs the Bashpile script directly"
 )
 public class BashpileMain implements Callable<Integer> {
 
@@ -34,7 +35,8 @@ public class BashpileMain implements Callable<Integer> {
     // class fields
 
     @CommandLine.Option(names = {"-o", "--outputFile"}, arity = "0..1",
-            description = "Save the transpiled shell script to this filename.  Will overwrite if filename exists.")
+            description = "Save the transpiled shell script to this filename.\n" +
+                    "It will overwrite if filename exists.")
     @Nullable @SuppressWarnings("UnusedDeclaration")
     private Path outputFile;
 
@@ -44,7 +46,7 @@ public class BashpileMain implements Callable<Integer> {
     private String command;
 
     @CommandLine.Parameters(arity = "0..1",
-            description = "Use the specified bashpile file.")
+            description = "Use the specified Bashpile file.  '-' will cause a read from STDIN")
     @Nullable @SuppressWarnings("UnusedDeclaration")
     private Path inputFile;
 

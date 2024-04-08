@@ -25,7 +25,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static boolean bprDeployed = false;
 
-    @Test @Timeout(20) @Order(5)
+    @Test
+    @Timeout(20)
+    @Order(5)
     public void bprDeploysSuccessfully() throws IOException {
         log.info("In bprDeploysSuccessfully");
 
@@ -36,7 +38,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         int exitCode = ExecutionResults.GENERIC_FAILURE;
         int loops = 0;
         ExecutionResults results = null;
-        while(exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
+        while (exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
             final String command = "bin/bpc --outputFile bin/bpr bin/bpr.bps";
             results = runAndJoin(command);
             log.trace("Output text:\n{}", results.stdout());
@@ -47,7 +49,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         bprDeployed = true;
     }
 
-    @Test @Timeout(10) @Order(10)
+    @Test
+    @Timeout(10)
+    @Order(10)
     public void bpcTranspiles() throws IOException {
         log.info("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
@@ -66,7 +70,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
     }
 
-    @Test @Timeout(20) @Order(11)
+    @Test
+    @Timeout(20)
+    @Order(11)
     public void bprWorks() throws IOException {
         log.info("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
@@ -79,7 +85,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertSuccessfulExitCode(results);
     }
 
-    @Test @Timeout(10) @Order(20)
+    @Test
+    @Timeout(10)
+    @Order(20)
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
         log.info("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
@@ -99,7 +107,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
     }
 
-    @Test @Timeout(10) @Order(30)
+    @Test
+    @Timeout(10)
+    @Order(30)
     public void noSubCommandWithMissingFileFails() throws IOException {
         log.info("In noSubCommandWithMissingFileFails");
         Assumptions.assumeTrue(bprDeployed);
@@ -112,7 +122,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("output.txt")));
     }
 
-    @Test @Timeout(30) @Order(40)
+    @Test
+    @Timeout(30)
+    @Order(40)
     public void outputFileFlagWithDoubleRunWorks() throws IOException {
         log.info("In outputFileFlagWithDoubleRunFails");
         Assumptions.assumeTrue(bprDeployed);
@@ -135,7 +147,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
     }
 
-    @Test @Timeout(20) @Order(50)
+    @Test
+    @Timeout(20)
+    @Order(50)
     public void bprCreateErrorMessagesPropagate() throws IOException {
         log.info("In bprCreateErrorMessagesPropagate");
         Assumptions.assumeTrue(bprDeployed);
@@ -150,7 +164,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFailedExitCode(results);
     }
 
-    @Test @Timeout(20) @Order(50)
+    @Test
+    @Timeout(20)
+    @Order(50)
     public void bprDashCWorks() throws IOException {
         log.info("In bpr -c works");
         Assumptions.assumeTrue(bprDeployed);
@@ -165,7 +181,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("command.bps")));
     }
 
-    @Test @Timeout(21) @Order(60)
+    @Test
+    @Timeout(21)
+    @Order(60)
     public void bpcDashCWithStdinWorks() throws IOException {
         log.info("In bpc -c with stdin works");
         Assumptions.assumeTrue(bprDeployed);
@@ -181,7 +199,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         Files.deleteIfExists(Path.of(filename));
     }
 
-    @Test @Timeout(20) @Order(70)
+    @Test
+    @Timeout(20)
+    @Order(70)
     public void bprDashCWithStdinWorks() throws IOException {
         log.info("In bpr -c with stdin works");
         Assumptions.assumeTrue(bprDeployed);
@@ -196,7 +216,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("command.bps")));
     }
 
-    @Test @Timeout(20) @Order(80)
+    @Test
+    @Timeout(20)
+    @Order(80)
     public void bprDashCWithStdinFromDifferentDirectoryWorks() throws IOException {
         log.info("In bpr -c with stdin works");
         Assumptions.assumeTrue(bprDeployed);
@@ -211,12 +233,27 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("command.bps")));
     }
 
+    @Test
+    @Timeout(20)
+    @Order(90)
+    public void bprWithNoArgumentsPrintsHelp() throws IOException {
+        log.info("In bpr with no arguments prints help");
+        Assumptions.assumeTrue(bprDeployed);
+
+        // run with our local (not installed) bpr
+        final String command = "bin/bpr";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertFailedExitCode(results);
+        assertTrue(results.stdout().contains("Usage: "));
+        assertFalse(Files.exists(Path.of("command.bps")));
+    }
+
     // TODO create test for
 //        final String command = "echo \"print('Hello World')\" | bin/bpr -c --outputFile command2.bpt ";
 
     // TODO multi-line -c tests (bpc / bpr)
-
-    // TODO ensure bpr without arguments prints the help
 
     // helpers
 
