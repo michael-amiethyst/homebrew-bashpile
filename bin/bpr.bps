@@ -24,6 +24,11 @@ while true:
         case "*":
             break
 
+// case "-" not working with Bash for some reason
+if isset arguments[1] and arguments[1] == "-":
+    commandMode = true
+    shift
+
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 
@@ -65,9 +70,10 @@ else:
 
 /** Occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed */
 function runTranslation(translatedFilename: str, args: list<str>):
-    chmod 755 $translatedFilename
-    #(./"$translatedFilename" "${args[@]}" 2>&1 | tee "bpr.log") creates "bpr.log":
+    absoluteFilename: str = #(realpath "$translatedFilename")
+    chmod 755 $absoluteFilename
+    #("$absoluteFilename" "${args[@]}" 2>&1 | tee "bpr.log") creates "bpr.log":
         if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
-            // this needs an explicit shell string to handle the ./"$translatedFilename" without
+            // this needs an explicit shell string to handle the ./"$absoluteFilename" without
             // breaking the lexer on the creates statement above
-            #(./"$translatedFilename" "${args[@]}")
+            #("$absoluteFilename" "${args[@]}")

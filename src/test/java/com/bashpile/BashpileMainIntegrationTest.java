@@ -235,6 +235,63 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     @Test
     @Timeout(20)
+    @Order(81)
+    public void bprDashCWithStdinFromDifferentDirectoryWithOutputFileWorks() throws IOException {
+        log.info("In bpr -c with stdin and outputfile works");
+        Assumptions.assumeTrue(bprDeployed);
+
+        // run with our local (not installed) bpr
+        final String command =
+                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpr --outputFile command81 -c";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello World\n", results.stdout());
+        assertFalse(Files.exists(Path.of("command81")));
+    }
+
+    // TODO fix other TODO in bin/bpc
+    // TODO uncomment
+
+//    @Test
+//    @Timeout(20)
+//    @Order(81)
+//    public void bpcDashWithStdinWorks() throws IOException {
+//        log.info("In bpc - with stdin works");
+//        Assumptions.assumeTrue(bprDeployed);
+//
+//        // run with our local (not installed) bpr
+//        final String command =
+//                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpc -";
+//        final ExecutionResults results = runAndJoin(command);
+//        log.debug("Output text:\n{}", results.stdout());
+//
+//        assertSuccessfulExitCode(results);
+//        assertTrue(results.stdout().contains("Hello World"));
+//        assertFalse(Files.exists(Path.of("command.bps")));
+//    }
+
+    @Test
+    @Timeout(20)
+    @Order(82)
+    public void bprDashWithStdinWorks() throws IOException {
+        log.info("In bpr - with stdin works");
+        Assumptions.assumeTrue(bprDeployed);
+
+        // run with our local (not installed) bpr
+        final String command =
+                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpr -";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello World\n", results.stdout());
+        assertFalse(Files.exists(Path.of("command.bps")));
+    }
+
+    @Test
+    @Timeout(20)
     @Order(90)
     public void bprWithNoArgumentsPrintsHelp() throws IOException {
         log.info("In bpr with no arguments prints help");
@@ -249,9 +306,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertTrue(results.stdout().contains("Usage: "));
         assertFalse(Files.exists(Path.of("command.bps")));
     }
-
-    // TODO create test for
-//        final String command = "echo \"print('Hello World')\" | bin/bpr -c --outputFile command2.bpt ";
 
     // TODO multi-line -c tests (bpc / bpr)
 
