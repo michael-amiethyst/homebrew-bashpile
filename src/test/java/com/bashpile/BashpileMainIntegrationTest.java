@@ -251,7 +251,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("command81")));
     }
 
-    // TODO fix other TODO in bin/bpc
     // TODO uncomment
 
 //    @Test
