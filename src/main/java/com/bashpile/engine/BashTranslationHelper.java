@@ -12,6 +12,8 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -120,11 +122,12 @@ public class BashTranslationHelper {
 
         // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
         final String exitOrReturn = inBlock(ctx) ? "return" : "exit";
-        final String plainFilename = Strings.unquote(filename).substring(1);
+        final String plainFilename = StringUtils.removeStart(Strings.unquote(filename), "$");
         String elseBody = """
-                printf "Failed to create %s correctly."
+                printf "Failed to create %s correctly, script output was:\\n"
+                cat %s
                 rm -f %s
-                %s 1""".formatted(plainFilename, filename, exitOrReturn);
+                %s 1""".formatted(plainFilename, filename, filename, exitOrReturn);
         elseBody = lambdaAllLines(elseBody, str -> TAB + str);
         elseBody = lambdaFirstLine(elseBody, String::stripLeading);
         return """
@@ -246,10 +249,12 @@ public class BashTranslationHelper {
     /** Concatenates inputs into stream */
     /* package */ static @Nonnull Stream<ParserRuleContext> streamContexts(
             @Nonnull final List<BashpileParser.StatementContext> statements,
-            @Nonnull final BashpileParser.ReturnPsudoStatementContext returnPsudoStatementContext) {
+            @Nullable final BashpileParser.ReturnPsudoStatementContext returnPsudoStatementContext) {
         // map of x to x needed for upcasting to parent type
         final Stream<ParserRuleContext> statementStream = statements.stream().map(x -> x);
-        return Stream.concat(statementStream, Stream.of(returnPsudoStatementContext));
+        return returnPsudoStatementContext != null
+                ? Stream.concat(statementStream, Stream.of(returnPsudoStatementContext))
+                : statementStream;
     }
 
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
@@ -268,6 +273,25 @@ public class BashTranslationHelper {
     /** Removes escaped newlines and trailing spaces */
     /* package */ static @Nonnull Translation joinEscapedNewlines(@Nonnull final Translation tr) {
         return tr.lambdaBody(x -> escapedNewline.matcher(x).replaceAll(""));
+    }
+
+    /** Convert pair to (Java like) case translation, a pattern and statements */
+    /* package */ static Translation toCase(Pair<Translation, List<Translation>> patternAndStatementPair) {
+        final Translation pattern = patternAndStatementPair.getLeft();
+        final Translation statements = patternAndStatementPair.getRight().stream()
+                .map(tr -> tr.lambdaBodyLines(x -> "    " + x))
+                .reduce(Translation::add)
+                .orElseThrow();
+        // second string is indented so will be inline with the ';;'
+        final String template = """
+                %s)
+                %s
+                    ;;
+                """.formatted(pattern.body(), statements.body());
+        return toParagraphTranslation(template)
+                .lambdaBodyLines(x -> "    " + x)
+                .addPreamble(pattern.preamble())
+                .addPreamble(statements.preamble());
     }
 
     // unwind static methods
@@ -439,8 +463,10 @@ public class BashTranslationHelper {
             }
             case INT -> {
                 // no automatic rounding for things like `"2.5":int`
+                // for argument variables (e.g. $1) take the user's word for it, we can't check here
                 expression = expression.unquoteBody();
-                final SimpleType foundType = SimpleType.parseNumberString(expression.body());
+                final SimpleType foundType =
+                        !expression.body().startsWith("$") ? SimpleType.parseNumberString(expression.body()) : INT;
                 if (!INT.equals(foundType)) {
                     throw new TypeError("""
                         Could not cast FLOAT value in STR to INT.  Try casting to float first.  Text was %s."""
@@ -449,13 +475,15 @@ public class BashTranslationHelper {
             }
             case FLOAT -> {
                 expression = expression.unquoteBody();
-                // verify the body parses as a valid number
-                try {
-                    SimpleType.parseNumberString(expression.body());
-                } catch (NumberFormatException e) {
-                    throw new TypeError("""
-                        Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
-                            .formatted(expression.body()), lineNumber);
+                // verify the body parses as a valid number for non-variables
+                if (!expression.body().startsWith("$")) {
+                    try {
+                        SimpleType.parseNumberString(expression.body());
+                    } catch (NumberFormatException e) {
+                            throw new TypeError("""
+                                    Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
+                                    .formatted(expression.body()), lineNumber);
+                    }
                 }
             }
             case STR -> {}

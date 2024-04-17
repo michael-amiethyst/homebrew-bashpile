@@ -2,49 +2,78 @@
 
 /**
  * Deployed with integration tests.
- * Manually deploy with `bin/bpr bin/bpc --outputFile=bin/bpr bin/bpr.bps`
+ * Manually deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
  */
+
+// getopt
+opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
+eval set -- "$opts"
+translatedFilename: str = "command.bpt"
+commandMode: bool = false
+while true:
+    switch arguments[1]:
+        case "-c" or "--command":
+            commandMode = true
+            shift
+        case "-o" or "--outputFile":
+            translatedFilename = arguments[2]
+            shift 2
+        case "--":
+            shift
+            break
+        case "*":
+            break
+
+// case "-" not working with Bash for some reason
+if isset arguments[1] and arguments[1] == "-":
+    commandMode = true
+    shift
 
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
 
-// if $1 is the default blank value then unset the ERR trap and trigger an error with help text from the jar
-if unset arguments[1]:
-    #(trap - ERR)
-    #(java -jar "$jarPath")
-    #(exit $?)
+// if not enough arguments (commandMode may read from STDIN)
+if not commandMode and unset arguments[1]:
+    trap - ERR
+    java -jar "$jarPath"
+    exit $?
+
+// allow for no additional args for 'arguments[all]' call
+set +u
+function runTranslation(translatedFilename: str, args: list<str>)
 
 // last line of the jar's output is the generated Bash script
-if arguments[1] != "-c" and arguments[1] != "--command":
-    translatedFilename: str = arguments[1] + ".bpt"
+if not commandMode:
+    if translatedFilename == "command.bpt":
+        translatedFilename = arguments[1] + ".bpt"
+        if fileExists translatedFilename:
+            print("Will not overwrite " + translatedFilename)
+            exit 1
     #(java -jar "$jarPath" --outputFile="$translatedFilename" "$1") creates translatedFilename:
-        // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
-        #(sleep .2)
-        #(shift)
+        shift
         print("Start of " + translatedFilename)
-        #(chmod 755 $translatedFilename)
-        // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
-        #(./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
-            if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
-                #(./"$translatedFilename" "$@")
+        runTranslation(translatedFilename, arguments[all])
 else:
     // command mode
-    command: str
-    doubleShift: bool = false
-    if isset arguments[2]:
-        command = #(echo $2)
-        doubleShift = true
+    commandString: str
+    if isset arguments[1]:
+        commandString = arguments[1]
+        shift
     else:
-        command = #(cat -)
-    translatedFilename: str = "command.bpt"
-    #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$command" 1>/dev/null) creates translatedFilename:
+        commandString = #(cat -)
+    #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" 1>/dev/null) creates translatedFilename:
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
-        #(sleep .2)
-        #(shift)
-        if doubleShift:
-            #(shift)
-        #(chmod 755 $translatedFilename)
-        // occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed
-        #(./"$translatedFilename" "$@" 2>&1 | tee "bpr.log") creates "bpr.log":
-            if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
-                #(./"$translatedFilename" "$@")
+        sleep .2
+        runTranslation(translatedFilename, arguments[all])
+
+// helpers
+
+/** Occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed */
+function runTranslation(translatedFilename: str, args: list<str>):
+    absoluteFilename: str = #(realpath "$translatedFilename")
+    chmod 755 $absoluteFilename
+    #("$absoluteFilename" "${args[@]}" 2>&1 | tee "bpr.log") creates "bpr.log":
+        if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
+            // this needs an explicit shell string to handle the ./"$absoluteFilename" without
+            // breaking the lexer on the creates statement above
+            #("$absoluteFilename" "${args[@]}")

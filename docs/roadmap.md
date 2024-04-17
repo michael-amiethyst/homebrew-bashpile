@@ -1,5 +1,5 @@
 # 1.0 features
-1. switch/case
+1. If regularFileExists (-f), directoryExists (-d)
 2. increment / decrement
 3. Loops
    1. do while
@@ -13,21 +13,6 @@
 8. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
 9. Enforce 'readonly' 
    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
-
-# getopts example
-After while and switch/case impl, bpr.bps will have:
-```
-// getopts
-opts: str = "o:c"
-translatedFilename: str = "command.bpt"
-commandMode: bool = false
-while #(getopts ${opts} option):
-    switch option:
-        case o:
-            translatedFilename = #($OPTARG)
-        case c:
-            commandMode = true
-```
 
 # Later
 (Not ordered)

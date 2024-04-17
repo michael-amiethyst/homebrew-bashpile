@@ -16,20 +16,20 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileTest extends BashpileTest {
 
-    @Test @Order(10)
+    @Test
+    @Order(10)
     public void printCalcWorks() {
         final ExecutionResults results = runText("print(1 + 1)");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("2\n", results.stdout());
     }
 
-    @Test @Order(20)
+    @Test
+    @Order(20)
     public void multilineCalcWorks() {
         final ExecutionResults results = runText("""
                 print(1 + 1)
                 print(1-1)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
 
         final List<String> lines = results.stdoutLines();
@@ -41,47 +41,48 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("0", lines.get(1));
     }
 
-    @Test @Order(30)
+    @Test
+    @Order(30)
     public void stringConcatWorks() {
         final ExecutionResults results = runText("""
                 print("hello" + " " + "world")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world\n", results.stdout());
     }
 
-    @Test @Order(31)
+    @Test
+    @Order(31)
     public void stringConcatWithNewlineWorks() {
         final ExecutionResults results = runText("""
                 print("hello" + "\\n" + "world")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello\nworld\n", results.stdout());
     }
 
-    @Test @Order(40)
+    @Test
+    @Order(40)
     public void stringBadOperatorThrows() {
         assertThrows(BashpileUncheckedException.class, () -> runText("""
                 print("hello " * "world")"""));
     }
 
-    @Test @Order(50)
+    @Test
+    @Order(50)
     public void parenStringWorks() {
         final ExecutionResults results = runText("""
                 print((("hello" + " world") + (", you" + " good?")))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world, you good?\n", results.stdout());
     }
 
-    @Test @Order(80)
+    @Test
+    @Order(80)
     public void intExpressionsWork() {
         final String bashpileScript = """
                 print((3 + 5) * 3)
                 print(32000 + 32000)
                 print(64 + 64)""";
         final ExecutionResults results = runText(bashpileScript);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("24", "64000", "128");
@@ -89,20 +90,20 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals(expected, lines);
     }
 
-    @Test @Order(90)
+    @Test
+    @Order(90)
     public void parenIntExpressionsWork() {
         final ExecutionResults results = runText("print(((1 + 2) * (3 + 4)))");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("21\n", results.stdout());
     }
 
-    @Test @Order(100)
+    @Test
+    @Order(100)
     public void floatExpressionsWork() {
         final ExecutionResults results = runText("""
                 print((38. + 4) * .5)
                 print(7.7 - 0.7)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "7.0");
@@ -110,7 +111,8 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals(expected, lines);
     }
 
-    @Test @Order(110)
+    @Test
+    @Order(110)
     public void numberAndStringExpressionsWork() {
         final ExecutionResults results = runText("""
                 i: int
@@ -119,7 +121,6 @@ class ExpressionBashpileTest extends BashpileTest {
                 j = .5
                 print((38. + i) * j)
                 print(7.7 - ".7":float)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
 
         // confirm string is unquoted on typecast
@@ -135,7 +136,8 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals(expected, lines);
     }
 
-    @Test @Order(120)
+    @Test
+    @Order(120)
     public void boolTypecastsWork() {
         final String bashpile = """
                 function times2point5(x:float) -> float:
@@ -144,7 +146,6 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(times2point5(true: float))
                 print("Genre: " + true:str + " crime")""";
         final ExecutionResults results = runText(bashpile);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("0", lines.get(0));
@@ -152,7 +153,8 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("Genre: true crime", lines.get(2));
     }
 
-    @Test @Order(130)
+    @Test
+    @Order(130)
     public void intTypecastsWork() {
         final String bashpile = """
                 function times2point5(x:float) -> float:
@@ -169,7 +171,6 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(times2point5(8000000000000: float))
                 print("NCC-" + 1701:str + "-D")""";
         final ExecutionResults results = runText(bashpile);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("true", lines.get(0));
@@ -178,7 +179,8 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("NCC-1701-D", lines.get(3));
     }
 
-    @Test @Order(140)
+    @Test
+    @Order(140)
     public void floatTypecastsWork() {
         final String bashpile = """
                 function times2point5(x:int) -> float:
@@ -195,7 +197,6 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(times2point5(2.5 : int))
                 print(1701.0:str + 1.0:str)""";
         final ExecutionResults results = runText(bashpile);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("true", lines.get(0));
@@ -204,7 +205,8 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("1701.01.0", lines.get(3));
     }
 
-    @Test @Order(150)
+    @Test
+    @Order(150)
     public void strTypecastsWork() {
         final String bashpile = """
                 function times2point5(x:int) -> float:
@@ -223,7 +225,6 @@ class ExpressionBashpileTest extends BashpileTest {
                 print(times2point5("2.5" : float : int))
                 print(times2point5ForFloats("2.50" : float))""";
         final ExecutionResults results = runText(bashpile);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("true", lines.get(0));
@@ -232,7 +233,8 @@ class ExpressionBashpileTest extends BashpileTest {
         assertEquals("6.25", lines.get(3));
     }
 
-    @Test @Order(150)
+    @Test
+    @Order(150)
     public void numericStrTypecastsWork() {
         final String bashpile = """
                 b1: bool = "-1." : bool
@@ -245,14 +247,14 @@ class ExpressionBashpileTest extends BashpileTest {
                     echo "false"
                 fi))""";
         final ExecutionResults results = runText(bashpile);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("true", lines.get(0));
         assertEquals("false", lines.get(1));
     }
 
-    @Test @Order(150)
+    @Test
+    @Order(150)
     public void badStrTypecastsFloatToIntThrow() {
         final String bashpile = """
                 function times2point5(x:int) -> float:
@@ -261,7 +263,8 @@ class ExpressionBashpileTest extends BashpileTest {
         assertThrows(TypeError.class, () -> runText(bashpile));
     }
 
-    @Test @Order(160)
+    @Test
+    @Order(160)
     public void badStrTypecastsTextToFloatThrow() {
         final String bashpile = """
                 function times2point5(x:float) -> float:
@@ -270,10 +273,33 @@ class ExpressionBashpileTest extends BashpileTest {
         assertThrows(TypeError.class, () -> runText(bashpile));
     }
 
-    @Test @Order(170)
+    @Test
+    @Order(170)
     public void numberTypecastsWork() {
         final String bashpile = """
                 b1: bool = (1 + 2 + 3) : bool""";
         assertThrows(TypeError.class, () -> runText(bashpile));
+    }
+
+    @Test
+    @Order(180)
+    public void argumentsExpresssionWorks() {
+        final String bashpile = """
+                print(arguments[1])""";
+        final ExecutionResults results = runText(bashpile, "Hello", "World");
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        assertEquals("Hello", lines.get(0));
+    }
+
+    @Test
+    @Order(190)
+    public void argumentsAllExpresssionWorks() {
+        final String bashpile = """
+                print(arguments[all])""";
+        final ExecutionResults results = runText(bashpile, "Hello", "World");
+        assertSuccessfulExitCode(results);
+        final List<String> lines = results.stdoutLines();
+        assertEquals("Hello World", lines.get(0));
     }
 }

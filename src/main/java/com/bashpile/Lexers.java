@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,17 +52,25 @@ public class Lexers {
     @SuppressWarnings("unused")
     public static boolean isLinuxCommand(@Nonnull final CharStream charStream) {
         // guard
-        String bashLine = charStream.toString();
-        if (bashLine.isBlank()) {
+        if (charStream.size() == 0) {
             return false;
         }
 
         // body
-        int prevIndex = charStream.index() - 1;
-        boolean startOfLine = prevIndex == -1 || charStream.getText(Interval.of(prevIndex, prevIndex)).equals("\n");
+        boolean startOfLine = true;
+        // scan backwards until at start, the last newline or a character besides space or newline
+        int i = charStream.index() - 1;
+        while(i >= 0 && !Objects.equals(charStream.getText(Interval.of(i, i)), "\n")) {
+            String curr = charStream.getText(Interval.of(i, i));
+            if (!curr.equals(" ")) {
+                startOfLine = false;
+                break;
+            }
+            i--;
+        }
         if (startOfLine) {
-            bashLine = bashLine.substring(charStream.index());
-            return isLinuxCommand(bashLine);
+            // chop off everything before charStream's index
+            return isLinuxCommand(charStream.getText(Interval.of(charStream.index(), charStream.size())));
         } else {
             return false;
         }
@@ -89,14 +98,15 @@ public class Lexers {
             match = ASSIGN_PATTERN.matcher(bashLine);
         }
 
-        // split on unquoted whitespace
-        final String command = bashLine.split(" ")[0];
+        // split on whitespace or Bash command separator
+        final String command = bashLine.split("[ \n;]")[0];
 
         if (COMMAND_TO_VALIDITY_CACHE.containsKey(command)) {
             return COMMAND_TO_VALIDITY_CACHE.get(command);
         }
 
         try {
+            // may need a 'and not find with createsStatementRegex' when we add file path recognition to shell lines
             if (COMMAND_PATTERN.matcher(command).matches()) {
                 ExecutionResults results = BashShell.runAndJoin("type -t " + command);
                 // exclude keywords like 'function'

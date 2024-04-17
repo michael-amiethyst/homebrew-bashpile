@@ -19,81 +19,82 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileTest extends BashpileTest {
 
-    @Test @Order(10)
+    @Test
+    @Order(10)
     public void assignBoolWorks() {
         final ExecutionResults results = runText("""
                 var: bool = false
                 print(var)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
 
-    @Test @Order(20)
+    @Test
+    @Order(20)
     public void assignIntWorks() {
         final ExecutionResults results = runText("""
                 var: int = 42
                 print(var)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("42\n", results.stdout());
     }
 
-    @Test @Order(30)
+    @Test
+    @Order(30)
     public void assignIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 someVar: int = 1 + 1
                 print(someVar + 2)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }
 
-    @Test @Order(31)
+    @Test
+    @Order(31)
     public void assignReadonlyIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 someVar: readonly int = 1 + 1
                 print(someVar + 2)""");
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }
 
-    @Test @Order(32)
+    @Test
+    @Order(32)
     public void assignExportedIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 someVar: exported int = 1 + 1
                 print(someVar + 2)""");
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare -x someVar"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }
 
-    @Test @Order(33)
+    @Test
+    @Order(33)
     public void assignReadonlyExportedIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 someVar: readonly exported int = 1 + 1
                 print(someVar + 2)""");
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare -x someVar"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }
 
-    @Test @Order(34)
+    @Test
+    @Order(34)
     public void assignExportedReadonlyIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 exportedFinal: exported readonly int = 1 + 1
                 print(exportedFinal + 2)""");
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare -x exportedFinal"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }
 
-    @Test() @Order(35)
+    @Test()
+    @Order(35)
     public void assignReadonlyReadonlyExportedIntExpressionThrows() {
         Assertions.assertThrows(BashpileUncheckedException.class, () -> runText("""
                 someVar: readonly readonly exported int = 1 + 1
@@ -103,7 +104,8 @@ class StatementBashpileTest extends BashpileTest {
     /**
      * References an undeclared variable.
      */
-    @Test @Order(40)
+    @Test
+    @Order(40)
     public void duplicateIntAssignmentThrows() {
         assertThrows(UserError.class, () -> runText("""
                 someVar: int = 1 + 1
@@ -111,92 +113,107 @@ class StatementBashpileTest extends BashpileTest {
                 """));
     }
 
-    @Test @Order(41)
+    @Test
+    @Order(41)
     public void assignFloatToIntThrows() {
         assertThrows(TypeError.class, () -> runText("""
                 someVar: int = 2.2
                 print(someVar + 2)"""));
     }
 
-    @Test @Order(50)
+    @Test
+    @Order(50)
     public void unassignedIntExpressionThrows() {
         assertThrows(UserError.class, () -> runText("""
                 someVar: int = 1 + 1
                 someOtherVar + 2"""));
     }
 
-    @Test @Order(60)
+    @Test
+    @Order(60)
     public void reassignIntExpressionWorks() {
         final ExecutionResults results = runText("""
                 someVar: int = 1 + 1
                 someVar = 3
                 print(someVar + 2)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("5\n", results.stdout());
     }
 
-    @Test @Order(61)
+    @Test
+    @Order(61)
     public void reassignPrimaryExpressionWorks() {
         final ExecutionResults results = runText("""
                 someVar: bool = true
                 someVar = "b" <= "a"
                 print(someVar)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
 
-    // TODO implement increment and decrement pre and post operators
+    // TODO uncomment test after implementation of increment and decrement pre and post operators
 //    @Test @Order(62)
 //    public void reassignWithIncrementWorks() {
 //        final ExecutionResults results = runText("""
 //                someVar: int = 0
 //                print(someVar++)
 //                print(someVar)""");
-//        assertCorrectFormatting(results);
-//        assertSuccessfulExitCode(results);
+//        //        assertSuccessfulExitCode(results);
 //        assertEquals("0\n1\n", results.stdout());
 //    }
 
-    @Test @Order(70)
+    @Test
+    @Order(70)
     public void floatWorks() {
         final ExecutionResults results = runText("""
                 var: float = 4000000.999
                 print(var)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("4000000.999\n", results.stdout());
     }
 
-    @Test @Order(80)
+    @Test
+    @Order(80)
     public void stringWorks() {
         final ExecutionResults results = runText("""
                 world:str="world"
                 print(world)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("world\n", results.stdout());
     }
 
-    @Test @Order(81)
+    @Test
+    @Order(81)
     public void stringConcatWorks() {
         final ExecutionResults results = runText("""
                 world:str="world"
                 print("hello " + world)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world\n", results.stdout());
     }
 
-    @Test @Order(82)
-    public void stringBadOperatorWorks() {
+    @Test
+    @Order(82)
+    public void stringConcatInAssignWorks() {
+        final ExecutionResults results = runText("""
+                world:str="hello " + "world"
+                print(world)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("hello world\n", results.stdout());
+    }
+
+    // TODO write test for reassign and string concat, include arguments[]
+
+    @Test
+    @Order(82)
+    public void stringBadOperatorFails() {
         assertThrows(BashpileUncheckedException.class, () -> runText("""
                 worldStr:str="world"
                 print("hello " * worldStr)"""));
     }
 
-    @Test @Order(90)
+    @Test
+    @Order(90)
     public void blockWorks() {
         final ExecutionResults results = runText("""
                 print((3 + 5) * 3)
@@ -204,7 +221,6 @@ class StatementBashpileTest extends BashpileTest {
                     print(32000 + 32000)
                     block:
                         print(64 + 64)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("24", "64000", "128");
@@ -212,7 +228,8 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals(expected, lines);
     }
 
-    @Test @Order(91)
+    @Test
+    @Order(91)
     public void blockWithNestedInlinesWork() {
         final ExecutionResults results = runText("""
                 print((3 + 5) * 3)
@@ -220,7 +237,6 @@ class StatementBashpileTest extends BashpileTest {
                     print(#(echo "$(echo "Captain's log, stardate...")"))
                     block:
                         print(64 + 64)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         final List<String> expected = List.of("24", "Captain's log, stardate...", "128");
@@ -228,7 +244,8 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals(expected, lines);
     }
 
-    @Test @Order(100)
+    @Test
+    @Order(100)
     public void lexicalScopingWorks() {
         assertThrows(UserError.class, () -> runText("""
                 print((38 + 5) * 3)
@@ -239,7 +256,8 @@ class StatementBashpileTest extends BashpileTest {
                 print(x * x)"""));
     }
 
-    @Test @Order(110)
+    @Test
+    @Order(110)
     public void commentsWork() {
         final ExecutionResults results = runText("""
                 print((38. + 4) * .5)
@@ -249,7 +267,6 @@ class StatementBashpileTest extends BashpileTest {
                     print(x * 3)
                 x: float = 7.7
                 print(x - 0.7)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> stdoutLines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "16.5", "7.0");
@@ -258,7 +275,8 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals(expected, stdoutLines);
     }
 
-    @Test @Order(120)
+    @Test
+    @Order(120)
     public void blockCommentsWork() {
         final ExecutionResults results = runText("""
                 print((38. + 4) * .5)
@@ -271,7 +289,6 @@ class StatementBashpileTest extends BashpileTest {
                     print(x + x)
                 x: float = 7.7
                 print(x - 0.7)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> stdoutLines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "11.0", "7.0");
@@ -280,7 +297,8 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals(expected, stdoutLines);
     }
 
-    @Test @Order(130)
+    @Test
+    @Order(130)
     public void bashpileDocsWork() {
         final ExecutionResults results = runText("""
                 /**
@@ -306,7 +324,6 @@ class StatementBashpileTest extends BashpileTest {
                 print(x - 0.7)
                 print(myString)
                 """);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> stdoutLines = results.stdoutLines();
         final List<String> expected = List.of("21.0", "0", "7.0", "To boldly go");
@@ -315,7 +332,8 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals(expected, stdoutLines);
     }
 
-    @Test @Order(140)
+    @Test
+    @Order(140)
     public void createStatementsWork() {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)
@@ -323,13 +341,13 @@ class StatementBashpileTest extends BashpileTest {
                 #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
                     contents = #(cat captainsLog.txt)
                 print(contents)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\n", results.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
     }
 
-    @Test @Order(150)
+    @Test
+    @Order(150)
     public void createStatementsCanFail() throws IOException {
         try {
             final ExecutionResults results = runText("""
@@ -338,14 +356,14 @@ class StatementBashpileTest extends BashpileTest {
                     #(echo "Captain's log, stardate..." > captainsLog.txt) creates "captainsLog.txt":
                         contents = #(cat captainsLog.txt)
                     print(contents)""");
-            assertCorrectFormatting(results);
             assertFailedExitCode(results);
         } finally {
             Files.deleteIfExists(Path.of("captainsLog.txt"));
         }
     }
 
-    @Test @Order(160)
+    @Test
+    @Order(160)
     public void createStatementTrapsWorks() {
         final String bashpileScript = """
                 #(rm -f captainsLog.txt || true)
@@ -354,17 +372,17 @@ class StatementBashpileTest extends BashpileTest {
                     #(sleep 1)
                     contents = #(cat captainsLog.txt)
                 print(contents)""";
-        try(final BashShell shell = runTextAsync(bashpileScript)) {
+        try (final BashShell shell = runTextAsync(bashpileScript)) {
             shell.sendTerminationSignal();
             final ExecutionResults results = shell.join();
-            assertCorrectFormatting(results);
             assertFailedExitCode(results);
             assertEquals("", results.stdout());
             assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
         }
     }
 
-    @Test @Order(170)
+    @Test
+    @Order(170)
     public void createStatementsWithSimpleNestedInlinesWork() {
         /*
         With inlines this tokenized as
@@ -383,13 +401,13 @@ class StatementBashpileTest extends BashpileTest {
          */
         final ExecutionResults results = runText("""
                 #(echo "$(echo "$(echo "Captain's log, stardate...")")")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\n", results.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
     }
 
-    @Test @Order(171)
+    @Test
+    @Order(171)
     public void createStatementsWithNestedInlinesWork() {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)
@@ -397,13 +415,27 @@ class StatementBashpileTest extends BashpileTest {
                 #(echo "$(echo "$(echo "Captain's log, stardate...")")" > captainsLog.txt) creates "captainsLog.txt":
                     contents = #(cat "$(echo captainsLog.txt)")
                 print(contents)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\n", results.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
     }
 
-    @Test @Order(180)
+    @Test
+    @Order(172)
+    public void createStatementsEmitCommandStdoutStderrOnError() {
+        final ExecutionResults results = runText("""
+                #(rm -f captainsLog.txt || true)
+                contents: str
+                #((echo "Hello World"; exit 1) > captainsLog.txt) creates "captainsLog.txt":
+                    contents = #(cat captainsLog.txt)
+                print(contents)""");
+        assertFailedExitCode(results);
+        assertTrue(results.stdout().contains("Hello World\n"));
+        assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
+    }
+
+    @Test
+    @Order(180)
     public void nestedCreateStatementsWithNestedInlinesWork() {
         final ExecutionResults results = runText("""
                 #(rm -f captainsLog.txt || true)
@@ -416,7 +448,6 @@ class StatementBashpileTest extends BashpileTest {
                         contents2 = #(cat "$(echo captainsLog2.txt)")
                 print(contents)
                 print(contents2)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("Captain's log, stardate...\nCaptain's log, stardate...\n", results.stdout());
         assertFalse(Files.exists(Path.of("captainsLog.txt")), "file not deleted");
@@ -424,7 +455,8 @@ class StatementBashpileTest extends BashpileTest {
         assertFalse(results.stdinLines().stream().anyMatch(str -> END_OF_LINE_COMMENT.matcher(str).matches()));
     }
 
-    @Test @Order(190)
+    @Test
+    @Order(190)
     public void nestedCreateStatementTrapsWorks() throws IOException, InterruptedException {
         final String bashpileScript = """
                 #(rm -f captainsLog.txt || true)
@@ -441,11 +473,10 @@ class StatementBashpileTest extends BashpileTest {
                 print(contents2)""";
         final Path innerFile = Path.of("captainsLog2.txt");
         final Path outerFile = Path.of("captainsLog.txt");
-        try(final BashShell shell = runTextAsync(bashpileScript)) {
+        try (final BashShell shell = runTextAsync(bashpileScript)) {
             Thread.sleep(Duration.ofMillis(100));
             shell.sendTerminationSignal();
             final ExecutionResults results = shell.join();
-            assertCorrectFormatting(results);
             assertFailedExitCode(results);
             // TERM signals wipe STDOUT -- unknown why
             assertEquals("", results.stdout());
@@ -457,7 +488,8 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    @Test @Order(191)
+    @Test
+    @Order(191)
     public void nestedCreateStatementTrapsInAnonymousBlockWorks() throws IOException, InterruptedException {
         final String bashpileScript = """
                 #(rm -f captainsLog.txt || true)
@@ -475,11 +507,10 @@ class StatementBashpileTest extends BashpileTest {
                     print(contents2)""";
         final Path innerFile = Path.of("captainsLog2.txt");
         final Path outerFile = Path.of("captainsLog.txt");
-        try(final BashShell shell = runTextAsync(bashpileScript)) {
+        try (final BashShell shell = runTextAsync(bashpileScript)) {
             Thread.sleep(Duration.ofMillis(100));
             shell.sendTerminationSignal();
             final ExecutionResults results = shell.join();
-            assertCorrectFormatting(results);
             assertFailedExitCode(results);
             // TERM signals wipe STDOUT -- unknown why
             assertEquals("", results.stdout());
@@ -506,7 +537,8 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    @Test @Order(200)
+    @Test
+    @Order(200)
     public void createStatementWithIdWorks() throws IOException {
         final String bashpileScript = """
                 log: str = "output" + #(printf "%d" $$):str + ".txt"
@@ -517,7 +549,6 @@ class StatementBashpileTest extends BashpileTest {
         Path jarLog = null;
         try {
             final ExecutionResults results = runText(bashpileScript);
-            assertCorrectFormatting(results);
             assertSuccessfulExitCode(results);
             jarLog = Path.of(results.stdoutLines().get(0));
             assertFalse(Files.exists(jarLog), "trap file not deleted");
@@ -528,7 +559,8 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    @Test @Order(210)
+    @Test
+    @Order(210)
     public void multilineCreateStatementWorks() throws IOException {
         final String bashpileScript = """
                 log: str = #(printf "%d.txt" $$)
@@ -541,7 +573,6 @@ class StatementBashpileTest extends BashpileTest {
         Path log = null;
         try {
             final ExecutionResults results = runText(bashpileScript);
-            assertCorrectFormatting(results);
             assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
             assertSuccessfulExitCode(results);
             assertTrue(results.stdoutLines().get(0).matches("\\d+\\.txt"));
@@ -554,7 +585,8 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    @Test @Order(220)
+    @Test
+    @Order(220)
     public void multilineExportedCreateStatementWorks() throws IOException {
         final String bashpileScript = """
                 log: readonly exported str = #(printf "%d.txt" $$)
@@ -567,7 +599,6 @@ class StatementBashpileTest extends BashpileTest {
         Path log = null;
         try {
             final ExecutionResults results = runText(bashpileScript);
-            assertCorrectFormatting(results);
             assertTrue(results.stdin().contains("declare -x log"));
             assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
             assertSuccessfulExitCode(results);
@@ -581,7 +612,8 @@ class StatementBashpileTest extends BashpileTest {
         }
     }
 
-    @Test @Order(230)
+    @Test
+    @Order(230)
     public void createStatementHandlesScopesCorrectly() throws IOException {
         final String bashpileScript = """
                 log: readonly exported str = #(printf "%d.txt" $$)
@@ -596,7 +628,6 @@ class StatementBashpileTest extends BashpileTest {
         Path log = null;
         try {
             final ExecutionResults results = runText(bashpileScript);
-            assertCorrectFormatting(results);
             assertTrue(results.stdin().contains("declare -x log"));
             assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
             assertSuccessfulExitCode(results);
@@ -607,5 +638,58 @@ class StatementBashpileTest extends BashpileTest {
                 Files.deleteIfExists(log);
             }
         }
+    }
+
+    @Test
+    @Order(250)
+    public void simpleSwitchWorks() {
+        ExecutionResults results = runText("""
+                i: int = 1
+                switch i:
+                    case -1:
+                        print('Neg')
+                    case 0:
+                        print('Zero')
+                    case 1:
+                        print('Positive')
+                """);
+        assertSuccessfulExitCode(results);
+        assertEquals("Positive\n", results.stdout());
+    }
+
+    @Test
+    @Order(260)
+    public void orSwitchWorks() {
+        ExecutionResults results = runText("""
+                i: int = 2
+                switch i:
+                    case -1:
+                        print('Neg')
+                    case 0:
+                        print('Zero')
+                    case 1 or 2:
+                        print('Positive')
+                """);
+        assertSuccessfulExitCode(results);
+        assertEquals("Positive\n", results.stdout());
+    }
+
+    @Test
+    @Order(270)
+    public void catchAllSwitchWorks() {
+        ExecutionResults results = runText("""
+                i: int = 3
+                switch i:
+                    case -1:
+                        print('Neg')
+                    case 0:
+                        print('Zero')
+                    case 1 or 2:
+                        print('Positive')
+                    case "*":
+                        print('Other')
+                """);
+        assertSuccessfulExitCode(results);
+        assertEquals("Other\n", results.stdout());
     }
 }

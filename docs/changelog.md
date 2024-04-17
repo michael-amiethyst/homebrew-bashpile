@@ -22,3 +22,4 @@
 * 0.18.0 - Implemented Bashpile Brew test section, started Docker testing
 * 0.19.0 - Lists
 * 0.20.0 - while loops
+* 0.21.0 - switch/case statements

@@ -47,6 +47,8 @@ public interface TranslationEngine {
     /** Translates a conditional (if, else if, else block) */
     Translation conditionalStatement(final BashpileParser.ConditionalStatementContext ctx);
 
+    Translation switchStatement(final BashpileParser.SwitchStatementContext ctx);
+
     /** Translates an assignment */
     Translation assignmentStatement(final BashpileParser.AssignmentStatementContext ctx);
 
@@ -95,6 +97,8 @@ public interface TranslationEngine {
     Translation binaryPrimaryExpression(final BashpileParser.BinaryPrimaryExpressionContext ctx);
 
     Translation combiningExpression(final BashpileParser.CombiningExpressionContext ctx);
+
+    Translation argumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx);
 
     Translation listOfBuiltinExpression(final BashpileParser.ListOfBuiltinExpressionContext ctx);
 

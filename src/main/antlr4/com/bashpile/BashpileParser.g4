@@ -16,6 +16,9 @@ statement
     | If Not? expression Colon indentedStatements
          (elseIfClauses)*
          (Else Colon indentedStatements)?       # conditionalStatement
+    | Switch expression Colon INDENT
+         (Case expression Colon indentedStatements)+ DEDENT
+                                                # switchStatement
     | <assoc=right> typedId
              (Equals expression)? Newline       # assignmentStatement
     | <assoc=right> (Id | listAccess) assignmentOperator
@@ -77,7 +80,7 @@ shellStringContents: shellString
                    | ShellStringEscapeSequence;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-unaryPrimary: Isset | Unset | Empty | NotEmpty;
+unaryPrimary: Isset | Unset | Empty | NotEmpty | FileExists;
 
 // one line means logically equal precidence (e.g. LessThan in the same as MoreThanOrEquals)
 binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
@@ -86,6 +89,6 @@ binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
 combiningOperator: And | Or;
 
 // translates to $1, $2, etc
-argumentsBuiltin: Arguments OBracket Number CBracket;
+argumentsBuiltin: Arguments OBracket (Number | All) CBracket;
 
-listAccess: Id OBracket Minus? Number CBracket;
+listAccess: Id OBracket (Minus? Number | All) CBracket;

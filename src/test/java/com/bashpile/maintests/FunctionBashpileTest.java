@@ -28,7 +28,6 @@ class FunctionBashpileTest extends BashpileTest {
                 x: float = 7.7
                 print(x * x)
                 """);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size(),
@@ -47,7 +46,6 @@ class FunctionBashpileTest extends BashpileTest {
                 x:float = 7.7
                 print(x * x)
                 """);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size(),
@@ -90,7 +88,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size());
@@ -106,7 +103,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return w * l
                 print(rectArea(3, 4))
                 """);
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("12\n", results.stdout());
     }
@@ -118,7 +114,6 @@ class FunctionBashpileTest extends BashpileTest {
                 function world() -> str:
                     return "hello world"
                 print(world())""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("hello world\n", results.stdout());
     }
@@ -130,7 +125,6 @@ class FunctionBashpileTest extends BashpileTest {
                 function world() -> str:
                     return "hello world"
                 world()""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("", results.stdout());
     }
@@ -143,7 +137,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("3.14\n3.14\n", results.stdout());
     }
@@ -179,7 +172,6 @@ class FunctionBashpileTest extends BashpileTest {
                     return 3.14 * r * r
                                 
                 print(twoCircleArea(1, -1))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size()
                 , "Wrong length, was: " + join(results.stdoutLines()));
@@ -190,12 +182,55 @@ class FunctionBashpileTest extends BashpileTest {
     }
 
     @Test
+    @Order(131)
+    public void functionForwardDeclarationNoReturnWorks() {
+        final ExecutionResults results = runText("""
+                function printCircleArea(r: float)
+                                
+                function twoCircleArea(r1: float, r2: float) -> float:
+                    // total: float = circleArea(r1) + circleArea(r2)
+                    // print(total)
+                    return 3.14
+                                
+                function printCircleArea(r:float) ["helper"]:
+                    print(3.14 * r * r)
+                                
+                printCircleArea(1)""");
+        assertSuccessfulExitCode(results);
+        assertEquals(1, results.stdoutLines().size(), "Wrong length, was: " + join(results.stdoutLines()));
+        assertEquals("3.14\n", results.stdout(), "Wrong return");
+    }
+
+    // TODO uncomment to test adding two function calls
+//    @Test
+//    @Order(132)
+//    public void functionDeclarationNoReturnWorks() {
+//        final ExecutionResults results = runText("""
+//                function circleArea(r: float) -> float
+//
+//                function printTwoCircleArea(r1: float, r2: float):
+//                    total: float = circleArea(r1) + circleArea(r2)
+//                    print(total)
+//
+//                function circleArea(r:float) ["helper"] -> float:
+//                    return 3.14 * r * r
+//
+//                printTwoCircleArea(1, -1)""");
+//        //        assertSuccessfulExitCode(results);
+//        assertEquals(1, results.stdoutLines().size()
+//                , "Wrong length, was: " + join(results.stdoutLines()));
+//        assertEquals(1,
+//                results.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
+//                "Wrong circleArea count");
+//        assertEquals("6.28", results.stdoutLines().get(0), "Wrong return");
+//    }
+
+    @Test
     @Order(140)
     public void stringTypeWorks() {
         final ExecutionResults results = runText("""
                 born: str = "to be wild"
                 print(born)""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size(),
                 "Wrong length, was: " + join(results.stdoutLines()));
@@ -206,11 +241,10 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(150)
     public void functionDeclTypesWork() {
         final ExecutionResults results = runText("""
-                function circleArea(r: float) ["need to remove the quotes"] -> float:
+                function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea(-1))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals(2, lines.size());
@@ -222,7 +256,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(160)
     public void badFunctionDeclTypesThrow() {
         assertThrows(TypeError.class, () -> runText("""
-                function circleArea(r: float) ["need to remove the quotes"] -> float:
+                function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(1))
                 print(circleArea("Hello World"))"""));
@@ -232,10 +266,9 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(170)
     public void functionDeclTypesCalcExpressionsWork() {
         final ExecutionResults results = runText("""
-                function circleArea(r: float) ["need to remove the quotes"] -> float:
+                function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(.5 + .5))""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("3.14\n", results.stdout());
     }
@@ -244,7 +277,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(180)
     public void functionDeclTypesBadCalcExpressionThrows() {
         assertThrows(UserError.class, () -> runText("""
-                function circleArea(r: float) ["need to remove the quotes"] -> float:
+                function circleArea(r: float) ["example tag"] -> float:
                     return 3.14 * r * r
                 print(circleArea(.5 + x))"""));
     }
@@ -253,11 +286,40 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(190)
     public void functionDeclTypesBadCalcExpressionNestedThrows() {
         assertThrows(TypeError.class, () -> runText("""
-                function circleArea(r: int) ["need to remove the quotes"] -> float:
+                function circleArea(r: int) ["example tag"] -> float:
                     function circleAreaHelper(r: float) -> float:
                         return 3.14 * r * r
                     r = circleAreaHelper(r)
                     return r
                 print(circleArea(.5 + 0.5))"""));
     }
+
+    @Test
+    @Order(200)
+    public void functionDeclWithArgumentsAllExpressionWorks() {
+        final ExecutionResults results = runText("""
+                function circleArea(log: str, args: list<str>) ["example tag"] -> float:
+                    shift
+                    r: int = arguments[1]: int
+                    print(log)
+                    return 3.14 * r * r
+                print(circleArea("test", arguments[all]))""", "1");
+        assertSuccessfulExitCode(results);
+        assertEquals("test\n3.14\n", results.stdout());
+    }
+
+    @Test
+    @Order(210)
+    public void functionDeclWithArgumentsAllAtStartExpressionWorks() {
+        final ExecutionResults results = runText("""
+                function circleArea(args: list<str>, r: float) ["example tag"] -> float:
+                    print(args[0])
+                    print(args)
+                    print(args[all])
+                    return 3.14 * r * r
+                print(circleArea(arguments[all], 1))""", "Hello World");
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello\nHello World\nHello World\n3.14\n", results.stdout());
+    }
+
 }

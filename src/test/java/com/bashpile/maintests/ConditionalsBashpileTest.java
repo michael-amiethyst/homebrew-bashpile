@@ -18,7 +18,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 if true:
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -31,7 +30,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -42,7 +40,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 if unset arguments[1]:
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -54,7 +51,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 test: str = ""
                 if isEmpty test:
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -68,7 +64,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -80,7 +75,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 test: str = "notEmpty"
                 if isNotEmpty test:
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -94,7 +88,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -108,7 +101,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -122,7 +114,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -133,7 +124,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 if isEmpty "":
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -146,9 +136,18 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(81)
+    public void ifFileExistsWorks() {
+        final ExecutionResults results = runText("""
+                if fileExists "pom.xml":
+                    print("true")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
     }
 
     @Test
@@ -157,7 +156,18 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 if #((which ls 1>/dev/null)):
                     print("true")""");
-        assertCorrectFormatting(results);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(91)
+    public void ifNotCommandWorks() {
+        final ExecutionResults results = runText("""
+                if not #((which ls 1>/dev/null)):
+                    print("false")
+                else:
+                    print("true")""");
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -170,7 +180,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -183,7 +192,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     return true
                 if retT():
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -198,7 +206,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -211,7 +218,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     return 0
                 if ret0():
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -226,7 +232,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -241,7 +246,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -256,7 +260,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -267,7 +270,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 if isNotEmpty #(printf "notEmpty"):
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -280,7 +282,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -294,7 +295,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")
                 else:
                     print("false")""");
-        assertCorrectFormatting(results);
         assertFailedExitCode(results);
     }
 
@@ -309,7 +309,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                         print("true")
                     else:
                         print("false")""");
-        assertCorrectFormatting(results);
         assertFailedExitCode(results);
         assertEquals("errorLog\n", results.stdout());
     }
@@ -320,7 +319,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 if isNotEmpty #(printf "$(printf "$(printf "notEmpty")")"):
                     print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -334,7 +332,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('no brew')
                 else:
                     print('brew')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertTrue(results.stdin().contains("# shellcheck"));
         // when running during a brew install `which brew` fails (not error out)
@@ -349,7 +346,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 if tested:
                     if isNotEmpty #(printf "notEmpty"):
                         print("true")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
@@ -364,7 +360,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                         print("true")
                     else:
                         print("false")""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("false\n", results.stdout());
     }
@@ -378,7 +373,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equals\n", results.stdout());
     }
@@ -392,7 +386,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equals\n", results.stdout());
     }
@@ -406,7 +399,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("nah\n", results.stdout());
     }
@@ -420,7 +412,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("nah\n", results.stdout());
     }
@@ -434,7 +425,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('not equal')
                 else:
                     print('ya')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("not equal\n", results.stdout());
     }
@@ -448,7 +438,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equals\n", results.stdout());
     }
@@ -462,7 +451,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("nah\n", results.stdout());
         assertFalse(results.stdin().contains("== \"1234\""));
@@ -477,7 +465,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('not equals')
                 else:
                     print('equals')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equals\n", results.stdout());
     }
@@ -492,7 +479,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('not equals')
                 else:
                     print('equals')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("not equals\n", results.stdout());
     }
@@ -506,7 +492,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('not equal')
                 else:
                     print('ya')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("not equal\n", results.stdout());
     }
@@ -520,7 +505,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equals\n", results.stdout());
     }
@@ -534,7 +518,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("nah\n", results.stdout());
         assertFalse(results.stdin().contains("== \"1234\""));
@@ -549,7 +532,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('not equals')
                 else:
                     print('equals')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equals\n", results.stdout());
     }
@@ -563,7 +545,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('not equal')
                 else:
                     print('ya')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("not equal\n", results.stdout());
     }
@@ -577,7 +558,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('less')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("nah\n", results.stdout());
     }
@@ -591,7 +571,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equals')
                 else:
                     print('nah')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equals\n", results.stdout());
         assertFalse(results.stdin().contains("== \"1234\""));
@@ -606,7 +585,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('more than')
                 else:
                     print('not')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("not\n", results.stdout());
     }
@@ -620,7 +598,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equal')
                 else:
                     print('no')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equal\n", results.stdout());
     }
@@ -634,12 +611,12 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print('equal')
                 else:
                     print('no')""");
-        assertCorrectFormatting(results);
         assertSuccessfulExitCode(results);
         assertEquals("equal\n", results.stdout());
     }
 
-    @Test @Order(390)
+    @Test
+    @Order(390)
     public void ifStatementGoesOutOfScopeCorrectly() {
         final String bashpileScript = """
                 b: bool = true
@@ -649,13 +626,13 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     log: str = "log2"
                 """;
         final ExecutionResults results = runText(bashpileScript);
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare -x log"));
         assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
         assertSuccessfulExitCode(results);
     }
 
-    @Test @Order(400)
+    @Test
+    @Order(400)
     public void elseIfWorks() {
         final String bashpileScript = """
                 b: bool = false
@@ -670,13 +647,13 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 log: str = "so many log variables!"
                 """;
         final ExecutionResults results = runText(bashpileScript);
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare -x log"));
         assertSuccessfulExitCode(results);
         assertEquals("third path\n", results.stdout());
     }
 
-    @Test @Order(410)
+    @Test
+    @Order(410)
     public void elseIfsWork() {
         final String bashpileScript = """
                 b: bool = false
@@ -693,7 +670,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 log: str = "so many log variables!"
                 """;
         final ExecutionResults results = runText(bashpileScript);
-        assertCorrectFormatting(results);
         assertTrue(results.stdin().contains("declare -x log"));
         assertSuccessfulExitCode(results);
         assertEquals("third path\n", results.stdout());

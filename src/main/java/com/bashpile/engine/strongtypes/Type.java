@@ -34,7 +34,7 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
     /** All floats (to 10 decimals) */
     public static final Type FLOAT_TYPE = Type.of(SimpleType.FLOAT);
 
-    /** INT or FLOAT */
+    /** Generic number.  INT or FLOAT but don't know which one. */
     public static final Type NUMBER_TYPE = Type.of(SimpleType.NUMBER);
 
     /** Strings */
@@ -43,7 +43,10 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
     // DO NOT USE LIST_TYPE, use isList() instead
 
     public static @Nonnull Type of(@Nonnull SimpleType simpleType) {
-        return new Type(simpleType, SimpleType.EMPTY);
+        if (simpleType.isBasic()) {
+            return new Type(simpleType, SimpleType.EMPTY);
+        } // else
+        return new Type(simpleType, SimpleType.UNKNOWN);
     }
 
     /** Gets the Type with mainType and contentsType info */
@@ -82,14 +85,56 @@ public record Type(SimpleType mainType, SimpleType contentsType) {
         return mainType.equals(SimpleType.LIST);
     }
 
-    /** Check if this type is unknown or numeric */
+    /** Is this UNKNOWN? */
+    public boolean isUnknown() {
+        return equals(UNKNOWN_TYPE);
+    }
+
+    /** Is this NOT_FOUND? */
+    public boolean isNotFound() {
+        return equals(NOT_FOUND_TYPE);
+    }
+
+    /** Is this anything else besides NOT_FOUND? */
+    public boolean isFound() {
+        return !isNotFound();
+    }
+
+    /** Is this an integer? */
+    public boolean isInt() {
+        return equals(INT_TYPE);
+    }
+
+    /**
+     * Check if this type is unknown or numeric.
+     * @see #isNumeric()
+     * @see #isGenericNumberType()
+     */
     public boolean isPossiblyNumeric() {
         return mainType.isPossiblyNumeric();
     }
 
-    /** Check if this type is a number, int or float */
+    /**
+     * Check if this type is a number, int or float.
+     * @see #isPossiblyNumeric()
+     * @see #isGenericNumberType()
+     */
     public boolean isNumeric() {
         return mainType.isNumeric();
+    }
+
+    /**
+     * Is this specifically the NUMBER_TYPE and NOT known to be int or float specifically?
+     * @see #isPossiblyNumeric()
+     * @see #isNumeric()
+     */
+    public boolean isGenericNumberType() {
+        return equals(NUMBER_TYPE);
+    }
+
+    /** Is this a String? */
+    public boolean isStr() {
+        return equals(STR_TYPE);
     }
 
     /**
