@@ -81,7 +81,8 @@ public class BashpileMain implements Callable<Integer> {
             transpiledFilename = Path.of(filename + ".bpt");
         }
         // will overwrite if output is explicitly given
-        if (Files.exists(transpiledFilename.toAbsolutePath()) && outputFile == null) {
+        // TODO 0.21.1 remove "false" below
+        if (false && Files.exists(transpiledFilename.toAbsolutePath()) && outputFile == null) {
             System.out.println(transpiledFilename + " already exists.  Will not overwrite without --outputFile option");
             return 2;
         } else {
