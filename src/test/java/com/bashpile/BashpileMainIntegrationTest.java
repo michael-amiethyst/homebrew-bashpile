@@ -7,7 +7,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -156,31 +155,30 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("output.txt")));
     }
 
-    // TODO 0.21.1 reenable
-//    @Test
-//    @Timeout(30)
-//    @Order(40)
-//    public void outputFileFlagWithDoubleRunWorks() throws IOException {
-//        log.info("In outputFileFlagWithDoubleRunFails");
-//        Assumptions.assumeTrue(bprDeployed);
-//
-//        final String translatedFilename = "src/test/resources/testrigData.example.bps";
-//        final String command = "bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
-//        ExecutionResults results = runAndJoin(command);
-//        try {
-//            log.debug("Output text:\n{}", results.stdout());
-//
-//            assertSuccessfulExitCode(results);
-//            List<String> lines = results.stdoutLines();
-//            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
-//
-//            // 2nd run to verify overwrites OK
-//            results = runAndJoin(command);
-//            assertSuccessfulExitCode(results);
-//        } finally {
-//            Files.deleteIfExists(Path.of(translatedFilename));
-//        }
-//    }
+    @Test
+    @Timeout(30)
+    @Order(40)
+    public void outputFileFlagWithDoubleRunWorks() throws IOException {
+        log.info("In outputFileFlagWithDoubleRunFails");
+        Assumptions.assumeTrue(bprDeployed);
+
+        final String translatedFilename = "src/test/resources/testrigData.example.bps";
+        final String command = "bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
+        ExecutionResults results = runAndJoin(command);
+        try {
+            log.debug("Output text:\n{}", results.stdout());
+
+            assertSuccessfulExitCode(results);
+            List<String> lines = results.stdoutLines();
+            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
+
+            // 2nd run to verify overwrites OK
+            results = runAndJoin(command);
+            assertSuccessfulExitCode(results);
+        } finally {
+            Files.deleteIfExists(Path.of(translatedFilename));
+        }
+    }
 
     @Test
     @Timeout(20)
@@ -216,42 +214,40 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("command.bps")));
     }
 
-    // TODO 0.21.1 renable
-//    @Test
-//    @Timeout(21)
-//    @Order(60)
-//    public void bpcDashCWithStdinWorks() throws IOException {
-//        log.info("In bpc -c with stdin works");
-//        Assumptions.assumeTrue(bprDeployed);
-//
-//        // run with our local (not installed) bpr
-//        final String command = "echo \"print('Hello World')\" | bin/bpc -c";
-//        final ExecutionResults results = runAndJoin(command);
-//        log.debug("Output text:\n{}", results.stdout());
-//
-//        assertSuccessfulExitCode(results);
-//        // last line is the created filename
-//        final String filename = results.stdoutLines().get(results.stdoutLines().size() - 1);
-//        Files.deleteIfExists(Path.of(filename));
-//    }
+    @Test
+    @Timeout(21)
+    @Order(60)
+    public void bpcDashCWithStdinWorks() throws IOException {
+        log.info("In bpc -c with stdin works");
+        Assumptions.assumeTrue(bprDeployed);
 
-    // TODO 0.21.1 reenable
-//    @Test
-//    @Timeout(20)
-//    @Order(70)
-//    public void bprDashCWithStdinWorks() throws IOException {
-//        log.info("In bpr -c with stdin works");
-//        Assumptions.assumeTrue(bprDeployed);
-//
-//        // run with our local (not installed) bpr
-//        final String command = "echo \"print('Hello World')\" | bin/bpr -c";
-//        final ExecutionResults results = runAndJoin(command);
-//        log.debug("Output text:\n{}", results.stdout());
-//
-//        assertSuccessfulExitCode(results);
-//        assertEquals("Hello World\n", results.stdout());
-//        assertFalse(Files.exists(Path.of("command.bps")));
-//    }
+        // run with our local (not installed) bpr
+        final String command = "echo \"print('Hello World')\" | bin/bpc -c";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
+        // last line is the created filename
+        final String filename = results.stdoutLines().get(results.stdoutLines().size() - 1);
+        Files.deleteIfExists(Path.of(filename));
+    }
+
+    @Test
+    @Timeout(20)
+    @Order(70)
+    public void bprDashCWithStdinWorks() throws IOException {
+        log.info("In bpr -c with stdin works");
+        Assumptions.assumeTrue(bprDeployed);
+
+        // run with our local (not installed) bpr
+        final String command = "echo \"print('Hello World')\" | bin/bpr -c";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello World\n", results.stdout());
+        assertFalse(Files.exists(Path.of("command.bps")));
+    }
 
     @Test
     @Timeout(20)
