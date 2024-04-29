@@ -710,13 +710,14 @@ public class BashTranslationEngine implements TranslationEngine {
         // right now all implemented primaries are string tests
         valueBeingTested = visitor.visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
 
-        if (ctx.expression() instanceof BashpileParser.ArgumentsBuiltinExpressionContext argumentsCtx) {
-            // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
-            // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
-            final String parameterExpansion = List.of("isset", "unset").contains(primary) ? "+default" : "";
-            final String argNumber = argumentsCtx.argumentsBuiltin().Number().getText();
-            valueBeingTested = valueBeingTested.body("${%s%s}".formatted(argNumber, parameterExpansion));
+        // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
+        // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
+        final boolean isSetCheck = List.of("isset", "unset").contains(primary);
+        if (isSetCheck) {
+            final String argNumber = ctx.expression().getText();
+            valueBeingTested = valueBeingTested.body("${%s+default}".formatted(argNumber));
         }
+
         final String body = "[ %s \"%s\" ]".formatted(
                 primaryTranslations.getOrDefault(primary, primary), valueBeingTested.unquoteBody().body());
         return new Translation(valueBeingTested.preamble(), body, STR_TYPE, List.of(NORMAL));

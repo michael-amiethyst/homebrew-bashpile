@@ -25,6 +25,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
+    private static boolean bpcDeployed = false;
+
     private static boolean bprDeployed = false;
 
     @Test
@@ -51,6 +53,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         final String nextBpcFilename = "./bin/bpc.bps.bpt";
         copy(nextBpcFilename, "./bin/bpc");
         Files.deleteIfExists(Path.of(nextBpcFilename));
+        bpcDeployed = true;
     }
 
     @Test
@@ -58,6 +61,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(10)
     public void bprDeploysSuccessfully() throws IOException {
         log.info("In bprDeploysSuccessfully");
+        Assumptions.assumeTrue(bpcDeployed);
 
         // ensure bin/bpr is using /n instead of /r/n
         ensureLinuxLineEndings("bin/bpc");

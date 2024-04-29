@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpc.bps on 2024-04-29T10:07:49.749846039-07:00[America/Los_Angeles] (timestamp 1714410469749)
+# Generated from bin/bpc.bps on 2024-04-29T11:48:40.502507217-07:00[America/Los_Angeles] (timestamp 1714416520502)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -9,11 +9,21 @@ declare -x IFS=$'\n\t'
 declare -i s
 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
 # assign statement, Bashpile line 4
-declare jarPath
-jarPath="$(dirname "${BASH_SOURCE[0]}")/bashpile.jar"
-if ! [ -e "${jarPath}" ]; then
-  # reassign statement, Bashpile line 6
-  jarPath=$(dirname "${BASH_SOURCE[0]}")/bin/bashpile.jar
+declare bpHome
+if [ -z "${BASHPILE_HOME+default}" ]; then
+  # assign statement, Bashpile line 6
+  declare bpWhere
+  bpWhere=$(whereis bashpile | cut -d ' ' -f 2)
+  # reassign statement, Bashpile line 7
+  bpHome=$(dirname $bpWhere)
+else
+  # assign statement, Bashpile line 9
+  declare BASHPILE_HOME
+  # reassign statement, Bashpile line 10
+  bpHome=${BASHPILE_HOME}/bin
 fi
-# expression statement, Bashpile line 7
+# assign statement, Bashpile line 11
+declare jarPath
+jarPath="${bpHome}/bashpile.jar"
+# expression statement, Bashpile line 12
 java -jar "$jarPath" "$@"
