@@ -1,0 +1,8 @@
+#!/usr/bin/env bpr
+
+// TODO this should be able to throw an error message and have it be displayed
+// TODO handle "-" as a filename for stdin
+jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
+if not fileExists jarPath:
+    jarPath = #(dirname "${BASH_SOURCE[0]}") + "/bin/bashpile.jar"
+#(java -jar "$jarPath" "$@")

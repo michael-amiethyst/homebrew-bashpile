@@ -1,6 +1,5 @@
 /**
  * TODO use BASHPILE_HOME environment var or have /bin on the PATH
- * TODO change stack to use bpc.bpt instead of bpc with bpr
  * TODO fix --outputFile ignored with getopts change
  * TODO checkin pipeline in GitHub
  * TODO builtin logging

@@ -7,16 +7,18 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * If we invoke bpc directly it uses the shebang to find the brew installed bpr and the installed jar.
- * However, we want the local bpr and the local jar, so we call `bin/bpr bin/bpc ...`.
+ * The first deploy methods are really like a CI/CD pipeline to a local deploy.
+ * We may want to refactor to Jenkins or break into its own class.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BashpileMainIntegrationTest extends BashpileTest {
@@ -28,6 +30,32 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Test
     @Timeout(20)
     @Order(5)
+    public void bpcDeploysSuccessfully() throws IOException {
+        log.info("In bpcDeploysSuccessfully");
+
+        ensureLinuxLineEndings("bin/bpc.bps");
+
+        // weird, intermittent errors running bpr in Java like characters getting skipped
+        int exitCode = ExecutionResults.GENERIC_FAILURE;
+        int loops = 0;
+        ExecutionResults results = null;
+        while (exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
+            final String command = "bin/bpc bin/bpc.bps";
+            results = runAndJoin(command);
+            log.trace("Output text:\n{}", results.stdout());
+            exitCode = results.exitCode();
+        }
+
+        assertSuccessfulExitCode(results);
+        copy("./bin/bpc", "./bin/bpc.old");
+        final String nextBpcFilename = "./bin/bpc.bps.bpt";
+        copy(nextBpcFilename, "./bin/bpc");
+        Files.deleteIfExists(Path.of(nextBpcFilename));
+    }
+
+    @Test
+    @Timeout(20)
+    @Order(10)
     public void bprDeploysSuccessfully() throws IOException {
         log.info("In bprDeploysSuccessfully");
 
@@ -47,7 +75,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         assertSuccessfulExitCode(results);
         // TODO 0.21.1 remove
-        Files.copy(Path.of("./bin/bpr.bps.bpt"), Path.of("./bin/bpr"));
+        copy("./bin/bpr.bps.bpt", "./bin/bpr");
         bprDeployed = true;
     }
 
@@ -58,7 +86,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String command = "bin/bpr bin/bpc src/test/resources/testrigData.bps";
+        final String command = "bin/bpc src/test/resources/testrigData.bps";
         final String translatedFilename = "src/test/resources/testrigData.bps.bpt";
         try {
             final ExecutionResults results = runAndJoin(command);
@@ -94,7 +122,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String command = "bin/bpr bin/bpc src/test/resources/testrigData";
+        final String command = "bin/bpc src/test/resources/testrigData";
         final String translatedFilename = "src/test/resources/testrigData.bpt";
         Files.deleteIfExists(Path.of(translatedFilename));
         final ExecutionResults results = runAndJoin(command);
@@ -314,6 +342,11 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     // TODO multi-line -c tests (bpc / bpr)
 
     // helpers
+
+    private static void copy(final String fromFilename, final String toFilename) throws IOException {
+        Files.copy(Path.of(fromFilename), Path.of(toFilename), StandardCopyOption.REPLACE_EXISTING);
+        ensureLinuxLineEndings(toFilename);
+    }
 
     private static void ensureLinuxLineEndings(String translatedFilename) throws IOException {
         // from https://superuser.com/a/1066353/1850749

@@ -1,9 +1,19 @@
-#!/usr/bin/env ./bin/bpr.bps.bpt
-// TODO 0.21.1 change back to bpr
+#!/usr/bin/env bash
 
-// TODO this should be able to throw an error message and have it be displayed
-// TODO handle "-" as a filename for stdin
-jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
-if not fileExists jarPath:
-    jarPath = #(dirname "${BASH_SOURCE[0]}") + "/bin/bashpile.jar"
-#(java -jar "$jarPath" "$@")
+#
+# Generated from bin/bpc.bps on 2024-04-29T10:07:49.749846039-07:00[America/Los_Angeles] (timestamp 1714410469749)
+#
+# strict mode header
+set -eEuo pipefail -o posix
+declare -x IFS=$'\n\t'
+declare -i s
+trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
+# assign statement, Bashpile line 4
+declare jarPath
+jarPath="$(dirname "${BASH_SOURCE[0]}")/bashpile.jar"
+if ! [ -e "${jarPath}" ]; then
+  # reassign statement, Bashpile line 6
+  jarPath=$(dirname "${BASH_SOURCE[0]}")/bin/bashpile.jar
+fi
+# expression statement, Bashpile line 7
+java -jar "$jarPath" "$@"
