@@ -16,7 +16,8 @@ RUN useradd -ms /bin/bash dockeruser
 RUN /bin/bash -c "NONINTERACTIVE=1 $(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # install Bashpile
-RUN /bin/bash -c "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" && brew install gcc michael-amiethyst/bashpile/bashpile"
+RUN /bin/bash -c "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" \
+    && brew install gcc && brew install --HEAD michael-amiethyst/bashpile/bashpile"
 
 # finish setting up user and start
 RUN chown -R dockeruser /home/linuxbrew/.linuxbrew
