@@ -2,6 +2,31 @@
 
 // TODO this should be able to throw an error message and have it be displayed
 
+// getopt
+opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
+eval set -- "$opts"
+translatedFilename: str = "command.bpt"
+commandMode: bool = false
+while true:
+    switch arguments[1]:
+        case "-c" or "--command":
+            commandMode = true
+            shift
+        case "-o" or "--outputFile":
+            translatedFilename = arguments[2]
+            shift 2
+        case "--":
+            shift
+            break
+        case "*":
+            break
+
+if isset arguments[1] and arguments[1] == "-":
+    commandMode = true
+    shift
+
+// TODO default command name to inputFilename.bpt
+
 // find the jar location
 bpHome: str
 if unset BASHPILE_HOME:
@@ -12,10 +37,8 @@ else:
     bpHome = BASHPILE_HOME + "/bin"
 jarPath: str = bpHome + "/bashpile.jar"
 
-// process args
-// case "-" not working with Bash for some reason
-if isset arguments[1] and arguments[1] == "-":
+if commandMode:
     commandString: str = #(cat -)
-    #(java -jar "$jarPath" -c "$commandString")
+    #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString")
 else:
-    #(java -jar "$jarPath" "$@")
+    #(java -jar "$jarPath" --outputFile="$translatedFilename" "$@")

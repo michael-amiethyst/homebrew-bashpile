@@ -9,7 +9,6 @@ import org.junit.jupiter.api.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import static com.bashpile.shell.BashShell.runAndJoin;
@@ -17,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * More of a System test
- *
+ * <br>
  * The first deploy methods are really like a CI/CD pipeline to a local deploy.
  * We may want to refactor to Jenkins or break into its own class.
  */
@@ -43,17 +42,13 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         int loops = 0;
         ExecutionResults results = null;
         while (exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
-            final String command = "bin/bpc bin/bpc.bps";
+            final String command = "bin/bpc --outputFile bin/bpc bin/bpc.bps";
             results = runAndJoin(command);
             log.trace("Output text:\n{}", results.stdout());
             exitCode = results.exitCode();
         }
 
         assertSuccessfulExitCode(results);
-        copy("./bin/bpc", "./bin/bpc.old");
-        final String nextBpcFilename = "./bin/bpc.bps.bpt";
-        copy(nextBpcFilename, "./bin/bpc");
-        Files.deleteIfExists(Path.of(nextBpcFilename));
         bpcDeployed = true;
     }
 
@@ -79,8 +74,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
 
         assertSuccessfulExitCode(results);
-        // TODO 0.21.1 remove
-        copy("./bin/bpr.bps.bpt", "./bin/bpr");
         bprDeployed = true;
     }
 
@@ -91,15 +84,18 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String command = "bin/bpc src/test/resources/testrigData.bps";
         final String translatedFilename = "src/test/resources/testrigData.bps.bpt";
+        final String command = "bin/bpc --outputFile %s src/test/resources/testrigData.bps"
+                .formatted(translatedFilename);
         try {
             final ExecutionResults results = runAndJoin(command);
             log.debug("Output text:\n{}", results.stdout());
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
+            final String lastLine = lines.get(lines.size() - 1);
+            assertTrue(lastLine.endsWith(translatedFilename),
+                    "Expected last line to end with %s but was %s".formatted(translatedFilename, lastLine));
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
         }
@@ -127,8 +123,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String command = "bin/bpc src/test/resources/testrigData";
         final String translatedFilename = "src/test/resources/testrigData.bpt";
+        final String command = "bin/bpc --outputFile %s src/test/resources/testrigData".formatted(translatedFilename);
         Path translatedPath = Path.of(translatedFilename);
         Files.deleteIfExists(translatedPath);
         final ExecutionResults results = runAndJoin(command);
@@ -267,6 +263,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("Hello World\n", results.stdout());
         assertFalse(Files.exists(Path.of("command.bps")));
+        assertFalse(Files.exists(Path.of("../command.bps")));
     }
 
     @Test
@@ -285,6 +282,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertEquals("Hello World\n", results.stdout());
         assertFalse(Files.exists(Path.of("command81")));
+        assertFalse(Files.exists(Path.of("../command81")));
     }
 
     @Test
@@ -303,13 +301,34 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         assertTrue(results.stdout().contains("Hello World"));
         assertFalse(Files.exists(Path.of("command.bps")));
+        assertFalse(Files.exists(Path.of("../command.bps")));
     }
-
-    // TODO test for `bpc --outputFile file -`
 
     @Test
     @Timeout(20)
     @Order(82)
+    public void bpcDashWithOutputFileWithStdinWorks() throws IOException {
+        log.info("In bpc - with stdin works");
+        Assumptions.assumeTrue(bprDeployed);
+
+        // run with our local (not installed) bpr
+        final String command =
+                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpc --outputFile dashOutput.bpt -";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdout().contains("Hello World"));
+        Path dashOutput = Path.of("../dashOutput.bpt");
+        assertTrue(Files.exists(dashOutput));
+
+        Files.deleteIfExists(dashOutput);
+        assertFalse(Files.exists(dashOutput));
+    }
+
+    @Test
+    @Timeout(20)
+    @Order(84)
     public void bprDashWithStdinWorks() throws IOException {
         log.info("In bpr - with stdin works");
         Assumptions.assumeTrue(bprDeployed);
@@ -345,11 +364,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     // TODO multi-line -c tests (bpc / bpr)
 
     // helpers
-
-    private static void copy(final String fromFilename, final String toFilename) throws IOException {
-        Files.copy(Path.of(fromFilename), Path.of(toFilename), StandardCopyOption.REPLACE_EXISTING);
-        ensureLinuxLineEndings(toFilename);
-    }
 
     private static void ensureLinuxLineEndings(String translatedFilename) throws IOException {
         // from https://superuser.com/a/1066353/1850749

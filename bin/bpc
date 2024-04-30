@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpc.bps on 2024-04-29T16:59:47.880159323-07:00[America/Los_Angeles] (timestamp 1714435187880)
+# Generated from bin/bpc.bps on 2024-04-30T10:53:47.503827992-07:00[America/Los_Angeles] (timestamp 1714499627503)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -9,29 +9,67 @@ declare -x IFS=$'\n\t'
 declare -i s
 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
 # assign statement, Bashpile line 5
+declare opts
+opts=$(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
+eval set -- "$opts"
+# assign statement, Bashpile line 7
+declare translatedFilename
+translatedFilename="command.bpt"
+# assign statement, Bashpile line 8
+declare commandMode
+commandMode=false
+# while statement, Bashpile line 9
+while true; do
+  # switch statement, Bashpile line 10
+  case $1 in
+    -c | --command)
+      # reassign statement, Bashpile line 12
+      commandMode=true
+      shift
+      ;;
+    -o | --outputFile)
+      # reassign statement, Bashpile line 15
+      translatedFilename=$2
+      shift 2
+      ;;
+    "--")
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+if [ -n "${1+default}" ] && [ "$1" == "-" ]; then
+  # reassign statement, Bashpile line 24
+  commandMode=true
+  shift
+fi
+# assign statement, Bashpile line 30
 declare bpHome
 if [ -z "${BASHPILE_HOME+default}" ]; then
-  # assign statement, Bashpile line 7
+  # assign statement, Bashpile line 32
   declare bpWhere
   bpWhere=$(whereis bashpile | cut -d ' ' -f 2)
-  # reassign statement, Bashpile line 8
+  # reassign statement, Bashpile line 33
   bpHome=$(dirname $bpWhere)
 else
-  # assign statement, Bashpile line 10
+  # assign statement, Bashpile line 35
   declare BASHPILE_HOME
-  # reassign statement, Bashpile line 11
+  # reassign statement, Bashpile line 36
   bpHome=${BASHPILE_HOME}/bin
 fi
-# assign statement, Bashpile line 12
+# assign statement, Bashpile line 37
 declare jarPath
 jarPath="${bpHome}/bashpile.jar"
-if [ -n "${1+default}" ] && [ "$1" == "-" ]; then
-  # assign statement, Bashpile line 17
+if ${commandMode}; then
+  # assign statement, Bashpile line 40
   declare commandString
   commandString=$(cat -)
-  # expression statement, Bashpile line 18
-  java -jar "$jarPath" -c "$commandString"
+  # expression statement, Bashpile line 41
+  java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString"
 else
-  # expression statement, Bashpile line 20
-  java -jar "$jarPath" "$@"
+  # expression statement, Bashpile line 43
+  java -jar "$jarPath" --outputFile="$translatedFilename" "$@"
 fi
