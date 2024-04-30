@@ -32,7 +32,7 @@ if isset arguments[1] and arguments[1] == "-":
 bpHome: str
 if unset BASHPILE_HOME:
     bpWhere: str = #(whereis bashpile | cut -d ' ' -f 2)
-    bpHome = #(dirname $bpWhere)
+    bpHome = #(dirname "$bpWhere")
 else:
     BASHPILE_HOME: str
     bpHome = BASHPILE_HOME + "/bin"

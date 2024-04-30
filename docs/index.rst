@@ -2,7 +2,14 @@
 Bashpile
 ====================
 
+Old docs at GitHub wiki.
+
 Install
 =======
-Brew install
-set BASHPILE_HOME
+#. Install Homebrew if needed.
+#. Run `brew install --HEAD michael-amiethyst/bashpile/bashpile`.
+
+Contributing
+============
+#. Pull code.
+#. Set BASHPILE_HOME to base of git repo.

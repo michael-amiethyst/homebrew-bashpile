@@ -7,3 +7,4 @@
 - [ ] I have added thorough tests.
 - [ ] I have installed this version locally with `brew uninstall bashpile; brew install --HEAD michael-amiethyst/bashpile/bashpile`
 - [ ] I have tested on Debian with `docker build -t "debian-bashpile" src/test/resources/docker/debian`
+- [ ] I have regenerated the docutils documentation with `docutils docs/index.rst > docs/index.html`

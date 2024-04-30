@@ -37,9 +37,6 @@ public class Lexers {
     private static final Pattern ASSIGN_PATTERN =
             Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*=(\"[^\"]*\"|'[^']*'|[^ ]+|[0-9]+)+\\s*");
 
-    /** A regex for the `type` result of `script is script` */
-    private static final Pattern LOCAL_SCRIPT_PATTERN = Pattern.compile("(^[a-zA-Z_][a-zA-Z0-9_]*) is \1");
-
     /** File is really a command */
     private static final List<String> COMMAND_TYPES = List.of("alias", "function", "builtin", "file");
 
