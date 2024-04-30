@@ -1,7 +1,8 @@
 #!/usr/bin/env bpr
 
 // TODO this should be able to throw an error message and have it be displayed
-// TODO handle "-" as a filename for stdin
+
+// find the jar location
 bpHome: str
 if unset BASHPILE_HOME:
     bpWhere: str = #(whereis bashpile | cut -d ' ' -f 2)
@@ -10,4 +11,11 @@ else:
     BASHPILE_HOME: str
     bpHome = BASHPILE_HOME + "/bin"
 jarPath: str = bpHome + "/bashpile.jar"
-#(java -jar "$jarPath" "$@")
+
+// process args
+// case "-" not working with Bash for some reason
+if isset arguments[1] and arguments[1] == "-":
+    commandString: str = #(cat -)
+    #(java -jar "$jarPath" -c "$commandString")
+else:
+    #(java -jar "$jarPath" "$@")

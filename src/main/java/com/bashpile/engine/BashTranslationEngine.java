@@ -714,8 +714,11 @@ public class BashTranslationEngine implements TranslationEngine {
         // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
         final boolean isSetCheck = List.of("isset", "unset").contains(primary);
         if (isSetCheck) {
-            final String argNumber = ctx.expression().getText();
-            valueBeingTested = valueBeingTested.body("${%s+default}".formatted(argNumber));
+            // remove ${ and } as needed
+            String modifiedValueBeingTested = StringUtils.removeStart(valueBeingTested.body(), "$");
+            modifiedValueBeingTested = StringUtils.removeStart(modifiedValueBeingTested, "{");
+            modifiedValueBeingTested = StringUtils.removeEnd(modifiedValueBeingTested, "}");
+            valueBeingTested = valueBeingTested.body("${%s+default}".formatted(modifiedValueBeingTested));
         }
 
         final String body = "[ %s \"%s\" ]".formatted(

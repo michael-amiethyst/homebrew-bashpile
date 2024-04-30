@@ -16,6 +16,8 @@ import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
+ * More of a System test
+ *
  * The first deploy methods are really like a CI/CD pipeline to a local deploy.
  * We may want to refactor to Jenkins or break into its own class.
  */
@@ -127,7 +129,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         final String command = "bin/bpc src/test/resources/testrigData";
         final String translatedFilename = "src/test/resources/testrigData.bpt";
-        Files.deleteIfExists(Path.of(translatedFilename));
+        Path translatedPath = Path.of(translatedFilename);
+        Files.deleteIfExists(translatedPath);
         final ExecutionResults results = runAndJoin(command);
         try {
             log.debug("Output text:\n{}", results.stdout());
@@ -136,7 +139,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             final List<String> lines = results.stdoutLines();
             assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
         } finally {
-            Files.deleteIfExists(Path.of(translatedFilename));
+            Files.deleteIfExists(translatedPath);
         }
     }
 
@@ -284,25 +287,25 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("command81")));
     }
 
-    // TODO uncomment
+    @Test
+    @Timeout(20)
+    @Order(81)
+    public void bpcDashWithStdinWorks() throws IOException {
+        log.info("In bpc - with stdin works");
+        Assumptions.assumeTrue(bprDeployed);
 
-//    @Test
-//    @Timeout(20)
-//    @Order(81)
-//    public void bpcDashWithStdinWorks() throws IOException {
-//        log.info("In bpc - with stdin works");
-//        Assumptions.assumeTrue(bprDeployed);
-//
-//        // run with our local (not installed) bpr
-//        final String command =
-//                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpc -";
-//        final ExecutionResults results = runAndJoin(command);
-//        log.debug("Output text:\n{}", results.stdout());
-//
-//        assertSuccessfulExitCode(results);
-//        assertTrue(results.stdout().contains("Hello World"));
-//        assertFalse(Files.exists(Path.of("command.bps")));
-//    }
+        // run with our local (not installed) bpr
+        final String command =
+                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpc -";
+        final ExecutionResults results = runAndJoin(command);
+        log.debug("Output text:\n{}", results.stdout());
+
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdout().contains("Hello World"));
+        assertFalse(Files.exists(Path.of("command.bps")));
+    }
+
+    // TODO test for `bpc --outputFile file -`
 
     @Test
     @Timeout(20)
