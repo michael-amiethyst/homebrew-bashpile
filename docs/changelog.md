@@ -24,3 +24,4 @@
 * 0.20.0 - while loops
 * 0.21.0 - switch/case statements
 * 0.21.1 - Getopt switch fix
+* 0.21.2 - If regularFileExists (-f), directoryExists (-d) and error.log fix
