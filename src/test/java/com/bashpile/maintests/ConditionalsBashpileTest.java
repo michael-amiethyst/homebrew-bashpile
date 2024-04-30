@@ -6,6 +6,10 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Order(60)
@@ -300,17 +304,22 @@ public class ConditionalsBashpileTest extends BashpileTest {
 
     @Test
     @Order(160)
-    public void ifWithInlineCanRaiseError() {
-        final ExecutionResults results = runText("""
-                #(rm -f error.log)
-                #(trap 'cat error.log; exit 1' INT)
-                #(printf "errorLog" > error.log; kill -INT $$) creates "error.log":
-                    if isEmpty ret:
-                        print("true")
-                    else:
-                        print("false")""");
-        assertFailedExitCode(results);
-        assertEquals("errorLog\n", results.stdout());
+    public void ifWithInlineCanRaiseError() throws IOException {
+        try {
+            String contents = "ConditionalsBashpileTest.ifWithInlineCanRaiseError test";
+            final ExecutionResults results = runText("""
+                    #(rm -f error.log)
+                    #(trap 'cat error.log; exit 1' INT)
+                    #(printf "%s" > error.log; kill -INT $$) creates "error.log":
+                        if isEmpty ret:
+                            print("true")
+                        else:
+                            print("false")""".formatted(contents));
+            assertFailedExitCode(results);
+            assertEquals(contents + "\n", results.stdout());
+        } finally {
+            Files.deleteIfExists(Path.of("error.log"));
+        }
     }
 
     @Test
