@@ -1,11 +1,4 @@
 /**
- * TODO fix --outputFile ignored with getopts change
- * TODO checkin pipeline in GitHub
- * TODO builtin logging
- * TODO better log messages in bpr
- *
- * LATER
- * TODO change to some Kotlin
- * TODO remove dev on WSL?
+ * Program starts with BashpileMain in this package.
  */
 package com.bashpile;

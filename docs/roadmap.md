@@ -14,6 +14,15 @@
 9. Enforce 'readonly' 
    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
+# Fixes and improvements
+* Near term
+  * checkin pipeline in GitHub
+  * builtin logging
+  * better log messages in bpr
+* LATER
+  * change to some Kotlin, especially in BashTranslationEngine and helper
+  * remove dev on WSL
+
 # Later
 (Not ordered)
 * 'Gnuize' the utilities used (ls?, sed, etc)

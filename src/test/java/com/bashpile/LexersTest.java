@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.nio.file.Path;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Order(3)
@@ -33,4 +35,26 @@ public class LexersTest {
     public void functionIsNotLinuxCommand() {
         assertFalse(Lexers.isLinuxCommand("function times2point5:float(x:float):"));
     }
+
+    @Test @Order(50)
+    public void relativeCommandIsLinuxCommand() {
+        assertTrue(Lexers.isLinuxCommand("src/test/resources/scripts/my_ls.bash"));
+    }
+
+    @Test @Order(60)
+    public void relativeCommandWithArgumentIsLinuxCommand() {
+        assertTrue(Lexers.isLinuxCommand("src/test/resources/scripts/my_ls.bash escapedString.bps"));
+    }
+
+    @Test @Order(70)
+    public void relativeCommandWithDotSlashIsLinuxCommand() {
+        assertTrue(Lexers.isLinuxCommand("./src/test/resources/scripts/my_ls.bash escapedString.bps"));
+    }
+
+    // TODO test on native Linux or OSX
+//    @Test @Order(80)
+//    public void absoluteCommandIsLinuxCommand() {
+//        String absolutePath = Path.of("./src/test/resources/scripts/my_ls.bash").toAbsolutePath().toString();
+//        assertTrue(Lexers.isLinuxCommand(absolutePath), "%s was not a command".formatted(absolutePath));
+//    }
 }
