@@ -31,6 +31,8 @@ public class Lexers {
     /** A regex for a valid Bash identifier */
     private static final Pattern COMMAND_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*");
 
+    private static final Pattern FILE_PATTERN = Pattern.compile("^(?:/?[a-zA-Z_.][a-zA-Z0-9_.]*)+");
+
     /** A regex for a Bash assignment */
     private static final Pattern ASSIGN_PATTERN =
             Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*=(\"[^\"]*\"|'[^']*'|[^ ]+|[0-9]+)+\\s*");
@@ -111,11 +113,15 @@ public class Lexers {
                 ExecutionResults results = BashShell.runAndJoin("type -t " + command);
                 // exclude keywords like 'function'
 
+                final String typeResults = results.stdout().trim();
                 boolean ret = results.exitCode() == ExecutionResults.SUCCESS
-                        && COMMAND_TYPES.contains(results.stdout().trim())
+                        && (COMMAND_TYPES.contains(typeResults))
                         && !BASHPILE_KEYWORDS.contains(command);
                 COMMAND_TO_VALIDITY_CACHE.put(command, ret);
                 return ret;
+            } else if (FILE_PATTERN.matcher(command).matches()) {
+                COMMAND_TO_VALIDITY_CACHE.put(command, true);
+                return true;
             } else {
                 COMMAND_TO_VALIDITY_CACHE.put(command, false);
                 return false;

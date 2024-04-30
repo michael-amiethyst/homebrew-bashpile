@@ -54,6 +54,7 @@ public class BashpileMainHelper {
     public static @Nonnull String transpileScript(@Nonnull String bashpileScript) throws IOException {
         final InputStream inputStream = IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
         final String parsed = parse(bashpileScript, inputStream);
+        LOG.debug("Parsed Bashpile script became:\n{}", parsed);
         final String formatted = format(parsed);
         return assertNoShellcheckWarnings(formatted);
     }

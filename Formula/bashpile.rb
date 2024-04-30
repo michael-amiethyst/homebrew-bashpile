@@ -2,8 +2,8 @@ class Bashpile < Formula
   desc "The Bash Transpiler: Write in a modern language and run in a Bash5 shell!"
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   license "MIT"
-  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.21.0"
-  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "feature/conditionals2"
+  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.21.1"
+  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "development"
 
   depends_on "gnu-sed"
   depends_on "maven" => :build

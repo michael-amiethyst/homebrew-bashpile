@@ -24,7 +24,7 @@ while true:
         case "*":
             break
 
-// case "-" not working with Bash for some reason
+// case "-" not parsed with getopt in POSIX mode
 if isset arguments[1] and arguments[1] == "-":
     commandMode = true
     shift

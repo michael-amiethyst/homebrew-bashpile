@@ -9,7 +9,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Order(70)
+@Order(80)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LoopsTest extends BashpileTest {
     @Test
