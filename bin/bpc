@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpc.bps on 2024-04-30T10:53:47.503827992-07:00[America/Los_Angeles] (timestamp 1714499627503)
+# Generated from bin/bpc.bps on 2024-04-30T11:15:54.123578675-07:00[America/Los_Angeles] (timestamp 1714500954123)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -42,34 +42,34 @@ while true; do
   esac
 done
 if [ -n "${1+default}" ] && [ "$1" == "-" ]; then
-  # reassign statement, Bashpile line 24
+  # reassign statement, Bashpile line 25
   commandMode=true
   shift
 fi
-# assign statement, Bashpile line 30
+# assign statement, Bashpile line 31
 declare bpHome
 if [ -z "${BASHPILE_HOME+default}" ]; then
-  # assign statement, Bashpile line 32
+  # assign statement, Bashpile line 33
   declare bpWhere
   bpWhere=$(whereis bashpile | cut -d ' ' -f 2)
-  # reassign statement, Bashpile line 33
+  # reassign statement, Bashpile line 34
   bpHome=$(dirname $bpWhere)
 else
-  # assign statement, Bashpile line 35
+  # assign statement, Bashpile line 36
   declare BASHPILE_HOME
-  # reassign statement, Bashpile line 36
+  # reassign statement, Bashpile line 37
   bpHome=${BASHPILE_HOME}/bin
 fi
-# assign statement, Bashpile line 37
+# assign statement, Bashpile line 38
 declare jarPath
 jarPath="${bpHome}/bashpile.jar"
 if ${commandMode}; then
-  # assign statement, Bashpile line 40
+  # assign statement, Bashpile line 41
   declare commandString
   commandString=$(cat -)
-  # expression statement, Bashpile line 41
+  # expression statement, Bashpile line 42
   java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString"
 else
-  # expression statement, Bashpile line 43
+  # expression statement, Bashpile line 44
   java -jar "$jarPath" --outputFile="$translatedFilename" "$@"
 fi

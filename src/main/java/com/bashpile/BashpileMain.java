@@ -41,12 +41,12 @@ public class BashpileMain implements Callable<Integer> {
     private Path outputFile;
 
     @CommandLine.Option(names = {"-c", "--command"}, arity = "0..1",
-            description = "Run the command")
+            description = "Run the command.  -c or INPUT_FILE is required")
     @Nullable @SuppressWarnings("UnusedDeclaration")
     private String command;
 
     @CommandLine.Parameters(arity = "0..1",
-            description = "Use the specified Bashpile file.  '-' will cause a read from STDIN")
+            description = "Use the specified Bashpile file.  -c or INPUT_FILE")
     @Nullable @SuppressWarnings("UnusedDeclaration")
     private Path inputFile;
 
@@ -80,15 +80,10 @@ public class BashpileMain implements Callable<Integer> {
             LOG.debug("Input file is: {}", filename);
             transpiledFilename = Path.of(filename + ".bpt");
         }
-        // will overwrite if output is explicitly given
-        // TODO 0.21.1 remove "false" below
-        if (false && Files.exists(transpiledFilename.toAbsolutePath()) && outputFile == null) {
-            System.out.println(transpiledFilename + " already exists.  Will not overwrite without --outputFile option");
-            return 2;
-        } else {
-            LOG.info("In directory {}.  Will create or overwrite file {}", System.getProperty("user.dir"), transpiledFilename);
-        }
-        LOG.info("Transpiling to {}", transpiledFilename);
+
+        // will overwrite
+        LOG.info("Transpiling in directory {}.  Will create or overwrite file {}",
+                System.getProperty("user.dir"), transpiledFilename);
         String translation = inputFile != null ? BashpileMainHelper.transpileNioFile(inputFile)
                 : BashpileMainHelper.transpileScript(Objects.requireNonNull(command));
         final String bashScript = "#!/usr/bin/env bash\n\n" + translation;
