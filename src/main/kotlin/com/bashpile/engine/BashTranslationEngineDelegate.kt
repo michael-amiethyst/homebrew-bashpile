@@ -50,15 +50,19 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // child translations in the format of 'expr operator expr', so we are only interested in the first and last
         val first = childTranslations[0]
         val second = Iterables.getLast(childTranslations)
-        // types section
-        return if (Translation.areNumericExpressions(first, second) && BashTranslationHelper.inCalc(ctx)) {
-            Translation.toTranslation(childTranslations.stream(), Type.NUMBER_TYPE, NORMAL)
-        } else if (Translation.areNumericExpressions(first, second)) {
-            val translationsString = childTranslations.stream()
-                .map { obj: Translation -> obj.body() }.collect(Collectors.joining(" "))
-            Translation.toTranslation(childTranslations.stream(), Type.NUMBER_TYPE, NEEDS_INLINING_OFTEN)
-                .body("bc <<< \"$translationsString\"")
+
+        return if (Translation.areNumericExpressions(first, second)) {
+            // Numbers -- We need the Basic Calculator to process
+            if (BashTranslationHelper.inCalc(ctx)) {
+                Translation.toTranslation(childTranslations.stream(), Type.NUMBER_TYPE, NORMAL)
+            } else {
+                val translationsString = childTranslations.stream()
+                    .map { obj: Translation -> obj.body() }.collect(Collectors.joining(" "))
+                Translation.toTranslation(childTranslations.stream(), Type.NUMBER_TYPE, NEEDS_INLINING_OFTEN)
+                    .body("bc <<< \"$translationsString\"")
+            }
         } else if (Translation.areStringExpressions(first, second)) {
+            // Strings -- only addition supported
             val op = ctx.op.text
             Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got $op")
             Translation.toTranslation(Stream.of(first, second)
