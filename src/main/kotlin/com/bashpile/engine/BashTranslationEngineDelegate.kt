@@ -40,7 +40,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
     fun calculationExpression(ctx: CalculationExpressionContext): Translation {
         LOG.trace("In calculationExpression")
         // get the child translations
-        val childTranslations: List<Translation> = ctx.children
+        var childTranslations: List<Translation> = ctx.children
             .map { tree: ParseTree? -> visitor.visit(tree) }
             .map { tr: Translation ->
                 tr.inlineAsNeeded { tr1: Translation? -> BashTranslationHelper.unwindNested(tr1!!) }
@@ -53,14 +53,14 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
         return if (Translation.areNumericExpressions(first, second)) {
             // Numbers -- We need the Basic Calculator to process
-            if (BashTranslationHelper.inCalc(ctx)) {
-                Translation.toTranslation(childTranslations.stream(), Type.NUMBER_TYPE, NORMAL)
-            } else {
-                val translationsString = childTranslations.stream()
-                    .map { obj: Translation -> obj.body() }.collect(Collectors.joining(" "))
-                Translation.toTranslation(childTranslations.stream(), Type.NUMBER_TYPE, NEEDS_INLINING_OFTEN)
-                    .body("bc <<< \"$translationsString\"")
+            if (first.metadata().contains(CALCULATION) || second.metadata().contains(CALCULATION)) {
+                childTranslations = childTranslations.map { unwrapCalculation(it) }
             }
+            // first happy path executed, assume no nesting
+            val translationsString = childTranslations.stream()
+                .map { obj: Translation -> obj.body() }.collect(Collectors.joining(" "))
+            Translation(translationsString, Type.NUMBER_TYPE, listOf(NEEDS_INLINING_OFTEN, CALCULATION))
+                .body("bc <<< \"$translationsString\"")
         } else if (Translation.areStringExpressions(first, second)) {
             // Strings -- only addition supported
             val op = ctx.op.text
@@ -77,6 +77,23 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             val message = "Incompatible types in calc: ${first.type()} and ${second.type()}"
             throw TypeError(message, BashTranslationHelper.lineNumber(ctx))
         }
+    }
+
+    private fun unwrapCalculation(translation: Translation): Translation {
+        // in nested calc, first or second may be wrapped in inlines "$()" or parenthesis
+        var ret = translation.lambdaBody { body2 -> body2
+            .removePrefix("$(")
+            .removePrefix(" ")
+            .removeSuffix(")")
+        }
+        var parens = false
+        if (ret.body().startsWith("(") && ret.body().endsWith(")")) {
+            parens = true
+            ret = ret.lambdaBody { body -> body.removePrefix("(").removeSuffix(")") }
+        }
+        ret = ret.lambdaBody { body -> body.removePrefix("bc <<< \"").removeSuffix("\"") }
+        if (parens) ret = ret.parenthesizeBody()
+        return ret
     }
 
     fun combiningExpression(ctx: BashpileParser.CombiningExpressionContext): Translation {

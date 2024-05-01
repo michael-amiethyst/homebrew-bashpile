@@ -384,8 +384,12 @@ public class Translation {
             String nextBody = Strings.addSpacesAroundParenthesis(body);
             // function calls may have redirect to /dev/null if only side effects needed
             nextBody = Strings.removeEnd(nextBody, ">/dev/null").stripTrailing();
+            // add INLINE and remove NEEDS INLINING OFTEN
+            var nextMetadata = new java.util.ArrayList<>(List.of(TranslationMetadata.INLINE));
+            nextMetadata.addAll(metadata);
+            nextMetadata.remove(TranslationMetadata.NEEDS_INLINING_OFTEN);
             return bodyLambda.apply(
-                    new Translation(preamble, "$(%s)".formatted(nextBody), type, List.of(TranslationMetadata.INLINE)));
+                    new Translation(preamble, "$(%s)".formatted(nextBody), type, nextMetadata));
         } // else
         return this;
     }
