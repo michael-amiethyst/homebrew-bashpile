@@ -654,6 +654,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation parenthesisExpression(@Nonnull final BashpileParser.ParenthesisExpressionContext ctx) {
         LOG.trace("In parenthesisExpression");
+        (new BashTranslationEngineDelegate()).doSomething(); // TODO remove
         // drop parenthesis
         Translation ret = visitor.visit(ctx.expression());
 
