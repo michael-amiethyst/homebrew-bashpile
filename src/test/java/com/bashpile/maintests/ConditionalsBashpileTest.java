@@ -1,10 +1,7 @@
 package com.bashpile.maintests;
 
 import com.bashpile.shell.ExecutionResults;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -682,5 +679,24 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertTrue(results.stdin().contains("declare -x log"));
         assertSuccessfulExitCode(results);
         assertEquals("third path\n", results.stdout());
+    }
+
+    // TODO 0.21.2 - reenable
+    @Disabled
+    @Test
+    @Order(420)
+    public void ifsWithParenthesisWork() {
+        final String bashpileScript = """
+                checkT: bool = 4 < 5
+                f: bool = false
+                if true and (isset arguments[1] and arguments[1] == "-"):
+                    print("true")
+                """;
+        final ExecutionResults results = runText(bashpileScript, "-");
+        assertSuccessfulExitCode(results);
+        // output should be like:
+        // if true && { [ -n "${1+default}" ] && [ "$1" == "-" ]; }; then ...
+        assertTrue(results.stdin().contains("]; };"));
+        assertEquals("true\n", results.stdout());
     }
 }
