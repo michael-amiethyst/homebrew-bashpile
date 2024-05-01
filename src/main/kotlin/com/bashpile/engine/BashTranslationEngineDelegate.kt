@@ -34,8 +34,15 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             "or" -> "||"
             else -> throw BashpileUncheckedException("Unexpected combiningExpression: ${ctx.combiningOperator().text}")
         }
-        val translations = listOf(visitor.visit(ctx.getChild(0)), visitor.visit(ctx.getChild(2)))
-        translations.forEach { it.inlineAsNeeded { tr: Translation? -> BashTranslationHelper.unwindNested(tr!!) } }
+        var translations = listOf(visitor.visit(ctx.getChild(0)), visitor.visit(ctx.getChild(2)))
+        translations = translations.map {
+            var ret = it.inlineAsNeeded { tr: Translation? -> BashTranslationHelper.unwindNested(tr!!) }
+            if (ret.metadata().contains(TranslationMetadata.PARENTHESIZED)) {
+                // wrap in a block and add an end-of-statement
+                ret = ret.body("{ ${ret.body()}; }")
+            }
+            ret
+        }
 
         val body = "${translations[0].unquoteBody().body()} $operator ${translations[1].unquoteBody().body()}"
         return Translation

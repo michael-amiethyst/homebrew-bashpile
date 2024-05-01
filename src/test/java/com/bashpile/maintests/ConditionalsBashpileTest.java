@@ -681,8 +681,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("third path\n", results.stdout());
     }
 
-    // TODO 0.21.2 - reenable
-    @Disabled
     @Test
     @Order(420)
     public void ifsWithParenthesisWork() {
