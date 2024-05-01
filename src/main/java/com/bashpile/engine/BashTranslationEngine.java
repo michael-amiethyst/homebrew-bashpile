@@ -213,74 +213,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionDeclarationStatement(
             @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
-        LOG.trace("In functionDeclarationStatement");
-        // avoid translating twice if was part of a forward declaration
-        final String functionName = ctx.Id().getText();
-        if (foundForwardDeclarations.contains(functionName)) {
-            return UNKNOWN_TRANSLATION;
-        }
-
-        // check for double declaration
-        if (typeStack.containsFunction(functionName)) {
-            throw new UserError(
-                    functionName + " was declared twice (function overloading is not supported)", lineNumber(ctx));
-        }
-
-        // regular processing -- no forward declaration
-
-        // register function param types and return type
-        final List<Type> typeList = ctx.paramaters().typedId()
-                .stream().map(SimpleType::valueOf).map(Type::of).collect(Collectors.toList());
-        final Type retType = ctx.type() != null ? Type.valueOf(ctx.type()) : NA_TYPE;
-        typeStack.putFunctionTypes(functionName, new FunctionTypeInfo(typeList, retType));
-
-        try (var ignored2 = typeStack.pushFrame()) {
-
-            // register local variable types
-            ctx.paramaters().typedId().forEach(x -> {
-                final Type mainType = Type.valueOf(x.type());
-                typeStack.putVariableType(x.Id().getText(), mainType, lineNumber(ctx));
-            });
-
-            // create Translations
-            final Translation comment = createCommentTranslation("function declaration", lineNumber(ctx));
-            final AtomicInteger i = new AtomicInteger(1);
-            // the empty string or ...
-            String namedParams = "";
-            if (!ctx.paramaters().typedId().isEmpty()) {
-                // local var1=$1; local var2=$2; etc
-                final String paramDeclarations = ctx.paramaters().typedId().stream()
-                        .map(BashpileParser.TypedIdContext::Id)
-                        .map(TerminalNode::getText)
-                        .map(x -> {
-                            Type type = typeStack.getVariableType(x);
-
-                            // special handling for lists with 'read -a'
-                            if (type.isList()) {
-                                return "declare -x IFS=$' '; read -r -a %s <<< \"$%s\"; declare -x IFS=$'\\n\\t';".formatted(x, i.getAndIncrement());
-                            }
-
-                            // normal processing
-                            String opts = "-r"; // read only
-                            if (type.isInt()) {
-                                opts += "i"; // Bash integer
-                            }
-                            return "declare %s %s=$%s;".formatted(opts, x, i.getAndIncrement());
-                        })
-                        .collect(Collectors.joining(" "));
-                namedParams = TAB + paramDeclarations + "\n";
-            }
-            final Translation blockStatements = streamContexts(
-                    ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement())
-                    .map(requireNonNull(visitor)::visit)
-                    .map(tr -> tr.lambdaBodyLines(str -> TAB + str))
-                    .reduce(Translation::add)
-                    .orElseThrow()
-                    .assertEmptyPreamble();
-            final Translation functionDeclaration = toParagraphTranslation("%s () {\n%s%s}\n"
-                    .formatted(functionName, assertIsLine(namedParams), assertIsParagraph(blockStatements.body())));
-            return comment.add(functionDeclaration);
-        }
+        return requireNonNull(kotlinDelegate).functionDeclarationStatement(ctx, foundForwardDeclarations, typeStack);
     }
 
     @Override
