@@ -26,15 +26,10 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
     fun parenthesisExpression(ctx: BashpileParser.ParenthesisExpressionContext): Translation {
         LOG.trace("In parenthesisExpression")
         // drop parenthesis
-        var ret: Translation = visitor.visit(ctx.expression())
+        val ret: Translation = visitor.visit(ctx.expression())
 
-        // only keep parenthesis for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
-        ret = if (ret.type().isPossiblyNumeric && BashTranslationHelper.inCalc(ctx)) {
-            ret.parenthesizeBody()
-        } else {
-            ret.metadata(ret.metadata() + PARENTHESIZED)
-        }
-        return ret
+        // only add parenthesis back in for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
+        return ret.metadata(ret.metadata() + PARENTHESIZED)
     }
 
     fun calculationExpression(ctx: CalculationExpressionContext): Translation {
@@ -53,8 +48,12 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
         return if (Translation.areNumericExpressions(first, second)) {
             // Numbers -- We need the Basic Calculator to process
-            if (first.metadata().contains(CALCULATION) || second.metadata().contains(CALCULATION)) {
-                childTranslations = childTranslations.map { unwrapCalculation(it) }
+            childTranslations = childTranslations.map {
+                if (it.metadata().contains(CALCULATION)) { unwrapCalculation(it) } else it
+            }.map {
+                if (it.metadata().contains(PARENTHESIZED)) {
+                    it.metadata(it.metadata() - PARENTHESIZED).parenthesizeBody()
+                } else it
             }
             // first happy path executed, assume no nesting
             val translationsString = childTranslations.stream()
