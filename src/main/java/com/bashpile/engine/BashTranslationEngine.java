@@ -37,7 +37,6 @@ import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
-import static com.google.common.collect.Iterables.getLast;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -664,40 +663,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation calculationExpression(@Nonnull final BashpileParser.CalculationExpressionContext ctx) {
-        LOG.trace("In calculationExpression");
-        // get the child translations
-        List<Translation> childTranslations;
-        childTranslations = ctx.children.stream()
-                .map(requireNonNull(visitor)::visit)
-                .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
-                .toList();
-
-        // child translations in the format of 'expr operator expr', so we are only interested in the first and last
-        final Translation first = childTranslations.get(0);
-        final Translation second = getLast(childTranslations);
-        // types section
-        if (areNumericExpressions(first, second) && inCalc(ctx)) {
-            return toTranslation(childTranslations.stream(), NUMBER_TYPE, NORMAL);
-        } else if (areNumericExpressions(first, second)) {
-            final String translationsString = childTranslations.stream()
-                    .map(Translation::body).collect(Collectors.joining(" "));
-            return toTranslation(childTranslations.stream(), NUMBER_TYPE, NEEDS_INLINING_OFTEN)
-                    .body("bc <<< \"%s\"".formatted(translationsString));
-        } else if (areStringExpressions(first, second)) {
-            final String op = ctx.op.getText();
-            Asserts.assertEquals("+", op, "Only addition is allowed on Strings, but got " + op);
-            return toTranslation(Stream.of(first, second)
-                    .map(Translation::unquoteBody)
-                    .map(tr -> tr.lambdaBody(Strings::unparenthesize)));
-        // found no matching types -- error section
-        } else if (first.isNotFound() || second.isNotFound()) {
-            throw new UserError("`%s` or `%s` are undefined".formatted(
-                    first.body(), second.body()), lineNumber(ctx));
-        } else {
-            // throw type error for all others
-            throw new TypeError("Incompatible types in calc: %s and %s".formatted(
-                    first.type(), second.type()), lineNumber(ctx));
-        }
+        return requireNonNull(kotlinDelegate).calculationExpression(ctx);
     }
 
     @Override
