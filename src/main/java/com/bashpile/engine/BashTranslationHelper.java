@@ -192,10 +192,12 @@ public class BashTranslationHelper {
      * @param ctx The context to check.
      * @return If ctx is a child of a {@link BashpileParser.CalculationExpressionContext}.
      */
+    // TODO get rid of this in favor of a Translation with metadata instead
     /* package */ static boolean inCalc(@Nonnull final RuleContext ctx) {
         return in(ctx, BashpileParser.CalculationExpressionContext.class);
     }
 
+    // TODO get rid of this in favor of a Translation with metadata instead
     /* package */ static boolean inBlock(@Nonnull final RuleContext ctx) {
         return in(ctx, BashpileParser.FunctionBlockContext.class);
     }

@@ -721,7 +721,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         final String body = "[ %s \"%s\" ]".formatted(
                 primaryTranslations.getOrDefault(primary, primary), valueBeingTested.unquoteBody().body());
-        return new Translation(valueBeingTested.preamble(), body, STR_TYPE, List.of(NORMAL));
+        return new Translation(valueBeingTested.preamble(), body, STR_TYPE, List.of(CONDITIONAL));
     }
 
     @Override
@@ -774,17 +774,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation combiningExpression(BashpileParser.CombiningExpressionContext ctx) {
-        LOG.trace("In combiningExpression");
-        final String operator = ctx.combiningOperator().getText().equals("and") ? "&&" : "||";
-        final Translation firstTranslation =
-                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
-        final Translation secondTranslation =
-                visitor.visit(ctx.getChild(2)).inlineAsNeeded(BashTranslationHelper::unwindNested);
-
-        final String body = "%s %s %s".formatted(firstTranslation.unquoteBody().body(), operator,
-                secondTranslation.unquoteBody().body());
-        return toStringTranslation(body).addPreamble(firstTranslation.preamble())
-                .addPreamble(secondTranslation.preamble());
+        return requireNonNull(kotlinDelegate).combiningExpression(ctx);
     }
 
     @Override

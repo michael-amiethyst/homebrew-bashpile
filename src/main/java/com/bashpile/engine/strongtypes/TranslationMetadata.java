@@ -22,5 +22,7 @@ public enum TranslationMetadata {
      */
     INLINE,
     /** Something like "[ 4 < 5 ]" */
-    CONDITIONAL
+    CONDITIONAL,
+    /** Parenthesis were removed */
+    PARENTHESIZED
 }
