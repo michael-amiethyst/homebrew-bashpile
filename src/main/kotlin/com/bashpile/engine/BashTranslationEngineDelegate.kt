@@ -97,8 +97,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement()
             )
                 .map { visitor.visit(it) }
-                .map { tr: Translation -> tr.lambdaBodyLines { BashTranslationEngine.TAB + it } }
-                .reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
+                .map { tr: Translation -> tr.lambdaBodyLines { BashTranslationEngine.TAB + it }
+                    .lambdaBody { it.replace("exit 1", "return 1") }
+                }.reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
                 .orElseThrow()
                 .assertEmptyPreamble()
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")

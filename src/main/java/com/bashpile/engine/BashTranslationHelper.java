@@ -9,7 +9,6 @@ import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringUtils;
@@ -120,14 +119,12 @@ public class BashTranslationHelper {
         ifBody = lambdaAllLines(ifBody, str -> TAB + str);
         ifBody = lambdaFirstLine(ifBody, String::stripLeading);
 
-        // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
-        final String exitOrReturn = inBlock(ctx) ? "return" : "exit";
         final String plainFilename = StringUtils.removeStart(Strings.unquote(filename), "$");
         String elseBody = """
                 printf "Failed to create %s correctly, script output was:\\n"
                 cat %s
                 rm -f %s
-                %s 1""".formatted(plainFilename, filename, filename, exitOrReturn);
+                exit 1""".formatted(plainFilename, filename, filename);
         elseBody = lambdaAllLines(elseBody, str -> TAB + str);
         elseBody = lambdaFirstLine(elseBody, String::stripLeading);
         return """
@@ -184,24 +181,6 @@ public class BashTranslationHelper {
             return toLineTranslation("## %s\n".formatted(name));
         }
         return UNKNOWN_TRANSLATION;
-    }
-
-    // TODO get rid of this in favor of a Translation with metadata instead
-    /* package */ static boolean inBlock(@Nonnull final RuleContext ctx) {
-        return in(ctx, BashpileParser.FunctionBlockContext.class);
-    }
-
-    private static <T extends RuleContext> boolean in(
-            @Nonnull final RuleContext ctx, @Nonnull final Class<T> clazz) {
-        RuleContext curr = ctx;
-        boolean inCalc = false;
-        while (!inCalc && curr.parent != null) {
-            curr = curr.parent;
-            if (clazz.isInstance(curr)) {
-                inCalc = true;
-            }
-        }
-        return inCalc;
     }
 
     /** Get the Bashpile script linenumber that ctx is found in. */
