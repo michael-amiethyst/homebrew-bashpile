@@ -21,6 +21,7 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
  */
+// TODO in body() ensure that preamble is empty
 public class Translation {
 
     // static constants
@@ -40,7 +41,7 @@ public class Translation {
     /**
      * A '\n' as a Translation
      */
-    public static final Translation NEWLINE = toLineTranslation("\n");
+    public static final Translation NEWLINE = toStringTranslation("\n");
 
     private static final Pattern NUMBER = Pattern.compile("[\\d().]+");
 
@@ -52,25 +53,13 @@ public class Translation {
 
     @Nonnull private final List<TranslationMetadata> metadata;
 
+    // static initializers
+
     /**
-     * @param preamble This is text that needs to be emitted before the rest of the translation.<br>
-     *                 This is to handle the case of a nested command substitution, since they are not supported well
-     *                 in Bash (errored exit codes are ignored) we need to assign the inner command substitution to a
-     *                 variable and have the <code>body</code> just be the variable.
-     * @param body     The target shell script (e.g. Bash) literal text.
-     * @param type     The Bashpile type.  For Shell Strings and Command Substitutions this is the type of the result.
-     *                 E.g. $(expr 1 + 1) could have a type of int.
-     * @param metadata Further information on the type (e.g. is this a subshell?)
+     * @return A NORMAL STR Translation.
      */
-    public Translation(
-            @Nonnull String preamble,
-            @Nonnull String body,
-            @Nonnull Type type,
-            @Nonnull List<TranslationMetadata> metadata) {
-        this.preamble = preamble;
-        this.body = body;
-        this.type = type;
-        this.metadata = metadata;
+    public static @Nonnull Translation toStringTranslation(@Nonnull final String text) {
+        return new Translation(text, STR_TYPE, TranslationMetadata.NORMAL);
     }
 
     // static methods
@@ -93,39 +82,28 @@ public class Translation {
         return Stream.of(translations).map(Translation::parseUnknown).allMatch(x -> x.type().isNumeric());
     }
 
-    // static initializers
-
-    /**
-     * Asserts text is a collection of lines, with each ending with '\n', or the empty string.
-     *
-     * @return A NORMAL STR Translation.
-     */
-    public static @Nonnull Translation toParagraphTranslation(@Nonnull final String text) {
-        return new Translation(assertIsParagraph(text), STR_TYPE, TranslationMetadata.NORMAL);
-    }
-
-    /**
-     * Asserts text is a single line ending with '\n', or the empty string.
-     *
-     * @return A NORMAL STR Translation.
-     */
-    public static @Nonnull Translation toLineTranslation(@Nonnull final String text) {
-        return new Translation(assertIsLine(text), STR_TYPE, TranslationMetadata.NORMAL);
-    }
-
-    /**
-     * Asserts text has no linebreaks at all
-     *
-     * @return A NORMAL STR Translation.
-     */
-    public static @Nonnull Translation toStringTranslation(@Nonnull final String text) {
-        assertNoMatch(text, Pattern.compile("[^\n]*\n"));
-        return new Translation(text, STR_TYPE, TranslationMetadata.NORMAL);
-    }
-
-    // toPhraseTranslation not used/needed
-
     // constructors
+
+    /**
+     * @param preamble This is text that needs to be emitted before the rest of the translation.<br>
+     *                 This is to handle the case of a nested command substitution, since they are not supported well
+     *                 in Bash (errored exit codes are ignored) we need to assign the inner command substitution to a
+     *                 variable and have the <code>body</code> just be the variable.
+     * @param body     The target shell script (e.g. Bash) literal text.
+     * @param type     The Bashpile type.  For Shell Strings and Command Substitutions this is the type of the result.
+     *                 E.g. $(expr 1 + 1) could have a type of int.
+     * @param metadata Further information on the type (e.g. is this a subshell?)
+     */
+    public Translation(
+            @Nonnull String preamble,
+            @Nonnull String body,
+            @Nonnull Type type,
+            @Nonnull List<TranslationMetadata> metadata) {
+        this.preamble = preamble;
+        this.body = body;
+        this.type = type;
+        this.metadata = metadata;
+    }
 
     public Translation(@Nonnull final String text) {
         this(text, UNKNOWN_TYPE, List.of());
@@ -143,17 +121,6 @@ public class Translation {
             @Nonnull final Type type,
             @Nonnull final List<TranslationMetadata> translationMetadata) {
         this("", text, type, translationMetadata);
-    }
-
-    /**
-     * Accumulates all the stream translations' preambles and bodies into the result
-     */
-    public static @Nonnull Translation toTranslation(
-            @Nonnull final Stream<Translation> stream,
-            @Nonnull final Type type,
-            @Nonnull final TranslationMetadata translationMetadata) {
-        final Translation joined = stream.reduce(Translation::add).orElseThrow();
-        return new Translation(joined.preamble, joined.body, type, List.of(translationMetadata));
     }
 
     /**
@@ -383,8 +350,12 @@ public class Translation {
             String nextBody = Strings.addSpacesAroundParenthesis(body);
             // function calls may have redirect to /dev/null if only side effects needed
             nextBody = Strings.removeEnd(nextBody, ">/dev/null").stripTrailing();
+            // add INLINE and remove NEEDS INLINING OFTEN
+            var nextMetadata = new java.util.ArrayList<>(List.of(TranslationMetadata.INLINE));
+            nextMetadata.addAll(metadata);
+            nextMetadata.remove(TranslationMetadata.NEEDS_INLINING_OFTEN);
             return bodyLambda.apply(
-                    new Translation(preamble, "$(%s)".formatted(nextBody), type, List.of(TranslationMetadata.INLINE)));
+                    new Translation(preamble, "$(%s)".formatted(nextBody), type, nextMetadata));
         } // else
         return this;
     }

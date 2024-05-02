@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Order(70)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ListTest extends BashpileTest {
+public class ListBashpileTest extends BashpileTest {
     /**
      * Empty list
      */

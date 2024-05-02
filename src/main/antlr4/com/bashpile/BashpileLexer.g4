@@ -65,6 +65,8 @@ Unset   : 'unset';
 Empty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';
 FileExists: 'fileExists';
+RegularFileExists: 'regularFileExists';
+DirectoryExists: 'directoryExists';
 LessThan: '<';
 LessThanOrEquals: '<=';
 MoreThan: '>';

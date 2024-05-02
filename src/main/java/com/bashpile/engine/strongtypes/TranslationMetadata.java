@@ -16,11 +16,14 @@ public enum TranslationMetadata {
      * @see Translation#inlineAsNeeded(Function)
      */
     NEEDS_INLINING_OFTEN,
+    CALCULATION,
     /**
      * Our name for Bash command substitution, i.e. $(commands).
      * An inline translation may need the inline logic to be moved into the preamble still.
      */
     INLINE,
     /** Something like "[ 4 < 5 ]" */
-    CONDITIONAL
+    CONDITIONAL,
+    /** Parenthesis were removed */
+    PARENTHESIZED
 }

@@ -3,9 +3,8 @@
 /**
  * Run after a PR is merged to main.  brew audit command reads from the main/formula/bashpile.rb file.
  */
-// untap/tap
+// uninstall
 #(brew uninstall bashpile || true)
-#(brew untap michael-amiethyst/bashpile)
 
 // install
-#(brew install michael-amiethyst/bashpile/bashpile)
+#(brew install --HEAD michael-amiethyst/bashpile/bashpile)
