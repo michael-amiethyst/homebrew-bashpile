@@ -101,12 +101,15 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 .reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
                 .orElseThrow()
                 .assertEmptyPreamble()
-            Asserts.assertIsLine(namedParams)
-            Asserts.assertIsParagraph(blockStatements.body())
-            val functionDeclaration = Translation.toParagraphTranslation(
-                "$functionName () {\n" +
-                        "$namedParams${blockStatements.body()}\n"
-            )
+            namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
+            val blockBody = Asserts.assertIsParagraph(blockStatements.body()).removeSuffix("\n")
+            val functionText = """
+                $functionName () {
+                $namedParams
+                $blockBody
+                }
+                """.trimIndent() + "\n"
+            val functionDeclaration = Translation.toParagraphTranslation(functionText)
             comment.add(functionDeclaration)
         }
     }

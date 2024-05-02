@@ -101,6 +101,7 @@ public class Translation {
      *
      * @return A NORMAL STR Translation.
      */
+    // TODO remove, now a Bash formatter takes care of this
     public static @Nonnull Translation toParagraphTranslation(@Nonnull final String text) {
         return new Translation(assertIsParagraph(text), STR_TYPE, TranslationMetadata.NORMAL);
     }
@@ -144,17 +145,6 @@ public class Translation {
             @Nonnull final Type type,
             @Nonnull final List<TranslationMetadata> translationMetadata) {
         this("", text, type, translationMetadata);
-    }
-
-    /**
-     * Accumulates all the stream translations' preambles and bodies into the result
-     */
-    public static @Nonnull Translation toTranslation(
-            @Nonnull final Stream<Translation> stream,
-            @Nonnull final Type type,
-            @Nonnull final TranslationMetadata translationMetadata) {
-        final Translation joined = stream.reduce(Translation::add).orElseThrow();
-        return new Translation(joined.preamble, joined.body, type, List.of(translationMetadata));
     }
 
     /**
