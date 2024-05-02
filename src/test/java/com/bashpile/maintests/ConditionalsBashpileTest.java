@@ -152,6 +152,26 @@ public class ConditionalsBashpileTest extends BashpileTest {
     }
 
     @Test
+    @Order(82)
+    public void ifRegularFileExistsWorks() {
+        final ExecutionResults results = runText("""
+                if regularFileExists "pom.xml":
+                    print("true")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(83)
+    public void ifDirectoryExistsWorks() {
+        final ExecutionResults results = runText("""
+                if directoryExists "bin":
+                    print("true")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
     @Order(90)
     public void ifCommandWorks() {
         final ExecutionResults results = runText("""

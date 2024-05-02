@@ -33,7 +33,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             Pair("isset", "-n"),
             Pair("isEmpty", "-z"),
             Pair("isNotEmpty", "-n"),
-            Pair("fileExists", "-e")
+            Pair("fileExists", "-e"),
+            Pair("regularFileExists", "-f"),
+            Pair("directoryExists", "-d")
         )
 
         private val LOG: Logger = LogManager.getLogger(BashTranslationEngineDelegate::class)
