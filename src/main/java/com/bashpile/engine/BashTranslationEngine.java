@@ -4,12 +4,10 @@ import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
-import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
-import com.bashpile.exceptions.UserError;
 import com.google.common.collect.Streams;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -23,14 +21,12 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.bashpile.Asserts.*;
+import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
@@ -100,7 +96,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation originHeader() {
         final ZonedDateTime now = ZonedDateTime.now();
-        return toParagraphTranslation("""
+        return toStringTranslation("""
                 #
                 # Generated from %s on %s (timestamp %d)
                 #
@@ -131,14 +127,14 @@ public class BashTranslationEngine implements TranslationEngine {
                 declare -i s
                 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
                 """;
-        return toParagraphTranslation("# strict mode header\n%s".formatted(strictMode));
+        return toStringTranslation("# strict mode header\n%s".formatted(strictMode));
     }
 
     @Override
     public @Nonnull Translation importsHeaders() {
         // stub
         String text = "";
-        return toParagraphTranslation(text);
+        return toStringTranslation(text);
     }
 
     // statement translations
@@ -170,7 +166,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
             // create a large if-else block with traps
             final String body = getBodyStringForCreatesStatement(ctx, shellString, filename, visitor, createFilenamesStack);
-            final Translation bodyTranslation = toParagraphTranslation(body);
+            final Translation bodyTranslation = toStringTranslation(body);
 
             // merge translations and preambles
             return comment.add(subcomment.add(bodyTranslation).mergePreamble());
@@ -186,7 +182,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation gate = requireNonNull(visitor).visit(ctx.expression());
         final Translation bodyStatements = ctx.indentedStatements().statement().stream()
                 .map(visitor::visit).reduce(Translation::add).orElseThrow().lambdaBodyLines(x -> "    " + x);
-        final Translation whileTranslation = Translation.toParagraphTranslation("""
+        final Translation whileTranslation = Translation.toStringTranslation("""
                 while %s; do
                 %sdone
                 """.formatted(gate.body(), bodyStatements.body()))
@@ -228,7 +224,7 @@ public class BashTranslationEngine implements TranslationEngine {
             final Translation blockStatements = visitBodyStatements(
                     ctx.functionBlock().statement(), requireNonNull(visitor));
             // define function and then call immediately with no arguments
-            final Translation selfCallingAnonymousFunction = toParagraphTranslation("%s () {\n%s}; %s\n"
+            final Translation selfCallingAnonymousFunction = toStringTranslation("%s () {\n%s}; %s\n"
                     .formatted(anonymousFunctionName, blockStatements.body(), anonymousFunctionName));
             return comment.add(selfCallingAnonymousFunction);
         }
@@ -279,7 +275,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 %s%s%s
                 fi
                 """.formatted(guard.body(), ifBlock, elseIfBlock, elseBlock);
-        return toParagraphTranslation(guard.preamble() + conditional);
+        return toStringTranslation(guard.preamble() + conditional);
     }
 
     @Override
@@ -310,7 +306,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 %sesac
                 """.formatted(expressionTranslation.body(), cases.body());
         final Translation comment = createCommentTranslation("switch statement", lineNumber(ctx));
-        return comment.add(toParagraphTranslation(template))
+        return comment.add(toStringTranslation(template))
                 .addPreamble(expressionTranslation.preamble()).addPreamble(cases.preamble());
     }
 
@@ -357,7 +353,7 @@ public class BashTranslationEngine implements TranslationEngine {
             modifiers = modifiers.addOption("a");
         }
         final Translation variableDeclaration =
-                toLineTranslation("declare %s%s\n".formatted(modifiers.body(), lhsVariableName));
+                toStringTranslation("declare %s%s\n".formatted(modifiers.body(), lhsVariableName));
 
         final boolean isListAssignment = lhsType.isList() && rhsExprTranslation.isList();
         if (isListAssignment && !rhsExprTranslation.isListOf()) {
@@ -367,7 +363,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // merge expr into the assignment
         final String assignmentBody = rhsExprExists ? "%s=%s\n".formatted(lhsVariableName, rhsExprTranslation.body()) : "";
         final Translation assignment =
-                toParagraphTranslation(assignmentBody).addPreamble(rhsExprTranslation.preamble());
+                toStringTranslation(assignmentBody).addPreamble(rhsExprTranslation.preamble());
 
         // order is comment, preamble, subcomment, variable declaration, assignment
         final Translation subcommentToAssignment = subcomment.add(variableDeclaration).add(assignment);
@@ -421,7 +417,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String reassignmentBody = "%s%s%s%s\n"
                 .formatted(lhsVariableName, listAccessor, assignOperator, rhsExprTranslation.body());
         final Translation reassignment =
-                toLineTranslation(reassignmentBody).addPreamble(rhsExprTranslation.preamble());
+                toStringTranslation(reassignmentBody).addPreamble(rhsExprTranslation.preamble());
 
         // order is: comment, preamble, subcomment, reassignment
         final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
@@ -434,7 +430,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // guard
         final BashpileParser.ArgumentListContext argList = ctx.argumentList();
         if (argList == null) {
-            return toLineTranslation("printf \"\\n\"\n");
+            return toStringTranslation("printf \"\\n\"\n");
         }
 
         // body

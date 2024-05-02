@@ -110,7 +110,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 $blockBody
                 }
                 """.trimIndent() + "\n"
-            val functionDeclaration = Translation.toParagraphTranslation(functionText)
+            val functionDeclaration = Translation.toStringTranslation(functionText)
             comment.add(functionDeclaration)
         }
     }

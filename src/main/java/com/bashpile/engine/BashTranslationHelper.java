@@ -172,13 +172,13 @@ public class BashTranslationHelper {
     }
 
     /* package */ static @Nonnull Translation createCommentTranslation(@Nonnull final String name, final int lineNumber) {
-        return toLineTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
+        return toStringTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
     }
 
     /* package */ static @Nonnull Translation subcommentTranslationOrDefault(
             final boolean subcommentNeeded, @Nonnull final String name) {
         if (subcommentNeeded) {
-            return toLineTranslation("## %s\n".formatted(name));
+            return toStringTranslation("## %s\n".formatted(name));
         }
         return UNKNOWN_TRANSLATION;
     }
@@ -258,7 +258,7 @@ public class BashTranslationHelper {
                 %s
                     ;;
                 """.formatted(pattern.body(), statements.body());
-        return toParagraphTranslation(template)
+        return toStringTranslation(template)
                 .lambdaBodyLines(x -> "    " + x)
                 .addPreamble(pattern.preamble())
                 .addPreamble(statements.preamble());
@@ -324,11 +324,11 @@ public class BashTranslationHelper {
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
 
         // create 5 lines of translations
-        final Translation subcomment = toLineTranslation("## unnest for %s\n".formatted(tr.body()));
-        final Translation export     = toLineTranslation("export %s\n".formatted(subshellReturn));
-        final Translation assign     = toLineTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
-        final Translation exitCode   = toLineTranslation("%s=$?\n".formatted(exitCodeName));
-        final Translation check      = toLineTranslation("""
+        final Translation subcomment = toStringTranslation("## unnest for %s\n".formatted(tr.body()));
+        final Translation export     = toStringTranslation("export %s\n".formatted(subshellReturn));
+        final Translation assign     = toStringTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
+        final Translation exitCode   = toStringTranslation("%s=$?\n".formatted(exitCodeName));
+        final Translation check      = toStringTranslation("""
                 if [ "$%s" -ne 0 ]; then exit "$%s"; fi
                 """.formatted(exitCodeName, exitCodeName));
 
