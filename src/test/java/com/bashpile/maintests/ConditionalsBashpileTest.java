@@ -1,10 +1,11 @@
 package com.bashpile.maintests;
 
 import com.bashpile.shell.ExecutionResults;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -145,6 +146,26 @@ public class ConditionalsBashpileTest extends BashpileTest {
     public void ifFileExistsWorks() {
         final ExecutionResults results = runText("""
                 if fileExists "pom.xml":
+                    print("true")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(82)
+    public void ifRegularFileExistsWorks() {
+        final ExecutionResults results = runText("""
+                if regularFileExists "pom.xml":
+                    print("true")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(83)
+    public void ifDirectoryExistsWorks() {
+        final ExecutionResults results = runText("""
+                if directoryExists "bin":
                     print("true")""");
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
@@ -300,17 +321,22 @@ public class ConditionalsBashpileTest extends BashpileTest {
 
     @Test
     @Order(160)
-    public void ifWithInlineCanRaiseError() {
-        final ExecutionResults results = runText("""
-                #(rm -f error.log)
-                #(trap 'cat error.log; exit 1' INT)
-                #(printf "errorLog" > error.log; kill -INT $$) creates "error.log":
-                    if isEmpty ret:
-                        print("true")
-                    else:
-                        print("false")""");
-        assertFailedExitCode(results);
-        assertEquals("errorLog\n", results.stdout());
+    public void ifWithInlineCanRaiseError() throws IOException {
+        try {
+            String contents = "ConditionalsBashpileTest.ifWithInlineCanRaiseError test";
+            final ExecutionResults results = runText("""
+                    #(rm -f error.log)
+                    #(trap 'cat error.log; exit 1' INT)
+                    #(printf "%s" > error.log; kill -INT $$) creates "error.log":
+                        if isEmpty ret:
+                            print("true")
+                        else:
+                            print("false")""".formatted(contents));
+            assertFailedExitCode(results);
+            assertEquals(contents + "\n", results.stdout());
+        } finally {
+            Files.deleteIfExists(Path.of("error.log"));
+        }
     }
 
     @Test
@@ -673,5 +699,22 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertTrue(results.stdin().contains("declare -x log"));
         assertSuccessfulExitCode(results);
         assertEquals("third path\n", results.stdout());
+    }
+
+    @Test
+    @Order(420)
+    public void ifsWithParenthesisWork() {
+        final String bashpileScript = """
+                checkT: bool = 4 < 5
+                f: bool = false
+                if true and (isset arguments[1] and arguments[1] == "-"):
+                    print("true")
+                """;
+        final ExecutionResults results = runText(bashpileScript, "-");
+        assertSuccessfulExitCode(results);
+        // output should be like:
+        // if true && { [ -n "${1+default}" ] && [ "$1" == "-" ]; }; then ...
+        assertTrue(results.stdin().contains("]; };"));
+        assertEquals("true\n", results.stdout());
     }
 }

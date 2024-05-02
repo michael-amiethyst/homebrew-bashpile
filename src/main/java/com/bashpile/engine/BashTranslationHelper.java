@@ -9,7 +9,6 @@ import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringUtils;
@@ -120,14 +119,12 @@ public class BashTranslationHelper {
         ifBody = lambdaAllLines(ifBody, str -> TAB + str);
         ifBody = lambdaFirstLine(ifBody, String::stripLeading);
 
-        // `return` in an if statement doesn't work, so we need to `exit` if we're not in a function or subshell
-        final String exitOrReturn = inBlock(ctx) ? "return" : "exit";
         final String plainFilename = StringUtils.removeStart(Strings.unquote(filename), "$");
         String elseBody = """
                 printf "Failed to create %s correctly, script output was:\\n"
                 cat %s
                 rm -f %s
-                %s 1""".formatted(plainFilename, filename, filename, exitOrReturn);
+                exit 1""".formatted(plainFilename, filename, filename);
         elseBody = lambdaAllLines(elseBody, str -> TAB + str);
         elseBody = lambdaFirstLine(elseBody, String::stripLeading);
         return """
@@ -175,42 +172,15 @@ public class BashTranslationHelper {
     }
 
     /* package */ static @Nonnull Translation createCommentTranslation(@Nonnull final String name, final int lineNumber) {
-        return toLineTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
+        return toStringTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
     }
 
     /* package */ static @Nonnull Translation subcommentTranslationOrDefault(
             final boolean subcommentNeeded, @Nonnull final String name) {
         if (subcommentNeeded) {
-            return toLineTranslation("## %s\n".formatted(name));
+            return toStringTranslation("## %s\n".formatted(name));
         }
         return UNKNOWN_TRANSLATION;
-    }
-
-    /**
-     * Checks if this context is in a calculation context.
-     *
-     * @param ctx The context to check.
-     * @return If ctx is a child of a {@link BashpileParser.CalculationExpressionContext}.
-     */
-    /* package */ static boolean inCalc(@Nonnull final RuleContext ctx) {
-        return in(ctx, BashpileParser.CalculationExpressionContext.class);
-    }
-
-    /* package */ static boolean inBlock(@Nonnull final RuleContext ctx) {
-        return in(ctx, BashpileParser.FunctionBlockContext.class);
-    }
-
-    private static <T extends RuleContext> boolean in(
-            @Nonnull final RuleContext ctx, @Nonnull final Class<T> clazz) {
-        RuleContext curr = ctx;
-        boolean inCalc = false;
-        while (!inCalc && curr.parent != null) {
-            curr = curr.parent;
-            if (clazz.isInstance(curr)) {
-                inCalc = true;
-            }
-        }
-        return inCalc;
     }
 
     /** Get the Bashpile script linenumber that ctx is found in. */
@@ -288,7 +258,7 @@ public class BashTranslationHelper {
                 %s
                     ;;
                 """.formatted(pattern.body(), statements.body());
-        return toParagraphTranslation(template)
+        return toStringTranslation(template)
                 .lambdaBodyLines(x -> "    " + x)
                 .addPreamble(pattern.preamble())
                 .addPreamble(statements.preamble());
@@ -354,11 +324,11 @@ public class BashTranslationHelper {
         final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
 
         // create 5 lines of translations
-        final Translation subcomment = toLineTranslation("## unnest for %s\n".formatted(tr.body()));
-        final Translation export     = toLineTranslation("export %s\n".formatted(subshellReturn));
-        final Translation assign     = toLineTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
-        final Translation exitCode   = toLineTranslation("%s=$?\n".formatted(exitCodeName));
-        final Translation check      = toLineTranslation("""
+        final Translation subcomment = toStringTranslation("## unnest for %s\n".formatted(tr.body()));
+        final Translation export     = toStringTranslation("export %s\n".formatted(subshellReturn));
+        final Translation assign     = toStringTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
+        final Translation exitCode   = toStringTranslation("%s=$?\n".formatted(exitCodeName));
+        final Translation check      = toStringTranslation("""
                 if [ "$%s" -ne 0 ]; then exit "$%s"; fi
                 """.formatted(exitCodeName, exitCodeName));
 

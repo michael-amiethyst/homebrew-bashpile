@@ -35,6 +35,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void bpcDeploysSuccessfully() throws IOException {
         log.info("In bpcDeploysSuccessfully");
 
+        ensureLinuxLineEndings("bin/bpc");
         ensureLinuxLineEndings("bin/bpc.bps");
 
         // weird, intermittent errors running bpr in Java like characters getting skipped
@@ -60,7 +61,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         Assumptions.assumeTrue(bpcDeployed);
 
         // ensure bin/bpr is using /n instead of /r/n
-        ensureLinuxLineEndings("bin/bpc");
+        ensureLinuxLineEndings("bin/bpr.bps");
 
         // weird, intermittent errors running bpr in Java like characters getting skipped
         int exitCode = ExecutionResults.GENERIC_FAILURE;
