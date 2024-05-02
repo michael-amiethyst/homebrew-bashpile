@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Order(80)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class LoopsTest extends BashpileTest {
+public class LoopsBashpileTest extends BashpileTest {
     @Test
     @Order(10)
     public void whileLoopWorks() {
