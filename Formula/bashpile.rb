@@ -14,7 +14,7 @@ class Bashpile < Formula
   # TODO add gnu-getopt for OSX or FreeBSD only
 
   def install
-    system "mvn", "clean", "verify", "-Dmaven.test.skip=true"
+    system "mvn", "clean", "verify", "-Dskip.failsafe.tests=true"
     bin.install "bin/bashpile.jar"
     bin.install "bin/bpc"
     FileUtils.cp "#{bin}/bpc", "#{bin}/bashpilec"
