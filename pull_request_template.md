@@ -8,5 +8,5 @@
 
 ## Merge to Main - Checklist before requesting a review
 - [ ] I have installed this version locally with `bin/deploy-head`
-- [ ] I have tested on Debian with `docker build -t "debian-bashpile" src/test/resources/docker/debian`
+- [ ] I have tested on Debian with `docker build --no-cache -t "debian-bashpile" src/test/resources/docker/debian`
 - [ ] I have regenerated the docutils documentation with `bin/generate-docs`
