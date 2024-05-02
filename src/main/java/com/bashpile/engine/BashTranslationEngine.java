@@ -45,12 +45,7 @@ public class BashTranslationEngine implements TranslationEngine {
     /** Four spaces */
     public static final String TAB = "    ";
 
-    private static final Map<String, String> primaryTranslations = Map.of(
-            "unset", "-z",
-            "isset", "-n",
-            "isEmpty", "-z",
-            "isNotEmpty", "-n",
-            "fileExists", "-e",
+    private static final Map<String, String> binaryPrimaryTranslations = Map.of(
             "===", "==",
             "!==", "!=");
 
@@ -597,26 +592,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation unaryPrimaryExpression(BashpileParser.UnaryPrimaryExpressionContext ctx) {
-        LOG.trace("In unaryPrimaryExpression");
-        final String primary = ctx.unaryPrimary().getText();
-        Translation valueBeingTested;
-        // right now all implemented primaries are string tests
-        valueBeingTested = requireNonNull(visitor).visit(ctx.expression()).inlineAsNeeded(BashTranslationHelper::unwindNested);
-
-        // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
-        // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
-        final boolean isSetCheck = List.of("isset", "unset").contains(primary);
-        if (isSetCheck) {
-            // remove ${ and } as needed
-            String modifiedValueBeingTested = StringUtils.removeStart(valueBeingTested.body(), "$");
-            modifiedValueBeingTested = StringUtils.removeStart(modifiedValueBeingTested, "{");
-            modifiedValueBeingTested = StringUtils.removeEnd(modifiedValueBeingTested, "}");
-            valueBeingTested = valueBeingTested.body("${%s+default}".formatted(modifiedValueBeingTested));
-        }
-
-        final String body = "[ %s \"%s\" ]".formatted(
-                primaryTranslations.getOrDefault(primary, primary), valueBeingTested.unquoteBody().body());
-        return new Translation(valueBeingTested.preamble(), body, STR_TYPE, List.of(CONDITIONAL));
+        return requireNonNull(kotlinDelegate).unaryPrimaryExpression(ctx);
     }
 
     @Override
@@ -638,7 +614,7 @@ public class BashTranslationEngine implements TranslationEngine {
         } // else make a non-trivial string or numeric primary
 
         String body;
-        primary = primaryTranslations.getOrDefault(primary, primary);
+        primary = binaryPrimaryTranslations.getOrDefault(primary, primary);
         String not = "";
         final boolean numeric = firstTranslation.type().isNumeric() && secondTranslation.type().isNumeric();
         if (numeric) {

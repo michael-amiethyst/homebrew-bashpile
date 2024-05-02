@@ -2,6 +2,7 @@ package com.bashpile.engine
 
 import com.bashpile.Asserts
 import com.bashpile.BashpileParser
+import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.createCommentTranslation
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
@@ -15,6 +16,7 @@ import com.bashpile.exceptions.UserError
 import com.google.common.collect.Iterables
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.apache.commons.lang3.StringUtils
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.util.concurrent.atomic.AtomicInteger
@@ -25,6 +27,15 @@ import java.util.stream.Stream
 class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
     companion object {
+
+        private val unaryPrimaryTranslations = mapOf(
+            Pair("unset", "-z"),
+            Pair("isset", "-n"),
+            Pair("isEmpty", "-z"),
+            Pair("isNotEmpty", "-n"),
+            Pair("fileExists", "-e")
+        )
+
         private val LOG: Logger = LogManager.getLogger(BashTranslationEngineDelegate::class)
     }
 
@@ -171,20 +182,42 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
     }
 
     private fun unwrapCalculation(translation: Translation): Translation {
-        // in nested calc, first or second may be wrapped in inlines "$()" or parenthesis
+        // in nested calc, first or second may be wrapped in inlines "$()" or parenthesis or "$( ())"
         var ret = translation.lambdaBody { body2 -> body2
-            .removePrefix("$(")
-            .removePrefix(" ")
-            .removeSuffix(")")
+            .removeSurrounding("$(", ")")
+            .trim()
         }
         var parens = false
         if (ret.body().startsWith("(") && ret.body().endsWith(")")) {
             parens = true
-            ret = ret.lambdaBody { body -> body.removePrefix("(").removeSuffix(")") }
+            ret = ret.lambdaBody { body -> body.removeSurrounding("(", ")") }
         }
-        ret = ret.lambdaBody { body -> body.removePrefix("bc <<< \"").removeSuffix("\"") }
+        ret = ret.lambdaBody { body -> body.removeSurrounding("bc <<< \"","\"") }
         if (parens) ret = ret.parenthesizeBody()
         return ret
+    } // end of calculationExpression helpers
+
+    fun unaryPrimaryExpression(ctx: UnaryPrimaryExpressionContext): Translation {
+        LOG.trace("In unaryPrimaryExpression")
+        var primary = ctx.unaryPrimary().text
+        var valueBeingTested: Translation
+        // right now all implemented primaries are string tests
+        valueBeingTested = visitor.visit(ctx.expression())
+            .inlineAsNeeded { tr: Translation? -> BashTranslationHelper.unwindNested(tr!!) }
+
+        // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
+        // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
+        val isSetCheck = listOf("isset", "unset").contains(primary)
+        if (isSetCheck) {
+            // remove ${ and } as needed
+            var modifiedValueBeingTested = StringUtils.removeStart(valueBeingTested.body(), "$")
+            modifiedValueBeingTested = StringUtils.removeStart(modifiedValueBeingTested, "{")
+            modifiedValueBeingTested = StringUtils.removeEnd(modifiedValueBeingTested, "}")
+            valueBeingTested = valueBeingTested.body("\${$modifiedValueBeingTested+default}")
+        }
+        primary = unaryPrimaryTranslations.getOrDefault(primary, primary)
+        val body = "[ $primary \"${valueBeingTested.unquoteBody().body()}\" ]"
+        return Translation(valueBeingTested.preamble(), body, Type.STR_TYPE, listOf(CONDITIONAL))
     }
 
     fun combiningExpression(ctx: BashpileParser.CombiningExpressionContext): Translation {
