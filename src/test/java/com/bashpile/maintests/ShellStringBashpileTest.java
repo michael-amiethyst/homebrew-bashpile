@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Order(50)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -212,7 +213,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Order(140)
     public void javaShellLineWorks() {
         String jarPath = "bin/bashpile.jar";
-        assertTrue(Files.exists(Path.of(jarPath)));
+        assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
                 java -help""".formatted(jarPath));
@@ -224,7 +225,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Order(150)
     public void javaShellLineWithVariableWorks() {
         String jarPath = "bin/bashpile.jar";
-        assertTrue(Files.exists(Path.of(jarPath)));
+        assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
                 __bp_test=y java -help""".formatted(jarPath));
@@ -236,7 +237,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Order(160)
     public void javaShellLineWithDoubleQuotedVariableWorks() {
         String jarPath = "bin/bashpile.jar";
-        assertTrue(Files.exists(Path.of(jarPath)));
+        assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
                 __bp_test="yes yes" java -help""".formatted(jarPath));
@@ -248,7 +249,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Order(170)
     public void javaShellLineWithSingleQuotedVariableWorks() {
         String jarPath = "bin/bashpile.jar";
-        assertTrue(Files.exists(Path.of(jarPath)));
+        assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
                 __bp_test='yes yes' java -help""".formatted(jarPath));
@@ -260,7 +261,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Order(180)
     public void shellLineInIfStatementWorks() {
         String jarPath = "bin/bashpile.jar";
-        assertTrue(Files.exists(Path.of(jarPath)));
+        assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
                 if "*.jarr" != jarPath:
@@ -274,7 +275,7 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Order(190)
     public void nestedShellLineInIfStatementWorks() {
         String jarPath = "bin/bashpile.jar";
-        assertTrue(Files.exists(Path.of(jarPath)));
+        assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
                 if "*.jarr" == jarPath:
