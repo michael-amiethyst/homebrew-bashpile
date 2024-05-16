@@ -26,3 +26,4 @@
 * 0.21.1 - Getopt switch fix
 * 0.21.2 - If regularFileExists (-f), directoryExists (-d).  Fixed a few TODOs, Kotlin integration
 * 0.21.3 - Fix for error on brew install now that more testing was enabled
+* 0.21.4 - Pulled extra testing during install
