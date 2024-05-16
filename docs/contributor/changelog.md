@@ -31,3 +31,4 @@
 * 0.21.6 - OSX Runtime fixes to verify Bash and gnu-getopt are on the PATH
 * 0.21.7 - Scripts with dashes (such as 'docker-compose') register as linux commands
 * 0.21.8 - Fix for PATH and other environment variables not passed into embedded shell
+* 0.22.0 - Added increment operator.  Added simpler integer-only translations

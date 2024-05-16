@@ -302,4 +302,17 @@ class ExpressionBashpileTest extends BashpileTest {
         final List<String> lines = results.stdoutLines();
         assertEquals("Hello World", lines.get(0));
     }
+
+    // TODO uncomment 0.22.0
+//    @Test
+//    @Order(200)
+//    public void incrementWorks() {
+//        final String bashpile = """
+//                i: int = 0
+//                i++
+//                print(i)""";
+//        final ExecutionResults results = runText(bashpile);
+//        assertSuccessfulExitCode(results);
+//        assertEquals("1\n", results.stdout());
+//    }
 }
