@@ -1,4 +1,4 @@
 #!/usr/bin/env bpr
 
-docutils docs/index.rst docs-generated/index.html
-docutils docs/tutorial/index.rst docs-generated/tutorial/index.html
+docutils docs/enduser/index.rst docs/generated/index.html
+docutils docs/enduser/tutorial/index.rst docs/generated/tutorial/index.html

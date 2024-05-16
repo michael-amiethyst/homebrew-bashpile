@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-04-16T14:34:05.358091064-07:00[America/Los_Angeles] (timestamp 1713303245358)
+# Generated from bin/bpr.bps on 2024-05-02T12:17:11.976868718-07:00[America/Los_Angeles] (timestamp 1714677431976)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -71,7 +71,7 @@ runTranslation() {
     set -o noclobber
     "$absoluteFilename" "${args[@]}" 2>&1 | tee "bpr.log"
   ) 2>/dev/null; then
-    trap 'rm -f bpr.log; exit 10' INT TERM EXIT
+    trap 'rm -f bpr.log; return 10' INT TERM EXIT
     ## wrapped body of creates statement
     if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' >/dev/null 2>&1; then
       # expression statement, Bashpile line 78
