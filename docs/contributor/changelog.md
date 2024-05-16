@@ -27,3 +27,4 @@
 * 0.21.2 - If regularFileExists (-f), directoryExists (-d).  Fixed a few TODOs, Kotlin integration
 * 0.21.3 - Fix for error on brew install now that more testing was enabled
 * 0.21.4 - Pulled extra testing during install
+* 0.22.0 - Added increment operator.  Added simpler integer-only translations
