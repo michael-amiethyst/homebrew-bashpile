@@ -35,6 +35,7 @@ import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.SimpleType.INT;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
@@ -49,18 +50,22 @@ public class BashTranslationHelper {
     /**
      * This Pattern has three matching groups.
      * They are everything before the command substitution, the command substitution, and everything after.
+     * The middle group has a negative lookahead, "(?!\()", to ignore the arithmetic built-in $(( ))
      */
-    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*?)(\\$\\(.*\\))(.*?)");
+    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*?)(\\$\\((?!\\().*?\\))(.*?)");
 
     /**
      * This single-line Pattern has three matching groups.
      * They are the start of the outer command substitution, the inner command substitution and the remainder of
-     * the outer command substitution.
+     * the outer command substitution.  The first two groups have a negative lookahead, "(?!\()", to ignore
+     * the arithmetic built-in $(( ))
      * <br>
+     * TODO 0.22.0 remove outer negative lookahead.  We do want to unwind $(( $(bad_command) ))
+     * TODO 0.22.0 check if this bug was fixed by the $(( )) update
      * WARNING: bug on two different, non-nesting command substitutions
      */
     public static final Pattern NESTED_COMMAND_SUBSTITUTION =
-            Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
+            Pattern.compile("(?s)(\\$\\((?!\\().*?)(\\$\\((?!\\().*?\\))(.*?\\))");
 
     private static final Pattern escapedNewline = Pattern.compile("\\\\\\r?\\n\\s*");
 
@@ -231,6 +236,7 @@ public class BashTranslationHelper {
     /* package */ static Translation visitGuardingExpression(TerminalNode notNode, Translation expressionTranslation) {
         final Translation not = notNode != null ? toStringTranslation("! ") : UNKNOWN_TRANSLATION;
         expressionTranslation = unwindAll(expressionTranslation);
+        // TODO 0.22.0 use $(( )) for ints
         if (expressionTranslation.type().isNumeric()) {
             // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
             expressionTranslation = expressionTranslation
@@ -358,31 +364,47 @@ public class BashTranslationHelper {
         return expression;
     }
 
+    // TODO 0.22.0 rename family of functions typecastFrom...
     /* package */ static @Nonnull Translation typecastToInt(
             @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        // parse expression to a BigInteger
-        BigInteger expressionValue;
-        try {
-            expressionValue = new BigInteger(expression.body());
-        } catch (final NumberFormatException e) {
-            throw new UserError(
-                    "Couldn't parse '%s' to an INT.  Typecasts only work on literals, was this an ID or function call?"
-                            .formatted(expression.body()), lineNumber);
-        }
+        if (!expression.metadata().contains(CALCULATION)) {
+            // parse expression to a BigInteger
+            BigInteger expressionValue;
+            try {
+                expressionValue = new BigInteger(expression.body());
+            } catch (final NumberFormatException e) {
+                String message = "Couldn't parse '%s' to an INT.  " +
+                        "Typecasts only work on literals, was this an ID or function call?";
+                throw new UserError(message.formatted(expression.body()), lineNumber);
+            }
 
-        // cast
-        switch (castTo) {
-            case BOOL -> expression =
-                    expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
-            case INT, FLOAT -> {}
-            case STR -> expression = expression.quoteBody();
-            // no list to int conversion
-            default -> throw typecastError;
+            // cast
+            switch (castTo) {
+                case BOOL -> expression =
+                        expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
+                case INT, FLOAT -> {}
+                case STR -> expression = expression.quoteBody();
+                // no list to int conversion
+                default -> throw typecastError;
+            }
+            return expression;
+        } else {
+            // Int or Float calculation
+            switch (castTo) {
+                // Bash int to bool is the opposite of C
+                case BOOL -> expression = expression.body("""
+                        $(if [ %s -eq 0 ]; then echo "true"; else echo "false"; fi)"""
+                        .formatted(expression.body()));
+                case INT, FLOAT -> {}
+                case STR -> expression = expression.quoteBody();
+                // no list to int conversion
+                default -> throw typecastError;
+            }
+            return expression;
         }
-        return expression;
     }
 
     /* package */ static @Nonnull Translation typecastToFloat(
