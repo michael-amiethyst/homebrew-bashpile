@@ -61,8 +61,6 @@ public class BashTranslationHelper {
      * the arithmetic built-in $(( ))
      * <br>
      * TODO 0.22.0 remove outer negative lookahead.  We do want to unwind $(( $(bad_command) ))
-     * TODO 0.22.0 check if this bug was fixed by the $(( )) update
-     * WARNING: bug on two different, non-nesting command substitutions
      */
     public static final Pattern NESTED_COMMAND_SUBSTITUTION =
             Pattern.compile("(?s)(\\$\\((?!\\().*?)(\\$\\((?!\\().*?\\))(.*?\\))");
@@ -280,6 +278,7 @@ public class BashTranslationHelper {
         return ret;
     }
 
+    // TODO factor out "Unwinder" class and re-implement without regular expressions.  Use string scanning instead
     /* package */ static @Nonnull Translation unwindNested(@Nonnull final Translation tr) {
         Translation ret = tr;
         while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
@@ -291,16 +290,47 @@ public class BashTranslationHelper {
     private static @Nonnull Translation unwindOnMatch(@Nonnull final Translation tr, @Nonnull final Pattern pattern) {
         Translation ret = tr;
         // extract inner command substitution
-        final Matcher bodyMatcher = pattern.matcher(ret.body());
-        if (!bodyMatcher.find()) {
-            return ret;
+        String middleGroup;
+        String toProcess = ret.body();
+        String processedBodyPrefix = "";
+        do {
+            final Matcher bodyMatcher = pattern.matcher(toProcess);
+            if (!bodyMatcher.find()) {
+                return ret;
+            }
+            middleGroup = bodyMatcher.group(2);
+
+            if (!mismatchedParenthesis(middleGroup)) {
+                // parenthesis match and no outer `$(`
+                final Translation unnested = unwindBody(new Translation(middleGroup, Type.STR_TYPE, NORMAL));
+                // replace group
+                final String unnestedBody = Matcher.quoteReplacement(unnested.body());
+                LOG.debug("Replacing with {}", unnestedBody);
+                ret = ret.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
+                ret = ret.addPreamble(unnested.preamble());
+            } else if (!bodyMatcher.group(1).isEmpty()) {
+                // discard group 1
+                toProcess = bodyMatcher.replaceFirst("$2$3");
+                processedBodyPrefix = bodyMatcher.group(1);
+            } else {
+                // whole string is a command substitution with enclosed parenthesis?
+                Asserts.assertTrue(!mismatchedParenthesis(ret.body()), "Could not unwind " + ret.body());
+                return unwindBody(ret);
+            }
+        } while (mismatchedParenthesis(middleGroup));
+        return ret.body(processedBodyPrefix + ret.body());
+    }
+
+    private static boolean mismatchedParenthesis(@Nonnull String str) {
+        int unmatchedCount = 0;
+        for (char ch: str.toCharArray()) {
+            if (ch == '(') {
+                unmatchedCount++;
+            } else if (ch == ')') {
+                unmatchedCount--;
+            }
         }
-        final Translation unnested = unwindBody(new Translation(bodyMatcher.group(2), Type.STR_TYPE, NORMAL));
-        // replace group
-        final String unnestedBody = Matcher.quoteReplacement(unnested.body());
-        LOG.debug("Replacing with {}", unnestedBody);
-        ret = ret.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
-        return ret.addPreamble(unnested.preamble());
+        return unmatchedCount != 0;
     }
 
     /**
