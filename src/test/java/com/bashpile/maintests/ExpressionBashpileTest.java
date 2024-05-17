@@ -18,10 +18,26 @@ class ExpressionBashpileTest extends BashpileTest {
 
     @Test
     @Order(10)
-    public void printCalcWorks() {
+    public void printCalcWithIntsWorks() {
         final ExecutionResults results = runText("print(1 + 1)");
         assertSuccessfulExitCode(results);
         assertEquals("2\n", results.stdout());
+    }
+
+    @Test
+    @Order(11)
+    public void printCalcWithFloatsWorks() {
+        final ExecutionResults results = runText("print(.1 + .1)");
+        assertSuccessfulExitCode(results);
+        assertEquals(".2\n", results.stdout());
+    }
+
+    @Test
+    @Order(11)
+    public void printCalcWithMixedWorks() {
+        final ExecutionResults results = runText("print(.1 + 1)");
+        assertSuccessfulExitCode(results);
+        assertEquals("1.1\n", results.stdout());
     }
 
     @Test
@@ -277,8 +293,22 @@ class ExpressionBashpileTest extends BashpileTest {
     @Order(170)
     public void numberTypecastsWork() {
         final String bashpile = """
-                b1: bool = (1 + 2 + 3) : bool""";
-        assertThrows(TypeError.class, () -> runText(bashpile));
+                b1: bool = (1 + 2 + 3) : bool
+                print(b1)""";
+        final ExecutionResults results = runText(bashpile);
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(171)
+    public void numberTypecastsWithParensWork() {
+        final String bashpile = """
+                b1: bool = (((2 - 3) * 2) + 2) : bool
+                print(b1)""";
+        final ExecutionResults results = runText(bashpile);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
     }
 
     @Test

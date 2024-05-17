@@ -5,6 +5,7 @@ import com.bashpile.BashpileParser
 import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.createCommentTranslation
+import com.bashpile.engine.BashTranslationHelper.subcommentTranslationOrDefault
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
 import com.bashpile.engine.strongtypes.SimpleType
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
@@ -19,8 +20,8 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import org.apache.commons.lang3.StringUtils
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.stream.Collectors
 import java.util.stream.Stream
 
 /** For the BashTranslationEngine to have complex code be in Kotlin */
@@ -128,6 +129,90 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         }
     }
 
+    // TODO start using this from BashTranslationEngine
+    fun printStatement(ctx: BashpileParser.PrintStatementContext): Translation {
+        LOG.trace("In printStatement")
+        // guard
+        val argList = ctx.argumentList() ?: return Translation.toStringTranslation("printf \"\\n\"\n")
+
+        // body
+        val comment = createCommentTranslation("print statement", BashTranslationHelper.lineNumber(ctx))
+        val arguments = argList.expression().stream()
+            .map { tree: BashpileParser.ExpressionContext? ->
+                Objects.requireNonNull(visitor).visit(tree)
+            }
+            .map { tr: Translation -> tr.inlineAsNeeded {
+                if (it.type() != Type.INT_TYPE || !it.metadata().contains(CALCULATION)) {
+                    BashTranslationHelper.unwindNested(it!!)
+                } else it
+            } }
+            .map {
+                if (it.type() != Type.INT_TYPE || !it.metadata().contains(CALCULATION)) {
+                    BashTranslationHelper.unwindNested(it!!)
+                } else it
+            }
+            .map { tr: Translation ->
+                if (tr.isBasicType && !tr.body().contains("$@") && !tr.body().contains("[@]")) {
+                    return@map tr.body("""
+                        printf "${tr.unquoteBody().body()}\n"
+                        """.trimIndent()
+                    )
+                } else if (tr.isBasicType /* and has $@ */) {
+                    return@map tr.body("""
+                        (declare -x IFS=${'$'}' '; printf "${tr.toStringArray().unquoteBody().body()}\n")
+                        """.trimIndent()
+                    )
+                } else {
+                    // list.  Change the Internal Field Separator to a space just for this subshell (parens)
+                    return@map tr.body("""
+                            (declare -x IFS=${'$'}' '; printf "%${tr.toStringArray().unquoteBody().body()}\n" "%s")
+                            """.trimIndent()
+                    )
+                }
+            }
+            .reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
+            .orElseThrow()
+        val subcomment = subcommentTranslationOrDefault(arguments.hasPreamble(), "print statement body")
+        return comment.add(subcomment.add(arguments).mergePreamble())
+    }
+
+    fun returnPsudoStatement(ctx: BashpileParser.ReturnPsudoStatementContext, typeStack: TypeStack): Translation {
+        LOG.trace("In returnPsudoStatement")
+        val exprExists = ctx.expression() != null
+
+        // guard: check return matches with function declaration
+        val enclosingFunction = ctx.parent.parent as BashpileParser.FunctionDeclarationStatementContext
+        val functionName = enclosingFunction.Id().text
+        val functionTypes: FunctionTypeInfo = typeStack.getFunctionTypes(functionName)
+        var exprTranslation =
+            if (exprExists) Objects.requireNonNull(visitor).visit(ctx.expression()) else Translation.EMPTY_TRANSLATION
+        Asserts.assertTypesCoerce(
+            functionTypes.returnType,
+            exprTranslation.type(),
+            functionName,
+            BashTranslationHelper.lineNumber(ctx)
+        )
+
+        // guard: check that the expression exists
+        if (!exprExists) {
+            return Translation.UNKNOWN_TRANSLATION
+        }
+
+        val comment = createCommentTranslation("return statement", BashTranslationHelper.lineNumber(ctx))
+        val returnLineLambda = { str: String ->
+            if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {
+                "printf \"${Strings.unquote(str)}\"\n"
+            } else if (exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)) {
+                // Avoid interpreting $(( )) results as a command, see https://www.shellcheck.net/wiki/SC2084
+                ": $str\n"
+            } else {
+                str + "\n"
+            }
+        }
+        exprTranslation = exprTranslation.body(Strings.lambdaLastLine(exprTranslation.body(), returnLineLambda))
+        return comment.add(exprTranslation.mergePreamble())
+    }
+
     fun parenthesisExpression(ctx: BashpileParser.ParenthesisExpressionContext): Translation {
         LOG.trace("In parenthesisExpression")
         // drop parenthesis
@@ -151,18 +236,28 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val first = childTranslations[0]
         val second = Iterables.getLast(childTranslations)
 
-        return if (Translation.areNumericExpressions(first, second)) {
+        return if (Translation.areIntExpressions(first, second)) {
+            // Integers, we can use the $(( )) syntax
+            childTranslations = childTranslations.map {
+                val ret = it.lambdaBody { body -> body.removeSurrounding("$(( ", " ))") }
+                if (ret.metadata().contains(PARENTHESIZED)) {
+                    ret.metadata(it.metadata() - PARENTHESIZED).parenthesizeBody()
+                } else ret
+            }
+            val translationsString = childTranslations.joinToString(" ") { it.body() }
+            Translation(translationsString, Type.INT_TYPE, listOf(CALCULATION))
+                .body("$(( $translationsString ))")
+        } else if (Translation.areNumericExpressions(first, second)) {
             // Numbers -- We need the Basic Calculator to process
             childTranslations = childTranslations.map {
-                if (it.metadata().contains(CALCULATION)) { unwrapCalculation(it) } else it
+                if (it.metadata().contains(CALCULATION) && it.type() != Type.INT_TYPE) { unwrapCalculation(it) } else it
             }.map {
                 if (it.metadata().contains(PARENTHESIZED)) {
                     it.metadata(it.metadata() - PARENTHESIZED).parenthesizeBody()
                 } else it
             }
             // first happy path executed, assume no nesting
-            val translationsString = childTranslations.stream()
-                .map { obj: Translation -> obj.body() }.collect(Collectors.joining(" "))
+            val translationsString = childTranslations.joinToString(" ") { it.body() }
             Translation(translationsString, Type.NUMBER_TYPE, listOf(NEEDS_INLINING_OFTEN, CALCULATION))
                 .body("bc <<< \"$translationsString\"")
         } else if (Translation.areStringExpressions(first, second)) {

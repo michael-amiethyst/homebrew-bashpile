@@ -7,6 +7,7 @@ import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.google.common.collect.Streams;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -43,7 +44,9 @@ public class Translation {
      */
     public static final Translation NEWLINE = toStringTranslation("\n");
 
-    private static final Pattern NUMBER = Pattern.compile("[\\d().]+");
+    private static final Pattern INT_PATTERN = Pattern.compile("\\d+");
+
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("[\\d().]+");
 
     @Nonnull private final String preamble;
 
@@ -70,16 +73,26 @@ public class Translation {
     public static boolean areStringExpressions(@Nonnull final Translation... translations) {
         // if all strings the stream of not-strings will be empty
         return Stream.of(translations)
-                .map(Translation::parseUnknown)
+                .map(Translation::convertUnknownToDetectedType)
                 .allMatch(Translation::isStr);
     }
 
     /**
-     * Are any translations numeric (number, int or float) or UNKNOWN?
+     * Are all translations INTs?
+     */
+    public static boolean areIntExpressions(@Nonnull final Translation... translations) {
+        return Stream.of(translations)
+                .map(Translation::convertUnknownToDetectedType)
+                .allMatch(x -> x.type().isInt());
+    }
+
+    /**
+     * Are all translations numeric (number, int or float)?
      */
     public static boolean areNumericExpressions(@Nonnull final Translation... translations) {
-        // if all numbers the stream of not-numbers will be empty
-        return Stream.of(translations).map(Translation::parseUnknown).allMatch(x -> x.type().isNumeric());
+        return Stream.of(translations)
+                .map(Translation::convertUnknownToDetectedType)
+                .allMatch(x -> x.type().isNumeric());
     }
 
     // constructors
@@ -346,16 +359,15 @@ public class Translation {
     public @Nonnull Translation inlineAsNeeded(
             @Nonnull final Function<Translation, Translation> bodyLambda) {
         if (metadata.contains(TranslationMetadata.NEEDS_INLINING_OFTEN)) {
-            // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
-            String nextBody = Strings.addSpacesAroundParenthesis(body);
             // function calls may have redirect to /dev/null if only side effects needed
-            nextBody = Strings.removeEnd(nextBody, ">/dev/null").stripTrailing();
+            String nextBody = Strings.removeEnd(body, ">/dev/null").stripTrailing();
             // add INLINE and remove NEEDS INLINING OFTEN
-            var nextMetadata = new java.util.ArrayList<>(List.of(TranslationMetadata.INLINE));
+            var nextMetadata = new ArrayList<>(List.of(TranslationMetadata.INLINE));
             nextMetadata.addAll(metadata);
             nextMetadata.remove(TranslationMetadata.NEEDS_INLINING_OFTEN);
+            // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
             return bodyLambda.apply(
-                    new Translation(preamble, "$(%s)".formatted(nextBody), type, nextMetadata));
+                    new Translation(preamble, "$( %s )".formatted(nextBody), type, nextMetadata));
         } // else
         return this;
     }
@@ -367,8 +379,11 @@ public class Translation {
 
     // helpers
 
-    private static @Nonnull Translation parseUnknown(Translation tr) {
-        if (tr.isUnknown() && NUMBER.matcher(tr.body).matches()) {
+    /** Tries to match tr's body to an INT or a NUMBER.  Defaults to String.  Doesn't modify non-unknown translations */
+    private static @Nonnull Translation convertUnknownToDetectedType(Translation tr) {
+        if (tr.isUnknown() && INT_PATTERN.matcher(tr.body).matches()) {
+            return tr.type(INT_TYPE);
+        } else if (tr.isUnknown() && NUMBER_PATTERN.matcher(tr.body).matches()) {
             return tr.type(NUMBER_TYPE);
         } else if (tr.isUnknown()) {
             return tr.type(STR_TYPE);

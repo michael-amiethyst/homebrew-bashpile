@@ -22,12 +22,10 @@ import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.bashpile.Asserts.assertTypesCoerce;
-import static com.bashpile.Strings.lambdaLastLine;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.strongtypes.SimpleType.LIST;
@@ -471,31 +469,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation returnPsudoStatement(@Nonnull final BashpileParser.ReturnPsudoStatementContext ctx) {
-        LOG.trace("In returnPsudoStatement");
-        final boolean exprExists = ctx.expression() != null;
-
-        // check return matches with function declaration
-        final BashpileParser.FunctionDeclarationStatementContext enclosingFunction =
-                (BashpileParser.FunctionDeclarationStatementContext) ctx.parent.parent;
-        final String functionName = enclosingFunction.Id().getText();
-        final FunctionTypeInfo functionTypes = typeStack.getFunctionTypes(functionName);
-        Translation exprTranslation =
-                exprExists ? requireNonNull(visitor).visit(ctx.expression()) : EMPTY_TRANSLATION;
-        assertTypesCoerce(functionTypes.returnType(), exprTranslation.type(), functionName, lineNumber(ctx));
-
-        if (!exprExists) {
-            return UNKNOWN_TRANSLATION;
-        }
-
-        final Translation comment = createCommentTranslation("return statement", lineNumber(ctx));
-        final Function<String, String> returnLineLambda = str -> {
-            if (functionTypes.returnsStr() || ctx.expression() instanceof BashpileParser.NumberExpressionContext) {
-                return "printf \"%s\"\n".formatted(Strings.unquote(str));
-            } // else
-            return str + "\n";
-        };
-        exprTranslation = exprTranslation.body(lambdaLastLine(exprTranslation.body(), returnLineLambda));
-        return comment.add(exprTranslation.mergePreamble());
+        return requireNonNull(kotlinDelegate).returnPsudoStatement(ctx, typeStack);
     }
 
     // expressions
