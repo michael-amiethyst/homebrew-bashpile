@@ -4,8 +4,8 @@ import com.bashpile.Asserts
 import com.bashpile.BashpileParser
 import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
-import com.bashpile.engine.BashTranslationHelper.createCommentTranslation
-import com.bashpile.engine.BashTranslationHelper.subcommentTranslationOrDefault
+import com.bashpile.engine.BashTranslationHelper.*
+import com.bashpile.engine.Translation.toStringTranslation
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
 import com.bashpile.engine.strongtypes.SimpleType
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
@@ -20,9 +20,10 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import org.apache.commons.lang3.StringUtils
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.util.*
+import java.util.Objects.requireNonNull
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
+
 
 /** For the BashTranslationEngine to have complex code be in Kotlin */
 class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
@@ -57,7 +58,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // check for double declaration
         if (typeStack.containsFunction(functionName)) {
             val message = "$functionName was declared twice (function overloading is not supported)"
-            throw UserError(message, BashTranslationHelper.lineNumber(ctx))
+            throw UserError(message, lineNumber(ctx))
         }
 
         // regular processing -- no forward declaration
@@ -76,11 +77,11 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             // register local variable types
             ctx.paramaters().typedId().forEach {
                 val mainType = Type.valueOf(it.type())
-                typeStack.putVariableType(it.Id().text, mainType, BashTranslationHelper.lineNumber(ctx))
+                typeStack.putVariableType(it.Id().text, mainType, lineNumber(ctx))
             }
 
             // create Translations
-            val comment = createCommentTranslation("function declaration", BashTranslationHelper.lineNumber(ctx))
+            val comment = createCommentTranslation("function declaration", lineNumber(ctx))
             val i = AtomicInteger(1)
             // the empty string or ...
             var namedParams = ""
@@ -107,7 +108,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                     }.joinToString(" ")
                 namedParams = BashTranslationEngine.TAB + paramDeclarations + "\n"
             }
-            val blockStatements = BashTranslationHelper.streamContexts(
+            val blockStatements = streamContexts(
                 ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement()
             )
                 .map { visitor.visit(it) }
@@ -124,56 +125,47 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 $blockBody
                 }
                 """.trimIndent() + "\n"
-            val functionDeclaration = Translation.toStringTranslation(functionText)
+            val functionDeclaration = toStringTranslation(functionText)
             comment.add(functionDeclaration)
         }
     }
 
-    // TODO start using this from BashTranslationEngine
     fun printStatement(ctx: BashpileParser.PrintStatementContext): Translation {
         LOG.trace("In printStatement")
         // guard
-        val argList = ctx.argumentList() ?: return Translation.toStringTranslation("printf \"\\n\"\n")
+        val argList = ctx.argumentList() ?: return toStringTranslation("""
+            printf "\n"
+            
+            """.trimIndent())
 
         // body
-        val comment = createCommentTranslation("print statement", BashTranslationHelper.lineNumber(ctx))
-        val arguments = argList.expression().stream()
-            .map { tree: BashpileParser.ExpressionContext? ->
-                Objects.requireNonNull(visitor).visit(tree)
-            }
-            .map { tr: Translation -> tr.inlineAsNeeded {
-                if (it.type() != Type.INT_TYPE || !it.metadata().contains(CALCULATION)) {
-                    BashTranslationHelper.unwindNested(it!!)
-                } else it
-            } }
-            .map {
-                if (it.type() != Type.INT_TYPE || !it.metadata().contains(CALCULATION)) {
-                    BashTranslationHelper.unwindNested(it!!)
-                } else it
-            }
+        val comment = createCommentTranslation("print statement", lineNumber(ctx))
+        val arguments: Translation = argList.expression().stream()
+            .map(requireNonNull(visitor)::visit)
+            .map{ tr: Translation -> tr.inlineAsNeeded { unwindNested(it) } }
+            .map { tr: Translation -> unwindNested(tr) }
             .map { tr: Translation ->
                 if (tr.isBasicType && !tr.body().contains("$@") && !tr.body().contains("[@]")) {
-                    return@map tr.body("""
-                        printf "${tr.unquoteBody().body()}\n"
-                        """.trimIndent()
-                    )
-                } else if (tr.isBasicType /* and has $@ */) {
-                    return@map tr.body("""
-                        (declare -x IFS=${'$'}' '; printf "${tr.toStringArray().unquoteBody().body()}\n")
-                        """.trimIndent()
+                    tr.body("""
+                            printf "${tr.unquoteBody().body()}\n"
+                            
+                            """.trimIndent()
                     )
                 } else {
-                    // list.  Change the Internal Field Separator to a space just for this subshell (parens)
-                    return@map tr.body("""
-                            (declare -x IFS=${'$'}' '; printf "%${tr.toStringArray().unquoteBody().body()}\n" "%s")
+                    // list or contains $@ or [@]
+                    // change the Internal Field Separator to a space just for this subshell (parens)
+                    tr.body("""
+                            (declare -x IFS=${'$'}' '; printf "%s\n" "${tr.toStringArray().unquoteBody().body()}")
+                            
                             """.trimIndent()
                     )
                 }
             }
-            .reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
+            .reduce { tr: Translation, otherTranslation: Translation? -> tr.add(otherTranslation!!) }
             .orElseThrow()
         val subcomment = subcommentTranslationOrDefault(arguments.hasPreamble(), "print statement body")
         return comment.add(subcomment.add(arguments).mergePreamble())
+
     }
 
     fun returnPsudoStatement(ctx: BashpileParser.ReturnPsudoStatementContext, typeStack: TypeStack): Translation {
@@ -185,12 +177,12 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val functionName = enclosingFunction.Id().text
         val functionTypes: FunctionTypeInfo = typeStack.getFunctionTypes(functionName)
         var exprTranslation =
-            if (exprExists) Objects.requireNonNull(visitor).visit(ctx.expression()) else Translation.EMPTY_TRANSLATION
+            if (exprExists) requireNonNull(visitor).visit(ctx.expression()) else Translation.EMPTY_TRANSLATION
         Asserts.assertTypesCoerce(
             functionTypes.returnType,
             exprTranslation.type(),
             functionName,
-            BashTranslationHelper.lineNumber(ctx)
+            lineNumber(ctx)
         )
 
         // guard: check that the expression exists
@@ -198,7 +190,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             return Translation.UNKNOWN_TRANSLATION
         }
 
-        val comment = createCommentTranslation("return statement", BashTranslationHelper.lineNumber(ctx))
+        val comment = createCommentTranslation("return statement", lineNumber(ctx))
         val returnLineLambda = { str: String ->
             if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {
                 "printf \"${Strings.unquote(str)}\"\n"
@@ -228,7 +220,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         var childTranslations: List<Translation> = ctx.children
             .map { tree: ParseTree? -> visitor.visit(tree) }
             .map { tr: Translation ->
-                tr.inlineAsNeeded { tr1: Translation? -> BashTranslationHelper.unwindNested(tr1!!) }
+                tr.inlineAsNeeded { tr1: Translation? -> unwindNested(tr1!!) }
             }
             .toList()
 
@@ -270,11 +262,11 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         } else if (first.isNotFound || second.isNotFound) {
             // found no matching types
             val message = "`${first.body()}` or `${second.body()}` are undefined"
-            throw UserError(message, BashTranslationHelper.lineNumber(ctx))
+            throw UserError(message, lineNumber(ctx))
         } else {
             // throw type error for all others
             val message = "Incompatible types in calc: ${first.type()} and ${second.type()}"
-            throw TypeError(message, BashTranslationHelper.lineNumber(ctx))
+            throw TypeError(message, lineNumber(ctx))
         }
     }
 
@@ -300,7 +292,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         var valueBeingTested: Translation
         // right now all implemented primaries are string tests
         valueBeingTested = visitor.visit(ctx.expression())
-            .inlineAsNeeded { tr: Translation? -> BashTranslationHelper.unwindNested(tr!!) }
+            .inlineAsNeeded { tr: Translation? -> unwindNested(tr!!) }
 
         // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
         // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
@@ -326,7 +318,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         }
         var translations = listOf(visitor.visit(ctx.getChild(0)), visitor.visit(ctx.getChild(2)))
         translations = translations.map {
-            var ret = it.inlineAsNeeded { tr: Translation? -> BashTranslationHelper.unwindNested(tr!!) }
+            var ret = it.inlineAsNeeded { tr: Translation? -> unwindNested(tr!!) }
             if (ret.metadata().contains(PARENTHESIZED)) {
                 // wrap in a block and add an end-of-statement
                 ret = ret.body("{ ${ret.body()}; }")
@@ -335,8 +327,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         }
 
         val body = "${translations[0].unquoteBody().body()} $operator ${translations[1].unquoteBody().body()}"
-        return Translation
-            .toStringTranslation(body)
+        return toStringTranslation(body)
             .addPreamble(translations[0].preamble())
             .addPreamble(translations[1].preamble())
             .metadata(CONDITIONAL)

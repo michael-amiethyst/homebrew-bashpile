@@ -419,40 +419,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public @Nonnull Translation printStatement(@Nonnull final BashpileParser.PrintStatementContext ctx) {
-        LOG.trace("In printStatement");
-        // guard
-        final BashpileParser.ArgumentListContext argList = ctx.argumentList();
-        if (argList == null) {
-            return toStringTranslation("printf \"\\n\"\n");
-        }
-
-        // body
-        final Translation comment = createCommentTranslation("print statement", lineNumber(ctx));
-        final Translation arguments = argList.expression().stream()
-                .map(requireNonNull(visitor)::visit)
-                .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
-                .map(BashTranslationHelper::unwindNested)
-                .map(tr -> {
-                    if (tr.isBasicType() && !tr.body().contains("$@") && !tr.body().contains("[@]")) {
-                        return tr.body("""
-                                printf "%s\\n"
-                                """.formatted(tr.unquoteBody().body()));
-                    } else if (tr.isBasicType() /* and has $@ */) {
-                        return tr.body("""
-                                (declare -x IFS=$' '; printf "%s\\n")
-                                """.formatted(tr.toStringArray().unquoteBody().body()));
-                    } else {
-                        // list.  Change the Internal Field Separator to a space just for this subshell (parens)
-                        return tr.body("""
-                                (declare -x IFS=$' '; printf "%%s\\n" "%s")
-                                """.formatted(tr.toStringArray().unquoteBody().body()));
-                    }
-                })
-                .reduce(Translation::add)
-                .orElseThrow();
-        final Translation subcomment =
-                subcommentTranslationOrDefault(arguments.hasPreamble(), "print statement body");
-        return comment.add(subcomment.add(arguments).mergePreamble());
+        return requireNonNull(kotlinDelegate).printStatement(ctx);
     }
 
     @Override
