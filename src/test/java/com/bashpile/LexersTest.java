@@ -7,7 +7,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Order(3)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -51,10 +52,14 @@ public class LexersTest {
         assertTrue(Lexers.isLinuxCommand("./src/test/resources/scripts/my_ls.bash escapedString.bps"));
     }
 
-    // TODO test on native Linux or OSX
-//    @Test @Order(80)
-//    public void absoluteCommandIsLinuxCommand() {
-//        String absolutePath = Path.of("./src/test/resources/scripts/my_ls.bash").toAbsolutePath().toString();
-//        assertTrue(Lexers.isLinuxCommand(absolutePath), "%s was not a command".formatted(absolutePath));
-//    }
+    @Test @Order(80)
+    public void absoluteCommandIsLinuxCommand() {
+        String absolutePath = Path.of("./src/test/resources/scripts/my_ls.bash").toAbsolutePath().toString();
+        assertTrue(Lexers.isLinuxCommand(absolutePath), "%s was not a command".formatted(absolutePath));
+    }
+
+    @Test @Order(90)
+    public void elseIfIsNotLinuxCommand() {
+        assertFalse(Lexers.isLinuxCommand("else-if check:"), "'else-if check:' was a command");
+    }
 }
