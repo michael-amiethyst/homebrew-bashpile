@@ -10,14 +10,15 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING_OFTEN;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+// TODO move to Kotlin
 @Order(3)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class BashTranslationHelperTest {
+public class UnwinderTest {
 
     @Test @Order(10)
     public void unwindAllWithFunctionCallWorks() {
         Translation tr = new Translation("$(ret0)");
-        tr = BashTranslationHelper.unwindAll(tr);
+        tr = Unwinder.unwindAll(tr);
         assertFalse(tr.body().contains("$("), "Unwound command substitution found");
     }
 
@@ -25,7 +26,7 @@ public class BashTranslationHelperTest {
     public void unwindAllWithParenthesisWorks() {
         Translation tr =
                 new Translation("(which ls 1>/dev/null)", Type.of(SimpleType.BOOL), NEEDS_INLINING_OFTEN);
-        tr = tr.inlineAsNeeded(BashTranslationHelper::unwindAll);
+        tr = tr.inlineAsNeeded(Unwinder::unwindAll);
         assertFalse(tr.body().contains("})"), "Bad parenthesis found");
     }
 
@@ -35,7 +36,7 @@ public class BashTranslationHelperTest {
                 new Translation("""
                         $(bc <<< "$(circleArea "${r1}") + $(circleArea "${r2}")")
                         """, Type.FLOAT_TYPE, NEEDS_INLINING_OFTEN);
-        tr = tr.inlineAsNeeded(BashTranslationHelper::unwindNested);
+        tr = tr.inlineAsNeeded(Unwinder::unwindNested);
         assertFalse(tr.body().contains("})"), "Bad parenthesis found");
         assertFalse(tr.preamble().isEmpty());
         assertFalse(tr.preamble().contains("$( $(bc <<< \"$(circleArea \"${r1}\")\n"), "Mismatched parens");
