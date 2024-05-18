@@ -455,12 +455,12 @@ public class BashTranslationEngine implements TranslationEngine {
         final TypeError typecastError = new TypeError(
                 "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber);
         switch (expression.type().mainType()) {
-            case BOOL -> expression = typecastToBool(castTo.mainType(), expression, typecastError);
-            case INT -> expression = typecastToInt(castTo.mainType(), expression, lineNumber, typecastError);
-            case FLOAT -> expression = typecastToFloat(castTo.mainType(), expression, lineNumber, typecastError);
-            case STR -> expression = typecastStr(castTo.mainType(), expression, lineNumber, typecastError);
-            case LIST -> expression = typecastToList(castTo, expression, typecastError);
-            case UNKNOWN -> typecastToUnknown(castTo.mainType(), typecastError);
+            case BOOL -> expression = typecastFromBool(castTo.mainType(), expression, typecastError);
+            case INT -> expression = typecastFromInt(castTo.mainType(), expression, lineNumber, typecastError);
+            case FLOAT -> expression = typecastFromFloat(castTo.mainType(), expression, lineNumber, typecastError);
+            case STR -> expression = typecastFromStr(castTo.mainType(), expression, lineNumber, typecastError);
+            case LIST -> expression = typecastFromList(castTo, expression, typecastError);
+            case UNKNOWN -> typecastFromUnknown(castTo.mainType(), typecastError);
             case NOT_FOUND -> {
                 // for specifying a type for a variable assigned by a command, e.g. getopts creates OPTARG
             }

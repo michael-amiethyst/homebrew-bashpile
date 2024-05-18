@@ -260,9 +260,11 @@ public class BashTranslationHelper {
                 .addPreamble(pattern.preamble())
                 .addPreamble(statements.preamble());
     }
+
+    // TODO disallow INT to BOOL and BOOL to INT typecasts -- must be explicit
     // typecast static methods
 
-    /* package */ static @Nonnull Translation typecastToBool(
+    /* package */ static @Nonnull Translation typecastFromBool(
             @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             @Nonnull final TypeError typecastError) {
@@ -279,8 +281,7 @@ public class BashTranslationHelper {
         return expression;
     }
 
-    // TODO 0.22.0 rename family of functions typecastFrom...
-    /* package */ static @Nonnull Translation typecastToInt(
+    /* package */ static @Nonnull Translation typecastFromInt(
             @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
@@ -322,7 +323,7 @@ public class BashTranslationHelper {
         }
     }
 
-    /* package */ static @Nonnull Translation typecastToFloat(
+    /* package */ static @Nonnull Translation typecastFromFloat(
             @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
@@ -348,7 +349,7 @@ public class BashTranslationHelper {
         return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastStr(
+    /* package */ static @Nonnull Translation typecastFromStr(
             @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
             final int lineNumber,
@@ -357,7 +358,7 @@ public class BashTranslationHelper {
             case BOOL -> {
                 expression = expression.unquoteBody();
                 if (SimpleType.isNumberString(expression.body())) {
-                    expression = typecastToFloat(castTo, expression, lineNumber, typecastError);
+                    expression = typecastFromFloat(castTo, expression, lineNumber, typecastError);
                 } else if (expression.body().equalsIgnoreCase("true")
                         || expression.body().equalsIgnoreCase("false")) {
                     expression = expression.body(expression.body().toLowerCase());
@@ -401,11 +402,12 @@ public class BashTranslationHelper {
     }
 
     /** Casts to a different kind of list (i.e. a different subtype), but no other conversions */
-    /* package */ static @Nonnull Translation typecastToList(
+    /* package */ static @Nonnull Translation typecastFromList(
             @Nonnull final Type castTo,
             @Nonnull Translation expression,
             @Nonnull final TypeError typecastError) {
         if (castTo.isList()) {
+            // Allow typecast to any subtype
             return expression.type(castTo);
         } else {
             // cannot cast to bool, int, float or str
@@ -413,8 +415,9 @@ public class BashTranslationHelper {
         }
     }
 
-    /* package */ static void typecastToUnknown(
+    /* package */ static void typecastFromUnknown(
             @Nonnull final SimpleType castTo, @Nonnull final TypeError typecastError) {
+        // TODO check that INTs and Floats parse
         switch (castTo) {
             case BOOL, INT, FLOAT, STR, LIST -> {}
             default -> throw typecastError;
