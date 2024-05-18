@@ -6,6 +6,7 @@ import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.Translation.toStringTranslation
+import com.bashpile.engine.Unwinder.Companion.unwindNested
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
 import com.bashpile.engine.strongtypes.SimpleType
 import com.bashpile.engine.strongtypes.TranslationMetadata.*

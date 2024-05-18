@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,17 +32,13 @@ import java.util.stream.Stream;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.Translation.UNKNOWN_TRANSLATION;
+import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.SimpleType.INT;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
-import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
  * Helper methods to {@link BashTranslationEngine}.
- * <br>
- * Has a concept of unwinding command substitutions.  Either only nested ones with {@link #unwindNested(Translation)} or
- * all with {@link #unwindAll(Translation)}.  This is to prevent errored exit codes from being suppressed.  As examples,
- * in Bash `$(echo $(echo hello; exit 1))` will suppress the error code and `[ -z $(echo hello; exit 1) ]` will as well.
  */
 public class BashTranslationHelper {
 
@@ -68,9 +63,6 @@ public class BashTranslationHelper {
     private static final Pattern escapedNewline = Pattern.compile("\\\\\\r?\\n\\s*");
 
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
-
-    /** Used to ensure variable names are unique */
-    private static int subshellWorkaroundCounter = 0;
 
     // static methods
 
@@ -197,6 +189,7 @@ public class BashTranslationHelper {
     /* package */ static @Nonnull ParserRuleContext getFunctionDeclCtx(
             @Nonnull final BashpileVisitor visitor,
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
+        LOG.trace("In getFunctionDeclCtx");
         final String functionName = ctx.Id().getText();
         assert visitor.getContextRoot() != null;
         final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
@@ -233,12 +226,12 @@ public class BashTranslationHelper {
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
     /* package */ static Translation visitGuardingExpression(TerminalNode notNode, Translation expressionTranslation) {
         final Translation not = notNode != null ? toStringTranslation("! ") : UNKNOWN_TRANSLATION;
-        expressionTranslation = unwindAll(expressionTranslation);
+        expressionTranslation = Unwinder.unwindAll(expressionTranslation);
         // TODO 0.22.0 use $(( )) for ints
         if (expressionTranslation.type().isNumeric()) {
             // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
             expressionTranslation = expressionTranslation
-                    .inlineAsNeeded(BashTranslationHelper::unwindAll)
+                    .inlineAsNeeded(Unwinder::unwindAll)
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
         return not.add(expressionTranslation);
@@ -267,114 +260,6 @@ public class BashTranslationHelper {
                 .addPreamble(pattern.preamble())
                 .addPreamble(statements.preamble());
     }
-
-    // unwind static methods
-
-    /* package */ static @Nonnull Translation unwindAll(@Nonnull final Translation tr) {
-        Translation ret = tr;
-        while (COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-            ret = unwindOnMatch(ret, COMMAND_SUBSTITUTION);
-        }
-        return ret;
-    }
-
-    // TODO factor out "Unwinder" class and re-implement without regular expressions.  Use string scanning instead
-    /* package */ static @Nonnull Translation unwindNested(@Nonnull final Translation tr) {
-        Translation ret = tr;
-        while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-            ret = unwindOnMatch(ret, NESTED_COMMAND_SUBSTITUTION);
-        }
-        return ret;
-    }
-
-    private static @Nonnull Translation unwindOnMatch(@Nonnull final Translation tr, @Nonnull final Pattern pattern) {
-        Translation ret = tr;
-        // extract inner command substitution
-        String middleGroup;
-        String toProcess = ret.body();
-        String processedBodyPrefix = "";
-        do {
-            final Matcher bodyMatcher = pattern.matcher(toProcess);
-            if (!bodyMatcher.find()) {
-                return ret;
-            }
-            middleGroup = bodyMatcher.group(2);
-
-            if (!mismatchedParenthesis(middleGroup)) {
-                // parenthesis match and no outer `$(`
-                final Translation unnested = unwindBody(new Translation(middleGroup, Type.STR_TYPE, NORMAL));
-                // replace group
-                final String unnestedBody = Matcher.quoteReplacement(unnested.body());
-                LOG.debug("Replacing with {}", unnestedBody);
-                ret = ret.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
-                ret = ret.addPreamble(unnested.preamble());
-            } else if (!bodyMatcher.group(1).isEmpty()) {
-                // discard group 1
-                toProcess = bodyMatcher.replaceFirst("$2$3");
-                processedBodyPrefix = bodyMatcher.group(1);
-            } else {
-                // whole string is a command substitution with enclosed parenthesis?
-                Asserts.assertTrue(!mismatchedParenthesis(ret.body()), "Could not unwind " + ret.body());
-                return unwindBody(ret);
-            }
-        } while (mismatchedParenthesis(middleGroup));
-        return ret.body(processedBodyPrefix + ret.body());
-    }
-
-    private static boolean mismatchedParenthesis(@Nonnull String str) {
-        int unmatchedCount = 0;
-        for (char ch: str.toCharArray()) {
-            if (ch == '(') {
-                unmatchedCount++;
-            } else if (ch == ')') {
-                unmatchedCount--;
-            }
-        }
-        return unmatchedCount != 0;
-    }
-
-    /**
-     * Subshell and inline errored exit codes are ignored in Bash despite all configurations.
-     * This workaround explicitly propagates errored exit codes.
-     * Unnests one level.
-     *
-     * @param tr The base translation.
-     * @return A Translation where the preamble is <code>tr</code>'s body and the work-around.
-     * The body is a Command Substitution of a created variable
-     * that holds the results of executing <code>tr</code>'s body.
-     */
-    private static @Nonnull Translation unwindBody(@Nonnull final Translation tr) {
-        // guard to check if unnest not needed
-        if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
-            LOG.debug("Skipped unnest for " + tr.body());
-            return tr;
-        }
-
-        if (NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
-            LOG.debug("Found nested command substitution in unnest: {}", tr.body());
-            return unwindNested(tr);
-        }
-
-        // assign Strings to use in translations
-        final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
-        final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
-
-        // create 5 lines of translations
-        final Translation subcomment = toStringTranslation("## unnest for %s\n".formatted(tr.body()));
-        final Translation export     = toStringTranslation("export %s\n".formatted(subshellReturn));
-        final Translation assign     = toStringTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
-        final Translation exitCode   = toStringTranslation("%s=$?\n".formatted(exitCodeName));
-        final Translation check      = toStringTranslation("""
-                if [ "$%s" -ne 0 ]; then exit "$%s"; fi
-                """.formatted(exitCodeName, exitCodeName));
-
-        // add the lines up
-        final Translation preambles = subcomment.add(export).add(assign).add(exitCode).add(check);
-
-        // add the preambles and swap the body
-        return tr.addPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
-    }
-
     // typecast static methods
 
     /* package */ static @Nonnull Translation typecastToBool(

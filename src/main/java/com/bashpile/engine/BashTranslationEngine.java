@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.Unwinder.unwindNested;
 import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
@@ -328,7 +329,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     return StringUtils.appendIfMissing(str, "\"");
                 });
             }
-            rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
+            rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(Unwinder::unwindNested);
             rhsExprTranslation = unwindNested(rhsExprTranslation);
         }
         assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
@@ -381,7 +382,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
                     .metadata(INLINE);
         }
-        rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(BashTranslationHelper::unwindNested);
+        rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(Unwinder::unwindNested);
         rhsExprTranslation = unwindNested(rhsExprTranslation);
         final Type rhsActualType = rhsExprTranslation.type();
         Asserts.assertTypesCoerce(lhsExpectedType, rhsActualType, lhsVariableName, lineNumber(ctx));
@@ -482,8 +483,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
-                        .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
-                        .map(BashTranslationHelper::unwindNested)
+                        .map(tr -> tr.inlineAsNeeded(Unwinder::unwindNested))
+                        .map(Unwinder::unwindNested)
                         .toList()
                 : List.of();
 
@@ -542,9 +543,9 @@ public class BashTranslationEngine implements TranslationEngine {
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
         String primary = ctx.binaryPrimary().getText();
         final Translation firstTranslation =
-                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded(Unwinder::unwindNested);
         final Translation secondTranslation =
-                visitor.visit(ctx.getChild(2)).inlineAsNeeded(BashTranslationHelper::unwindNested);
+                visitor.visit(ctx.getChild(2)).inlineAsNeeded(Unwinder::unwindNested);
 
         // we do some checks for strict equals and strict not equals
         final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
@@ -663,7 +664,7 @@ public class BashTranslationEngine implements TranslationEngine {
         LOG.trace("In shellString helper");
         Translation contentsTranslation = ctx.shellStringContents().stream()
                 .map(requireNonNull(visitor)::visit)
-                .map(tr -> tr.inlineAsNeeded(BashTranslationHelper::unwindNested))
+                .map(tr -> tr.inlineAsNeeded(Unwinder::unwindNested))
                 .reduce(Translation::add)
                 .map(x -> x.lambdaBody(Strings::dedent))
                 .map(BashTranslationHelper::joinEscapedNewlines)
