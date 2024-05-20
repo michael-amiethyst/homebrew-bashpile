@@ -196,8 +196,8 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {
                 "printf \"${Strings.unquote(str)}\"\n"
             } else if (exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)) {
-                // Avoid interpreting $(( )) results as a command, see https://www.shellcheck.net/wiki/SC2084
-                ": $str\n"
+                // Avoid interpreting $(( )) results as a command
+                "printf $str\n"
             } else {
                 str + "\n"
             }

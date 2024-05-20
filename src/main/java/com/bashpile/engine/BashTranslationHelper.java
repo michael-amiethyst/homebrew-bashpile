@@ -7,7 +7,6 @@ import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
-import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -144,8 +143,7 @@ public class BashTranslationHelper {
 
         // check readonly declarations
         final long readonlys = ctx.stream().filter(typeCtx -> typeCtx.Readonly() != null).count();
-        Asserts.assertNotOver(
-                1, readonlys, "Can only have one readonly statement, line " + lineNumber);
+        Asserts.assertNotOver(1, readonlys, "Can only have one readonly statement, line " + lineNumber);
 
         // check declare declarations
         final long exports = ctx.stream().filter(typeCtx -> typeCtx.Exported() != null).count();
@@ -261,7 +259,6 @@ public class BashTranslationHelper {
                 .addPreamble(statements.preamble());
     }
 
-    // TODO disallow INT to BOOL and BOOL to INT typecasts -- must be explicit
     // typecast static methods
 
     /* package */ static @Nonnull Translation typecastFromBool(
@@ -270,12 +267,8 @@ public class BashTranslationHelper {
             @Nonnull final TypeError typecastError) {
         switch (castTo) {
             case BOOL -> {}
-            case INT -> expression =
-                    expression.body(expression.body().equalsIgnoreCase("true") ? "1" : "0");
-            case FLOAT -> expression =
-                    expression.body(expression.body().equalsIgnoreCase("true") ? "1.0" : "0.0");
             case STR -> expression = expression.quoteBody();
-            // no cast to list
+            // no cast to int, float or list
             default -> throw typecastError;
         }
         return expression;
@@ -288,39 +281,23 @@ public class BashTranslationHelper {
             @Nonnull final TypeError typecastError) {
         if (!expression.metadata().contains(CALCULATION)) {
             // parse expression to a BigInteger
-            BigInteger expressionValue;
             try {
-                expressionValue = new BigInteger(expression.body());
+                new BigInteger(expression.body());
             } catch (final NumberFormatException e) {
                 String message = "Couldn't parse '%s' to an INT.  " +
                         "Typecasts only work on literals, was this an ID or function call?";
-                throw new UserError(message.formatted(expression.body()), lineNumber);
+                throw new TypeError(message.formatted(expression.body()), lineNumber);
             }
-
-            // cast
-            switch (castTo) {
-                case BOOL -> expression =
-                        expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
-                case INT, FLOAT -> {}
-                case STR -> expression = expression.quoteBody();
-                // no list to int conversion
-                default -> throw typecastError;
-            }
-            return expression;
-        } else {
-            // Int or Float calculation
-            switch (castTo) {
-                // Bash int to bool is the opposite of C
-                case BOOL -> expression = expression.body("""
-                        $(if [ %s -eq 0 ]; then echo "true"; else echo "false"; fi)"""
-                        .formatted(expression.body()));
-                case INT, FLOAT -> {}
-                case STR -> expression = expression.quoteBody();
-                // no list to int conversion
-                default -> throw typecastError;
-            }
-            return expression;
         }
+
+        // Cast
+        switch (castTo) {
+            case INT, FLOAT -> {}
+            case STR -> expression = expression.quoteBody();
+            // no typecast to bool or list
+            default -> throw typecastError;
+        }
+        return expression;
     }
 
     /* package */ static @Nonnull Translation typecastFromFloat(
@@ -333,17 +310,15 @@ public class BashTranslationHelper {
         try {
             expressionValue = new BigDecimal(expression.body());
         } catch (final NumberFormatException e) {
-            throw new UserError("Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber);
+            throw new TypeError("Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber);
         }
 
         // cast
         switch (castTo) {
-            case BOOL -> expression =
-                    expression.body(expressionValue.compareTo(BigDecimal.ZERO) != 0 ? "true" : "false");
             case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
             case FLOAT -> {}
             case STR -> expression = expression.quoteBody();
-            // no list to float conversion
+            // no typecast to bool or list
             default -> throw typecastError;
         }
         return expression;
@@ -365,7 +340,7 @@ public class BashTranslationHelper {
                 } else {
                     throw new TypeError("""
                             Could not cast STR to BOOL.
-                            Only 'true', 'false' and numbers in Strings allowed.
+                            Only 'true' and 'false' allowed (capitalization ignored).
                             Text was %s.""".formatted(expression.body()), lineNumber);
                 }
             }
@@ -395,7 +370,7 @@ public class BashTranslationHelper {
                 }
             }
             case STR -> {}
-            // no list to str conversion
+            // no typecast to list
             default -> throw typecastError;
         }
         return expression;
@@ -407,7 +382,7 @@ public class BashTranslationHelper {
             @Nonnull Translation expression,
             @Nonnull final TypeError typecastError) {
         if (castTo.isList()) {
-            // Allow typecast to any subtype
+            // Allow a typecast to any subtype
             return expression.type(castTo);
         } else {
             // cannot cast to bool, int, float or str
