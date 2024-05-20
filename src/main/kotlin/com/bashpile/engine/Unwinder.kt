@@ -1,6 +1,8 @@
 package com.bashpile.engine
 
 import com.bashpile.Asserts
+import com.bashpile.engine.Unwinder.Companion.unwindAll
+import com.bashpile.engine.Unwinder.Companion.unwindNested
 import com.bashpile.engine.strongtypes.TranslationMetadata
 import com.bashpile.engine.strongtypes.Type
 import org.apache.logging.log4j.LogManager
@@ -15,6 +17,24 @@ import java.util.regex.Pattern
 class Unwinder {
 
     companion object {
+
+        // TODO 0.22.0 replace REGEX with manual computation
+        /**
+         * This Pattern has three matching groups.
+         * They are everything before the command substitution, the command substitution, and everything after.
+         * The middle group has a negative lookahead, "(?!\()", to ignore the arithmetic built-in $(( ))
+         */
+        private val COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*?)(\\$\\((?!\\().*?\\))(.*?)")
+
+        /**
+         * This single-line Pattern has three matching groups.
+         * They are the start of the outer command substitution, the inner command substitution and the remainder of
+         * the outer command substitution.  The first two groups have a negative lookahead, "(?!\()", to ignore
+         * the arithmetic built-in $(( ))
+         */
+        private val NESTED_COMMAND_SUBSTITUTION =
+            Pattern.compile("(?s)(\\$\\(.*?)(\\$\\((?!\\().*?\\))(.*?\\))")
+
         /** Used to ensure variable names are unique  */
         private var subshellWorkaroundCounter = 0
         private val LOG = LogManager.getLogger(Unwinder::class)
@@ -22,8 +42,8 @@ class Unwinder {
         @JvmStatic
         fun unwindAll(tr: Translation): Translation {
             var ret = tr
-            while (BashTranslationHelper.COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-                ret = unwindOnMatch(ret, BashTranslationHelper.COMMAND_SUBSTITUTION)
+            while (COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
+                ret = unwindOnMatch(ret, COMMAND_SUBSTITUTION)
             }
             return ret
         }
@@ -31,8 +51,8 @@ class Unwinder {
         @JvmStatic
         fun unwindNested(tr: Translation): Translation {
             var ret = tr
-            while (BashTranslationHelper.NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-                ret = unwindOnMatch(ret, BashTranslationHelper.NESTED_COMMAND_SUBSTITUTION)
+            while (NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
+                ret = unwindOnMatch(ret, NESTED_COMMAND_SUBSTITUTION)
             }
             return ret
         }
@@ -103,11 +123,11 @@ class Unwinder {
          */
         private fun unwindBody(tr: Translation): Translation {
             // guard to check if unnest not needed
-            if (!BashTranslationHelper.COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
+            if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
                 LOG.debug("Skipped unnest for " + tr.body())
                 return tr
             }
-            if (BashTranslationHelper.NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
+            if (NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
                 LOG.debug("Found nested command substitution in unnest: {}", tr.body())
                 return unwindNested(tr)
             }

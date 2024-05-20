@@ -41,24 +41,6 @@ import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
  */
 public class BashTranslationHelper {
 
-    /**
-     * This Pattern has three matching groups.
-     * They are everything before the command substitution, the command substitution, and everything after.
-     * The middle group has a negative lookahead, "(?!\()", to ignore the arithmetic built-in $(( ))
-     */
-    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*?)(\\$\\((?!\\().*?\\))(.*?)");
-
-    /**
-     * This single-line Pattern has three matching groups.
-     * They are the start of the outer command substitution, the inner command substitution and the remainder of
-     * the outer command substitution.  The first two groups have a negative lookahead, "(?!\()", to ignore
-     * the arithmetic built-in $(( ))
-     * <br>
-     * TODO 0.22.0 remove outer negative lookahead.  We do want to unwind $(( $(bad_command) ))
-     */
-    public static final Pattern NESTED_COMMAND_SUBSTITUTION =
-            Pattern.compile("(?s)(\\$\\((?!\\().*?)(\\$\\((?!\\().*?\\))(.*?\\))");
-
     private static final Pattern escapedNewline = Pattern.compile("\\\\\\r?\\n\\s*");
 
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
