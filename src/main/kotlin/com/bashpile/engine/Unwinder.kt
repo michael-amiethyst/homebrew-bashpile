@@ -57,45 +57,35 @@ class Unwinder {
         private fun splitOnCommandSubstitution(str: String): List<String> {
             val ret = mutableListOf("", "", "")
             var i = 0
-            var afterDollar = false
-            var afterDollarParen = false
             var parenCount = 0
             var foundCommandSubstitution = false
 
+            val changeToMiddle = {
+                // change to middle
+                ret[0] = ret[0].removeSuffix("$(")
+                ret[1] = ret[1] + "$("
+                parenCount++
+                foundCommandSubstitution = true
+                i = 1
+            }
             // add to ret[0] until "$(", add to ret[1] until matching paren, add to ret[2] until done
             str.forEach { ch ->
                 when (ch) {
                     '$' -> {
-                        if (afterDollarParen) {
-                            // change to middle
-                            ret[0] = ret[0].removeSuffix("$(")
-                            ret[1] = ret[1] + "$("
-                            parenCount++
-                            foundCommandSubstitution = true
-                            i = 1
+                        if (ret[0].endsWith("$(")) {
+                            changeToMiddle.invoke()
                         }
-                        afterDollarParen = false
-                        afterDollar = true
                         ret[i] = ret[i] + ch
                     }
                     '(' -> {
                         when (i) {
-                            0 -> {
-                                if (afterDollarParen) {
-                                    afterDollarParen = false
-                                }
-                                if (afterDollar) {
-                                    afterDollarParen = true
-                                }
-                                ret[i] = ret[i] + ch
-                            }
+                            0 -> ret[i] = ret[i] + ch
                             1 -> {
                                 parenCount++
                                 ret[i] = ret[i] + ch
                             }
-                            2 -> {ret[i] = ret[i] + ch}
+                            2 -> ret[i] = ret[i] + ch
                         }
-                        afterDollar = false
                     }
                     ')' -> {
                         if (i == 1) {
@@ -107,13 +97,8 @@ class Unwinder {
                         } else ret[i] = ret[i] + ch
                     }
                     else -> {
-                        if (afterDollarParen) {
-                            // change to middle
-                            ret[0] = ret[0].removeSuffix("$(")
-                            ret[1] = ret[1] + "$("
-                            parenCount++
-                            foundCommandSubstitution = true
-                            i = 1
+                        if (ret[0].endsWith("$(")) {
+                            changeToMiddle.invoke()
                         }
                         ret[i] = ret[i] + ch
                     }
