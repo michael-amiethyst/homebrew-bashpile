@@ -54,7 +54,6 @@ class Unwinder {
          * Returns three substrings: everything before the inline, the inline, and everything after.
          * Ignores the arithmetic built-in $(( ))
          */
-        // TODO test for $(())
         private fun splitOnCommandSubstitution(str: String): List<String> {
             val ret = mutableListOf("", "", "")
             var i = 0
@@ -65,24 +64,30 @@ class Unwinder {
 
             // add to ret[0] until "$(", add to ret[1] until matching paren, add to ret[2] until done
             str.forEach { ch ->
-                // check for $
-                // check for (
-                // check for )
                 when (ch) {
-                    '$' -> { afterDollar = true; ret[i] = ret[i] + ch; }
+                    '$' -> {
+                        if (afterDollarParen) {
+                            // change to middle
+                            ret[0] = ret[0].removeSuffix("$(")
+                            ret[1] = ret[1] + "$("
+                            parenCount++
+                            foundCommandSubstitution = true
+                            i = 1
+                        }
+                        afterDollarParen = false
+                        afterDollar = true
+                        ret[i] = ret[i] + ch
+                    }
                     '(' -> {
                         when (i) {
                             0 -> {
-                                if (afterDollar) {
-                                    // change to middle
-                                    ret[0] = ret[0].removeSuffix("$")
-                                    ret[1] = ret[1] + "$("
-                                    parenCount++
-                                    foundCommandSubstitution = true
-                                    i = 1
-                                } else {
-                                    ret[i] = ret[i] + ch
+                                if (afterDollarParen) {
+                                    afterDollarParen = false
                                 }
+                                if (afterDollar) {
+                                    afterDollarParen = true
+                                }
+                                ret[i] = ret[i] + ch
                             }
                             1 -> {
                                 parenCount++
@@ -101,7 +106,17 @@ class Unwinder {
                             }
                         } else ret[i] = ret[i] + ch
                     }
-                    else -> ret[i] = ret[i] + ch
+                    else -> {
+                        if (afterDollarParen) {
+                            // change to middle
+                            ret[0] = ret[0].removeSuffix("$(")
+                            ret[1] = ret[1] + "$("
+                            parenCount++
+                            foundCommandSubstitution = true
+                            i = 1
+                        }
+                        ret[i] = ret[i] + ch
+                    }
                 }
             }
             return if (foundCommandSubstitution) ret else listOf()

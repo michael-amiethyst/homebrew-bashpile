@@ -16,6 +16,13 @@ class UnwinderTest {
         tr = unwindAll(tr)
         Assertions.assertFalse(tr.body().contains("$("), "Unwound command substitution found")
     }
+    @Test
+    @Order(11)
+    fun unwindAllWithCalcDoesNotNeedUnwind() {
+        var tr = Translation("$((1 + 1))")
+        tr = unwindAll(tr)
+        Assertions.assertTrue(tr.body().contains("$(("), "Unneeded unwind found")
+    }
 
     @Test
     @Order(20)
