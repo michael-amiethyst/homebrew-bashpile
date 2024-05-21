@@ -18,14 +18,7 @@ class Unwinder {
 
     companion object {
 
-        // TODO 0.22.0 replace REGEX with manual computation
-        /**
-         * This Pattern has three matching groups.
-         * They are everything before the command substitution, the command substitution, and everything after.
-         * The middle group has a negative lookahead, "(?!\()", to ignore the arithmetic built-in $(( ))
-         */
-        private val COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*?)(\\$\\((?!\\().*?\\))(.*?)")
-
+        // TODO 0.22.0 replace REGEX with manual computation, str -> List<Str> of length 3 or 0
         /**
          * This single-line Pattern has three matching groups.
          * They are the start of the outer command substitution, the inner command substitution and the remainder of
@@ -42,8 +35,8 @@ class Unwinder {
         @JvmStatic
         fun unwindAll(tr: Translation): Translation {
             var ret = tr
-            while (COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-                ret = unwindOnMatch(ret, COMMAND_SUBSTITUTION)
+            while (splitOnCommandSubstitution(ret.body()).isNotEmpty()) {
+                ret = unwindOnMatch(ret, null)
             }
             return ret
         }
@@ -57,18 +50,77 @@ class Unwinder {
             return ret
         }
 
-        private fun unwindOnMatch(tr: Translation, pattern: Pattern): Translation {
+        /**
+         * Returns three substrings: everything before the inline, the inline, and everything after.
+         * Ignores the arithmetic built-in $(( ))
+         */
+        // TODO test for $(())
+        private fun splitOnCommandSubstitution(str: String): List<String> {
+            val ret = mutableListOf("", "", "")
+            var i = 0
+            var afterDollar = false
+            var afterDollarParen = false
+            var parenCount = 0
+            var foundCommandSubstitution = false
+
+            // add to ret[0] until "$(", add to ret[1] until matching paren, add to ret[2] until done
+            str.forEach { ch ->
+                // check for $
+                // check for (
+                // check for )
+                when (ch) {
+                    '$' -> { afterDollar = true; ret[i] = ret[i] + ch; }
+                    '(' -> {
+                        when (i) {
+                            0 -> {
+                                if (afterDollar) {
+                                    // change to middle
+                                    ret[0] = ret[0].removeSuffix("$")
+                                    ret[1] = ret[1] + "$("
+                                    parenCount++
+                                    foundCommandSubstitution = true
+                                    i = 1
+                                } else {
+                                    ret[i] = ret[i] + ch
+                                }
+                            }
+                            1 -> {
+                                parenCount++
+                                ret[i] = ret[i] + ch
+                            }
+                            2 -> {ret[i] = ret[i] + ch}
+                        }
+                        afterDollar = false
+                    }
+                    ')' -> {
+                        if (i == 1) {
+                            parenCount--
+                            ret[i] = ret[i] + ch
+                            if (parenCount == 0) {
+                                i = 2
+                            }
+                        } else ret[i] = ret[i] + ch
+                    }
+                    else -> ret[i] = ret[i] + ch
+                }
+            }
+            return if (foundCommandSubstitution) ret else listOf()
+        }
+
+        private fun unwindOnMatch(tr: Translation, pattern: Pattern?): Translation {
             var ret = tr
             // extract inner command substitution
             var middleGroup: String
             var toProcess = ret.body()
             var processedBodyPrefix = ""
             do {
-                val bodyMatcher = pattern.matcher(toProcess)
-                if (!bodyMatcher.find()) {
+                val bodyMatcher = pattern?.matcher(toProcess)
+                val parts = if (pattern == null) splitOnCommandSubstitution(toProcess) else listOf()
+                // if bodyMatcher or splitOnCommandSubstitution is not a match
+                if ((bodyMatcher != null && !bodyMatcher.find()) || (bodyMatcher == null && parts.isEmpty())) {
                     return ret
                 }
-                middleGroup = bodyMatcher.group(2)
+                middleGroup = bodyMatcher?.group(2) ?: parts[1]
                 if (!mismatchedParenthesis(middleGroup)) {
                     // parenthesis match and no outer `$(`
                     val unnested = unwindBody(
@@ -79,14 +131,20 @@ class Unwinder {
                         )
                     )
                     // replace group
-                    val unnestedBody = Matcher.quoteReplacement(unnested.body())
+                    val unnestedBody = if (bodyMatcher != null) {
+                        Matcher.quoteReplacement(unnested.body())
+                    } else unnested.body()
                     LOG.debug("Replacing with {}", unnestedBody)
-                    ret = ret.body(bodyMatcher.replaceFirst("$1$unnestedBody$3"))
+                    val nextBody = if (bodyMatcher != null) {
+                        bodyMatcher.replaceFirst("$1$unnestedBody$3")
+                    } else parts[0] + unnestedBody + parts[2]
+                    ret = ret.body(nextBody)
                     ret = ret.addPreamble(unnested.preamble())
-                } else if (!bodyMatcher.group(1).isEmpty()) {
+                } else if ((bodyMatcher != null && bodyMatcher.group(1).isNotEmpty())
+                        || (bodyMatcher == null && parts[0].isNotEmpty())) {
                     // discard group 1
-                    toProcess = bodyMatcher.replaceFirst("$2$3")
-                    processedBodyPrefix = bodyMatcher.group(1)
+                    toProcess = if (bodyMatcher != null) bodyMatcher.replaceFirst("$2$3") else parts[1] + parts[2]
+                    processedBodyPrefix = if (bodyMatcher != null) bodyMatcher.group(1) else parts[0]
                 } else {
                     // whole string is a command substitution with enclosed parenthesis?
                     Asserts.assertTrue(
@@ -123,7 +181,7 @@ class Unwinder {
          */
         private fun unwindBody(tr: Translation): Translation {
             // guard to check if unnest not needed
-            if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
+            if (splitOnCommandSubstitution(tr.body()).isEmpty()) {
                 LOG.debug("Skipped unnest for " + tr.body())
                 return tr
             }
