@@ -5,12 +5,18 @@ class Bashpile < Formula
   url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.21.4"
   head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "development"
 
-  depends_on "gnu-sed"
-  depends_on "maven" => :build
-  depends_on "bc"
+  # foundational dependencies
   depends_on "openjdk"
+  depends_on "bash"
+  depends_on "maven" => :build
+
+  # tooling dependencies for compilation
   depends_on "shfmt"
   depends_on "shellcheck"
+
+  # tooling dependencies for generated scripts
+  depends_on "gnu-sed"
+  depends_on "bc"
   # TODO add gnu-getopt for OSX or FreeBSD only
 
   def install
