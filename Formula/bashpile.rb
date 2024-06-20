@@ -2,7 +2,7 @@ class Bashpile < Formula
   desc "The Bash Transpiler: Write in a modern language and run in a Bash5 shell!"
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   license "MIT"
-  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.21.4"
+  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.21.5"
   head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "development"
 
   # foundational dependencies
@@ -17,7 +17,7 @@ class Bashpile < Formula
   # tooling dependencies for generated scripts
   depends_on "gnu-sed"
   depends_on "bc"
-  # TODO add gnu-getopt for OSX or FreeBSD only
+  depends_on "gnu-getopt" # needed for OSX and FreeBSD, kept as generic dependency for consistency
 
   def install
     system "mvn", "clean", "verify", "-Dskip.failsafe.tests=true" # Integration tests can't find dependencies on PATH
