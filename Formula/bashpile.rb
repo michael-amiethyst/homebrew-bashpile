@@ -17,7 +17,7 @@ class Bashpile < Formula
   # tooling dependencies for generated scripts
   depends_on "gnu-sed"
   depends_on "bc"
-  # TODO add gnu-getopt for OSX or FreeBSD only
+  depends_on "gnu-getopt" # needed for OSX and FreeBSD, kept as generic dependency for consistency
 
   def install
     system "mvn", "clean", "verify", "-Dskip.failsafe.tests=true" # Integration tests can't find dependencies on PATH
