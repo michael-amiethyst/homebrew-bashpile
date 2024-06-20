@@ -10,17 +10,14 @@ LABEL authors="Michael Amiethyst"
 
 # Setup system and user
 RUN apt update && apt upgrade && apt-get -y install curl git build-essential procps
-RUN useradd -ms /bin/bash dockeruser
+# skip user-add for simple and safe mode
 
 # install brew
 RUN /bin/bash -c "NONINTERACTIVE=1 $(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # install Bashpile
 RUN /bin/bash -c "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" \
-    && brew install gcc && brew install --HEAD michael-amiethyst/bashpile/bashpile"
+    && brew install gcc && brew install --HEAD michael-amiethyst/bashpile/bashpile || \
+    cat /root/.cache/Homebrew/Logs/bashpile/01.mvn"
 
-# finish setting up user and start
-RUN chown -R dockeruser /home/linuxbrew/.linuxbrew
-USER dockeruser
-WORKDIR /home/dockeruser
 ENTRYPOINT ["/bin/bash"]
