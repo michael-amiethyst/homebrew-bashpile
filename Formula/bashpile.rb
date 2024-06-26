@@ -3,7 +3,8 @@ class Bashpile < Formula
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   license "MIT"
   url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.21.5"
-  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "development"
+  # TODO change back to "development"
+  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "hotfix-osx-getopt"
 
   # foundational dependencies
   depends_on "openjdk"
@@ -32,5 +33,16 @@ class Bashpile < Formula
   test do
     assert_match "Hello Bash", shell_output("echo \"print('Hello Bash')\" | bpr -c")
     assert_match "6.28", shell_output("echo \"print(3.14 + 3.14)\" | bpr -c")
+  end
+
+  def caveats
+    <<~EOS
+      OSX Only: By default, the Bash5 and GNU-getopt dependencies will be installed to:
+      	#{HOMEBREW_PREFIX}/Cellar/bash/<VERSION>/bin
+      	and
+      	#{HOMEBREW_PREFIX}/Cellar/gnu-getopt/<VERSION>/bin
+
+      You will need to add these to the front of your PATH for Bashpile to work correctly.
+    EOS
   end
 end

@@ -5,6 +5,12 @@
  * Manually deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
  */
 
+// TODO factor this out into a library
+// check for GNU getopt vs FreeBSD getopt
+if #(getopt) == " --":
+    print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting..."
+    exit 2
+
 // getopt
 opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
