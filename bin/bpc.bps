@@ -4,7 +4,7 @@
 
 // TODO factor this out into a library
 // check for GNU getopt vs FreeBSD getopt
-if #(getopt) == " --":
+if #(getopt --help) == " --":
     print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting..."
     exit 2
 
@@ -47,3 +47,5 @@ if commandMode:
     #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString")
 else:
     #(java -jar "$jarPath" --outputFile="$translatedFilename" "$@")
+
+chmod 755 $translatedFilename

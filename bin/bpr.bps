@@ -7,7 +7,7 @@
 
 // TODO factor this out into a library
 // check for GNU getopt vs FreeBSD getopt
-if #(getopt) == " --":
+if #(getopt --help) == " --":
     print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting..."
     exit 2
 
@@ -77,6 +77,7 @@ else:
 /** Occasional false positive for unexpected EOF or syntax error on WSL, rerun once if needed */
 function runTranslation(translatedFilename: str, args: list<str>):
     absoluteFilename: str = #(realpath "$translatedFilename")
+    // TODO remove after bpc with permissions is deployed (0.21.5)
     chmod 755 $absoluteFilename
     #("$absoluteFilename" "${args[@]}" 2>&1 | tee "bpr.log") creates "bpr.log":
         if #(cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
