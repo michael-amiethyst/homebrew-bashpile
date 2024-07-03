@@ -2,6 +2,12 @@
 
 // TODO this should be able to throw an error message and have it be displayed
 
+// TODO factor this out into a library
+// check for GNU getopt vs FreeBSD getopt
+if #(getopt --help) == " --":
+    print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting..."
+    exit 2
+
 // getopt
 opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
@@ -26,8 +32,6 @@ if isset arguments[1] and arguments[1] == "-":
     commandMode = true
     shift
 
-// TODO default command name to inputFilename.bpt
-
 // find the jar location
 bpHome: str
 if unset BASHPILE_HOME:
@@ -43,3 +47,5 @@ if commandMode:
     #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString")
 else:
     #(java -jar "$jarPath" --outputFile="$translatedFilename" "$@")
+
+chmod 755 $translatedFilename

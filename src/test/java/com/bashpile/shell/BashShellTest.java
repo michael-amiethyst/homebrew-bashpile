@@ -62,4 +62,6 @@ class BashShellTest extends BashpileTest {
         final ExecutionResults executionResults = runAndJoin("shellcheck --help");
         assertSuccessfulExitCode(executionResults);
     }
+
+    // TODO check that env variables are picked up correctly (e.g. PATH)
 }

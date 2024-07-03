@@ -33,4 +33,15 @@ class Bashpile < Formula
     assert_match "Hello Bash", shell_output("echo \"print('Hello Bash')\" | bpr -c")
     assert_match "6.28", shell_output("echo \"print(3.14 + 3.14)\" | bpr -c")
   end
+
+  def caveats
+    <<~EOS
+      OSX Only: By default, the Bash5 and GNU-getopt dependencies will be installed to:
+      	#{HOMEBREW_PREFIX}/Cellar/bash/<VERSION>/bin
+      	and
+      	#{HOMEBREW_PREFIX}/Cellar/gnu-getopt/<VERSION>/bin
+
+      You will need to add these to the front of your PATH for Bashpile to work correctly.
+    EOS
+  end
 end
