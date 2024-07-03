@@ -28,3 +28,4 @@
 * 0.21.3 - Fix for error on brew install now that more testing was enabled
 * 0.21.4 - Removed recently added extra testing during install
 * 0.21.5 - OSX Brew install fixes, added Bash and gnu-getopt dependencies
+* 0.21.6 - OSX Runtime fixes to verify Bash and gnu-getopt are on the PATH
