@@ -3,8 +3,7 @@ class Bashpile < Formula
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   license "MIT"
   url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.21.5"
-  # TODO change back to "development"
-  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "hotfix-osx-getopt"
+  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "development"
 
   # foundational dependencies
   depends_on "openjdk"

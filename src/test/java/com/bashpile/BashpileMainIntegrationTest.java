@@ -39,7 +39,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     public void bpcDeploysSuccessfully() throws IOException {
         log.info("In bpcDeploysSuccessfully");
 
-        // weird, intermittent errors running bpr in Java like characters getting skipped
         int exitCode = ExecutionResults.GENERIC_FAILURE;
         int loops = 0;
         ExecutionResults results = null;
@@ -51,6 +50,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         }
 
         assertSuccessfulExitCode(results);
+        // ensure generated bpc is executable
+        assertSuccessfulExitCode(runAndJoin("test -x bin/bpc"));
         bpcDeployed = true;
     }
 
@@ -61,7 +62,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In bprDeploysSuccessfully");
         Assumptions.assumeTrue(bpcDeployed);
 
-        // weird, intermittent errors running bpr in Java like characters getting skipped
+        // weird, intermittent errors running bpr in Java under WSL like characters getting skipped
         int exitCode = ExecutionResults.GENERIC_FAILURE;
         int loops = 0;
         ExecutionResults results = null;
