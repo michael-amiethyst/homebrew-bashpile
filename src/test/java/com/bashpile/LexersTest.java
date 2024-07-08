@@ -1,17 +1,20 @@
 package com.bashpile;
 
+import com.bashpile.maintests.BashpileTest;
+import com.bashpile.shell.BashShell;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Order(3)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class LexersTest {
+public class LexersTest extends BashpileTest {
 
     @Test @Order(10)
     public void cdIsLinuxCommand() {
@@ -37,8 +40,11 @@ public class LexersTest {
     }
 
     @Test @Order(50)
-    public void relativeCommandIsLinuxCommand() {
-        assertTrue(Lexers.isLinuxCommand("src/test/resources/scripts/my_ls.bash"));
+    public void relativeCommandIsLinuxCommand() throws IOException {
+        String command = "src/test/resources/scripts/my_ls.bash";
+        // must be executable to register as a command
+        assertSuccessfulExitCode(BashShell.runAndJoin("chmod +x " + command));
+        assertTrue(Lexers.isLinuxCommand(command));
     }
 
     @Test @Order(60)
@@ -51,10 +57,16 @@ public class LexersTest {
         assertTrue(Lexers.isLinuxCommand("./src/test/resources/scripts/my_ls.bash escapedString.bps"));
     }
 
-    // TODO test on native Linux or OSX
-//    @Test @Order(80)
-//    public void absoluteCommandIsLinuxCommand() {
-//        String absolutePath = Path.of("./src/test/resources/scripts/my_ls.bash").toAbsolutePath().toString();
-//        assertTrue(Lexers.isLinuxCommand(absolutePath), "%s was not a command".formatted(absolutePath));
-//    }
+    @Test @Order(80)
+    public void absoluteCommandIsLinuxCommand() {
+        String absolutePath = Path.of("./src/test/resources/scripts/my_ls.bash").toAbsolutePath().toString();
+        assertTrue(Lexers.isLinuxCommand(absolutePath), "%s was not a command".formatted(absolutePath));
+    }
+
+    @Test @Order(90)
+    public void absoluteCommandWithDashesIsLinuxCommand() {
+        String absolutePath = Path.of("./src/test/resources/scripts/ls-with-dashes.bash-with-dashes")
+                .toAbsolutePath().toString();
+        assertTrue(Lexers.isLinuxCommand(absolutePath), "%s was not a command".formatted(absolutePath));
+    }
 }
