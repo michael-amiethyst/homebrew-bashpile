@@ -29,3 +29,4 @@
 * 0.21.4 - Removed recently added extra testing during install
 * 0.21.5 - OSX Brew install fixes, added Bash and gnu-getopt dependencies
 * 0.21.6 - OSX Runtime fixes to verify Bash and gnu-getopt are on the PATH
+* 0.21.7 - Scripts with dashes (such as 'docker-compose') register as linux commands
