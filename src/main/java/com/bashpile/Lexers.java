@@ -31,7 +31,7 @@ public class Lexers {
     /** A regex for a valid Bash identifier */
     private static final Pattern COMMAND_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*");
 
-    private static final Pattern FILE_PATTERN = Pattern.compile("^(?:/?[a-zA-Z_.][a-zA-Z0-9_.]*)+");
+    private static final Pattern FILE_PATTERN = Pattern.compile("^(?:/?[a-zA-Z_.-][a-zA-Z0-9_.-]*)+");
 
     /** A regex for a Bash assignment */
     private static final Pattern ASSIGN_PATTERN =
@@ -109,7 +109,7 @@ public class Lexers {
 
         try {
             // may need a 'and not find with createsStatementRegex' when we add file path recognition to shell lines
-            if (COMMAND_PATTERN.matcher(command).matches()) {
+            if (COMMAND_PATTERN.matcher(command).matches() || FILE_PATTERN.matcher(command).matches()) {
                 ExecutionResults results = BashShell.runAndJoin("type -t " + command);
                 // exclude keywords like 'function'
 
