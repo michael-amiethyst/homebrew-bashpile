@@ -41,6 +41,8 @@ else:
     BASHPILE_HOME: str
     bpHome = BASHPILE_HOME + "/bin"
 jarPath: str = bpHome + "/bashpile.jar"
+if not fileExists jarPath:
+    jarPath = bpHome + "/bin/bashpile.jar"
 
 if commandMode:
     commandString: str = #(cat -)

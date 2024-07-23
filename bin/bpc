@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpc.bps on 2024-07-03T12:40:44.189721-04:00[America/New_York] (timestamp 1720024844189)
+# Generated from bin/bpc.bps on 2024-07-23T14:03:08.553846-04:00[America/New_York] (timestamp 1721757788553)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -73,14 +73,18 @@ fi
 # assign statement, Bashpile line 42
 declare jarPath
 jarPath="${bpHome}/bashpile.jar"
+if ! [ -e "${jarPath}" ]; then
+  # reassign statement, Bashpile line 44
+  jarPath=${bpHome}/bin/bashpile.jar
+fi
 if ${commandMode}; then
-  # assign statement, Bashpile line 45
+  # assign statement, Bashpile line 47
   declare commandString
   commandString=$(cat -)
-  # expression statement, Bashpile line 46
+  # expression statement, Bashpile line 48
   java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString"
 else
-  # expression statement, Bashpile line 48
+  # expression statement, Bashpile line 50
   java -jar "$jarPath" --outputFile="$translatedFilename" "$@"
 fi
 chmod 755 $translatedFilename

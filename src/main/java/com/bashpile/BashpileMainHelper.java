@@ -127,8 +127,13 @@ public class BashpileMainHelper {
             final ExecutionResults shfmtResults = BashShell.runAndJoin(
                     "shfmt -i 2 -ci -bn %s".formatted(temp.toString()));
             if (shfmtResults.exitCode() != ExecutionResults.SUCCESS) {
-                final String message = "Script was unable to format with shfmt.  Script:\n%s\nShellcheck output:\n%s"
-                        .formatted(shfmtResults, shfmtResults.stdout());
+                final String message = """
+                        Script was unable to format with shfmt.  Script: %s
+                        shfmt code: %d, output: %s
+                        JVM env PATH: %s"""
+                        .stripIndent()
+                        .formatted(shfmtResults.stdin(), shfmtResults.exitCode(), shfmtResults.stdout(),
+                                System.getenv("PATH"));
                 throw new BashpileUncheckedAssertionException(message);
             }
             return shfmtResults.stdout();
