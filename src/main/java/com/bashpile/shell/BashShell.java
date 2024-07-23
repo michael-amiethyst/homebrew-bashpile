@@ -1,5 +1,6 @@
 package com.bashpile.shell;
 
+import com.bashpile.Strings;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -107,7 +108,9 @@ public class BashShell implements Closeable {
                     .formatted(filename, filename, String.join(" ", args), filename);
         }
 
-        commandLine.writeLn(bashString);
+        // some OS's (Debian at least) drop the original PATH info during brew install
+        final String envPath = Strings.defaultString(System.getenv("PATH"), ".");
+        commandLine.writeLn("export PATH=%s:$PATH; %s".formatted(envPath, bashString));
 
         // exit from subshell
         commandLine.writeLn("exit $?");
@@ -116,7 +119,7 @@ public class BashShell implements Closeable {
         return processes;
     }
 
-    public BashShell(@Nonnull final IoManager ioManager, @Nonnull final String bashScript) {
+    /* package */ BashShell(@Nonnull final IoManager ioManager, @Nonnull final String bashScript) {
         this.ioManager = ioManager;
         this.bashScript = bashScript;
     }

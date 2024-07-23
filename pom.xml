@@ -6,7 +6,7 @@
 
     <groupId>com.bashpile</groupId>
     <artifactId>bashpile</artifactId>
-    <version>0.21.7</version>
+    <version>0.21.8</version>
     <packaging>jar</packaging>
 
     <properties>

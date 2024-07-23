@@ -7,6 +7,8 @@ LABEL authors="Michael Amiethyst"
 # docker build --progress=plain --no-cache -t "debian-bashpile" src/test/resources/docker/debian
 # docker run --rm -it debian-bashpile
 
+# Use bash as default shell for RUN commands
+SHELL ["/bin/bash", "-c"]
 
 # Setup system and user
 RUN apt update && apt upgrade && apt-get -y install curl git build-essential procps
@@ -18,13 +20,13 @@ WORKDIR /home/dockeruser
 
 # install brew
 RUN /bin/bash -c "NONINTERACTIVE=1 $(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && which brew
 
 # install gcc, Bashpile dependencies and Bashpile
-RUN /bin/bash -c "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" \
-    && brew install gcc openjdk bash maven shfmt shellcheck bc gnu-getopt gnu-sed" \
-# shfmt not in PATH for embedded Shell
-RUN /bin/bash -c "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" && export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH \
-    && brew install --HEAD michael-amiethyst/bashpile/bashpile || cat /home/dockeruser/.cache/Homebrew/Logs/bashpile/01.mvn"
-RUN /bin/bash -c "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\" && bpr --help"
+RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
+    && brew install gcc openjdk bash maven shfmt shellcheck bc gnu-getopt gnu-sed
+RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
+    && brew install --HEAD michael-amiethyst/bashpile/bashpile || echo /home/dockeruser/.cache/Homebrew/Logs/bashpile/01.mvn
+RUN bpc --help
 
 ENTRYPOINT ["/bin/bash"]
