@@ -91,8 +91,6 @@ public class BashShell implements Closeable {
         // run our CommandLine process in background threads
         final IoManager commandLine = IoManager.of(spawnLinuxProcess());
         final BashShell processes = new BashShell(commandLine, bashString);
-        // TODO trace PATH of JVM and spawned Bashshell.  Can't find dependencies during brew install integration tests
-        // TODO Maybe try to set PATH manually -- see https://stackoverflow.com/questions/26992165/how-to-set-path-environment-variable-in-processbuilder-java-in-windows
 
         // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
         // also the Linux process starts in the user's shell, which may not be Bash (e.g. zsh)

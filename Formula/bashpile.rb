@@ -21,7 +21,7 @@ class Bashpile < Formula
   depends_on "gnu-getopt" # needed for OSX and FreeBSD, kept as generic dependency for consistency
 
   def install
-    system "mvn", "clean", "verify", "-Dskip.failsafe.tests=true" # Integration tests can't find dependencies on PATH
+    system "mvn", "clean", "verify"
     bin.install "bin/bashpile.jar"
     bin.install "bin/bpc"
     FileUtils.cp "#{bin}/bpc", "#{bin}/bashpilec"
