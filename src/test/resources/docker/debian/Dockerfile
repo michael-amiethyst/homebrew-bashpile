@@ -18,9 +18,8 @@ RUN chown -R dockeruser /home/linuxbrew
 USER dockeruser
 WORKDIR /home/dockeruser
 
-# install brew
+# install brew, don't update .bashrc or .bash_profile (not picked up by subsequent RUN commands)
 RUN /bin/bash -c "NONINTERACTIVE=1 $(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && which brew
 
 # install gcc, Bashpile dependencies and Bashpile
 RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
