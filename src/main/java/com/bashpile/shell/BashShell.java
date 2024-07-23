@@ -1,5 +1,6 @@
 package com.bashpile.shell;
 
+import com.bashpile.Strings;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -90,8 +91,6 @@ public class BashShell implements Closeable {
         // run our CommandLine process in background threads
         final IoManager commandLine = IoManager.of(spawnLinuxProcess());
         final BashShell processes = new BashShell(commandLine, bashString);
-        // TODO trace PATH of JVM and spawned Bashshell.  Can't find dependencies during brew install integration tests
-        // TODO Maybe try to set PATH manually -- see https://stackoverflow.com/questions/26992165/how-to-set-path-environment-variable-in-processbuilder-java-in-windows
 
         // on Windows 11 `set -e` causes an exit code of 1 unless we do a sub-shell
         // also the Linux process starts in the user's shell, which may not be Bash (e.g. zsh)
@@ -107,7 +106,9 @@ public class BashShell implements Closeable {
                     .formatted(filename, filename, String.join(" ", args), filename);
         }
 
-        commandLine.writeLn(bashString);
+        // some OS's (Debian at least) drop the original PATH info during brew install
+        final String envPath = Strings.defaultString(System.getenv("PATH"), ".");
+        commandLine.writeLn("export PATH=%s:$PATH; %s".formatted(envPath, bashString));
 
         // exit from subshell
         commandLine.writeLn("exit $?");
@@ -116,7 +117,7 @@ public class BashShell implements Closeable {
         return processes;
     }
 
-    public BashShell(@Nonnull final IoManager ioManager, @Nonnull final String bashScript) {
+    /* package */ BashShell(@Nonnull final IoManager ioManager, @Nonnull final String bashScript) {
         this.ioManager = ioManager;
         this.bashScript = bashScript;
     }
