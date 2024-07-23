@@ -25,7 +25,6 @@ RUN /bin/bash -c "NONINTERACTIVE=1 $(curl -fsSL https://raw.githubusercontent.co
 RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
     && brew install gcc openjdk bash maven shfmt shellcheck bc gnu-getopt gnu-sed
 RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
-    && brew install --HEAD michael-amiethyst/bashpile/bashpile || echo /home/dockeruser/.cache/Homebrew/Logs/bashpile/01.mvn
-RUN bpc --help
+    && brew install --HEAD michael-amiethyst/bashpile/bashpile
 
 ENTRYPOINT ["/bin/bash"]
