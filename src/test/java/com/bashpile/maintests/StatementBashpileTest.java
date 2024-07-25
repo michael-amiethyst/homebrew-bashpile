@@ -151,16 +151,19 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("false\n", results.stdout());
     }
 
-    // TODO uncomment test after implementation of increment and decrement pre and post operators
-//    @Test @Order(62)
-//    public void reassignWithIncrementWorks() {
-//        final ExecutionResults results = runText("""
-//                someVar: int = 0
-//                print(someVar++)
-//                print(someVar)""");
-//        //        assertSuccessfulExitCode(results);
-//        assertEquals("0\n1\n", results.stdout());
-//    }
+    @Test
+    @Order(62)
+    public void reassignWithIncrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: int = 0
+                print(someVar++)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n", results.stdout());
+    }
+
+    // TODO finish tests for increment, decrement / prefix and postfix / unhappy paths / complex expressions
+    // TODO tests for int/float/string/other
 
     @Test
     @Order(70)

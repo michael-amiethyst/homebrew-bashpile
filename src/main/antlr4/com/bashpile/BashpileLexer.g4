@@ -50,7 +50,7 @@ While    : 'while';
 OParen  : '(';
 // closing parenthesis
 CParen  : ')';
-// unary minus (minus defiend below)
+// unary minus (minus defined below)
 Increment: '++';
 Decrement: '--';
 Not     : 'not';

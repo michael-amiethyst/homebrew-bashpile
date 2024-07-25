@@ -442,6 +442,23 @@ public class BashTranslationEngine implements TranslationEngine {
 
     // expressions
 
+    @Override
+    public Translation unaryPostCrementExpression(BashpileParser.UnaryPostCrementExpressionContext ctx) {
+        final String variableName = ctx.Id().getText();
+        final Type type = typeStack.getVariableType(variableName);
+        final String opText = ctx.op.getText();
+        if (type.isInt()) {
+            // arithmetic built-in when possible
+            return new Translation("$((%s%s))".formatted(variableName, opText), INT_TYPE, List.of(CALCULATION));
+        } else if (type.isNumeric()) {
+            // bc tool for floats
+            return new Translation("bc <<< \"%s%s\"".formatted(variableName, opText),
+                    Type.NUMBER_TYPE, List.of(NEEDS_INLINING_OFTEN, CALCULATION));
+        } else {
+            throw new BashpileUncheckedException("Post Increment and post decrement only allowed on numeric vars");
+        }
+    }
+
     /**
      * True/False cast to 1/0.  Any number besides 0 casts to true.  "true" and "false" (any case) cast to BOOLs.
      * Quoted numbers (numbers in STRs) cast to BOOLs like numbers.  Anything cast to an STR gets quotes around it.

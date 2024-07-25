@@ -168,6 +168,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit expressions
 
     @Override
+    public Translation visitUnaryPostCrementExpression(BashpileParser.UnaryPostCrementExpressionContext ctx) {
+        return translator.unaryPostCrementExpression(ctx);
+    }
+
+    @Override
     public @Nonnull Translation visitTypecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         return translator.typecastExpression(ctx);
     }
