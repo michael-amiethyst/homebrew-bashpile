@@ -273,7 +273,7 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     @Override
-    public Translation switchStatement(BashpileParser.SwitchStatementContext ctx) {
+    public Translation switchStatement(@Nonnull BashpileParser.SwitchStatementContext ctx) {
         LOG.trace("In switchStatement");
         final Translation expressionTranslation = requireNonNull(visitor).visit(ctx.expression(0));
         final Stream<Translation> patterns = ctx.expression().stream().skip(1)
@@ -426,7 +426,9 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation expressionStatement(@Nonnull final BashpileParser.ExpressionStatementContext ctx) {
         LOG.trace("In expressionStatement");
-        final Translation expr = requireNonNull(visitor).visit(ctx.expression()).add(NEWLINE);
+        Translation expr = requireNonNull(visitor).visit(ctx.expression());
+        // change $(( )) to _=$(( )) to avoid executing a number.  Fixes ShellCheck error SC2084
+        expr = expr.lambdaBody(body -> !body.startsWith("$((") ? body : "_=" + body).add(NEWLINE);
         final Translation comment = createCommentTranslation("expression statement", lineNumber(ctx));
         final Translation subcomment =
                 subcommentTranslationOrDefault(expr.hasPreamble(), "expression statement body");
