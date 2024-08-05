@@ -268,7 +268,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 else:
                     print("false")""");
         assertSuccessfulExitCode(results);
-        assertEquals("true\n", results.stdout());
+        assertEquals("false\n", results.stdout());
     }
 
     @Test
@@ -282,7 +282,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 else:
                     print("false")""");
         assertSuccessfulExitCode(results);
-        assertEquals("false\n", results.stdout());
+        assertEquals("true\n", results.stdout());
     }
 
     @Test

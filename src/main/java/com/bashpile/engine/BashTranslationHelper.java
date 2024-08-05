@@ -207,9 +207,12 @@ public class BashTranslationHelper {
     /* package */ static Translation visitGuardingExpression(TerminalNode notNode, Translation expressionTranslation) {
         final Translation not = notNode != null ? toStringTranslation("! ") : UNKNOWN_TRANSLATION;
         expressionTranslation = Unwinder.unwindAll(expressionTranslation);
-        // TODO 0.22.0 use $(( )) for ints
-        if (expressionTranslation.type().isNumeric()) {
-            // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
+        if (expressionTranslation.type().isInt() && expressionTranslation.body().startsWith("$((")) {
+            // strip initial $ for (( instead of $((
+            expressionTranslation = expressionTranslation.lambdaBody(body -> body.substring(1));
+        } else if (expressionTranslation.type().isNumeric()) {
+            // to handle floats we use bc, but the test by default will be for if bc succeeded (had exit code 0)
+            // so we need to explicitly check if the check returned true (1)
             expressionTranslation = expressionTranslation
                     .inlineAsNeeded(Unwinder::unwindAll)
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);

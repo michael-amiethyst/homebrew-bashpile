@@ -35,7 +35,7 @@ class Unwinder {
         @JvmStatic
         fun unwindAll(tr: Translation): Translation {
             var ret = tr
-            while (splitOnCommandSubstitution(ret.body()).isNotEmpty()) {
+            while (!ret.body().startsWith("$((") && splitOnCommandSubstitution(ret.body()).isNotEmpty()) {
                 ret = unwindOnMatch(ret, null)
             }
             return ret

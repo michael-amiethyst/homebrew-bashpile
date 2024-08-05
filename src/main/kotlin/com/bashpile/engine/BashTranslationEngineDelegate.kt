@@ -85,8 +85,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             val comment = createCommentTranslation("function declaration", lineNumber(ctx))
             val i = AtomicInteger(1)
             // the empty string or ...
-            var namedParams = ""
-            if (ctx.paramaters().typedId().isNotEmpty()) {
+            var namedParams = if (ctx.paramaters().typedId().isNotEmpty()) {
                 // local var1=$1; local var2=$2; etc
                 val paramDeclarations = ctx.paramaters().typedId()
                     .map{ it.Id() }
@@ -107,7 +106,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                         }
                         "declare $opts $x=$${i.getAndIncrement()};"
                     }.joinToString(" ")
-                namedParams = BashTranslationEngine.TAB + paramDeclarations + "\n"
+                BashTranslationEngine.TAB + paramDeclarations + "\n"
+            } else {
+                BashTranslationEngine.TAB + "# no parameters to function" + "\n"
             }
             val blockStatements = streamContexts(
                 ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement()
@@ -119,13 +120,14 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 .orElseThrow()
                 .assertEmptyPreamble()
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
+            // TODO ensure 2nd+ lines of blockbody have 5 tabs
             val blockBody = Asserts.assertIsParagraph(blockStatements.body()).removeSuffix("\n")
             val functionText = """
                 $functionName () {
                 $namedParams
                 $blockBody
                 }
-                """.trimIndent() + "\n"
+                """.trimMargin() + "\n"
             val functionDeclaration = toStringTranslation(functionText)
             comment.add(functionDeclaration)
         }
