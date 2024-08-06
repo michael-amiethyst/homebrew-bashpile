@@ -55,10 +55,17 @@ if not commandMode:
         if fileExists translatedFilename:
             print("Will not overwrite " + translatedFilename)
             exit 1
-    #(java -jar "$jarPath" --outputFile="$translatedFilename" "$1") creates translatedFilename:
+    java -jar "$jarPath" --outputFile="$translatedFilename" "$1" > bp_jar.log 2>&1 || true
+    if regularFileExists translatedFilename:
+        rm bp_jar.log
         shift
         print("Start of " + translatedFilename)
         runTranslation(translatedFilename, arguments[all])
+    else:
+        print("Compile failed")
+        cat bp_jar.log
+        rm bp_jar.log
+        exit 1
 else:
     // command mode
     commandString: str
@@ -67,10 +74,17 @@ else:
         shift
     else:
         commandString = #(cat -)
-    #(java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" 1>/dev/null) creates translatedFilename:
+    java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" > bp_jar.log 2>&1 || true
+    if regularFileExists translatedFilename:
+        rm bp_jar.log
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename
         sleep .2
         runTranslation(translatedFilename, arguments[all])
+    else:
+        print("Compile failed")
+        cat bp_jar.log
+        rm bp_jar.log
+        exit 1
 
 // helpers
 
@@ -84,3 +98,4 @@ function runTranslation(translatedFilename: str, args: list<str>):
             // this needs an explicit shell string to handle the ./"$absoluteFilename" without
             // breaking the lexer on the creates statement above
             #("$absoluteFilename" "${args[@]}")
+    rm $absoluteFilename 2>/dev/null || true
