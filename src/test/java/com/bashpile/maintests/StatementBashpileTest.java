@@ -153,7 +153,7 @@ class StatementBashpileTest extends BashpileTest {
 
     @Test
     @Order(62)
-    public void reassignWithIncrementWorks() {
+    public void reassignIntWithIncrementWorks() {
         final ExecutionResults results = runText("""
                 someVar: int = 0
                 print(someVar++)
@@ -162,6 +162,16 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("0\n1\n", results.stdout());
     }
 
+    @Test
+    @Order(63)
+    public void reassignFloatWithIncrementFailsWithTypeError() {
+        assertThrows(TypeError.class, () -> runText("""
+                someVar: float = 0.1
+                print(someVar++)
+                print(someVar)"""));
+    }
+
+    // TODO 0.22.0 test for var with number type and cast to int and increment
     // TODO 0.22.0 finish tests for increment, decrement / prefix and postfix / unhappy paths / complex expressions
     // TODO 0.22.0 tests for int/float/string/other
 

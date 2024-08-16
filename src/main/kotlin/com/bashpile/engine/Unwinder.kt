@@ -18,7 +18,7 @@ class Unwinder {
 
     companion object {
 
-        // TODO 0.22.0 replace REGEX with manual computation, str -> List<Str> of length 3 or 0
+        // TODO replace REGEX with manual computation, str -> List<Str> of length 3 or 0
         /**
          * This single-line Pattern has three matching groups.
          * They are the start of the outer command substitution, the inner command substitution and the remainder of

@@ -453,9 +453,11 @@ public class BashTranslationEngine implements TranslationEngine {
             // arithmetic built-in when possible
             return new Translation("$((%s%s))".formatted(variableName, opText), INT_TYPE, List.of(CALCULATION));
         } else if (type.isNumeric()) {
-            // bc tool for floats
-            return new Translation("bc <<< \"%s%s\"".formatted(variableName, opText),
-                    Type.NUMBER_TYPE, List.of(NEEDS_INLINING_OFTEN, CALCULATION));
+            // bc tool can't assign to shell variables, only bc variables.
+            // bc variables can't have uppercase, and to "export" them back to the shell we would need a whole
+            // concept of a post-amble and who uses ++ on floats anyway???
+            final String message = "++/-- operators only allowed on explicit ints.  Try casting with ': int'.";
+            throw new TypeError(message, ctx.start.getLine());
         } else {
             throw new BashpileUncheckedException("Post Increment and post decrement only allowed on numeric vars");
         }

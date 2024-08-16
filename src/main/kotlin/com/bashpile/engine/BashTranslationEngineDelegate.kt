@@ -120,7 +120,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 .orElseThrow()
                 .assertEmptyPreamble()
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
-            // TODO ensure 2nd+ lines of blockbody have 5 tabs
+            // 2nd+ lines of blockbody has bad indent, but that's why we go over with shfmt
             val blockBody = Asserts.assertIsParagraph(blockStatements.body()).removeSuffix("\n")
             val functionText = """
                 $functionName () {
