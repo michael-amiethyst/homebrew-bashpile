@@ -171,6 +171,17 @@ class StatementBashpileTest extends BashpileTest {
                 print(someVar)"""));
     }
 
+    @Test
+    @Order(63)
+    public void reassignFloatWithCastAndIncrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: float = 0.0
+                print((someVar: int)++)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n", results.stdout());
+    }
+
     // TODO 0.22.0 test for var with number type and cast to int and increment
     // TODO 0.22.0 finish tests for increment, decrement / prefix and postfix / unhappy paths / complex expressions
     // TODO 0.22.0 tests for int/float/string/other

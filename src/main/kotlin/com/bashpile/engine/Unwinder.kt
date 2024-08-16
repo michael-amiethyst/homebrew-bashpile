@@ -26,7 +26,7 @@ class Unwinder {
          * the arithmetic built-in $(( ))
          */
         private val NESTED_COMMAND_SUBSTITUTION =
-            Pattern.compile("(?s)(\\$\\(.*?)(\\$\\((?!\\().*?\\))(.*?\\))")
+            Pattern.compile("(?s)(\\$\\((?!\\().*?)(\\$\\((?!\\().*?\\))(.*?\\))")
 
         /** Used to ensure variable names are unique  */
         private var subshellWorkaroundCounter = 0

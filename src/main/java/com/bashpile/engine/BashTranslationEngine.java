@@ -446,13 +446,18 @@ public class BashTranslationEngine implements TranslationEngine {
 
     @Override
     public Translation unaryPostCrementExpression(BashpileParser.UnaryPostCrementExpressionContext ctx) {
-        final String variableName = ctx.Id().getText();
-        final Type type = typeStack.getVariableType(variableName);
+        final Translation expressionTranslation = requireNonNull(visitor).visit(ctx.expression());
         final String opText = ctx.op.getText();
-        if (type.isInt()) {
+        if (expressionTranslation.isInt()) {
             // arithmetic built-in when possible
-            return new Translation("$((%s%s))".formatted(variableName, opText), INT_TYPE, List.of(CALCULATION));
-        } else if (type.isNumeric()) {
+            final String preamble = expressionTranslation.preamble();
+            return new Translation("$((%s%s))".formatted(expressionTranslation.lambdaBody(body -> {
+                // get just the variable name without ${}
+                String ret = StringUtils.stripStart(body, "${");
+                return StringUtils.stripEnd(ret, "}");
+            }), opText), INT_TYPE, List.of(CALCULATION))
+                    .addPreamble(preamble);
+        } else if (expressionTranslation.isNumeric()) {
             // bc tool can't assign to shell variables, only bc variables.
             // bc variables can't have uppercase, and to "export" them back to the shell we would need a whole
             // concept of a post-amble and who uses ++ on floats anyway???

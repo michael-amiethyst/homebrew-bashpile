@@ -22,7 +22,6 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
  */
-// TODO in body() ensure that preamble is empty
 public class Translation {
 
     // static constants
@@ -48,7 +47,7 @@ public class Translation {
 
     private static final Pattern NUMBER_PATTERN = Pattern.compile("[\\d().]+");
 
-    @Nonnull private final String preamble;
+    @Nonnull private String preamble;
 
     @Nonnull private final String body;
 
@@ -331,6 +330,16 @@ public class Translation {
         return type.isNotFound();
     }
 
+    /** Is the type an integer? */
+    public boolean isInt() {
+        return type.isInt();
+    }
+
+    /** Is the type a number, but we don't know if it's an Int or a Float? */
+    public boolean isNumeric() {
+        return type.isNumeric();
+    }
+
     /** Is the type a String? */
     public boolean isStr() {
         return type.isStr();
@@ -392,7 +401,11 @@ public class Translation {
     }
 
     public @Nonnull String preamble() {
-        return preamble;
+        try {
+            return preamble;
+        } finally {
+            preamble = "";
+        }
     }
 
     public @Nonnull String body() {

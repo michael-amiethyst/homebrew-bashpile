@@ -35,6 +35,8 @@ import static com.bashpile.engine.Translation.UNKNOWN_TRANSLATION;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.SimpleType.INT;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
+import static com.bashpile.engine.strongtypes.Type.INT_TYPE;
+import static com.bashpile.engine.strongtypes.Type.STR_TYPE;
 
 /**
  * Helper methods to {@link BashTranslationEngine}.
@@ -291,18 +293,40 @@ public class BashTranslationHelper {
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
         // parse expression as a BigDecimal
-        BigDecimal expressionValue;
+        BigDecimal expressionValue = null;
+        boolean literalValue = true;  // e.g. not a variable reference
         try {
             expressionValue = new BigDecimal(expression.body());
         } catch (final NumberFormatException e) {
-            throw new TypeError("Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber);
+            // check for literal float
+            try {
+                expressionValue = new BigDecimal(expression.body());
+                throw new TypeError(
+                        "Couldn't parse %s (FLOAT) to a(n) %s".formatted(expression.body(), castTo),
+                        lineNumber);
+            } catch (final NumberFormatException e1) {
+                literalValue = false;
+            }
         }
 
         // cast
         switch (castTo) {
-            case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
+            case INT -> {
+                if (literalValue) {
+                    return expression.body(expressionValue.toBigInteger().toString()).type(INT_TYPE);
+                } else {
+                    // if a variable reference then typecast to int (round down) with printf
+                    String varName = StringUtils.stripStart(expression.body(), "${");
+                    varName = StringUtils.stripEnd(varName, "}");
+                    return expression.addPreamble("""
+                                    %s=$(printf '%%d' "%s" 2>/dev/null || true)
+                                    """.formatted(varName, expression))
+                            .type(INT_TYPE);
+                }
+            }
             case FLOAT -> {}
-            case STR -> expression = expression.quoteBody();
+            // TODO ensure .type(new_type) on other typecast methods
+            case STR -> expression = expression.quoteBody().type(STR_TYPE);
             // no typecast to bool or list
             default -> throw typecastError;
         }
