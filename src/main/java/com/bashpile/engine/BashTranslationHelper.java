@@ -270,6 +270,7 @@ public class BashTranslationHelper {
             try {
                 new BigInteger(expression.body());
             } catch (final NumberFormatException e) {
+                // TODO allow for non-literals like for typecastFromFloat
                 String message = "Couldn't parse '%s' to an INT.  " +
                         "Typecasts only work on literals, was this an ID or function call?";
                 throw new TypeError(message.formatted(expression.body()), lineNumber);
@@ -288,29 +289,20 @@ public class BashTranslationHelper {
     }
 
     /* package */ static @Nonnull Translation typecastFromFloat(
-            @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
-            final int lineNumber,
+            @Nonnull final Type castTo,
             @Nonnull final TypeError typecastError) {
-        // parse expression as a BigDecimal
+        // parse expression as a BigDecimal to check for literal float
         BigDecimal expressionValue = null;
         boolean literalValue = true;  // e.g. not a variable reference
         try {
             expressionValue = new BigDecimal(expression.body());
         } catch (final NumberFormatException e) {
-            // check for literal float
-            try {
-                expressionValue = new BigDecimal(expression.body());
-                throw new TypeError(
-                        "Couldn't parse %s (FLOAT) to a(n) %s".formatted(expression.body(), castTo),
-                        lineNumber);
-            } catch (final NumberFormatException e1) {
-                literalValue = false;
-            }
+            literalValue = false;
         }
 
         // cast
-        switch (castTo) {
+        switch (castTo.mainType()) {
             case INT -> {
                 if (literalValue) {
                     return expression.body(expressionValue.toBigInteger().toString()).type(INT_TYPE);
@@ -334,15 +326,15 @@ public class BashTranslationHelper {
     }
 
     /* package */ static @Nonnull Translation typecastFromStr(
-            @Nonnull final SimpleType castTo,
+            @Nonnull final Type castTo,
             @Nonnull Translation expression,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        switch (castTo) {
+        switch (castTo.mainType()) {
             case BOOL -> {
                 expression = expression.unquoteBody();
                 if (SimpleType.isNumberString(expression.body())) {
-                    expression = typecastFromFloat(castTo, expression, lineNumber, typecastError);
+                    expression = typecastFromFloat(expression, castTo, typecastError);
                 } else if (expression.body().equalsIgnoreCase("true")
                         || expression.body().equalsIgnoreCase("false")) {
                     expression = expression.body(expression.body().toLowerCase());

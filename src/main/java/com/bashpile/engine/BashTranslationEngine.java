@@ -483,8 +483,8 @@ public class BashTranslationEngine implements TranslationEngine {
         switch (expression.type().mainType()) {
             case BOOL -> expression = typecastFromBool(expression, castTo, typecastError);
             case INT -> expression = typecastFromInt(expression, castTo, lineNumber, typecastError);
-            case FLOAT -> expression = typecastFromFloat(castTo.mainType(), expression, lineNumber, typecastError);
-            case STR -> expression = typecastFromStr(castTo.mainType(), expression, lineNumber, typecastError);
+            case FLOAT -> expression = typecastFromFloat(expression, castTo, typecastError);
+            case STR -> expression = typecastFromStr(castTo, expression, lineNumber, typecastError);
             case LIST -> expression = typecastFromList(castTo, expression, typecastError);
             case UNKNOWN -> typecastFromUnknown(castTo.mainType(), typecastError);
             case NOT_FOUND -> {
