@@ -246,6 +246,9 @@ public class BashTranslationHelper {
     }
 
     // typecast static methods
+    // TODO not 0.22.0 - extract to its own class, "TypeCaster" with docs as following:
+    // computations not checked for parsability or anything that starts with $ (Bash variable)
+    // C style number casts, we can't check for correctness of non-literals (but we allow them)
 
     /* package */ static @Nonnull Translation typecastFromBool(
             @Nonnull Translation expression,
@@ -326,8 +329,8 @@ public class BashTranslationHelper {
     }
 
     /* package */ static @Nonnull Translation typecastFromStr(
-            @Nonnull final Type castTo,
             @Nonnull Translation expression,
+            @Nonnull final Type castTo,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
         switch (castTo.mainType()) {
@@ -337,18 +340,18 @@ public class BashTranslationHelper {
                     expression = typecastFromFloat(expression, castTo, typecastError);
                 } else if (expression.body().equalsIgnoreCase("true")
                         || expression.body().equalsIgnoreCase("false")) {
-                    expression = expression.body(expression.body().toLowerCase());
+                    expression = expression.body(expression.body().toLowerCase()).type(castTo);
                 } else {
                     throw new TypeError("""
                             Could not cast STR to BOOL.
-                            Only 'true' and 'false' allowed (capitalization ignored).
+                            Only 'true' and 'false' allowed (capitalization ignored) or numbers for a C style cast.
                             Text was %s.""".formatted(expression.body()), lineNumber);
                 }
             }
             case INT -> {
-                // no automatic rounding for things like `"2.5":int`
+                // TODO automatic rounding for things like `"2.5":int` (see above)
                 // for argument variables (e.g. $1) take the user's word for it, we can't check here
-                expression = expression.unquoteBody();
+                expression = expression.unquoteBody().type(castTo);
                 final SimpleType foundType =
                         !expression.body().startsWith("$") ? SimpleType.parseNumberString(expression.body()) : INT;
                 if (!INT.equals(foundType)) {
@@ -358,7 +361,7 @@ public class BashTranslationHelper {
                 }
             }
             case FLOAT -> {
-                expression = expression.unquoteBody();
+                expression = expression.unquoteBody().type(castTo);
                 // verify the body parses as a valid number for non-variables
                 if (!expression.body().startsWith("$")) {
                     try {

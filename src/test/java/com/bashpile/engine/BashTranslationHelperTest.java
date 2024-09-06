@@ -35,25 +35,49 @@ class BashTranslationHelperTest {
     @Test
     @Order(30)
     public void intToStrTypecastWorks() {
-        Translation str = new Translation("1", INT_TYPE, List.of());
-        Translation converted = BashTranslationHelper.typecastFromInt(str, STR_TYPE, 0, error);
+        Translation intTr = new Translation("1", INT_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromInt(intTr, STR_TYPE, 0, error);
         assertEquals(STR_TYPE, converted.type());
     }
 
     @Test
     @Order(40)
     public void floatToIntTypecastWorks() {
-        Translation str = new Translation("1.0", FLOAT_TYPE, List.of());
-        Translation converted = BashTranslationHelper.typecastFromFloat(str, INT_TYPE, error);
+        Translation floatTr = new Translation("1.0", FLOAT_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromFloat(floatTr, INT_TYPE, error);
         assertEquals(INT_TYPE, converted.type());
     }
 
     @Test
     @Order(50)
     public void floatToStrTypecastWorks() {
-        Translation str = new Translation("1.0", FLOAT_TYPE, List.of());
-        Translation converted = BashTranslationHelper.typecastFromFloat(str, STR_TYPE, error);
+        Translation floatTr = new Translation("1.0", FLOAT_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromFloat(floatTr, STR_TYPE, error);
         assertEquals(STR_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(60)
+    public void strToBoolTypecastWorks() {
+        Translation str = new Translation("TRUE", STR_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromStr(str, BOOL_TYPE, 0, error);
+        assertEquals(BOOL_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(70)
+    public void strToIntTypecastWorks() {
+        Translation str = new Translation("1", STR_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromStr(str, INT_TYPE, 0, error);
+        assertEquals(INT_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(80)
+    public void strToFloatTypecastWorks() {
+        Translation str = new Translation("1.0", STR_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromStr(str, FLOAT_TYPE, 0, error);
+        assertEquals(FLOAT_TYPE, converted.type());
     }
 
 }

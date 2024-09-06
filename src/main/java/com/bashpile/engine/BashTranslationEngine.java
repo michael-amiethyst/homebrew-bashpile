@@ -484,7 +484,7 @@ public class BashTranslationEngine implements TranslationEngine {
             case BOOL -> expression = typecastFromBool(expression, castTo, typecastError);
             case INT -> expression = typecastFromInt(expression, castTo, lineNumber, typecastError);
             case FLOAT -> expression = typecastFromFloat(expression, castTo, typecastError);
-            case STR -> expression = typecastFromStr(castTo, expression, lineNumber, typecastError);
+            case STR -> expression = typecastFromStr(expression, castTo, lineNumber, typecastError);
             case LIST -> expression = typecastFromList(castTo, expression, typecastError);
             case UNKNOWN -> typecastFromUnknown(castTo.mainType(), typecastError);
             case NOT_FOUND -> {
