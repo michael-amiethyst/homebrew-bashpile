@@ -35,8 +35,7 @@ import static com.bashpile.engine.Translation.UNKNOWN_TRANSLATION;
 import static com.bashpile.engine.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.SimpleType.INT;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
-import static com.bashpile.engine.strongtypes.Type.INT_TYPE;
-import static com.bashpile.engine.strongtypes.Type.STR_TYPE;
+import static com.bashpile.engine.strongtypes.Type.*;
 
 /**
  * Helper methods to {@link BashTranslationEngine}.
@@ -249,10 +248,10 @@ public class BashTranslationHelper {
     // typecast static methods
 
     /* package */ static @Nonnull Translation typecastFromBool(
-            @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
+            @Nonnull final Type castTo,
             @Nonnull final TypeError typecastError) {
-        switch (castTo) {
+        switch (castTo.mainType()) {
             case BOOL -> {}
             case STR -> expression = expression.quoteBody().type(STR_TYPE);
             // no cast to int, float or list
@@ -262,8 +261,8 @@ public class BashTranslationHelper {
     }
 
     /* package */ static @Nonnull Translation typecastFromInt(
-            @Nonnull final SimpleType castTo,
             @Nonnull Translation expression,
+            @Nonnull final Type castTo,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
         if (!expression.metadata().contains(CALCULATION)) {
@@ -278,9 +277,10 @@ public class BashTranslationHelper {
         }
 
         // Cast
-        switch (castTo) {
-            case INT, FLOAT -> {}
-            case STR -> expression = expression.quoteBody();
+        switch (castTo.mainType()) {
+            case INT -> {}
+            case FLOAT -> expression = expression.type(FLOAT_TYPE);
+            case STR -> expression = expression.quoteBody().type(STR_TYPE);
             // no typecast to bool or list
             default -> throw typecastError;
         }

@@ -481,8 +481,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final TypeError typecastError = new TypeError(
                 "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber);
         switch (expression.type().mainType()) {
-            case BOOL -> expression = typecastFromBool(castTo.mainType(), expression, typecastError);
-            case INT -> expression = typecastFromInt(castTo.mainType(), expression, lineNumber, typecastError);
+            case BOOL -> expression = typecastFromBool(expression, castTo, typecastError);
+            case INT -> expression = typecastFromInt(expression, castTo, lineNumber, typecastError);
             case FLOAT -> expression = typecastFromFloat(castTo.mainType(), expression, lineNumber, typecastError);
             case STR -> expression = typecastFromStr(castTo.mainType(), expression, lineNumber, typecastError);
             case LIST -> expression = typecastFromList(castTo, expression, typecastError);
