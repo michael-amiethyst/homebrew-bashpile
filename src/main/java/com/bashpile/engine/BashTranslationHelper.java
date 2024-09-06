@@ -254,7 +254,7 @@ public class BashTranslationHelper {
             @Nonnull final TypeError typecastError) {
         switch (castTo) {
             case BOOL -> {}
-            case STR -> expression = expression.quoteBody();
+            case STR -> expression = expression.quoteBody().type(STR_TYPE);
             // no cast to int, float or list
             default -> throw typecastError;
         }
