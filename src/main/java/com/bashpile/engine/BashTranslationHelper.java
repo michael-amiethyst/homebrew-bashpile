@@ -295,37 +295,38 @@ public class BashTranslationHelper {
             @Nonnull Translation expression,
             @Nonnull final Type castTo,
             @Nonnull final TypeError typecastError) {
-        // parse expression as a BigDecimal to check for literal float
-        BigDecimal expressionValue = null;
-        boolean literalValue = true;  // e.g. not a variable reference
-        try {
-            expressionValue = new BigDecimal(expression.body());
-        } catch (final NumberFormatException e) {
-            literalValue = false;
-        }
 
         // cast
         switch (castTo.mainType()) {
-            case INT -> {
-                if (literalValue) {
-                    return expression.body(expressionValue.toBigInteger().toString()).type(INT_TYPE);
-                } else {
-                    // if a variable reference then typecast to int (round down) with printf
-                    String varName = StringUtils.stripStart(expression.body(), "${");
-                    varName = StringUtils.stripEnd(varName, "}");
-                    return expression.addPreamble("""
-                                    %s=$(printf '%%d' "%s" 2>/dev/null || true)
-                                    """.formatted(varName, expression))
-                            .type(INT_TYPE);
-                }
-            }
+            case INT -> expression = typecastToInt(expression);
             case FLOAT -> {}
-            // TODO ensure .type(new_type) on other typecast methods
             case STR -> expression = expression.quoteBody().type(STR_TYPE);
             // no typecast to bool or list
             default -> throw typecastError;
         }
         return expression;
+    }
+
+    // helper
+    private static @Nonnull Translation typecastToInt(@Nonnull Translation expression) {
+        // parse expression as a BigDecimal to check for literal float
+        BigDecimal expressionValue = null;
+        try {
+            expressionValue = new BigDecimal(expression.body());
+        } catch (final NumberFormatException e) {
+            // expressionValue is still null if it is not a literal (e.g. variable or function call)
+        }
+        if (expressionValue != null) {
+            return expression.body(expressionValue.toBigInteger().toString()).type(INT_TYPE);
+        } else {
+            // if a variable reference then typecast to int (round down) with printf
+            String varName = StringUtils.stripStart(expression.body(), "${");
+            varName = StringUtils.stripEnd(varName, "}");
+            return expression.addPreamble("""
+                            %s=$(printf '%%d' "%s" 2>/dev/null || true)
+                            """.formatted(varName, expression))
+                    .type(INT_TYPE);
+        }
     }
 
     /* package */ static @Nonnull Translation typecastFromStr(
@@ -349,7 +350,7 @@ public class BashTranslationHelper {
                 }
             }
             case INT -> {
-                // TODO automatic rounding for things like `"2.5":int` (see above)
+                // TODO automatic rounding for things like `"2.5":int` (see above), use typecastToInt?
                 // for argument variables (e.g. $1) take the user's word for it, we can't check here
                 expression = expression.unquoteBody().type(castTo);
                 final SimpleType foundType =
@@ -382,8 +383,8 @@ public class BashTranslationHelper {
 
     /** Casts to a different kind of list (i.e. a different subtype), but no other conversions */
     /* package */ static @Nonnull Translation typecastFromList(
-            @Nonnull final Type castTo,
             @Nonnull Translation expression,
+            @Nonnull final Type castTo,
             @Nonnull final TypeError typecastError) {
         if (castTo.isList()) {
             // Allow a typecast to any subtype
@@ -394,13 +395,15 @@ public class BashTranslationHelper {
         }
     }
 
-    /* package */ static void typecastFromUnknown(
-            @Nonnull final SimpleType castTo, @Nonnull final TypeError typecastError) {
-        // TODO check that INTs and Floats parse
-        switch (castTo) {
-            case BOOL, INT, FLOAT, STR, LIST -> {}
+    /* package */ static @Nonnull Translation typecastFromUnknown(
+            @Nonnull Translation expression, @Nonnull final Type castTo, @Nonnull final TypeError typecastError) {
+        switch (castTo.mainType()) {
+            case BOOL, STR, LIST -> expression = expression.type(castTo);
+            case INT -> expression = typecastToInt(expression);
+            case FLOAT -> expression = expression.unquoteBody().type(castTo);
             default -> throw typecastError;
         }
+        return expression;
     }
 
     // helpers to helpers

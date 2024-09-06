@@ -80,4 +80,28 @@ class BashTranslationHelperTest {
         assertEquals(FLOAT_TYPE, converted.type());
     }
 
+    @Test
+    @Order(90)
+    public void unknownToBoolTypecastWorks() {
+        Translation unknown = new Translation("1.0", UNKNOWN_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, BOOL_TYPE, error);
+        assertEquals(BOOL_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(90)
+    public void unknownToIntTypecastWorks() {
+        Translation unknown = new Translation("1", UNKNOWN_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, INT_TYPE, error);
+        assertEquals(INT_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(90)
+    public void unknownToFloatTypecastWorks() {
+        Translation unknown = new Translation("1.0", UNKNOWN_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, FLOAT_TYPE, error);
+        assertEquals(FLOAT_TYPE, converted.type());
+    }
+
 }

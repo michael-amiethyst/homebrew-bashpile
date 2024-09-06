@@ -485,8 +485,8 @@ public class BashTranslationEngine implements TranslationEngine {
             case INT -> expression = typecastFromInt(expression, castTo, lineNumber, typecastError);
             case FLOAT -> expression = typecastFromFloat(expression, castTo, typecastError);
             case STR -> expression = typecastFromStr(expression, castTo, lineNumber, typecastError);
-            case LIST -> expression = typecastFromList(castTo, expression, typecastError);
-            case UNKNOWN -> typecastFromUnknown(castTo.mainType(), typecastError);
+            case LIST -> expression = typecastFromList(expression, castTo, typecastError);
+            case UNKNOWN -> expression = typecastFromUnknown(expression, castTo, typecastError);
             case NOT_FOUND -> {
                 // for specifying a type for a variable assigned by a command, e.g. getopts creates OPTARG
             }
