@@ -296,12 +296,14 @@ class ExpressionBashpileTest extends BashpileTest {
 
     @Test
     @Order(154)
-    public void badStrTypecastsFloatToIntThrow() {
+    public void strTypecastsFloatToIntWorks() {
         final String bashpile = """
                 function times2point5(x:int) -> float:
                     return x * 2.5
                 print(times2point5("2.5" : int))""";
-        assertThrows(TypeError.class, () -> runText(bashpile));
+        final ExecutionResults result = runText(bashpile);
+        assertSuccessfulExitCode(result);
+        assertEquals("5.0\n", result.stdout());
     }
 
     @Test

@@ -164,13 +164,13 @@ class FunctionBashpileTest extends BashpileTest {
     public void functionForwardDeclarationWorks() {
         final ExecutionResults results = runText("""
                 function circleArea(r: float) -> float
-                                
+                
                 function twoCircleArea(r1: float, r2: float) -> float:
                     return circleArea(r1) + circleArea(r2)
-                                
+                
                 function circleArea(r:float) ["helper"] -> float:
                     return 3.14 * r * r
-                                
+                
                 print(twoCircleArea(1, -1))""");
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size()
@@ -186,15 +186,15 @@ class FunctionBashpileTest extends BashpileTest {
     public void functionForwardDeclarationNoReturnWorks() {
         final ExecutionResults results = runText("""
                 function printCircleArea(r: float)
-                                
+                
                 function twoCircleArea(r1: float, r2: float) -> float:
                     // total: float = circleArea(r1) + circleArea(r2)
                     // print(total)
                     return 3.14
-                                
+                
                 function printCircleArea(r:float) ["helper"]:
                     print(3.14 * r * r)
-                                
+                
                 printCircleArea(1)""");
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size(), "Wrong length, was: " + join(results.stdoutLines()));
@@ -299,7 +299,8 @@ class FunctionBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 function circleArea(log: str, args: list<str>) ["example tag"] -> float:
                     shift
-                    r: int = arguments[1]: int
+                    a1: list<str> = arguments[1]: list<str>
+                    r: int = a1[0]: int
                     print(log)
                     return 3.14 * r * r
                 print(circleArea("test", arguments[all]))""", "1");

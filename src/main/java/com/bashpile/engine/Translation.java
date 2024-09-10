@@ -22,6 +22,7 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
  */
+// TODO not 0.22.0 refactor to combine with ListOfTranslation
 public class Translation {
 
     // static constants

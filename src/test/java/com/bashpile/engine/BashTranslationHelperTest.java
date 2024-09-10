@@ -44,7 +44,7 @@ class BashTranslationHelperTest {
     @Order(40)
     public void floatToIntTypecastWorks() {
         Translation floatTr = new Translation("1.0", FLOAT_TYPE, List.of());
-        Translation converted = BashTranslationHelper.typecastFromFloat(floatTr, INT_TYPE, error);
+        Translation converted = BashTranslationHelper.typecastFromFloat(floatTr, INT_TYPE, 1, error);
         assertEquals(INT_TYPE, converted.type());
     }
 
@@ -52,7 +52,7 @@ class BashTranslationHelperTest {
     @Order(50)
     public void floatToStrTypecastWorks() {
         Translation floatTr = new Translation("1.0", FLOAT_TYPE, List.of());
-        Translation converted = BashTranslationHelper.typecastFromFloat(floatTr, STR_TYPE, error);
+        Translation converted = BashTranslationHelper.typecastFromFloat(floatTr, STR_TYPE, 1, error);
         assertEquals(STR_TYPE, converted.type());
     }
 
@@ -73,6 +73,15 @@ class BashTranslationHelperTest {
     }
 
     @Test
+    @Order(71)
+    public void strWithFloatToIntTypecastWorks() {
+        Translation str = new Translation("1.5", STR_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromStr(str, INT_TYPE, 0, error);
+        assertEquals(INT_TYPE, converted.type());
+        assertEquals("1", converted.body());
+    }
+
+    @Test
     @Order(80)
     public void strToFloatTypecastWorks() {
         Translation str = new Translation("1.0", STR_TYPE, List.of());
@@ -84,7 +93,7 @@ class BashTranslationHelperTest {
     @Order(90)
     public void unknownToBoolTypecastWorks() {
         Translation unknown = new Translation("1.0", UNKNOWN_TYPE, List.of());
-        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, BOOL_TYPE, error);
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, BOOL_TYPE, 1, error);
         assertEquals(BOOL_TYPE, converted.type());
     }
 
@@ -92,7 +101,7 @@ class BashTranslationHelperTest {
     @Order(90)
     public void unknownToIntTypecastWorks() {
         Translation unknown = new Translation("1", UNKNOWN_TYPE, List.of());
-        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, INT_TYPE, error);
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, INT_TYPE, 1, error);
         assertEquals(INT_TYPE, converted.type());
     }
 
@@ -100,7 +109,7 @@ class BashTranslationHelperTest {
     @Order(90)
     public void unknownToFloatTypecastWorks() {
         Translation unknown = new Translation("1.0", UNKNOWN_TYPE, List.of());
-        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, FLOAT_TYPE, error);
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, FLOAT_TYPE, 1, error);
         assertEquals(FLOAT_TYPE, converted.type());
     }
 

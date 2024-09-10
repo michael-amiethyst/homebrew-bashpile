@@ -33,7 +33,6 @@ import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.Translation.UNKNOWN_TRANSLATION;
 import static com.bashpile.engine.Translation.toStringTranslation;
-import static com.bashpile.engine.strongtypes.SimpleType.INT;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
 import static com.bashpile.engine.strongtypes.Type.*;
 
@@ -294,11 +293,12 @@ public class BashTranslationHelper {
     /* package */ static @Nonnull Translation typecastFromFloat(
             @Nonnull Translation expression,
             @Nonnull final Type castTo,
+            final int lineNumber,
             @Nonnull final TypeError typecastError) {
 
         // cast
         switch (castTo.mainType()) {
-            case INT -> expression = typecastToInt(expression);
+            case INT -> expression = typecastToInt(expression, lineNumber);
             case FLOAT -> {}
             case STR -> expression = expression.quoteBody().type(STR_TYPE);
             // no typecast to bool or list
@@ -308,8 +308,9 @@ public class BashTranslationHelper {
     }
 
     // helper
-    private static @Nonnull Translation typecastToInt(@Nonnull Translation expression) {
+    private static @Nonnull Translation typecastToInt(@Nonnull Translation expression, final int lineNumber) {
         // parse expression as a BigDecimal to check for literal float
+        expression = expression.unquoteBody();
         BigDecimal expressionValue = null;
         try {
             expressionValue = new BigDecimal(expression.body());
@@ -317,15 +318,22 @@ public class BashTranslationHelper {
             // expressionValue is still null if it is not a literal (e.g. variable or function call)
         }
         if (expressionValue != null) {
-            return expression.body(expressionValue.toBigInteger().toString()).type(INT_TYPE);
+            return expression.body(expressionValue.toBigInteger().toString()).type(INT_TYPE).unquoteBody();
         } else {
             // if a variable reference then typecast to int (round down) with printf
             String varName = StringUtils.stripStart(expression.body(), "${");
             varName = StringUtils.stripEnd(varName, "}");
-            return expression.addPreamble("""
-                            %s=$(printf '%%d' "%s" 2>/dev/null || true)
-                            """.formatted(varName, expression))
-                    .type(INT_TYPE);
+            if (!varName.matches("\\d")) {
+                return expression.addPreamble("""
+                                %s="$(printf '%%d' "%s" 2>/dev/null || true)"
+                                """.formatted(varName, expression))
+                        .type(INT_TYPE);
+            } else {
+                // trying to reassign $1, $2, etc
+                // too complex to set an individual varable with the command 'set', throw
+                final String message = "Could not cast $1, $2, etc.  Assign to a local variable and typecast that.";
+                throw new TypeError(message, lineNumber);
+            }
         }
     }
 
@@ -338,7 +346,7 @@ public class BashTranslationHelper {
             case BOOL -> {
                 expression = expression.unquoteBody();
                 if (SimpleType.isNumberString(expression.body())) {
-                    expression = typecastFromFloat(expression, castTo, typecastError);
+                    expression = typecastFromFloat(expression, castTo, lineNumber, typecastError);
                 } else if (expression.body().equalsIgnoreCase("true")
                         || expression.body().equalsIgnoreCase("false")) {
                     expression = expression.body(expression.body().toLowerCase()).type(castTo);
@@ -349,18 +357,7 @@ public class BashTranslationHelper {
                             Text was %s.""".formatted(expression.body()), lineNumber);
                 }
             }
-            case INT -> {
-                // TODO automatic rounding for things like `"2.5":int` (see above), use typecastToInt?
-                // for argument variables (e.g. $1) take the user's word for it, we can't check here
-                expression = expression.unquoteBody().type(castTo);
-                final SimpleType foundType =
-                        !expression.body().startsWith("$") ? SimpleType.parseNumberString(expression.body()) : INT;
-                if (!INT.equals(foundType)) {
-                    throw new TypeError("""
-                        Could not cast FLOAT value in STR to INT.  Try casting to float first.  Text was %s."""
-                            .formatted(expression.body()), lineNumber);
-                }
-            }
+            case INT -> expression = typecastToInt(expression, lineNumber);
             case FLOAT -> {
                 expression = expression.unquoteBody().type(castTo);
                 // verify the body parses as a valid number for non-variables
@@ -375,7 +372,8 @@ public class BashTranslationHelper {
                 }
             }
             case STR -> {}
-            // no typecast to list
+            // TODO allow typecasting to LIST for all conversions
+            case LIST -> expression = expression.type(castTo); // trust the user, may be a bad idea
             default -> throw typecastError;
         }
         return expression;
@@ -396,10 +394,13 @@ public class BashTranslationHelper {
     }
 
     /* package */ static @Nonnull Translation typecastFromUnknown(
-            @Nonnull Translation expression, @Nonnull final Type castTo, @Nonnull final TypeError typecastError) {
+            @Nonnull Translation expression,
+            @Nonnull final Type castTo,
+            final int lineNumber,
+            @Nonnull final TypeError typecastError) {
         switch (castTo.mainType()) {
             case BOOL, STR, LIST -> expression = expression.type(castTo);
-            case INT -> expression = typecastToInt(expression);
+            case INT -> expression = typecastToInt(expression, lineNumber);
             case FLOAT -> expression = expression.unquoteBody().type(castTo);
             default -> throw typecastError;
         }
