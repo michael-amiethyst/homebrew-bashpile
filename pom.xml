@@ -119,6 +119,7 @@
                 <version>${antlr.version}</version>
                 <configuration>
                     <visitor>true</visitor>
+                    <outputDirectory>${basedir}/target/generated-sources/antlr4</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>

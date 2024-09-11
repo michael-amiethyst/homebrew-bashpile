@@ -25,7 +25,7 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
-Type     : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
+Type     : 'unknown' | 'empty' | 'bool' | 'number' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
 Function : 'function';
 Block    : 'block';
 Return   : 'return';

@@ -182,6 +182,17 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("0\n1\n", results.stdout());
     }
 
+    @Test
+    @Order(64)
+    public void reassignNumberWithCastAndIncrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: number = 0.0
+                print((someVar: int)++)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n", results.stdout());
+    }
+
     // TODO 0.22.0 test for var with number type and cast to int and increment
     // TODO 0.22.0 finish tests for increment, decrement / prefix and postfix / unhappy paths / complex expressions
     // TODO 0.22.0 tests for int/float/string/other
@@ -330,7 +341,7 @@ class StatementBashpileTest extends BashpileTest {
                     really starting to shape up.
                     It will replace Bash.
                 */
-                                
+                
                 print((38. + 4) * .5)
                 myString : str
                 // anonymous block

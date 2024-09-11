@@ -482,6 +482,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber);
         switch (expression.type().mainType()) {
             case BOOL -> expression = typecastFromBool(expression, castTo, typecastError);
+            case NUMBER -> expression = typecastFromNumber(expression, castTo, lineNumber, typecastError);
             case INT -> expression = typecastFromInt(expression, castTo, lineNumber, typecastError);
             case FLOAT -> expression = typecastFromFloat(expression, castTo, lineNumber, typecastError);
             case STR -> expression = typecastFromStr(expression, castTo, lineNumber, typecastError);

@@ -50,7 +50,7 @@ returnPsudoStatement: Return expression? Newline;
 expression
     : listAccess                        # listAccessExpression
     | expression op=(Increment | Decrement)     # unaryPostCrementExpression
-    // TODO add prefix and postfix expressions
+    // prefix increment/decrement expressions here
     | expression Colon type             # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
