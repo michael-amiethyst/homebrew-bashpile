@@ -448,6 +448,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation unaryPostCrementExpression(BashpileParser.UnaryPostCrementExpressionContext ctx) {
         final Translation expressionTranslation = requireNonNull(visitor).visit(ctx.expression());
         final String opText = ctx.op.getText();
+        final int lineNumber = ctx.start.getLine();
         if (expressionTranslation.isInt()) {
             // arithmetic built-in when possible
             final String preamble = expressionTranslation.preamble();
@@ -462,9 +463,9 @@ public class BashTranslationEngine implements TranslationEngine {
             // bc variables can't have uppercase, and to "export" them back to the shell we would need a whole
             // concept of a post-amble and who uses ++ on floats anyway???
             final String message = "++/-- operators only allowed on explicit ints.  Try casting with ': int'.";
-            throw new TypeError(message, ctx.start.getLine());
+            throw new TypeError(message, lineNumber);
         } else {
-            throw new BashpileUncheckedException("Post Increment and post decrement only allowed on numeric vars");
+            throw new TypeError("Post increment and post decrement only allowed on numeric vars", lineNumber);
         }
     }
 

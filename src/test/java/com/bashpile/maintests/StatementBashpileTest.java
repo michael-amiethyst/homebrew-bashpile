@@ -204,8 +204,46 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("0\n-1\n", results.stdout());
     }
 
-    // TODO 0.22.0 finish tests for increment, decrement / unhappy paths / complex expressions
-    // TODO 0.22.0 tests for int/float/string/other
+    @Test
+    @Order(66)
+    public void reassignStringWithFloatWithCastAndDecrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: str = "0.0"
+                print((someVar: int)--)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n-1\n", results.stdout());
+    }
+
+    @Test
+    @Order(67)
+    public void decrementBoolThrows() {
+        assertThrows(TypeError.class, () -> runText("""
+                BOOL: bool = false
+                BOOL--"""));
+    }
+
+    @Test
+    @Order(68)
+    public void whileWithIncrementWorks() {
+        final ExecutionResults results = runText("""
+                i: int = 0
+                while i < 3:
+                    print(i++)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n2\n", results.stdout());
+    }
+
+    @Test
+    @Order(69)
+    public void whileWithDecrementWorks() {
+        final ExecutionResults results = runText("""
+                i: int = 3
+                while i > 0:
+                    print(i--)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("3\n2\n1\n", results.stdout());
+    }
 
     @Test
     @Order(70)
