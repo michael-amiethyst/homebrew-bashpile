@@ -150,7 +150,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             .map { tr: Translation ->
                 if (tr.isBasicType && !tr.body().contains("$@") && !tr.body().contains("[@]")) {
                     tr.body("""
-                            printf "${tr.unquoteBody().body()}\n"
+                            printf -- "${tr.unquoteBody().body()}\n"
                             
                             """.trimIndent()
                     )
@@ -158,7 +158,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                     // list or contains $@ or [@]
                     // change the Internal Field Separator to a space just for this subshell (parens)
                     tr.body("""
-                            (declare -x IFS=${'$'}' '; printf "%s\n" "${tr.toStringArray().unquoteBody().body()}")
+                            (declare -x IFS=${'$'}' '; printf -- "%s\n" "${tr.toStringArray().unquoteBody().body()}")
                             
                             """.trimIndent()
                     )
@@ -196,10 +196,10 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val comment = createCommentTranslation("return statement", lineNumber(ctx))
         val returnLineLambda = { str: String ->
             if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {
-                "printf \"${Strings.unquote(str)}\"\n"
+                "printf -- \"${Strings.unquote(str)}\"\n"
             } else if (exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)) {
                 // Avoid interpreting $(( )) results as a command
-                "printf $str\n"
+                "printf -- $str\n"
             } else {
                 str + "\n"
             }

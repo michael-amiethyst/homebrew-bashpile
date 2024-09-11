@@ -21,6 +21,7 @@
         </executions>
         <configuration>
           <visitor>true</visitor>
+          <outputDirectory>${basedir}/target/generated-sources/antlr4</outputDirectory>
         </configuration>
       </plugin>
       <plugin>
