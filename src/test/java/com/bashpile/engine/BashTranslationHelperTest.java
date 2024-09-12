@@ -1,33 +1,116 @@
 package com.bashpile.engine;
 
-import com.bashpile.engine.strongtypes.TranslationMetadata;
-import com.bashpile.engine.strongtypes.SimpleType;
-import com.bashpile.engine.strongtypes.Type;
+import com.bashpile.exceptions.TypeError;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import java.util.List;
 
-@Order(3)
+import static com.bashpile.engine.strongtypes.Type.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class BashTranslationHelperTest {
+class BashTranslationHelperTest {
 
-    @Test @Order(10)
-    public void unwindAllWithFunctionCallWorks() {
-        Translation tr = new Translation("$(ret0)");
-        tr = BashTranslationHelper.unwindAll(tr);
-        assertFalse(tr.body().contains("$("), "Unwound command substitution found");
+    private final TypeError error = new TypeError("", 0);
+
+    @Test
+    @Order(10)
+    public void boolToStrTypecastWorks() {
+        Translation bool = new Translation("false", BOOL_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromBool(bool, STR_TYPE, error);
+        assertEquals(STR_TYPE, converted.type());
     }
 
-    @Test @Order(20)
-    public void unwindAllWithParenthesisWorks() {
-        Translation tr =
-                new Translation("(which ls 1>/dev/null)", Type.of(SimpleType.BOOL), TranslationMetadata.NEEDS_INLINING_OFTEN);
-        tr = tr.inlineAsNeeded(BashTranslationHelper::unwindAll);
-        assertFalse(tr.body().contains("})"), "Bad parenthesis found");
+    @Test
+    @Order(20)
+    public void intToFloatTypecastWorks() {
+        Translation intTranslation = new Translation("1", INT_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromInt(intTranslation, FLOAT_TYPE, 0, error);
+        assertEquals(FLOAT_TYPE, converted.type());
     }
 
-    // TODO test unwind nested '$(bc <<< "$(circleArea "${r1}") + $(circleArea "${r2}")")`, INLINE
+    @Test
+    @Order(30)
+    public void intToStrTypecastWorks() {
+        Translation intTr = new Translation("1", INT_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromInt(intTr, STR_TYPE, 0, error);
+        assertEquals(STR_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(40)
+    public void floatToIntTypecastWorks() {
+        Translation floatTr = new Translation("1.0", FLOAT_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromFloat(floatTr, INT_TYPE, 1, error);
+        assertEquals(INT_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(50)
+    public void floatToStrTypecastWorks() {
+        Translation floatTr = new Translation("1.0", FLOAT_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromFloat(floatTr, STR_TYPE, 1, error);
+        assertEquals(STR_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(60)
+    public void strToBoolTypecastWorks() {
+        Translation str = new Translation("TRUE", STR_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromStr(str, BOOL_TYPE, 0, error);
+        assertEquals(BOOL_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(70)
+    public void strToIntTypecastWorks() {
+        Translation str = new Translation("1", STR_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromStr(str, INT_TYPE, 0, error);
+        assertEquals(INT_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(71)
+    public void strWithFloatToIntTypecastWorks() {
+        Translation str = new Translation("1.5", STR_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromStr(str, INT_TYPE, 0, error);
+        assertEquals(INT_TYPE, converted.type());
+        assertEquals("1", converted.body());
+    }
+
+    @Test
+    @Order(80)
+    public void strToFloatTypecastWorks() {
+        Translation str = new Translation("1.0", STR_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromStr(str, FLOAT_TYPE, 0, error);
+        assertEquals(FLOAT_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(90)
+    public void unknownToBoolTypecastWorks() {
+        Translation unknown = new Translation("1.0", UNKNOWN_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, BOOL_TYPE, 1, error);
+        assertEquals(BOOL_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(90)
+    public void unknownToIntTypecastWorks() {
+        Translation unknown = new Translation("1", UNKNOWN_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, INT_TYPE, 1, error);
+        assertEquals(INT_TYPE, converted.type());
+    }
+
+    @Test
+    @Order(90)
+    public void unknownToFloatTypecastWorks() {
+        Translation unknown = new Translation("1.0", UNKNOWN_TYPE, List.of());
+        Translation converted = BashTranslationHelper.typecastFromUnknown(unknown, FLOAT_TYPE, 1, error);
+        assertEquals(FLOAT_TYPE, converted.type());
+    }
+
 }

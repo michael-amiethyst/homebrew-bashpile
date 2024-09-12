@@ -151,16 +151,99 @@ class StatementBashpileTest extends BashpileTest {
         assertEquals("false\n", results.stdout());
     }
 
-    // TODO uncomment test after implementation of increment and decrement pre and post operators
-//    @Test @Order(62)
-//    public void reassignWithIncrementWorks() {
-//        final ExecutionResults results = runText("""
-//                someVar: int = 0
-//                print(someVar++)
-//                print(someVar)""");
-//        //        assertSuccessfulExitCode(results);
-//        assertEquals("0\n1\n", results.stdout());
-//    }
+    @Test
+    @Order(62)
+    public void reassignIntWithIncrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: int = 0
+                print(someVar++)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n", results.stdout());
+    }
+
+    @Test
+    @Order(63)
+    public void reassignFloatWithIncrementFailsWithTypeError() {
+        assertThrows(TypeError.class, () -> runText("""
+                someVar: float = 0.1
+                print(someVar++)
+                print(someVar)"""));
+    }
+
+    @Test
+    @Order(63)
+    public void reassignFloatWithCastAndIncrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: float = 0.0
+                print((someVar: int)++)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n", results.stdout());
+    }
+
+    @Test
+    @Order(64)
+    public void reassignNumberWithCastAndIncrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: number = 0.0
+                print((someVar: int)++)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n", results.stdout());
+    }
+
+    @Test
+    @Order(65)
+    public void reassignFloatWithCastAndDecrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: float = 0.0
+                print((someVar: int)--)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n-1\n", results.stdout());
+    }
+
+    @Test
+    @Order(66)
+    public void reassignStringWithFloatWithCastAndDecrementWorks() {
+        final ExecutionResults results = runText("""
+                someVar: str = "0.0"
+                print((someVar: int)--)
+                print(someVar)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n-1\n", results.stdout());
+    }
+
+    @Test
+    @Order(67)
+    public void decrementBoolThrows() {
+        assertThrows(TypeError.class, () -> runText("""
+                BOOL: bool = false
+                BOOL--"""));
+    }
+
+    @Test
+    @Order(68)
+    public void whileWithIncrementWorks() {
+        final ExecutionResults results = runText("""
+                i: int = 0
+                while i < 3:
+                    print(i++)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("0\n1\n2\n", results.stdout());
+    }
+
+    @Test
+    @Order(69)
+    public void whileWithDecrementWorks() {
+        final ExecutionResults results = runText("""
+                i: int = 3
+                while i > 0:
+                    print(i--)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("3\n2\n1\n", results.stdout());
+    }
 
     @Test
     @Order(70)
@@ -306,7 +389,7 @@ class StatementBashpileTest extends BashpileTest {
                     really starting to shape up.
                     It will replace Bash.
                 */
-                                
+                
                 print((38. + 4) * .5)
                 myString : str
                 // anonymous block

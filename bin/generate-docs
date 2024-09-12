@@ -2,7 +2,8 @@
 
 // ensure docutils is installed
 
-mkdir docs/generated || true
-mkdir docs/generated/tutorial || true
+mkdir docs/generated 2>/dev/null || true
+mkdir docs/generated/tutorial 2>/dev/null || true
 docutils docs/enduser/index.rst docs/generated/index.html
 docutils docs/enduser/tutorial/index.rst docs/generated/tutorial/index.html
+print("Docs generated at BASHPILE_HOME/docs/generated")

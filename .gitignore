@@ -1,5 +1,6 @@
 # Project
 docs/generated/
+logs/
 
 # Compiled class file
 *.class

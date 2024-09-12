@@ -5,6 +5,7 @@ import com.bashpile.shell.ExecutionResults;
 import com.google.common.annotations.VisibleForTesting;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.misc.Interval;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
@@ -15,6 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.bashpile.shell.BashShell.isWindows;
 
 /**
  * Helper class for BashpileLexer.
@@ -31,7 +34,10 @@ public class Lexers {
     /** A regex for a valid Bash identifier */
     private static final Pattern COMMAND_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*");
 
-    private static final Pattern FILE_PATTERN = Pattern.compile("^(?:/?[a-zA-Z_.-][a-zA-Z0-9_.-]*)+");
+    private static final Pattern WINDOWS_FILE_PATTERN =
+            Pattern.compile("^([A-Za-z]):\\\\([a-zA-Z_.][a-zA-Z0-9_\\-.]*)+");
+
+    private static final Pattern FILE_PATTERN = Pattern.compile("^(?:/?[a-zA-Z_.-][a-zA-Z0-9_.-\\\\]*)+");
 
     /** A regex for a Bash assignment */
     private static final Pattern ASSIGN_PATTERN =
@@ -41,7 +47,7 @@ public class Lexers {
     private static final List<String> COMMAND_TYPES = List.of("alias", "function", "builtin", "file");
 
     /** Should be excluded from being a Linux command */
-    private static final List<String> BASHPILE_KEYWORDS = List.of("return", "readonly", "unset");
+    private static final List<String> BASHPILE_KEYWORDS = List.of("return", "readonly", "unset", "else-if");
 
     /**
      * Checks if the command portion of the input Bash line is a valid Bash command.
@@ -80,8 +86,9 @@ public class Lexers {
 
     /**
      * Checks if the command portion of the input Bash line is a valid Bash command.
+     * Accepts Windows style filenames for when we are running under WSL.
      * <br>
-     * Running 'type' to verify is expensive so we both check if the command is valid with a Regex and cache results.
+     * Running 'type' to verify is slow so we both check if the command is valid with a Regex and cache results.
      *
      * @param bashLine A line of Bash script to check.
      * @return Checks if the parsed command is valid.
@@ -101,10 +108,21 @@ public class Lexers {
         }
 
         // split on whitespace or Bash command separator
-        final String command = bashLine.split("[ \n;]")[0];
+        String command = bashLine.split("[ \n;]")[0];
 
         if (COMMAND_TO_VALIDITY_CACHE.containsKey(command)) {
             return COMMAND_TO_VALIDITY_CACHE.get(command);
+        }
+
+        if (isWindows()) {
+            // change paths like C:\filename to /mnt/c/filename for WSL
+            command = FilenameUtils.separatorsToUnix(command);
+            final Matcher matcher = WINDOWS_FILE_PATTERN.matcher(command);
+            if (matcher.find()) {
+                final String driveLetter = matcher.group(1).toLowerCase();
+                final String relativePathFromDriveRoot = command.substring(3);
+                command = "/mnt/%s/%s".formatted(driveLetter, relativePathFromDriveRoot);
+            }
         }
 
         try {
@@ -119,7 +137,7 @@ public class Lexers {
                         && !BASHPILE_KEYWORDS.contains(command);
                 COMMAND_TO_VALIDITY_CACHE.put(command, ret);
                 return ret;
-            } else if (FILE_PATTERN.matcher(command).matches()) {
+            } else if (FILE_PATTERN.matcher(command).matches() && !BASHPILE_KEYWORDS.contains(command)) {
                 COMMAND_TO_VALIDITY_CACHE.put(command, true);
                 return true;
             } else {

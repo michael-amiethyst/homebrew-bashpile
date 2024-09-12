@@ -18,10 +18,26 @@ class ExpressionBashpileTest extends BashpileTest {
 
     @Test
     @Order(10)
-    public void printCalcWorks() {
+    public void printCalcWithIntsWorks() {
         final ExecutionResults results = runText("print(1 + 1)");
         assertSuccessfulExitCode(results);
         assertEquals("2\n", results.stdout());
+    }
+
+    @Test
+    @Order(11)
+    public void printCalcWithFloatsWorks() {
+        final ExecutionResults results = runText("print(.1 + .1)");
+        assertSuccessfulExitCode(results);
+        assertEquals(".2\n", results.stdout());
+    }
+
+    @Test
+    @Order(11)
+    public void printCalcWithMixedWorks() {
+        final ExecutionResults results = runText("print(.1 + 1)");
+        assertSuccessfulExitCode(results);
+        assertEquals("1.1\n", results.stdout());
     }
 
     @Test
@@ -138,12 +154,12 @@ class ExpressionBashpileTest extends BashpileTest {
 
     @Test
     @Order(120)
-    public void boolTypecastsWork() {
+    public void boolToStringTypecastsWork() {
         final String bashpile = """
                 function times2point5(x:float) -> float:
                     return x * 2.5
-                print(false:int * 38)
-                print(times2point5(true: float))
+                print(0:int * 38)
+                print(times2point5(1: float))
                 print("Genre: " + true:str + " crime")""";
         final ExecutionResults results = runText(bashpile);
         assertSuccessfulExitCode(results);
@@ -154,55 +170,79 @@ class ExpressionBashpileTest extends BashpileTest {
     }
 
     @Test
+    @Order(121)
+    public void boolToIntTypecastsFail() {
+        final String bashpile = """
+                print(false: int)""";
+        assertThrows(TypeError.class, () -> runText(bashpile));
+    }
+
+    @Test
+    @Order(122)
+    public void boolToFloatTypecastsFail() {
+        final String bashpile = """
+                print(true: float)""";
+        assertThrows(TypeError.class, () -> runText(bashpile));
+    }
+
+    @Test
     @Order(130)
-    public void intTypecastsWork() {
+    public void intToFloatOrStringTypecastsWork() {
         final String bashpile = """
                 function times2point5(x:float) -> float:
                     return x * 2.5
-                b1: bool = 8000000000 : bool
-                b2: bool = -1 : bool
-                b3: bool = 0 : bool
-                print(#(if [ "$b1" = true ] && [ "$b2" = true ]; then echo "true"; else echo "false"; fi))
-                print(#(if [ "$b1" = true ] && [ "$b2" = true ] && [ "$b3" = true ]; then
-                    echo "true"
-                else
-                    echo "false"
-                fi))
                 print(times2point5(8000000000000: float))
                 print("NCC-" + 1701:str + "-D")""";
         final ExecutionResults results = runText(bashpile);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
-        assertEquals("true", lines.get(0));
-        assertEquals("false", lines.get(1));
-        assertEquals("20000000000000.0", lines.get(2));
-        assertEquals("NCC-1701-D", lines.get(3));
+        // 8 trillion * 2.5 equals 20 trillion
+        assertEquals("20000000000000.0", lines.get(0));
+        assertEquals("NCC-1701-D", lines.get(1));
+    }
+
+    @Test
+    @Order(131)
+    public void intToBooleanTypecastsFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                print(0: bool)"""));
+    }
+
+    @Test
+    @Order(132)
+    public void largeIntToBooleanTypecastsFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                print(5000000000: bool)"""));
+    }
+
+    @Test
+    @Order(133)
+    public void intToIntListTypecastsFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                print(5000000000: list<int>)"""));
+    }
+
+    @Test
+    @Order(134)
+    public void intVariableToFloatTypecastsFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                x: int = 5000000000
+                print(x: float)"""));
     }
 
     @Test
     @Order(140)
-    public void floatTypecastsWork() {
+    public void floatToIntOrStringTypecastsWork() {
         final String bashpile = """
                 function times2point5(x:int) -> float:
-                    return x * 2.5
-                b1: bool = 8000000000.9999 : bool
-                b2: bool = -1.0 : bool
-                b3: bool = 0.0 : bool
-                print(#(if [ "$b1" = true ] && [ "$b2" = true ]; then echo "true"; else echo "false"; fi))
-                print(#(if [ "$b1" = true ] && [ "$b2" = true ] && [ "$b3" = true ]; then
-                    echo "true"
-                else
-                    echo "false"
-                fi))
+                    return x * 2.5: int
                 print(times2point5(2.5 : int))
                 print(1701.0:str + 1.0:str)""";
         final ExecutionResults results = runText(bashpile);
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
-        assertEquals("true", lines.get(0));
-        assertEquals("false", lines.get(1));
-        assertEquals("5.0", lines.get(2));
-        assertEquals("1701.01.0", lines.get(3));
+        assertEquals("4", lines.get(0));
+        assertEquals("1701.01.0", lines.get(1));
     }
 
     @Test
@@ -234,33 +274,36 @@ class ExpressionBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(150)
-    public void numericStrTypecastsWork() {
-        final String bashpile = """
-                b1: bool = "-1." : bool
-                b2: bool = ".000001" : bool
-                b3: bool = "0" : bool
-                print(#(if [ "$b1" = true ] && [ "$b2" = true ]; then echo "true"; else echo "false"; fi))
-                print(#(if [ "$b1" = true ] && [ "$b2" = true ] && [ "$b3" = true ]; then
-                    echo "true"
-                else
-                    echo "false"
-                fi))""";
-        final ExecutionResults results = runText(bashpile);
-        assertSuccessfulExitCode(results);
-        final List<String> lines = results.stdoutLines();
-        assertEquals("true", lines.get(0));
-        assertEquals("false", lines.get(1));
+    @Order(151)
+    public void negativeNumericStrTypecastsFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                b1: bool = "-1." : bool"""));
     }
 
     @Test
-    @Order(150)
-    public void badStrTypecastsFloatToIntThrow() {
+    @Order(152)
+    public void smallNumericStrTypecastsFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                b2: bool = ".000001" : bool"""));
+    }
+
+    @Test
+    @Order(153)
+    public void zeroStrTypecastsFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                b3: bool = "0" : bool"""));
+    }
+
+    @Test
+    @Order(154)
+    public void strTypecastsFloatToIntWorks() {
         final String bashpile = """
                 function times2point5(x:int) -> float:
                     return x * 2.5
                 print(times2point5("2.5" : int))""";
-        assertThrows(TypeError.class, () -> runText(bashpile));
+        final ExecutionResults result = runText(bashpile);
+        assertSuccessfulExitCode(result);
+        assertEquals("5.0\n", result.stdout());
     }
 
     @Test
@@ -275,10 +318,16 @@ class ExpressionBashpileTest extends BashpileTest {
 
     @Test
     @Order(170)
-    public void numberTypecastsWork() {
-        final String bashpile = """
-                b1: bool = (1 + 2 + 3) : bool""";
-        assertThrows(TypeError.class, () -> runText(bashpile));
+    public void numberTypecastsFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                b1: bool = (1 + 2 + 3) : bool"""));
+    }
+
+    @Test
+    @Order(171)
+    public void numberTypecastsWithParensFail() {
+        assertThrows(TypeError.class, () -> runText("""
+                b1: bool = (((2 - 3) * 2) + 2) : bool"""));
     }
 
     @Test
@@ -301,5 +350,17 @@ class ExpressionBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("Hello World", lines.get(0));
+    }
+
+    @Test
+    @Order(200)
+    public void incrementWorks() {
+        final String bashpile = """
+                i: int = 0
+                i++
+                print(i)""";
+        final ExecutionResults results = runText(bashpile);
+        assertSuccessfulExitCode(results);
+        assertEquals("1\n", results.stdout());
     }
 }

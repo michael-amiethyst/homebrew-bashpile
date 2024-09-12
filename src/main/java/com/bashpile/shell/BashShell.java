@@ -160,6 +160,11 @@ public class BashShell implements Closeable {
         }
     }
 
+    /** Checks if we are running on Windows (i.e. under WSL) or not */
+    public static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().startsWith("windows");
+    }
+
     // helpers
 
     private static @Nonnull Process spawnLinuxProcess() throws IOException {
@@ -176,10 +181,5 @@ public class BashShell implements Closeable {
         } // else
         LOG.trace("Detected *nix");
         return builder.command("bash");
-    }
-
-    private static boolean isWindows() {
-        return System.getProperty("os.name")
-                .toLowerCase().startsWith("windows");
     }
 }

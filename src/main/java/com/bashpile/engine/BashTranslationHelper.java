@@ -7,7 +7,6 @@ import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
-import com.bashpile.exceptions.UserError;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,41 +31,19 @@ import java.util.stream.Stream;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.Translation.*;
-import static com.bashpile.engine.strongtypes.SimpleType.INT;
-import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
+import static com.bashpile.engine.Translation.UNKNOWN_TRANSLATION;
+import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
+import static com.bashpile.engine.strongtypes.Type.*;
 
 /**
  * Helper methods to {@link BashTranslationEngine}.
- * <br>
- * Has a concept of unwinding command substitutions.  Either only nested ones with {@link #unwindNested(Translation)} or
- * all with {@link #unwindAll(Translation)}.  This is to prevent errored exit codes from being suppressed.  As examples,
- * in Bash `$(echo $(echo hello; exit 1))` will suppress the error code and `[ -z $(echo hello; exit 1) ]` will as well.
  */
 public class BashTranslationHelper {
-
-    /**
-     * This Pattern has three matching groups.
-     * They are everything before the command substitution, the command substitution, and everything after.
-     */
-    public static final Pattern COMMAND_SUBSTITUTION = Pattern.compile("(?s)(.*?)(\\$\\(.*\\))(.*?)");
-
-    /**
-     * This single-line Pattern has three matching groups.
-     * They are the start of the outer command substitution, the inner command substitution and the remainder of
-     * the outer command substitution.
-     * <br>
-     * WARNING: bug on two different, non-nesting command substitutions
-     */
-    public static final Pattern NESTED_COMMAND_SUBSTITUTION =
-            Pattern.compile("(?s)(\\$\\(.*?)(\\$\\(.*\\))(.*?\\))");
 
     private static final Pattern escapedNewline = Pattern.compile("\\\\\\r?\\n\\s*");
 
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
-
-    /** Used to ensure variable names are unique */
-    private static int subshellWorkaroundCounter = 0;
 
     // static methods
 
@@ -149,8 +125,7 @@ public class BashTranslationHelper {
 
         // check readonly declarations
         final long readonlys = ctx.stream().filter(typeCtx -> typeCtx.Readonly() != null).count();
-        Asserts.assertNotOver(
-                1, readonlys, "Can only have one readonly statement, line " + lineNumber);
+        Asserts.assertNotOver(1, readonlys, "Can only have one readonly statement, line " + lineNumber);
 
         // check declare declarations
         final long exports = ctx.stream().filter(typeCtx -> typeCtx.Exported() != null).count();
@@ -194,6 +169,7 @@ public class BashTranslationHelper {
     /* package */ static @Nonnull ParserRuleContext getFunctionDeclCtx(
             @Nonnull final BashpileVisitor visitor,
             @Nonnull final BashpileParser.FunctionForwardDeclarationStatementContext ctx) {
+        LOG.trace("In getFunctionDeclCtx");
         final String functionName = ctx.Id().getText();
         assert visitor.getContextRoot() != null;
         final Stream<ParserRuleContext> allContexts = stream(visitor.getContextRoot());
@@ -230,11 +206,15 @@ public class BashTranslationHelper {
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
     /* package */ static Translation visitGuardingExpression(TerminalNode notNode, Translation expressionTranslation) {
         final Translation not = notNode != null ? toStringTranslation("! ") : UNKNOWN_TRANSLATION;
-        expressionTranslation = unwindAll(expressionTranslation);
-        if (expressionTranslation.type().isNumeric()) {
-            // to handle floats we use bc, but bc uses C style bools (1 for true, 0 for false) so we need to convert
+        expressionTranslation = Unwinder.unwindAll(expressionTranslation);
+        if (expressionTranslation.type().isInt() && expressionTranslation.body().startsWith("$((")) {
+            // strip initial $ for (( instead of $((
+            expressionTranslation = expressionTranslation.lambdaBody(body -> body.substring(1));
+        } else if (expressionTranslation.type().isNumeric()) {
+            // to handle floats we use bc, but the test by default will be for if bc succeeded (had exit code 0)
+            // so we need to explicitly check if the check returned true (1)
             expressionTranslation = expressionTranslation
-                    .inlineAsNeeded(BashTranslationHelper::unwindAll)
+                    .inlineAsNeeded(Unwinder::unwindAll)
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
         return not.add(expressionTranslation);
@@ -264,187 +244,136 @@ public class BashTranslationHelper {
                 .addPreamble(statements.preamble());
     }
 
-    // unwind static methods
-
-    /* package */ static @Nonnull Translation unwindAll(@Nonnull final Translation tr) {
-        Translation ret = tr;
-        while (COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-            ret = unwindOnMatch(ret, COMMAND_SUBSTITUTION);
-        }
-        return ret;
-    }
-
-    /* package */ static @Nonnull Translation unwindNested(@Nonnull final Translation tr) {
-        Translation ret = tr;
-        while(NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
-            ret = unwindOnMatch(ret, NESTED_COMMAND_SUBSTITUTION);
-        }
-        return ret;
-    }
-
-    private static @Nonnull Translation unwindOnMatch(@Nonnull final Translation tr, @Nonnull final Pattern pattern) {
-        Translation ret = tr;
-        // extract inner command substitution
-        final Matcher bodyMatcher = pattern.matcher(ret.body());
-        if (!bodyMatcher.find()) {
-            return ret;
-        }
-        final Translation unnested = unwindBody(new Translation(bodyMatcher.group(2), Type.STR_TYPE, NORMAL));
-        // replace group
-        final String unnestedBody = Matcher.quoteReplacement(unnested.body());
-        LOG.debug("Replacing with {}", unnestedBody);
-        ret = ret.body(bodyMatcher.replaceFirst("$1%s$3".formatted(unnestedBody)));
-        return ret.addPreamble(unnested.preamble());
-    }
-
-    /**
-     * Subshell and inline errored exit codes are ignored in Bash despite all configurations.
-     * This workaround explicitly propagates errored exit codes.
-     * Unnests one level.
-     *
-     * @param tr The base translation.
-     * @return A Translation where the preamble is <code>tr</code>'s body and the work-around.
-     * The body is a Command Substitution of a created variable
-     * that holds the results of executing <code>tr</code>'s body.
-     */
-    private static @Nonnull Translation unwindBody(@Nonnull final Translation tr) {
-        // guard to check if unnest not needed
-        if (!COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
-            LOG.debug("Skipped unnest for " + tr.body());
-            return tr;
-        }
-
-        if (NESTED_COMMAND_SUBSTITUTION.matcher(tr.body()).find()) {
-            LOG.debug("Found nested command substitution in unnest: {}", tr.body());
-            return unwindNested(tr);
-        }
-
-        // assign Strings to use in translations
-        final String subshellReturn = "__bp_subshellReturn%d".formatted(subshellWorkaroundCounter);
-        final String exitCodeName = "__bp_exitCode%d".formatted(subshellWorkaroundCounter++);
-
-        // create 5 lines of translations
-        final Translation subcomment = toStringTranslation("## unnest for %s\n".formatted(tr.body()));
-        final Translation export     = toStringTranslation("export %s\n".formatted(subshellReturn));
-        final Translation assign     = toStringTranslation("%s=%s\n".formatted(subshellReturn, tr.body()));
-        final Translation exitCode   = toStringTranslation("%s=$?\n".formatted(exitCodeName));
-        final Translation check      = toStringTranslation("""
-                if [ "$%s" -ne 0 ]; then exit "$%s"; fi
-                """.formatted(exitCodeName, exitCodeName));
-
-        // add the lines up
-        final Translation preambles = subcomment.add(export).add(assign).add(exitCode).add(check);
-
-        // add the preambles and swap the body
-        return tr.addPreamble(preambles.body()).body("${%s}".formatted(subshellReturn));
-    }
-
     // typecast static methods
+    // TODO not 0.22.0 - extract to its own class, "TypeCaster" with docs as following:
+    // computations not checked for parsability or anything that starts with $ (Bash variable)
+    // TODO consistent C style number casts, we can't check for correctness of non-literals (but we allow them)
 
-    /* package */ static @Nonnull Translation typecastToBool(
-            @Nonnull final SimpleType castTo,
+    /* package */ static @Nonnull Translation typecastFromBool(
             @Nonnull Translation expression,
+            @Nonnull final Type castTo,
             @Nonnull final TypeError typecastError) {
-        switch (castTo) {
+        switch (castTo.mainType()) {
             case BOOL -> {}
-            case INT -> expression =
-                    expression.body(expression.body().equalsIgnoreCase("true") ? "1" : "0");
-            case FLOAT -> expression =
-                    expression.body(expression.body().equalsIgnoreCase("true") ? "1.0" : "0.0");
-            case STR -> expression = expression.quoteBody();
-            // no cast to list
+            case STR -> expression = expression.quoteBody().type(STR_TYPE);
+            // no cast to int, float or list
             default -> throw typecastError;
         }
         return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastToInt(
-            @Nonnull final SimpleType castTo,
+    /* package */ static @Nonnull Translation typecastFromNumber(
             @Nonnull Translation expression,
+            @Nonnull final Type castTo,
+            final int lineNumber,
+            @Nonnull final TypeError typecastError
+    ) {
+        switch (castTo.mainType()) {
+            case INT -> expression = typecastToInt(expression, lineNumber);
+            case FLOAT -> expression = expression.type(FLOAT_TYPE);
+            default -> throw typecastError;
+        }
+        return expression;
+    }
+
+    /* package */ static @Nonnull Translation typecastFromInt(
+            @Nonnull Translation expression,
+            @Nonnull final Type castTo,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        // parse expression to a BigInteger
-        BigInteger expressionValue;
-        try {
-            expressionValue = new BigInteger(expression.body());
-        } catch (final NumberFormatException e) {
-            throw new UserError(
-                    "Couldn't parse '%s' to an INT.  Typecasts only work on literals, was this an ID or function call?"
-                            .formatted(expression.body()), lineNumber);
+        if (!expression.metadata().contains(CALCULATION)) {
+            // parse expression to a BigInteger
+            try {
+                new BigInteger(expression.body());
+            } catch (final NumberFormatException e) {
+                // TODO allow for non-literals like for typecastFromFloat
+                String message = "Couldn't parse '%s' to an INT.  " +
+                        "Typecasts only work on literals, was this an ID or function call?";
+                throw new TypeError(message.formatted(expression.body()), lineNumber);
+            }
         }
+
+        // Cast
+        switch (castTo.mainType()) {
+            case INT -> {}
+            case FLOAT -> expression = expression.type(FLOAT_TYPE);
+            case STR -> expression = expression.quoteBody().type(STR_TYPE);
+            // no typecast to bool or list
+            default -> throw typecastError;
+        }
+        return expression;
+    }
+
+    /* package */ static @Nonnull Translation typecastFromFloat(
+            @Nonnull Translation expression,
+            @Nonnull final Type castTo,
+            final int lineNumber,
+            @Nonnull final TypeError typecastError) {
 
         // cast
-        switch (castTo) {
-            case BOOL -> expression =
-                    expression.body(!expressionValue.equals(BigInteger.ZERO) ? "true" : "false");
-            case INT, FLOAT -> {}
-            case STR -> expression = expression.quoteBody();
-            // no list to int conversion
+        switch (castTo.mainType()) {
+            case INT -> expression = typecastToInt(expression, lineNumber);
+            case FLOAT -> {}
+            case STR -> expression = expression.quoteBody().type(STR_TYPE);
+            // no typecast to bool or list
             default -> throw typecastError;
         }
         return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastToFloat(
-            @Nonnull final SimpleType castTo,
-            @Nonnull Translation expression,
-            final int lineNumber,
-            @Nonnull final TypeError typecastError) {
-        // parse expression as a BigDecimal
-        BigDecimal expressionValue;
+    // helper
+    private static @Nonnull Translation typecastToInt(@Nonnull Translation expression, final int lineNumber) {
+        // parse expression as a BigDecimal to check for literal float
+        expression = expression.unquoteBody();
+        BigDecimal expressionValue = null;
         try {
             expressionValue = new BigDecimal(expression.body());
         } catch (final NumberFormatException e) {
-            throw new UserError("Couldn't parse %s to a FLOAT".formatted(expression.body()), lineNumber);
+            // expressionValue is still null if it is not a literal (e.g. variable or function call)
         }
-
-        // cast
-        switch (castTo) {
-            case BOOL -> expression =
-                    expression.body(expressionValue.compareTo(BigDecimal.ZERO) != 0 ? "true" : "false");
-            case INT -> expression = expression.body(expressionValue.toBigInteger().toString());
-            case FLOAT -> {}
-            case STR -> expression = expression.quoteBody();
-            // no list to float conversion
-            default -> throw typecastError;
+        if (expressionValue != null) {
+            return expression.body(expressionValue.toBigInteger().toString()).type(INT_TYPE).unquoteBody();
+        } else {
+            // if a variable reference then typecast to int (round down) with printf
+            String varName = StringUtils.stripStart(expression.body(), "${");
+            varName = StringUtils.stripEnd(varName, "}");
+            if (!varName.matches("\\d")) {
+                return expression.addPreamble("""
+                                %s="$(printf '%%d' "%s" 2>/dev/null || true)"
+                                """.formatted(varName, expression))
+                        .type(INT_TYPE);
+            } else {
+                // trying to reassign $1, $2, etc
+                // too complex to set an individual varable with the command 'set', throw
+                final String message = "Could not cast $1, $2, etc.  Assign to a local variable and typecast that.";
+                throw new TypeError(message, lineNumber);
+            }
         }
-        return expression;
     }
 
-    /* package */ static @Nonnull Translation typecastStr(
-            @Nonnull final SimpleType castTo,
+    /* package */ static @Nonnull Translation typecastFromStr(
             @Nonnull Translation expression,
+            @Nonnull final Type castTo,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        switch (castTo) {
+        switch (castTo.mainType()) {
             case BOOL -> {
                 expression = expression.unquoteBody();
                 if (SimpleType.isNumberString(expression.body())) {
-                    expression = typecastToFloat(castTo, expression, lineNumber, typecastError);
+                    expression = typecastFromFloat(expression, castTo, lineNumber, typecastError);
                 } else if (expression.body().equalsIgnoreCase("true")
                         || expression.body().equalsIgnoreCase("false")) {
-                    expression = expression.body(expression.body().toLowerCase());
+                    expression = expression.body(expression.body().toLowerCase()).type(castTo);
                 } else {
                     throw new TypeError("""
                             Could not cast STR to BOOL.
-                            Only 'true', 'false' and numbers in Strings allowed.
+                            Only 'true' and 'false' allowed (capitalization ignored) or numbers for a C style cast.
                             Text was %s.""".formatted(expression.body()), lineNumber);
                 }
             }
-            case INT -> {
-                // no automatic rounding for things like `"2.5":int`
-                // for argument variables (e.g. $1) take the user's word for it, we can't check here
-                expression = expression.unquoteBody();
-                final SimpleType foundType =
-                        !expression.body().startsWith("$") ? SimpleType.parseNumberString(expression.body()) : INT;
-                if (!INT.equals(foundType)) {
-                    throw new TypeError("""
-                        Could not cast FLOAT value in STR to INT.  Try casting to float first.  Text was %s."""
-                            .formatted(expression.body()), lineNumber);
-                }
-            }
+            case INT -> expression = typecastToInt(expression, lineNumber);
             case FLOAT -> {
-                expression = expression.unquoteBody();
+                expression = expression.unquoteBody().type(castTo);
                 // verify the body parses as a valid number for non-variables
                 if (!expression.body().startsWith("$")) {
                     try {
@@ -457,18 +386,20 @@ public class BashTranslationHelper {
                 }
             }
             case STR -> {}
-            // no list to str conversion
+            // TODO allow typecasting to LIST for all conversions
+            case LIST -> expression = expression.type(castTo); // trust the user, may be a bad idea
             default -> throw typecastError;
         }
         return expression;
     }
 
     /** Casts to a different kind of list (i.e. a different subtype), but no other conversions */
-    /* package */ static @Nonnull Translation typecastToList(
-            @Nonnull final Type castTo,
+    /* package */ static @Nonnull Translation typecastFromList(
             @Nonnull Translation expression,
+            @Nonnull final Type castTo,
             @Nonnull final TypeError typecastError) {
         if (castTo.isList()) {
+            // Allow a typecast to any subtype
             return expression.type(castTo);
         } else {
             // cannot cast to bool, int, float or str
@@ -476,12 +407,18 @@ public class BashTranslationHelper {
         }
     }
 
-    /* package */ static void typecastToUnknown(
-            @Nonnull final SimpleType castTo, @Nonnull final TypeError typecastError) {
-        switch (castTo) {
-            case BOOL, INT, FLOAT, STR, LIST -> {}
+    /* package */ static @Nonnull Translation typecastFromUnknown(
+            @Nonnull Translation expression,
+            @Nonnull final Type castTo,
+            final int lineNumber,
+            @Nonnull final TypeError typecastError) {
+        switch (castTo.mainType()) {
+            case BOOL, STR, LIST -> expression = expression.type(castTo);
+            case INT -> expression = typecastToInt(expression, lineNumber);
+            case FLOAT -> expression = expression.unquoteBody().type(castTo);
             default -> throw typecastError;
         }
+        return expression;
     }
 
     // helpers to helpers

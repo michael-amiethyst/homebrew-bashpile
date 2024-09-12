@@ -46,9 +46,11 @@ assignmentOperator: Equals | PlusEquals;
 functionBlock       : INDENT statement* (returnPsudoStatement | statement) DEDENT;
 returnPsudoStatement: Return expression? Newline;
 
-// in operator precedence order
+// in operator precedence order, modeled on Java precedence at https://introcs.cs.princeton.edu/java/11precedence/
 expression
     : listAccess                        # listAccessExpression
+    | expression op=(Increment | Decrement)     # unaryPostCrementExpression
+    // prefix increment/decrement expressions here
     | expression Colon type             # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
