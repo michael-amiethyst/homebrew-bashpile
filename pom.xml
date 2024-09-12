@@ -6,7 +6,7 @@
 
     <groupId>com.bashpile</groupId>
     <artifactId>bashpile</artifactId>
-    <version>0.21.8</version>
+    <version>0.22.0</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -119,6 +119,7 @@
                 <version>${antlr.version}</version>
                 <configuration>
                     <visitor>true</visitor>
+                    <outputDirectory>${basedir}/target/generated-sources/antlr4</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>

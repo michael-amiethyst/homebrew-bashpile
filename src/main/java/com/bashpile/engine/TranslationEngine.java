@@ -69,6 +69,9 @@ public interface TranslationEngine {
 
     // expression translations
 
+    /** For Increment and Decrement such as `i++` */
+    Translation unaryPostCrementExpression(final BashpileParser.UnaryPostCrementExpressionContext ctx);
+
     /**
      * Translates a type-cast.
      * Typically implemented in the implementing class, like Typescript adds types to JavaScript

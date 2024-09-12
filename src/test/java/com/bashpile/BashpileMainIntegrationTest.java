@@ -357,5 +357,21 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(Files.exists(Path.of("command.bps")));
     }
 
+    @Test
+    @Timeout(20)
+    @Order(100)
+    public void bprDashCFailsGracefullyOnBadCompile() throws IOException {
+        log.info("In bpr -c fails gracefully");
+        Assumptions.assumeTrue(bprDeployed);
+
+        final String command = "bin/bpr -c \"# echo\"";
+        final ExecutionResults results = runAndJoin(command);
+
+        assertFailedExitCode(results);
+        assertFalse(results.stdout().contains("No such file or directory"));
+        // set -e text
+        assertFalse(results.stdout().contains("Error (exit code 1) found on line "));
+    }
+
     // TODO multi-line -c tests (bpc / bpr)
 }

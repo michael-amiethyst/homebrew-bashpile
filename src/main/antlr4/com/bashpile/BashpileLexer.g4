@@ -25,7 +25,7 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
-Type     : 'empty' | 'bool' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
+Type     : 'unknown' | 'empty' | 'bool' | 'number' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
 Function : 'function';
 Block    : 'block';
 Return   : 'return';
@@ -50,7 +50,7 @@ While    : 'while';
 OParen  : '(';
 // closing parenthesis
 CParen  : ')';
-// unary minus (minus defiend below)
+// unary minus (minus defined below)
 Increment: '++';
 Decrement: '--';
 Not     : 'not';

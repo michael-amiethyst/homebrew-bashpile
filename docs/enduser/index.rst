@@ -2,7 +2,11 @@
 Bashpile
 ====================
 
-Old docs at GitHub wiki.
+Old docs at GitHub_ `wiki`__.
+
+.. _GitHub: https://github.com/michael-amiethyst/homebrew-bashpile/wiki
+
+__ GitHub_
 
 Why Bashpile
 ============

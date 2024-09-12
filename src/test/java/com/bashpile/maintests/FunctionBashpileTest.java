@@ -164,13 +164,13 @@ class FunctionBashpileTest extends BashpileTest {
     public void functionForwardDeclarationWorks() {
         final ExecutionResults results = runText("""
                 function circleArea(r: float) -> float
-                                
+                
                 function twoCircleArea(r1: float, r2: float) -> float:
                     return circleArea(r1) + circleArea(r2)
-                                
+                
                 function circleArea(r:float) ["helper"] -> float:
                     return 3.14 * r * r
-                                
+                
                 print(twoCircleArea(1, -1))""");
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size()
@@ -186,44 +186,43 @@ class FunctionBashpileTest extends BashpileTest {
     public void functionForwardDeclarationNoReturnWorks() {
         final ExecutionResults results = runText("""
                 function printCircleArea(r: float)
-                                
+                
                 function twoCircleArea(r1: float, r2: float) -> float:
                     // total: float = circleArea(r1) + circleArea(r2)
                     // print(total)
                     return 3.14
-                                
+                
                 function printCircleArea(r:float) ["helper"]:
                     print(3.14 * r * r)
-                                
+                
                 printCircleArea(1)""");
         assertSuccessfulExitCode(results);
         assertEquals(1, results.stdoutLines().size(), "Wrong length, was: " + join(results.stdoutLines()));
         assertEquals("3.14\n", results.stdout(), "Wrong return");
     }
 
-    // TODO uncomment to test adding two function calls
-//    @Test
-//    @Order(132)
-//    public void functionDeclarationNoReturnWorks() {
-//        final ExecutionResults results = runText("""
-//                function circleArea(r: float) -> float
-//
-//                function printTwoCircleArea(r1: float, r2: float):
-//                    total: float = circleArea(r1) + circleArea(r2)
-//                    print(total)
-//
-//                function circleArea(r:float) ["helper"] -> float:
-//                    return 3.14 * r * r
-//
-//                printTwoCircleArea(1, -1)""");
-//        //        assertSuccessfulExitCode(results);
-//        assertEquals(1, results.stdoutLines().size()
-//                , "Wrong length, was: " + join(results.stdoutLines()));
-//        assertEquals(1,
-//                results.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
-//                "Wrong circleArea count");
-//        assertEquals("6.28", results.stdoutLines().get(0), "Wrong return");
-//    }
+    @Test
+    @Order(132)
+    public void functionDeclarationNoReturnWorks() {
+        final ExecutionResults results = runText("""
+                function circleArea(r: float) -> float
+
+                function printTwoCircleArea(r1: float, r2: float):
+                    total: float = circleArea(r1) + circleArea(r2)
+                    print(total)
+
+                function circleArea(r:float) ["helper"] -> float:
+                    return 3.14 * r * r
+
+                printTwoCircleArea(1, -1)""");
+        assertSuccessfulExitCode(results);
+        assertEquals(1, results.stdoutLines().size(),
+                "Wrong length, was: " + join(results.stdoutLines()));
+        assertEquals(1,
+                results.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
+                "Wrong circleArea count");
+        assertEquals("6.28", results.stdoutLines().get(0), "Wrong return");
+    }
 
     @Test
     @Order(140)
@@ -300,7 +299,8 @@ class FunctionBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 function circleArea(log: str, args: list<str>) ["example tag"] -> float:
                     shift
-                    r: int = arguments[1]: int
+                    a1: list<str> = arguments[1]: list<str>
+                    r: int = a1[0]: int
                     print(log)
                     return 3.14 * r * r
                 print(circleArea("test", arguments[all]))""", "1");

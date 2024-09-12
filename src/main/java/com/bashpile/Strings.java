@@ -83,19 +83,6 @@ public class Strings extends StringUtils {
                 + trailingNewline;
     }
 
-    /**
-     * Adds spaces around parentheses.  This is typically to break up $(()) syntax into $( () ).
-     *
-     * @param text The string to add spaces to.
-     * @return The string with spaces added around it, if needed.
-     */
-    public static @Nonnull String addSpacesAroundParenthesis(@Nonnull final String text) {
-        if (inParentheses(text)) {
-            return " %s ".formatted(text);
-        }
-        return text;
-    }
-
     /** Applies a function to the first line only */
     public static @Nonnull String lambdaFirstLine(
             @Nonnull final String text, @Nonnull final Function<String, String> lambda) {
