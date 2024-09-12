@@ -7,4 +7,4 @@
 #(brew uninstall bashpile || true)
 
 // install
-#(brew install --HEAD michael-amiethyst/bashpile/bashpile)
+#(brew install --HEAD Formula/bashpile.rb)

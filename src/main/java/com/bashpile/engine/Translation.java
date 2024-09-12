@@ -5,6 +5,7 @@ import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.google.common.collect.Streams;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public class Translation {
 
     private static final Pattern INT_PATTERN = Pattern.compile("\\d+");
 
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("[\\d().]+");
+    private static final Pattern FLOAT_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
 
     @Nonnull private String preamble;
 
@@ -237,6 +238,16 @@ public class Translation {
     }
 
     /**
+     * Remove surrounding `${}`s.
+     */
+    public @Nonnull Translation removeVariableBrackets() {
+        return lambdaBody(body -> {
+            final String nextBody = StringUtils.stripStart(body, "${");
+            return StringUtils.stripEnd(nextBody, "}");
+        });
+    }
+
+    /**
      * Adds to the start of the current options or creates the option at the start
      */
     public @Nonnull Translation addOption(final String additionalOption) {
@@ -392,8 +403,8 @@ public class Translation {
     private static @Nonnull Translation convertUnknownToDetectedType(Translation tr) {
         if (tr.isUnknown() && INT_PATTERN.matcher(tr.body).matches()) {
             return tr.type(INT_TYPE);
-        } else if (tr.isUnknown() && NUMBER_PATTERN.matcher(tr.body).matches()) {
-            return tr.type(NUMBER_TYPE);
+        } else if (tr.isUnknown() && FLOAT_PATTERN.matcher(tr.body).matches()) {
+            return tr.type(FLOAT_TYPE);
         } else if (tr.isUnknown()) {
             return tr.type(STR_TYPE);
         } else {
@@ -401,6 +412,9 @@ public class Translation {
         }
     }
 
+    /**
+     * Drains the preamble; blanks out the preamble as a side effect to indicate that it has been handled and not lost.
+     */
     public @Nonnull String preamble() {
         try {
             return preamble;

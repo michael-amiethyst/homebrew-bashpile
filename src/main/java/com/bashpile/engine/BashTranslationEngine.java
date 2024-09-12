@@ -452,16 +452,13 @@ public class BashTranslationEngine implements TranslationEngine {
         if (expressionTranslation.isInt()) {
             // arithmetic built-in when possible
             final String preamble = expressionTranslation.preamble();
-            return new Translation("$((%s%s))".formatted(expressionTranslation.lambdaBody(body -> {
-                // get just the variable name without ${}
-                String ret = StringUtils.stripStart(body, "${");
-                return StringUtils.stripEnd(ret, "}");
-            }), opText), INT_TYPE, List.of(CALCULATION))
-                    .addPreamble(preamble);
+            final String body = "$((%s%s))".formatted(expressionTranslation.removeVariableBrackets(), opText);
+            return new Translation(body, INT_TYPE, List.of(CALCULATION)).addPreamble(preamble);
         } else if (expressionTranslation.isNumeric()) {
             // bc tool can't assign to shell variables, only bc variables.
             // bc variables can't have uppercase, and to "export" them back to the shell we would need a whole
             // concept of a post-amble and who uses ++ on floats anyway???
+            // TODO add test for below
             final String message = "++/-- operators only allowed on explicit ints.  Try casting with ': int'.";
             throw new TypeError(message, lineNumber);
         } else {

@@ -119,7 +119,9 @@ public class Lexers {
             command = FilenameUtils.separatorsToUnix(command);
             final Matcher matcher = WINDOWS_FILE_PATTERN.matcher(command);
             if (matcher.find()) {
-                command = "/mnt/" + matcher.group(1).toLowerCase() + command.substring(2);
+                final String driveLetter = matcher.group(1).toLowerCase();
+                final String relativePathFromDriveRoot = command.substring(3);
+                command = "/mnt/%s/%s".formatted(driveLetter, relativePathFromDriveRoot);
             }
         }
 
