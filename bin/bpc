@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpc.bps on 2024-07-23T14:03:08.553846-04:00[America/New_York] (timestamp 1721757788553)
+# Generated from bin/bpc.bps on 2024-09-13T13:03:54.154203-04:00[America/New_York] (timestamp 1726247034154)
 #
 # strict mode header
 set -eEuo pipefail -o posix
 declare -x IFS=$'\n\t'
 declare -i s
 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
-## unnest for $(getopt --help)
+## unnest for $( getopt --help )
 export __bp_subshellReturn0
 __bp_subshellReturn0=$(getopt --help)
 __bp_exitCode0=$?
 if [ "$__bp_exitCode0" -ne 0 ]; then exit "$__bp_exitCode0"; fi
 if [ "${__bp_subshellReturn0}" == " --" ]; then
   # print statement, Bashpile line 7
-  printf "FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...\n"
+  printf -- "FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...\n"
   exit 2
 fi
 # assign statement, Bashpile line 11
@@ -23,22 +23,25 @@ declare opts
 opts=$(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
 # assign statement, Bashpile line 13
-declare translatedFilename
-translatedFilename="command.bpt"
+declare DEFAULT_FILENAME
+DEFAULT_FILENAME="command.bpt"
 # assign statement, Bashpile line 14
+declare translatedFilename
+translatedFilename="${DEFAULT_FILENAME}"
+# assign statement, Bashpile line 15
 declare commandMode
 commandMode=false
-# while statement, Bashpile line 15
+# while statement, Bashpile line 16
 while true; do
-  # switch statement, Bashpile line 16
+  # switch statement, Bashpile line 17
   case $1 in
     -c | --command)
-      # reassign statement, Bashpile line 18
+      # reassign statement, Bashpile line 19
       commandMode=true
       shift
       ;;
     -o | --outputFile)
-      # reassign statement, Bashpile line 21
+      # reassign statement, Bashpile line 22
       translatedFilename=$2
       shift 2
       ;;
@@ -52,39 +55,49 @@ while true; do
   esac
 done
 if [ -n "${1+default}" ] && [ "$1" == "-" ]; then
-  # reassign statement, Bashpile line 31
+  # reassign statement, Bashpile line 32
   commandMode=true
   shift
 fi
-# assign statement, Bashpile line 35
+if [ -n "${1+default}" ] && [ "${commandMode}" == "false" ] && [ "${translatedFilename}" == "${DEFAULT_FILENAME}" ]; then
+  # assign statement, Bashpile line 38
+  declare dir
+  dir=$(dirname "$1")
+  # assign statement, Bashpile line 39
+  declare filename
+  filename=$(basename "$1" .bps)
+  # reassign statement, Bashpile line 40
+  translatedFilename=${dir}/${filename}
+fi
+# assign statement, Bashpile line 43
 declare bpHome
 if [ -z "${BASHPILE_HOME+default}" ]; then
-  # assign statement, Bashpile line 37
+  # assign statement, Bashpile line 45
   declare bpWhere
   bpWhere=$(whereis bashpile | cut -d ' ' -f 2)
-  # reassign statement, Bashpile line 38
+  # reassign statement, Bashpile line 46
   bpHome=$(dirname "$bpWhere")
 else
-  # assign statement, Bashpile line 40
+  # assign statement, Bashpile line 48
   declare BASHPILE_HOME
-  # reassign statement, Bashpile line 41
+  # reassign statement, Bashpile line 49
   bpHome=${BASHPILE_HOME}/bin
 fi
-# assign statement, Bashpile line 42
+# assign statement, Bashpile line 50
 declare jarPath
 jarPath="${bpHome}/bashpile.jar"
 if ! [ -e "${jarPath}" ]; then
-  # reassign statement, Bashpile line 44
+  # reassign statement, Bashpile line 52
   jarPath=${bpHome}/bin/bashpile.jar
 fi
 if ${commandMode}; then
-  # assign statement, Bashpile line 47
+  # assign statement, Bashpile line 55
   declare commandString
   commandString=$(cat -)
-  # expression statement, Bashpile line 48
+  # expression statement, Bashpile line 56
   java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString"
 else
-  # expression statement, Bashpile line 50
+  # expression statement, Bashpile line 58
   java -jar "$jarPath" --outputFile="$translatedFilename" "$@"
 fi
 chmod 755 $translatedFilename
