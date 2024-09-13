@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+// TODO 0.23.0 - create dockerfile for redhat
 /** Base class for Bashpile Tests */
 abstract public class BashpileTest {
 
