@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-09-13T13:04:07.621492-04:00[America/New_York] (timestamp 1726247047621)
+# Generated from bin/bpr.bps on 2024-09-16T11:16:13.421542-04:00[America/New_York] (timestamp 1726499773421)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -69,28 +69,15 @@ runTranslation() {
   declare absoluteFilename
   absoluteFilename=$(realpath "$translatedFilename")
   chmod 755 $absoluteFilename
-  # creates statement, Bashpile line 93
-  if (
-    set -o noclobber
-    "$absoluteFilename" "${args[@]}" 2>&1 | tee "bpr.log"
-  ) 2>/dev/null; then
-    trap 'rm -f bpr.log; return 10' INT TERM EXIT
-    ## wrapped body of creates statement
-    if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' >/dev/null 2>&1; then
-      # expression statement, Bashpile line 97
-      "$absoluteFilename" "${args[@]}"
-    fi
-    ## end of wrapped body of creates statement
-    rm -f bpr.log
-    trap - INT TERM EXIT
-  else
-    printf "Failed to create bpr.log correctly, script output was:\n"
-    cat bpr.log
-    rm -f bpr.log
-    return 1
+  # assign statement, Bashpile line 93
+  declare LOG_NAME
+  LOG_NAME=$(mktemp -t bpr.log)
+  # expression statement, Bashpile line 94
+  "$absoluteFilename" "${args[@]}" 2>&1 | tee "$LOG_NAME"
+  if cat "$LOG_NAME" | grep -E 'unexpected EOF|syntax error|command not found' >/dev/null 2>&1; then
+    # expression statement, Bashpile line 97
+    "$absoluteFilename" "${args[@]}"
   fi
-  declare -i __bp_exitCode=$?
-  if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
   rm $absoluteFilename 2>/dev/null || true
 }
 if ! ${commandMode}; then

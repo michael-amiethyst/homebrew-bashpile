@@ -28,6 +28,7 @@ class Bashpile < Formula
     FileUtils.cp "#{bin}/bpc", "#{bin}/bashpilec"
     bin.install "bin/bpr"
     FileUtils.cp "#{bin}/bpr", "#{bin}/bashpile"
+    bin.install "bin/stdlib"
   end
 
   test do
@@ -42,8 +43,11 @@ class Bashpile < Formula
       	and
       	/usr/local/gnu-getopt/bin
 
-      You will need to add /usr/local/gnu-getopt/bin to the front of your PATH for Bashpile to work correctly.
-      You can add /usr/local/bash/bin to the front of your path as well, or set it to your default shell with `chsh`.
+        You will need to add /usr/local/gnu-getopt/bin to the front of your PATH for Bashpile to work correctly.
+        You can add /usr/local/bash/bin to the front of your path as well, or set it to your default shell with `chsh`.
+
+      All OSs:
+        Set BASHPILE_HOME in your env
     EOS
   end
 end
