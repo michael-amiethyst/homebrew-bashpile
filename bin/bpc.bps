@@ -1,7 +1,5 @@
 #!/usr/bin/env bpr
 
-// TODO this should be able to throw an error message and have it be displayed
-
 // TODO factor this out into a library
 // check for GNU getopt vs FreeBSD getopt
 if #(getopt --help) == " --":
