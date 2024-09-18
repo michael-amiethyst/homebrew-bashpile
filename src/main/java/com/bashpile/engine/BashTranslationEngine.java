@@ -10,7 +10,6 @@ import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.google.common.collect.Streams;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
@@ -20,7 +19,10 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -57,9 +59,6 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
-
-    /** The current create statement filenames for using in a trap command */
-    private final Stack<String> createFilenamesStack = new Stack<>();
 
     /** The Bashpile script input file or literal text */
     private final @Nonnull String origin;
@@ -132,42 +131,6 @@ public class BashTranslationEngine implements TranslationEngine {
     }
 
     // statement translations
-
-    /**
-     * See "Setting Traps" and "Race Conditions" at
-     * <a href="https://www.davidpashley.com/articles/writing-robust-shell-scripts/">Writing Robust Shell Scripts</a>
-     */
-    @Override
-    public @Nonnull Translation createsStatement(BashpileParser.CreatesStatementContext ctx) {
-        LOG.trace("In createsStatement");
-        final boolean fileNameIsId = ctx.String() == null;
-
-        // create child translations and other variables
-        Translation shellString;
-        shellString = requireNonNull(visitor).visit(ctx.shellString());
-        final TerminalNode filenameNode = fileNameIsId ? ctx.Id() : ctx.String();
-        String filename =  visitor.visit(filenameNode).unquoteBody().body();
-        // convert ID to "$ID"
-        filename = fileNameIsId ? "\"$%s\"".formatted(filename) : filename;
-
-        // create our final translation and pop the stack
-        createFilenamesStack.push(filename);
-        try (var ignored = typeStack.pushFrame()){
-            // create other translations
-            final Translation comment = createCommentTranslation("creates statement", lineNumber(ctx));
-            final Translation subcomment =
-                    subcommentTranslationOrDefault(shellString.hasPreamble(), "creates statement body");
-
-            // create a large if-else block with traps
-            final String body = getBodyStringForCreatesStatement(ctx, shellString, filename, visitor, createFilenamesStack);
-            final Translation bodyTranslation = toStringTranslation(body);
-
-            // merge translations and preambles
-            return comment.add(subcomment.add(bodyTranslation).mergePreamble());
-        } finally {
-            createFilenamesStack.pop();
-        }
-    }
 
     @Override
     public Translation whileStatement(BashpileParser.WhileStatementContext ctx) {

@@ -2,7 +2,6 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
-import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedException;
@@ -19,17 +18,12 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.bashpile.Strings.lambdaAllLines;
-import static com.bashpile.Strings.lambdaFirstLine;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.Translation.UNKNOWN_TRANSLATION;
 import static com.bashpile.engine.Translation.toStringTranslation;
@@ -46,73 +40,6 @@ public class BashTranslationHelper {
     private static final Logger LOG = LogManager.getLogger(BashTranslationHelper.class);
 
     // static methods
-
-    /* package */ static @Nonnull String getBodyStringForCreatesStatement(
-            @Nonnull final BashpileParser.CreatesStatementContext ctx,
-            @Nonnull final Translation shellString,
-            @Nonnull final String filename,
-            @Nonnull final BashpileVisitor visitor,
-            @Nonnull final Stack<String> createFilenamesStack) {
-        String preamble, check, thenFragment;
-        boolean briefGuard = !shellString.hasPreamble();
-        if (briefGuard) {
-            // collapse with semicolons to one line
-            preamble = Arrays.stream(shellString.preamble().trim().split("\n"))
-                    .filter(str -> !str.trim().startsWith("#"))
-                    .collect(Collectors.joining("; "));
-            check = String.join("; ", shellString.body().trim().split("\n"));
-            if (Strings.isNotEmpty(preamble)) {
-                preamble += "; ";
-            }
-            thenFragment = "; then";
-        } else {
-            // preserve whitespace
-            preamble = "\n    ## end of unnest\n" + shellString.lambdaPreambleLines(str -> TAB + str).preamble();
-            check = shellString.lambdaBodyLines(str -> TAB + str).body();
-            thenFragment = "\nthen";
-        }
-
-        // set noclobber avoids some race conditions
-        String ifGuard = "if (set -o noclobber; %s%s) 2> /dev/null%s".formatted(preamble, check, thenFragment);
-
-        // create our statements translation
-        final Translation statements = ctx.statement().stream()
-                .map(visitor::visit)
-                .reduce(Translation::add)
-                .orElseThrow()
-                .assertParagraphBody()
-                .assertNoBlankLinesInBody();
-        // create an ifBody to put into the bodyTranslation
-        // only one trap can be in effect at a time, so we keep a stack of all current filenames to delete
-        String ifBody = """
-                trap 'rm -f %s; exit 10' INT TERM EXIT
-                ## wrapped body of creates statement
-                %s
-                ## end of wrapped body of creates statement
-                rm -f %s
-                trap - INT TERM EXIT""".formatted(
-                String.join(" ", createFilenamesStack), statements.body(), filename);
-        ifBody = lambdaAllLines(ifBody, str -> TAB + str);
-        ifBody = lambdaFirstLine(ifBody, String::stripLeading);
-
-        final String plainFilename = StringUtils.removeStart(Strings.unquote(filename), "$");
-        String elseBody = """
-                printf "Failed to create %s correctly, script output was:\\n"
-                cat %s
-                rm -f %s
-                exit 1""".formatted(plainFilename, filename, filename);
-        elseBody = lambdaAllLines(elseBody, str -> TAB + str);
-        elseBody = lambdaFirstLine(elseBody, String::stripLeading);
-        return """
-                %s
-                    %s
-                else
-                    %s
-                fi
-                declare -i __bp_exitCode=$?
-                if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
-                """.formatted(ifGuard, ifBody, elseBody);
-    }
 
     /**
      * Ensures there is only one copy of a given modifier.  Returns "-x " or "" as a Translation.

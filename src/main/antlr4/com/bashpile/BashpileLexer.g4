@@ -30,7 +30,6 @@ Function : 'function';
 Block    : 'block';
 Return   : 'return';
 Print    : 'print';
-Creates  : 'creates';
 Bool     : 'true' | 'false';
 If       : 'if';
 ElseIf   : 'else-if';
