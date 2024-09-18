@@ -393,6 +393,4 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         // set -e text
         assertFalse(results.stdout().contains("Error (exit code 1) found on line "));
     }
-
-    // TODO multi-line -c tests (bpc / bpr)
 }
