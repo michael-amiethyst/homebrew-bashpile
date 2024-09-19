@@ -3,7 +3,7 @@ class Bashpile < Formula
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   license "MIT"
   # TODO change to 0.23.0 before PR
-  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.22.0"
+  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.23.0"
   # TODO change to development before PR
   head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "feature/remove-creates"
 
@@ -45,9 +45,6 @@ class Bashpile < Formula
 
         You will need to add /usr/local/gnu-getopt/bin to the front of your PATH for Bashpile to work correctly.
         You can add /usr/local/bash/bin to the front of your path as well, or set it to your default shell with `chsh`.
-
-      All OSs:
-        Set BASHPILE_HOME in your env
     EOS
   end
 end
