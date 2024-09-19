@@ -14,6 +14,7 @@ import java.util.List;
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO remove "bpt" concept entirely
 /**
  * More of a System test
  * <br>
@@ -29,6 +30,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static boolean bprDeployed = false;
 
+    // TODO not 0.23.0 - remove unneeded --outputFile's
     @Test
     @Timeout(20)
     @Order(5)
@@ -49,6 +51,25 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         // ensure generated bpc is executable
         assertSuccessfulExitCode(runAndJoin("test -x bin/bpc"));
         bpcDeployed = true;
+    }
+
+    @Test
+    @Timeout(20)
+    @Order(6)
+    public void stdlibDeploysSuccessfully() throws IOException {
+        log.info("In stdlibDeploysSuccessfully");
+
+        int exitCode = ExecutionResults.GENERIC_FAILURE;
+        int loops = 0;
+        ExecutionResults results = null;
+        while (exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
+            final String command = "bin/bpc --outputFile bin/stdlib bin/stdlib.bps";
+            results = runAndJoin(command);
+            log.trace("Output text:\n{}", results.stdout());
+            exitCode = results.exitCode();
+        }
+
+        assertSuccessfulExitCode(results);
     }
 
     @Test
@@ -80,7 +101,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In noSubCommandTest");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String translatedFilename = "src/test/resources/testrigData.bps.bpt";
+        final String translatedFilename = "src/test/resources/testrigData";
         final String command = "bin/bpc --outputFile %s src/test/resources/testrigData.bps"
                 .formatted(translatedFilename);
         try {
@@ -119,8 +140,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In noSubCommandWithNoExtensionTranspiles");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String translatedFilename = "src/test/resources/testrigData.bpt";
-        final String command = "bin/bpc --outputFile %s src/test/resources/testrigData".formatted(translatedFilename);
+        final String translatedFilename = "src/test/resources/testrigData2";
+        final String command = "bin/bpc --outputFile %s src/test/resources/testrigData2.bps".formatted(translatedFilename);
         Path translatedPath = Path.of(translatedFilename);
         Files.deleteIfExists(translatedPath);
         final ExecutionResults results = runAndJoin(command);
@@ -157,8 +178,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In outputFileFlagWithDoubleRunFails");
         Assumptions.assumeTrue(bprDeployed);
 
-        final String translatedFilename = "src/test/resources/testrigData.example.bps";
-        final String command = "bin/bpc src/test/resources/testrigData --outputFile " + translatedFilename;
+        final String translatedFilename = "src/test/resources/testrigData2.example.bps";
+        final String command = "bin/bpc src/test/resources/testrigData2.bps --outputFile " + translatedFilename;
         ExecutionResults results = runAndJoin(command);
         try {
             log.debug("Output text:\n{}", results.stdout());
@@ -372,6 +393,4 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         // set -e text
         assertFalse(results.stdout().contains("Error (exit code 1) found on line "));
     }
-
-    // TODO multi-line -c tests (bpc / bpr)
 }

@@ -29,9 +29,6 @@ public interface TranslationEngine {
 
     // statement translations
 
-    /** Translates a creates statement, similar to a try-with-resources block in Java */
-    Translation createsStatement(final BashpileParser.CreatesStatementContext ctx);
-
     /** Translates a while loop */
     Translation whileStatement(final BashpileParser.WhileStatementContext ctx);
 

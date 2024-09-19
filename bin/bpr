@@ -1,44 +1,37 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-08-06T14:49:12.477230-04:00[America/New_York] (timestamp 1722970152477)
+# Generated from bin/bpr.bps on 2024-09-19T14:52:34.398520-04:00[America/New_York] (timestamp 1726771954398)
 #
 # strict mode header
 set -eEuo pipefail -o posix
 declare -x IFS=$'\n\t'
 declare -i s
 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
-## unnest for $(getopt --help)
-export __bp_subshellReturn0
-__bp_subshellReturn0=$(getopt --help)
-__bp_exitCode0=$?
-if [ "$__bp_exitCode0" -ne 0 ]; then exit "$__bp_exitCode0"; fi
-if [ "${__bp_subshellReturn0}" == " --" ]; then
-  # print statement, Bashpile line 10
-  printf "FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...\n"
-  exit 2
-fi
-# assign statement, Bashpile line 14
+source ${BASHPILE_HOME:=.}/bin/stdlib || source ${BASHPILE_HOME:=.}/stdlib
+# expression statement, Bashpile line 8
+assertGnuGetopt
+# assign statement, Bashpile line 11
 declare opts
 opts=$(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
-# assign statement, Bashpile line 16
+# assign statement, Bashpile line 13
 declare translatedFilename
 translatedFilename="command.bpt"
-# assign statement, Bashpile line 17
+# assign statement, Bashpile line 14
 declare commandMode
 commandMode=false
-# while statement, Bashpile line 18
+# while statement, Bashpile line 15
 while true; do
-  # switch statement, Bashpile line 19
+  # switch statement, Bashpile line 16
   case $1 in
     -c | --command)
-      # reassign statement, Bashpile line 21
+      # reassign statement, Bashpile line 18
       commandMode=true
       shift
       ;;
     -o | --outputFile)
-      # reassign statement, Bashpile line 24
+      # reassign statement, Bashpile line 21
       translatedFilename=$2
       shift 2
       ;;
@@ -52,11 +45,11 @@ while true; do
   esac
 done
 if [ -n "${1+default}" ] && [ "$1" == "-" ]; then
-  # reassign statement, Bashpile line 34
+  # reassign statement, Bashpile line 31
   commandMode=true
   shift
 fi
-# assign statement, Bashpile line 38
+# assign statement, Bashpile line 35
 declare jarPath
 jarPath="$(dirname "${BASH_SOURCE[0]}")/bashpile.jar"
 if ! ${commandMode} && [ -z "${1+default}" ]; then
@@ -65,48 +58,35 @@ if ! ${commandMode} && [ -z "${1+default}" ]; then
   exit $?
 fi
 set +u
-# function forward declaration, Bashpile line 48
-# function declaration, Bashpile line 91
+# function forward declaration, Bashpile line 45
+# function declaration, Bashpile line 88
 runTranslation() {
   declare -r translatedFilename=$1
   declare -x IFS=$' '
   read -r -a args <<<"$2"
   declare -x IFS=$'\n\t'
-  # assign statement, Bashpile line 92
+  # assign statement, Bashpile line 90
   declare absoluteFilename
   absoluteFilename=$(realpath "$translatedFilename")
   chmod 755 $absoluteFilename
-  # creates statement, Bashpile line 95
-  if (
-    set -o noclobber
-    "$absoluteFilename" "${args[@]}" 2>&1 | tee "bpr.log"
-  ) 2>/dev/null; then
-    trap 'rm -f bpr.log; return 10' INT TERM EXIT
-    ## wrapped body of creates statement
-    if cat bpr.log | grep -E 'unexpected EOF|syntax error|command not found' >/dev/null 2>&1; then
-      # expression statement, Bashpile line 99
-      "$absoluteFilename" "${args[@]}"
-    fi
-    ## end of wrapped body of creates statement
-    rm -f bpr.log
-    trap - INT TERM EXIT
-  else
-    printf "Failed to create bpr.log correctly, script output was:\n"
-    cat bpr.log
-    rm -f bpr.log
-    return 1
+  # assign statement, Bashpile line 93
+  declare LOG_NAME
+  LOG_NAME=$(mktemp -t bpr.log)
+  # expression statement, Bashpile line 94
+  "$absoluteFilename" "${args[@]}" 2>&1 | tee "$LOG_NAME"
+  if cat "$LOG_NAME" | grep -E 'unexpected EOF|syntax error|command not found' >/dev/null 2>&1; then
+    # expression statement, Bashpile line 97
+    "$absoluteFilename" "${args[@]}"
   fi
-  declare -i __bp_exitCode=$?
-  if [ "$__bp_exitCode" -ne 0 ]; then exit "$__bp_exitCode"; fi
   rm $absoluteFilename 2>/dev/null || true
 }
 if ! ${commandMode}; then
   if [ "${translatedFilename}" == "command.bpt" ]; then
-    # reassign statement, Bashpile line 53
+    # reassign statement, Bashpile line 50
     translatedFilename=$1.bpt
     if [ -e "${translatedFilename}" ]; then
-      # print statement, Bashpile line 55
-      printf "Will not overwrite ${translatedFilename}\n"
+      # print statement, Bashpile line 52
+      printf -- "Will not overwrite ${translatedFilename}\n"
       exit 1
     fi
   fi
@@ -114,37 +94,37 @@ if ! ${commandMode}; then
   if [ -f "${translatedFilename}" ]; then
     rm bp_jar.log
     shift
-    # print statement, Bashpile line 61
-    printf "Start of ${translatedFilename}\n"
-    # expression statement, Bashpile line 62
+    # print statement, Bashpile line 58
+    printf -- "Start of ${translatedFilename}\n"
+    # expression statement, Bashpile line 59
     runTranslation "${translatedFilename}" "$@"
   else
-    # print statement, Bashpile line 64
-    printf "Compile failed\n"
+    # print statement, Bashpile line 61
+    printf -- "Compile failed\n"
     cat bp_jar.log
     rm bp_jar.log
     exit 1
   fi
 else
-  # assign statement, Bashpile line 70
+  # assign statement, Bashpile line 67
   declare commandString
   if [ -n "${1+default}" ]; then
-    # reassign statement, Bashpile line 72
+    # reassign statement, Bashpile line 69
     commandString=$1
     shift
   else
-    # reassign statement, Bashpile line 75
+    # reassign statement, Bashpile line 72
     commandString=$(cat -)
   fi
   java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" >bp_jar.log 2>&1 || true
   if [ -f "${translatedFilename}" ]; then
     rm bp_jar.log
     sleep .2
-    # expression statement, Bashpile line 81
+    # expression statement, Bashpile line 78
     runTranslation "${translatedFilename}" "$@"
   else
-    # print statement, Bashpile line 83
-    printf "Compile failed\n"
+    # print statement, Bashpile line 80
+    printf -- "Compile failed\n"
     cat bp_jar.log
     rm bp_jar.log
     exit 1

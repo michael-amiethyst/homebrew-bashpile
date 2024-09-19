@@ -4,6 +4,7 @@
  * Usage: bin/testrigTokens src/test/resources/currTest
 */
 
-#(mvn dependency:build-classpath -Dmdep.outputFile=cpath.txt) creates "cpath.txt":
-    classPath: str = #(cat cpath.txt)
-    #(java -cp target/classes:$classPath org.antlr.v4.gui.TestRig com.bashpile.Bashpile program -tokens "$@")
+CLASS_PATH_FILE: readonly str = #(mktemp -t cpath.txt)
+mvn dependency:build-classpath -Dmdep.outputFile="$CLASS_PATH_FILE"
+classPath: str = #(cat "$CLASS_PATH_FILE")
+#(java -cp target/classes:$classPath org.antlr.v4.gui.TestRig com.bashpile.Bashpile program -tokens "$@")

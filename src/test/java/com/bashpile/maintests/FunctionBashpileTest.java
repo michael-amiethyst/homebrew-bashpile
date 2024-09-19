@@ -151,6 +151,32 @@ class FunctionBashpileTest extends BashpileTest {
     }
 
     @Test
+    @Order(91)
+    public void functionCallNoReturnWorks() {
+        final ExecutionResults results = runText("""
+                function noReturnFunction():
+                    print("Side effects only; no return statement")
+                noReturnFunction()""");
+        assertSuccessfulExitCode(results);
+        assertEquals("Side effects only; no return statement\n", results.stdout());
+    }
+
+    @Test
+    @Order(92)
+    public void assertGnuGetoptCallNoReturnWorks() {
+        final ExecutionResults results = runText("""
+                /**
+                 * Checks for GNU getopt vs FreeBSD getopt.
+                 * FreeBSD getopt cannot handle long options (e.g. --help) like we need.
+                 */
+                function assertGnuGetopt():
+                    if #(getopt --help) == " --":
+                        print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...")
+                        exit 2""");
+        assertSuccessfulExitCode(results);
+    }
+
+    @Test
     @Order(100)
     public void functionCallReturnEmptyBadTypeThrows() {
         assertThrows(TypeError.class, () -> runText("""
