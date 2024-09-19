@@ -32,4 +32,4 @@
 * 0.21.7 - Scripts with dashes (such as 'docker-compose') register as linux commands
 * 0.21.8 - Fix for PATH and other environment variables not passed into embedded shell
 * 0.22.0 - Added increment operator.  Added simpler integer-only translations
-* 0.23.0 - Removed creates statement in favor of make-temp library call (for tempfile/mktemp)
+* 0.23.0 - Removed creates statement in favor of createTempFile library call (for tempfile/mktemp)
