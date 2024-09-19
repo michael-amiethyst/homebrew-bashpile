@@ -7,4 +7,4 @@
 #(brew uninstall bashpile || true)
 
 // install
-#(brew install --HEAD Formula/bashpile.rb)
+#(HOMEBREW_NO_INSTALL_FROM_API=1 brew install --build-from-source --verbose --debug --HEAD Formula/homebrew-bashpile.rb)

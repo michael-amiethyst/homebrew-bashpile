@@ -6,8 +6,6 @@ program: statement+;
 // statements, in descending order of complexity
 statement
     : ShellLine Newline                         # shellLineStatement
-    | shellString Creates (String|Id)
-           Colon INDENT statement+ DEDENT       # createsStatement
     | While expression Colon indentedStatements # whileStatement
     | Function Id paramaters (Arrow type)?      # functionForwardDeclarationStatement
     | Function Id paramaters tags? (Arrow type)?

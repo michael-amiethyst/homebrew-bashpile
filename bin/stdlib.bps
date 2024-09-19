@@ -1,0 +1,13 @@
+#!/usr/bin/env bpc
+
+/**
+ * Checks for GNU getopt vs FreeBSD getopt.
+ * FreeBSD getopt cannot handle long options (e.g. --help) like we need.
+ */
+function assertGnuGetopt():
+    if #(getopt --help) == " --":
+        print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...")
+        exit 2
+
+function createTempFile():
+    return #(mktemp)

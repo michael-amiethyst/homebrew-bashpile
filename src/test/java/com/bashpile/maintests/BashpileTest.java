@@ -13,16 +13,13 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+// TODO right after 0.23.0 - create GitHubAction/dockerfile for redhat
 /** Base class for Bashpile Tests */
 abstract public class BashpileTest {
-
-    /** Full match for Bash comments ('#') */
-    protected static final Pattern END_OF_LINE_COMMENT = Pattern.compile("^[^ #]+#.*$");
 
     private static final Logger LOG = LogManager.getLogger(BashpileTest.class);
 
@@ -50,16 +47,6 @@ abstract public class BashpileTest {
         }
     }
 
-    /** Runs {@code bashText} in a Bash environment in the background */
-    protected @Nonnull BashShell runTextAsync(@Nonnull final String bashText) {
-        LOG.debug("Starting background threads for:\n{}", bashText);
-        try {
-            return executeAsync(BashpileMainHelper.transpileScript(bashText));
-        } catch (IOException e) {
-            throw new BashpileUncheckedException(e);
-        }
-    }
-
     /** Runs {@code file} from src/test/resources/scripts as a script in a Bash environment. */
     protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
         final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
@@ -81,17 +68,6 @@ abstract public class BashpileTest {
             throw e;
         } catch (Throwable e) {
             throw createExecutionException(e, bashScript, args);
-        }
-    }
-
-    private @Nonnull BashShell executeAsync(@Nonnull final String bashScript) {
-        LOG.debug("In {}", System.getProperty("user.dir"));
-        try {
-            return BashShell.runAsync(bashScript, null);
-        } catch (UserError | AssertionError e) {
-            throw e;
-        } catch (Throwable e) {
-            throw createExecutionException(e, bashScript, null);
         }
     }
 

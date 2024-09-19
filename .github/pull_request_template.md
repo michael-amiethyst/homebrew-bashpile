@@ -3,7 +3,9 @@
 ## Issue ticket number and link
 
 ## Merge to Development - Checklist before requesting a review
-- [ ] I have performed a self-review of my code.  It runs with `mvn clean verify`
+- [ ] I have performed a self-review of my code.  
+- [ ] It runs with `mvn clean verify`
+- [ ] I have installed this version locally with `bin/deploy-head`
 - [ ] I have added thorough tests.
 
 ## Merge to Main - Checklist before requesting a review

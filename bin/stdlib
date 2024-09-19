@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+#
+# Generated from bin/stdlib.bps on 2024-09-13T13:04:00.665901-04:00[America/New_York] (timestamp 1726247040665)
+#
+# strict mode header
+set -eEuo pipefail -o posix
+declare -x IFS=$'\n\t'
+declare -i s
+trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
+# function declaration, Bashpile line 6
+assertGnuGetopt() {
+  # no parameters to function
+  ## unnest for $( getopt --help )
+  export __bp_subshellReturn0
+  __bp_subshellReturn0=$(getopt --help)
+  __bp_exitCode0=$?
+  if [ "$__bp_exitCode0" -ne 0 ]; then exit "$__bp_exitCode0"; fi
+  if [ "${__bp_subshellReturn0}" == " --" ]; then
+    # print statement, Bashpile line 8
+    printf -- "FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...\n"
+    exit 2
+  fi
+}
+# function declaration, Bashpile line 11
+createTempFile() {
+  # no parameters to function
+  # return statement, Bashpile line 12
+  mktemp
+}
