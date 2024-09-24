@@ -1,10 +1,7 @@
 #!/usr/bin/env bpr
 
-// TODO factor this out into a library
-// check for GNU getopt vs FreeBSD getopt
-if #(getopt --help) == " --":
-    print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...")
-    exit 2
+source ${BASHPILE_HOME:=.}/bin/stdlib || source ${BASHPILE_HOME:=.}/stdlib
+assertGnuGetopt()
 
 // getopt
 opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
