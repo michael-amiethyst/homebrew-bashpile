@@ -18,16 +18,12 @@
 * Near term
   * checkin pipeline in GitHub
   * builtin logging
-  * better log messages in bpr
-* LATER
-  * change to some Kotlin, especially in BashTranslationEngine and helper
-  * remove dev on WSL
+  * better log messages in bpr (-v option)
 
 # Later
 (Not ordered)
 * 'Gnuize' the utilities used (ls?, sed, etc)
-* Implement int / float (built-in or `expr` vs `bc`)
-* OOP (use / be inspired by bash infinity?)
+* OOP (use / be inspired by bash infinity?) or at least structs
 * Factor out text for future localization and consistent end-user feel.
 * Regexes for Strings, files
 * imports
@@ -39,9 +35,7 @@
 * Script super-blocks / sections
 * Scriptinos and easy testing
 * `until`
-* `unless`
 * `expr AND expr` like Bash's `(expr;expr)` without the subshell (maybe)
-* typecasts on IDs and function calls - implemented in the translated output
 
 # much later
 * tooling (IDE integrations, code highlighting)

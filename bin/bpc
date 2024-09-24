@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpc.bps on 2024-09-18T17:56:24.663131-04:00[America/New_York] (timestamp 1726696584663)
+# Generated from bin/bpc.bps on 2024-09-24T11:55:19.830259-04:00[America/New_York] (timestamp 1727193319830)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -60,44 +60,44 @@ if [ -n "${1+default}" ] && [ "$1" == "-" ]; then
   shift
 fi
 if [ -n "${1+default}" ] && [ "${commandMode}" == "false" ] && [ "${translatedFilename}" == "${DEFAULT_FILENAME}" ]; then
-  # assign statement, Bashpile line 36
+  # assign statement, Bashpile line 35
   declare dir
   dir=$(dirname "$1")
-  # assign statement, Bashpile line 37
+  # assign statement, Bashpile line 36
   declare filename
   filename=$(basename "$1" .bps)
-  # reassign statement, Bashpile line 38
+  # reassign statement, Bashpile line 37
   translatedFilename=${dir}/${filename}
 fi
-# assign statement, Bashpile line 41
+# assign statement, Bashpile line 40
 declare bpHome
 if [ -z "${BASHPILE_HOME+default}" ]; then
-  # assign statement, Bashpile line 43
+  # assign statement, Bashpile line 42
   declare bpWhere
   bpWhere=$(whereis bashpile | cut -d ' ' -f 2)
-  # reassign statement, Bashpile line 44
+  # reassign statement, Bashpile line 43
   bpHome=$(dirname "$bpWhere")
 else
-  # assign statement, Bashpile line 46
+  # assign statement, Bashpile line 45
   declare BASHPILE_HOME
-  # reassign statement, Bashpile line 47
+  # reassign statement, Bashpile line 46
   bpHome=${BASHPILE_HOME}/bin
 fi
-# assign statement, Bashpile line 48
+# assign statement, Bashpile line 47
 declare jarPath
 jarPath="${bpHome}/bashpile.jar"
 if ! [ -e "${jarPath}" ]; then
-  # reassign statement, Bashpile line 50
+  # reassign statement, Bashpile line 49
   jarPath=${bpHome}/bin/bashpile.jar
 fi
 if ${commandMode}; then
-  # assign statement, Bashpile line 53
+  # assign statement, Bashpile line 52
   declare commandString
   commandString=$(cat -)
-  # expression statement, Bashpile line 54
+  # expression statement, Bashpile line 53
   java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString"
 else
-  # expression statement, Bashpile line 56
+  # expression statement, Bashpile line 55
   java -jar "$jarPath" --outputFile="$translatedFilename" "$@"
 fi
 chmod 755 $translatedFilename
