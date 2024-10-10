@@ -8,7 +8,6 @@ import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.Translation.toStringTranslation
 import com.bashpile.engine.Unwinder.Companion.unwindNested
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
-import com.bashpile.engine.strongtypes.SimpleType
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
 import com.bashpile.engine.strongtypes.Type
 import com.bashpile.engine.strongtypes.TypeStack
@@ -66,8 +65,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
         // register function param types and return type
         val typeList = ctx.paramaters().typedId()
-            .map { SimpleType.valueOf(it!!) }
-            .map { Type.of(it) }
+            .map { Type.valueOf(it.type()!!) }
             .toList()
         val retType = if (ctx.type() != null) { Type.valueOf(ctx.type()) } else Type.NA_TYPE
         typeStack.putFunctionTypes(functionName, FunctionTypeInfo(typeList, retType))

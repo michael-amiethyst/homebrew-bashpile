@@ -156,7 +156,7 @@ public class Translation {
         Type nextType = type;
         nextType = nextType.isUnknown() ? other.type : nextType;
         // favor INT or FLOAT over NUMBER
-        nextType = nextType.isGenericNumberType() && other.type.isNumeric() ? other.type : nextType;
+        nextType = nextType.isNumber() && other.type.isNumeric() ? other.type : nextType;
         return new Translation(preamble + other.preamble, body + other.body, nextType, nextMetadata);
     }
 
@@ -184,13 +184,6 @@ public class Translation {
      */
     public boolean hasPreamble() {
         return !isEmpty(preamble);
-    }
-
-    /**
-     * Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax.
-     */
-    public @Nonnull Translation lambdaPreambleLines(@Nonnull final Function<String, String> lambda) {
-        return new Translation(lambdaAllLines(preamble, lambda), body, type, metadata);
     }
 
     /**
@@ -297,14 +290,6 @@ public class Translation {
      */
     public @Nonnull Translation assertParagraphBody() {
         assertIsParagraph(body);
-        return this;
-    }
-
-    /**
-     * Ensures body has no empty or blank lines and is not the empty string
-     */
-    public @Nonnull Translation assertNoBlankLinesInBody() {
-        assertNoBlankLines(body);
         return this;
     }
 

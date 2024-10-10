@@ -1,5 +1,16 @@
 package com.bashpile.engine;
 
+import java.time.ZonedDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
@@ -16,22 +27,10 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.time.ZonedDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
 import static com.bashpile.engine.Unwinder.unwindNested;
-import static com.bashpile.engine.strongtypes.SimpleType.LIST;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static java.util.Objects.requireNonNull;
@@ -272,8 +271,9 @@ public class BashTranslationEngine implements TranslationEngine {
         LOG.trace("In assignmentStatement");
         // add this variable for the Left Hand Side to the type map
         final String lhsVariableName = ctx.typedId().Id().getText();
-        final Type lhsType = Type.valueOf(ctx.typedId());
-        typeStack.putVariableType(lhsVariableName, lhsType, lineNumber(ctx));
+        final int lineNumber = lineNumber(ctx);
+        final Type lhsType = getLhsType(ctx);
+        typeStack.putVariableType(lhsVariableName, lhsType, lineNumber);
 
         // visit the Right Hand Side expression
         final boolean rhsExprExists = ctx.expression() != null;
@@ -295,15 +295,16 @@ public class BashTranslationEngine implements TranslationEngine {
             rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(Unwinder::unwindNested);
             rhsExprTranslation = unwindNested(rhsExprTranslation);
         }
-        assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber(ctx));
+        assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber);
 
         // create translations
-        final Translation comment = createCommentTranslation("assign statement", lineNumber(ctx));
+        final Translation comment = createCommentTranslation("assign statement", lineNumber);
         final Translation subcomment =
                 subcommentTranslationOrDefault(rhsExprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
         Translation modifiers = visitModifiers(ctx.typedId().modifier());
-        final boolean isList = ctx.typedId().type().Type(0).getText().toUpperCase().equals(LIST.name());
+        final String ctxTypeString = ctx.typedId().type().Type(0).getText();
+        final boolean isList = ctxTypeString.equalsIgnoreCase(LIST_TYPE.mainTypeName().name());
         if (isList) {
             modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
             // make the declaration for a Bash non-associative array
@@ -441,7 +442,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final int lineNumber = lineNumber(ctx);
         final TypeError typecastError = new TypeError(
                 "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber);
-        switch (expression.type().mainType()) {
+        switch (expression.type().mainTypeName()) {
             case BOOL -> expression = TypecastUtils.typecastFromBool(expression, castTo, typecastError);
             case NUMBER -> expression = TypecastUtils.typecastFromNumber(expression, castTo, lineNumber, typecastError);
             case INT -> expression = TypecastUtils.typecastFromInt(expression, castTo, lineNumber, typecastError);
@@ -626,7 +627,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type type = typeStack.getVariableType(variableName);
         // list syntax is `listName[*]`
         // see https://www.masteringunixshell.net/qa35/bash-how-to-print-array.html
-        final String allIndexes = type.mainType().isBasic() ? "" : /* list */ "[*]";
+        final String allIndexes = type.isBasic() ? "" : /* list */ "[*]";
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
         return new Translation("${%s%s}".formatted(ctx.getText(), allIndexes), type, NORMAL);
     }
@@ -638,6 +639,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type type = typeStack.getVariableType(requireNonNull(variableName));
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
         Integer index = ContextUtils.getListAccessorIndex(ctx);
+        assert type.asContentsType() != null; // list types have contents
         if (index != null) {
             return new Translation("${%s[%d]}".formatted(variableName, index), type.asContentsType(), NORMAL);
         } else {

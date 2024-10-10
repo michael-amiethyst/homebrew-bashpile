@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
+import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -9,6 +10,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -77,7 +79,27 @@ public class BashTranslationHelper {
         return UNKNOWN_TRANSLATION;
     }
 
-    /** Get the Bashpile script linenumber that ctx is found in. */
+    /**
+     * Get left hand side's type.
+     *
+     * @param ctx The Antlr context
+     * @return The left hand side's type, including contents type if applicable
+     */
+    /* package */ static @NotNull Type getLhsType(@NotNull BashpileParser.AssignmentStatementContext ctx) {
+        // extract info from context
+        int lineNumber = lineNumber(ctx);
+        final BashpileParser.TypeContext lhsTypeRoot = ctx.typedId().type();
+        final String lhsTypeText = lhsTypeRoot.Type(0).getText();
+
+        // find type - the result might be a list with a contents type
+        final Type.TypeNames lhsMainType = Type.TypeNames.valueOf(lhsTypeText.toUpperCase());
+        final TerminalNode contentsTypeNode = lhsTypeRoot.Type(1);
+        final Type lhsContentsType =
+                contentsTypeNode != null ? Type.valueOf(contentsTypeNode.getText(), lineNumber) : null;
+        return new Type(lhsMainType, lhsContentsType);
+    }
+
+    /** Get the Bashpile script line number that ctx is found in. */
     /* package */ static int lineNumber(@Nonnull final ParserRuleContext ctx) {
         return ctx.start.getLine();
     }

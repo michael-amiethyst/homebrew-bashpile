@@ -1,6 +1,5 @@
 package com.bashpile.engine;
 
-import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.TypeError;
 import org.apache.commons.lang3.StringUtils;
@@ -21,7 +20,7 @@ public class TypecastUtils {
             @Nonnull Translation expression,
             @Nonnull final Type castTo,
             @Nonnull final TypeError typecastError) {
-        switch (castTo.mainType()) {
+        switch (castTo.mainTypeName()) {
             case BOOL -> {}
             case STR -> expression = expression.quoteBody().type(STR_TYPE);
             // no cast to int, float or list
@@ -36,7 +35,7 @@ public class TypecastUtils {
             final int lineNumber,
             @Nonnull final TypeError typecastError
     ) {
-        switch (castTo.mainType()) {
+        switch (castTo.mainTypeName()) {
             case INT -> expression = typecastToInt(expression, lineNumber);
             case FLOAT -> expression = expression.type(FLOAT_TYPE);
             default -> throw typecastError;
@@ -62,7 +61,7 @@ public class TypecastUtils {
         }
 
         // Cast
-        switch (castTo.mainType()) {
+        switch (castTo.mainTypeName()) {
             case INT -> {}
             case FLOAT -> expression = expression.type(FLOAT_TYPE);
             case STR -> expression = expression.quoteBody().type(STR_TYPE);
@@ -79,7 +78,7 @@ public class TypecastUtils {
             @Nonnull final TypeError typecastError) {
 
         // cast
-        switch (castTo.mainType()) {
+        switch (castTo.mainTypeName()) {
             case INT -> expression = typecastToInt(expression, lineNumber);
             case FLOAT -> {}
             case STR -> expression = expression.quoteBody().type(STR_TYPE);
@@ -124,10 +123,10 @@ public class TypecastUtils {
             @Nonnull final Type castTo,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        switch (castTo.mainType()) {
+        switch (castTo.mainTypeName()) {
             case BOOL -> {
                 expression = expression.unquoteBody();
-                if (SimpleType.isNumberString(expression.body())) {
+                if (Type.isNumberString(expression.body())) {
                     expression = typecastFromFloat(expression, castTo, lineNumber, typecastError);
                 } else if (expression.body().equalsIgnoreCase("true")
                         || expression.body().equalsIgnoreCase("false")) {
@@ -145,7 +144,7 @@ public class TypecastUtils {
                 // verify the body parses as a valid number for non-variables
                 if (!expression.body().startsWith("$")) {
                     try {
-                        SimpleType.parseNumberString(expression.body());
+                        Type.parseNumberString(expression.body());
                     } catch (NumberFormatException e) {
                         throw new TypeError("""
                                     Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
@@ -180,7 +179,7 @@ public class TypecastUtils {
             @Nonnull final Type castTo,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        switch (castTo.mainType()) {
+        switch (castTo.mainTypeName()) {
             case BOOL, STR, LIST -> expression = expression.type(castTo);
             case INT -> expression = typecastToInt(expression, lineNumber);
             case FLOAT -> expression = expression.unquoteBody().type(castTo);
