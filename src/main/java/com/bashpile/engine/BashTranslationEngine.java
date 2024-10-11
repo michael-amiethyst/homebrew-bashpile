@@ -1,10 +1,7 @@
 package com.bashpile.engine;
 
 import java.time.ZonedDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -234,6 +231,7 @@ public class BashTranslationEngine implements TranslationEngine {
         return toStringTranslation(guard.preamble() + conditional);
     }
 
+    @SuppressWarnings("UnstableApiUsage") // for Streams.zip
     @Override
     public Translation switchStatement(@Nonnull BashpileParser.SwitchStatementContext ctx) {
         LOG.trace("In switchStatement");
@@ -244,7 +242,6 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(x -> x.lambdaBody(str -> str.replace("||", "|")))
                 .map(tr -> {
                     // unquote a catchAll
-                    // TODO replace with Bashpile regex expression when it's implemented
                     if (tr.body().equals("\"*\"")) {
                         tr = tr.unquoteBody();
                     }
@@ -422,7 +419,6 @@ public class BashTranslationEngine implements TranslationEngine {
             // bc tool can't assign to shell variables, only bc variables.
             // bc variables can't have uppercase, and to "export" them back to the shell we would need a whole
             // concept of a post-amble and who uses ++ on floats anyway???
-            // TODO add test for below
             final String message = "++/-- operators only allowed on explicit ints.  Try casting with ': int'.";
             throw new TypeError(message, lineNumber);
         } else {
@@ -639,11 +635,11 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type type = typeStack.getVariableType(requireNonNull(variableName));
         // use ${var} syntax instead of $var for string concatenations, e.g. `${var}someText`
         Integer index = ContextUtils.getListAccessorIndex(ctx);
-        assert type.asContentsType() != null; // list types have contents
         if (index != null) {
-            return new Translation("${%s[%d]}".formatted(variableName, index), type.asContentsType(), NORMAL);
+            return new Translation(
+                    "${%s[%d]}".formatted(variableName, index), type.asContentsType().orElseThrow(), NORMAL);
         } else {
-            return new Translation("${%s[@]}".formatted(variableName), type.asContentsType(), NORMAL);
+            return new Translation("${%s[@]}".formatted(variableName), type.asContentsType().orElseThrow(), NORMAL);
         }
 
     }

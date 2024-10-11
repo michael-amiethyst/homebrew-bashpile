@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 import static com.bashpile.engine.BashTranslationEngine.TAB;
 import static com.bashpile.engine.Translation.UNKNOWN_TRANSLATION;
 import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.strongtypes.Type.NA_TYPE;
 
 /**
  * Helper methods to {@link BashTranslationEngine}.
@@ -95,8 +97,8 @@ public class BashTranslationHelper {
         final Type.TypeNames lhsMainType = Type.TypeNames.valueOf(lhsTypeText.toUpperCase());
         final TerminalNode contentsTypeNode = lhsTypeRoot.Type(1);
         final Type lhsContentsType =
-                contentsTypeNode != null ? Type.valueOf(contentsTypeNode.getText(), lineNumber) : null;
-        return new Type(lhsMainType, lhsContentsType);
+                contentsTypeNode != null ? Type.valueOf(contentsTypeNode.getText(), lineNumber) : NA_TYPE;
+        return new Type(lhsMainType, Optional.of(lhsContentsType));
     }
 
     /** Get the Bashpile script line number that ctx is found in. */

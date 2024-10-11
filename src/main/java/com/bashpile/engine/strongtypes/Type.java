@@ -3,21 +3,21 @@ package com.bashpile.engine.strongtypes;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
+import java.util.Optional;
+import javax.annotation.Nonnull;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
 import com.bashpile.exceptions.TypeError;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import static com.bashpile.engine.strongtypes.Type.TypeNames.*;
 
 /**
  * Basically a pair of SimpleTypes.  The secondary type is for the type of the contents for a list, hash or ref.
  */
-public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType) {
+// TODO 0.23.1 - Fix GHA by using custom Docker image (with shfmt, etc)
+public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> contentsType) {
 
     // static section
 
@@ -67,18 +67,16 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType)
     public static final Type LIST_TYPE = Type.of(LIST, UNKNOWN_TYPE);
 
     public static @Nonnull Type of(@Nonnull String mainType) {
-        return new Type(TypeNames.valueOf(mainType), null);
+        return new Type(TypeNames.valueOf(mainType), Optional.empty());
     }
 
     public static @Nonnull Type of(@Nonnull final TypeNames mainType, @Nonnull final Type contentsType) {
-        return new Type(mainType, contentsType);
+        return new Type(mainType, Optional.of(contentsType));
     }
 
     /** Gets the Type with mainTypeName and contentsType info */
     public static @Nonnull Type valueOf(@Nonnull String mainType, int lineNumber) {
-        if (mainType.equalsIgnoreCase("NA") || mainType.equalsIgnoreCase("NOT_APPLICABLE")) {
-            return NA_TYPE;
-        } else if (mainType.equalsIgnoreCase(UNKNOWN.name())) {
+        if (mainType.equalsIgnoreCase(UNKNOWN.name())) {
             return UNKNOWN_TYPE;
         } else if (mainType.equalsIgnoreCase(NOT_FOUND.name()) || mainType.equalsIgnoreCase("notfound")) {
             return NOT_FOUND_TYPE;
@@ -115,7 +113,7 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType)
             return valueOf(mainTypeName, line);
         } else {
             final Type contentsType = valueOf(ctx.Type(1).getText(), line);
-            return new Type(TypeNames.valueOf(mainTypeName), contentsType);
+            return new Type(TypeNames.valueOf(mainTypeName), Optional.of(contentsType));
         }
     }
 
@@ -146,8 +144,7 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType)
         if (isBasic()) {
             return mainTypeName.name();
         } // else
-        assert contentsType != null;
-        return "%s<%s>".formatted(mainTypeName, contentsType.name());
+        return "%s<%s>".formatted(mainTypeName, contentsType.orElseThrow().name());
     }
 
     /** Is the type basic (e.g. not a List, Hash or Ref)? */
@@ -175,13 +172,16 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType)
         return !isNotFound();
     }
 
+    // TODO factor out common isType method
     /** Is this an integer? */
     public boolean isInt() {
-        return equals(INT_TYPE);
+        return mainTypeName.name().equalsIgnoreCase(INT.name())
+                && (contentsType.isEmpty() || contentsType.orElseThrow().mainTypeName.equals(NA));
     }
 
     public boolean isFloat() {
-        return equals(FLOAT_TYPE);
+        return mainTypeName.name().equalsIgnoreCase(FLOAT.name())
+                && (contentsType.isEmpty() || contentsType.orElseThrow().mainTypeName.equals(NA));
     }
 
     /**
@@ -197,12 +197,14 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType)
      * @see #isNumeric()
      */
     public boolean isNumber() {
-        return equals(NUMBER_TYPE);
+        return mainTypeName.name().equalsIgnoreCase(NUMBER.name())
+                && (contentsType.isEmpty() || contentsType.orElseThrow().mainTypeName.equals(NA));
     }
 
     /** Is this a String? */
     public boolean isStr() {
-        return equals(STR_TYPE);
+        return mainTypeName.name().equalsIgnoreCase(STR.name())
+                && (contentsType.isEmpty() || contentsType.orElseThrow().mainTypeName.equals(NA));
     }
 
     /**
@@ -211,15 +213,15 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType)
      */
     public boolean coercesTo(@Nonnull Type other) {
         // contents type of null can coerce to anything
-        // TODO 0.23.1 change contents type of null to NA
         if (this.isBasic() && other.isBasic()) {
             return typesCoerce(mainTypeName, other.mainTypeName);
         } else if (!this.isBasic() && !other.isBasic()) {
-            assert other.contentsType != null; // to suppress IDE warnings
             return typesCoerce(mainTypeName, other.mainTypeName)
-                    && (contentsType == null || contentsType.coercesTo(other.contentsType));
+                    && (contentsType.isEmpty()
+                        || contentsType.orElse(NA_TYPE).coercesTo(other.contentsType.orElse(NA_TYPE)));
         } else if (other.isList()) {
-            return other.contentsType == null || typesCoerce(other.contentsType.mainTypeName, mainTypeName);
+            return other.contentsType.isEmpty()
+                    || typesCoerce(other.contentsType.orElse(NA_TYPE).mainTypeName, mainTypeName);
         } else {
             // mismatch (e.g. list to a string, or int to a list)
             return false;
@@ -227,7 +229,7 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType)
     }
 
     /** Returns the Type of the contents (e.g. a List&lt;str&gt; would return a str type) */
-    public @Nullable Type asContentsType() {
+    public @Nonnull Optional<Type> asContentsType() {
         return contentsType;
     }
 
@@ -257,8 +259,8 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nullable Type contentsType)
                 // an INT coerces to a FLOAT
                 || (first.equals(INT_TYPE.mainTypeName) && other.equals(FLOAT_TYPE.mainTypeName))
                 // a NUMBER coerces to an INT or a FLOAT
-                || (first.equals(NUMBER_TYPE.mainTypeName) && (new Type(other, null)).isNumeric())
+                || (first.equals(NUMBER_TYPE.mainTypeName) && (new Type(other, Optional.empty())).isNumeric())
                 // an INT or a FLOAT coerces to a NUMBER
-                || ((new Type(first, null)).isNumeric() && other.equals(NUMBER_TYPE.mainTypeName));
+                || ((new Type(first, Optional.empty())).isNumeric() && other.equals(NUMBER_TYPE.mainTypeName));
     }
 }

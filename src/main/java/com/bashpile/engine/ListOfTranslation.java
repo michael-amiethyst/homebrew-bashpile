@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -33,7 +34,7 @@ public class ListOfTranslation extends Translation {
     public ListOfTranslation(@Nonnull Type type) {
         super(
                 "()",
-                new Type(Type.TypeNames.LIST, type),
+                new Type(Type.TypeNames.LIST, Optional.of(type)),
                 NORMAL
         );
     }

@@ -1,5 +1,13 @@
 package com.bashpile.engine;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
@@ -7,15 +15,7 @@ import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
-import static com.bashpile.Asserts.*;
+import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -23,7 +23,6 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
  */
-// TODO not 0.22.0 refactor to combine with ListOfTranslation
 public class Translation {
 
     // static constants
