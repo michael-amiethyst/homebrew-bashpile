@@ -16,7 +16,6 @@ import static com.bashpile.engine.strongtypes.Type.TypeNames.*;
 /**
  * Basically a pair of SimpleTypes.  The secondary type is for the type of the contents for a list, hash or ref.
  */
-// TODO 0.23.1 - Fix GHA by using custom Docker image (with shfmt, etc)
 public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> contentsType) {
 
     // static section
