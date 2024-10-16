@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpc.bps on 2024-09-24T12:03:12.221107-04:00[America/New_York] (timestamp 1727193792221)
+# Generated from bin/bpc.bps on 2024-10-16T15:05:07.055529-04:00[America/New_York] (timestamp 1729105507055)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -52,7 +52,7 @@ if [ -n "${1+default}" ] && [ "$1" == "-" ]; then
   commandMode=true
   shift
 fi
-if [ -n "${1+default}" ] && [ "${commandMode}" == "false" ] && [ "${translatedFilename}" == "${DEFAULT_FILENAME}" ]; then
+if [ -n "${1+default}" ] && ! ${commandMode} && [ "${translatedFilename}" == "${DEFAULT_FILENAME}" ]; then
   # assign statement, Bashpile line 32
   declare dir
   dir=$(dirname "$1")

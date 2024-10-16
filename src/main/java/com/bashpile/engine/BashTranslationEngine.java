@@ -187,7 +187,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         LOG.trace("In conditionalStatement");
         // handle initial if
-        Translation guard = visitGuardingExpression(ctx.Not(), requireNonNull(visitor).visit(ctx.expression()));
+        Translation guard = visitGuardingExpression(requireNonNull(visitor).visit(ctx.expression()));
         Translation ifBlockStatements;
         try (var ignored = typeStack.pushFrame()) {
             ifBlockStatements = visitBodyStatements(ctx.indentedStatements(0).statement(), visitor);
@@ -197,7 +197,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final AtomicReference<String> elseIfBlock = new AtomicReference<>();
         elseIfBlock.set("");
         ctx.elseIfClauses().forEach(elseIfCtx -> {
-            Translation guard2 = visitGuardingExpression(elseIfCtx.Not(), visitor.visit(elseIfCtx.expression()));
+            Translation guard2 = visitGuardingExpression(visitor.visit(elseIfCtx.expression()));
             Translation ifBlockStatements2;
             try (var ignored = typeStack.pushFrame()) {
                 ifBlockStatements2 = visitBodyStatements(elseIfCtx.indentedStatements().statement(), visitor);

@@ -31,6 +31,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
     companion object {
 
         private val unaryPrimaryTranslations = mapOf(
+            Pair("not", "!"),
             Pair("unset", "-z"),
             Pair("isset", "-n"),
             Pair("isEmpty", "-z"),
@@ -305,8 +306,16 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             modifiedValueBeingTested = StringUtils.removeEnd(modifiedValueBeingTested, "}")
             valueBeingTested = valueBeingTested.body("\${$modifiedValueBeingTested+default}")
         }
+
+        // translate Bashpile token to Bash and insert.  Special handling for ! ("not")
         primary = unaryPrimaryTranslations.getOrDefault(primary, primary)
-        val body = "[ $primary \"${valueBeingTested.unquoteBody().body()}\" ]"
+        val body = if (primary != "!") {
+            // put into portable [ ] test expression
+            "[ $primary \"${valueBeingTested.unquoteBody().body()}\" ]"
+        } else {
+            // valueBeingTested will have [ ] if needed
+            "$primary ${valueBeingTested.unquoteBody().body()}"
+        }
         return Translation(valueBeingTested.preamble(), body, Type.STR_TYPE, listOf(CONDITIONAL))
     }
 

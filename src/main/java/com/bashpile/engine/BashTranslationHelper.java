@@ -147,8 +147,7 @@ public class BashTranslationHelper {
     }
 
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
-    /* package */ static Translation visitGuardingExpression(TerminalNode notNode, Translation expressionTranslation) {
-        final Translation not = notNode != null ? toStringTranslation("! ") : UNKNOWN_TRANSLATION;
+    /* package */ static Translation visitGuardingExpression(Translation expressionTranslation) {
         expressionTranslation = Unwinder.unwindAll(expressionTranslation);
         if (expressionTranslation.type().isInt() && expressionTranslation.body().startsWith("$((")) {
             // strip initial $ for (( instead of $((
@@ -160,7 +159,7 @@ public class BashTranslationHelper {
                     .inlineAsNeeded(Unwinder::unwindAll)
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
-        return not.add(expressionTranslation);
+        return expressionTranslation;
     }
 
     /** Removes escaped newlines and trailing spaces */
