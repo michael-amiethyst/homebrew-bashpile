@@ -732,4 +732,15 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertTrue(results.stdin().contains("]; };"));
         assertEquals("true\n", results.stdout());
     }
+
+    @Test
+    @Order(430)
+    public void printConditionalWorks() {
+        final String bashpileScript = """
+                print(4 <= 5)
+                """;
+        final ExecutionResults results = runText(bashpileScript);
+        assertSuccessfulExitCode(results);
+        assertEquals("true\n", results.stdout());
+    }
 }

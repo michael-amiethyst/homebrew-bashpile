@@ -147,11 +147,17 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             .map{ tr: Translation -> tr.inlineAsNeeded { unwindNested(it) } }
             .map { tr: Translation -> unwindNested(tr) }
             .map { tr: Translation ->
-                if (tr.isBasicType && !tr.body().contains("$@") && !tr.body().contains("[@]")) {
+                if (tr.isBasicType && !tr.isListAccess && !tr.metadata().contains(CONDITIONAL)) {
                     tr.body("""
-                            printf -- "${tr.unquoteBody().body()}\n"
-                            
-                            """.trimIndent()
+                        printf -- "${tr.unquoteBody().body()}\n"
+                        
+                        """.trimIndent()
+                    )
+                } else if (tr.isBasicType && !tr.isListAccess /* and a CONDITIONAL */) {
+                    // body will already contain [ ... -eq 1 ]
+                    tr.body("""
+                        if ${tr.unquoteBody().body()}; then printf -- "true"; else printf -- "false"; fi
+                        """.trimIndent()
                     )
                 } else {
                     // list or contains $@ or [@]

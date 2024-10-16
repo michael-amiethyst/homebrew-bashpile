@@ -316,6 +316,11 @@ public class Translation {
         return this instanceof ListOfTranslation;
     }
 
+    /** Does this expand a list or reference all elements of a list? */
+    public boolean isListAccess() {
+        return body().contains("$@") || body().contains("[@]");
+    }
+
     /** Is the type UNKNOWN? */
     public boolean isUnknown() {
         return type.isUnknown();
