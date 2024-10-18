@@ -101,9 +101,11 @@ public class Asserts {
             final int contextStartLine) {
 
         // check if the argument lengths match
-        boolean typesCoerce = actualTypes.size() == expectedTypes.size();
+        boolean typesCoerce = expectedTypes.size() == actualTypes.size();
         if (!typesCoerce) {
-            throw new TypeError("Mismatch of type list lengths for " + functionName, contextStartLine);
+            final String message = "Mismatch of type list lengths for function %s.  Expected %d arguments and found %d"
+                    .formatted(functionName, expectedTypes.size(), actualTypes.size());
+            throw new TypeError(message, contextStartLine);
         }
 
         // lazily iterate over both lists looking for a non-match

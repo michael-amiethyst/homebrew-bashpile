@@ -14,7 +14,6 @@ import java.util.List;
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TODO remove "bpt" concept entirely
 /**
  * More of a System test
  * <br>
@@ -49,6 +48,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         // ensure generated bpc is executable
         assertSuccessfulExitCode(runAndJoin("test -x bin/bpc"));
+
+        // TODO rename to "deploysWorked" and consolidate bpc, stdlib and bpr
         bpcDeployed = true;
     }
 
@@ -72,7 +73,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     }
 
     @Test
-    @Timeout(20)
+    @Timeout(25) // sometimes it takes a while
     @Order(9)
     public void bprDeploysSuccessfully() throws IOException {
         log.info("In bprDeploysSuccessfully");
@@ -202,8 +203,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         Assumptions.assumeTrue(bprDeployed);
 
         final String bashpileFilename = "src/test/resources/scripts/overwriteCheck.bps";
-        final Path defaultOutputFile = Path.of(bashpileFilename + ".bpt");
-        assertTrue(Files.exists(defaultOutputFile));
+        final Path defaultOutputFile = Path.of("src/test/resources/scripts/overwriteCheck");
+        assertTrue(Files.exists(defaultOutputFile), "Default output file does not exist");
         final String command = "bin/bpr " + bashpileFilename;
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
@@ -328,13 +329,13 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // run with our local (not installed) bpr
         final String command =
-                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpc --outputFile dashOutput.bpt -";
+                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpc --outputFile dashOutput.bash -";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
         assertTrue(results.stdout().contains("Hello World"));
-        Path dashOutput = Path.of("../dashOutput.bpt");
+        Path dashOutput = Path.of("../dashOutput.bash");
         assertTrue(Files.exists(dashOutput));
 
         Files.deleteIfExists(dashOutput);

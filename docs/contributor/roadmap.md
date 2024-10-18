@@ -3,15 +3,17 @@
    1. do while loop
    2. C style for loop
    3. foreach loop
-2. Hashes
-3. Refs
-4. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
+2. Logging / debug so that we can debug functions that return strings
+3. Syntax highlighting in Intellij
+4. Hashes
+5. Refs
+6. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
     1. Maybe a 'guard' block where set +u/set -u is automatic (stop checking for unset)
     2. Or use default so checks for set work with -u in effect
-5. String interpolation with $[]
+7. String interpolation with $[]
    1. have bpr use arguments, arguments[all] (args/argv alias?)
-6. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
-7. Enforce 'readonly' 
+8. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+9. Enforce 'readonly' 
    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # Fixes and improvements
@@ -38,7 +40,7 @@
 * `expr AND expr` like Bash's `(expr;expr)` without the subshell (maybe)
 
 # much later
-* tooling (IDE integrations, code highlighting)
+* tooling (IDE integrations, more syntax highlighting)
 * native run instead of just on bash
 
 # maybe

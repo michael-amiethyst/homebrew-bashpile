@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpc.bps on 2024-10-16T15:05:07.055529-04:00[America/New_York] (timestamp 1729105507055)
+# Generated from bin/bpc.bps on 2024-10-18T12:02:33.563818-04:00[America/New_York] (timestamp 1729267353563)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -17,7 +17,7 @@ opts=$(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
 # assign statement, Bashpile line 8
 declare DEFAULT_FILENAME
-DEFAULT_FILENAME="command.bpt"
+DEFAULT_FILENAME="command.bash"
 # assign statement, Bashpile line 9
 declare translatedFilename
 translatedFilename="${DEFAULT_FILENAME}"

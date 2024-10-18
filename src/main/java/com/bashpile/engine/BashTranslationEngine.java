@@ -346,7 +346,9 @@ public class BashTranslationEngine implements TranslationEngine {
         rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(Unwinder::unwindNested);
         rhsExprTranslation = unwindNested(rhsExprTranslation);
         final Type rhsActualType = rhsExprTranslation.type();
-        Asserts.assertTypesCoerce(lhsExpectedType, rhsActualType, lhsVariableName, lineNumber(ctx));
+        if (!rhsActualType.isEmpty()) {
+            Asserts.assertTypesCoerce(lhsExpectedType, rhsActualType, lhsVariableName, lineNumber(ctx));
+        } // TODO import impl - rhs is empty on `source`d function calls
 
         // create translations
         final Translation comment = createCommentTranslation("reassign statement", lineNumber(ctx));
@@ -477,7 +479,9 @@ public class BashTranslationEngine implements TranslationEngine {
         // check types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(id);
         final List<Type> actualTypes = argumentTranslationsList.stream().map(Translation::type).toList();
-        Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, id, lineNumber(ctx));
+        if (!expectedTypes.isEmpty()) {
+            Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, id, lineNumber(ctx));
+        } // TODO "imports" impl - ensure expectedTypes interfaces with the planned import system
 
         // extract argText and preambles from argumentTranslations
         // empty list or ' arg1Text arg2Text etc.'

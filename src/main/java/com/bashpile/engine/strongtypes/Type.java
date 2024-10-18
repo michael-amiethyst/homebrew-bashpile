@@ -161,6 +161,10 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> cont
         return equals(UNKNOWN_TYPE);
     }
 
+    public boolean isEmpty() {
+        return equals(EMPTY_TYPE);
+    }
+
     /** Is this NOT_FOUND? */
     public boolean isNotFound() {
         return equals(NOT_FOUND_TYPE);

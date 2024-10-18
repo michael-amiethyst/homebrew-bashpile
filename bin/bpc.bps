@@ -6,7 +6,7 @@ assertGnuGetopt()
 // getopt
 opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
-DEFAULT_FILENAME: str = "command.bpt"
+DEFAULT_FILENAME: str = "command.bash"
 translatedFilename: str = DEFAULT_FILENAME
 commandMode: bool = false
 while true:
