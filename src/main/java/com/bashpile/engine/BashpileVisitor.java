@@ -1,8 +1,12 @@
 package com.bashpile.engine;
 
+import java.util.Optional;
+import java.util.stream.IntStream;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
-import com.bashpile.engine.strongtypes.SimpleType;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
@@ -12,11 +16,6 @@ import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.Optional;
-import java.util.stream.IntStream;
 
 import static com.bashpile.engine.Translation.NEWLINE;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
@@ -231,8 +230,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         if (number == null) {
             throw new BashpileUncheckedAssertionException("No number in number expression.  Bad parse?");
         }
-        final SimpleType simpleType = SimpleType.parseNumberString(number.getText());
-        return new Translation(ctx.getText(), Type.of(simpleType), NORMAL);
+        final Type simpleType = Type.parseNumberString(number.getText());
+        return new Translation(ctx.getText(), simpleType, NORMAL);
     }
 
     /**

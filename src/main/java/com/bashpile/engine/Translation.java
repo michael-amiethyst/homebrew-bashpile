@@ -1,5 +1,13 @@
 package com.bashpile.engine;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
@@ -7,15 +15,7 @@ import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
-import static com.bashpile.Asserts.*;
+import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -23,7 +23,6 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
  */
-// TODO not 0.22.0 refactor to combine with ListOfTranslation
 public class Translation {
 
     // static constants
@@ -156,7 +155,7 @@ public class Translation {
         Type nextType = type;
         nextType = nextType.isUnknown() ? other.type : nextType;
         // favor INT or FLOAT over NUMBER
-        nextType = nextType.isGenericNumberType() && other.type.isNumeric() ? other.type : nextType;
+        nextType = nextType.isNumber() && other.type.isNumeric() ? other.type : nextType;
         return new Translation(preamble + other.preamble, body + other.body, nextType, nextMetadata);
     }
 
@@ -184,13 +183,6 @@ public class Translation {
      */
     public boolean hasPreamble() {
         return !isEmpty(preamble);
-    }
-
-    /**
-     * Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax.
-     */
-    public @Nonnull Translation lambdaPreambleLines(@Nonnull final Function<String, String> lambda) {
-        return new Translation(lambdaAllLines(preamble, lambda), body, type, metadata);
     }
 
     /**
@@ -300,14 +292,6 @@ public class Translation {
         return this;
     }
 
-    /**
-     * Ensures body has no empty or blank lines and is not the empty string
-     */
-    public @Nonnull Translation assertNoBlankLinesInBody() {
-        assertNoBlankLines(body);
-        return this;
-    }
-
     // type and typeMetadata instance methods
 
     /**
@@ -330,6 +314,11 @@ public class Translation {
     /** Is this a ListOf translation?  (E.g. created by the syntax `listOf(...)`)*/
     public boolean isListOf() {
         return this instanceof ListOfTranslation;
+    }
+
+    /** Does this expand a list or reference all elements of a list? */
+    public boolean isListAccess() {
+        return body().contains("$@") || body().contains("[@]");
     }
 
     /** Is the type UNKNOWN? */

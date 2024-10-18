@@ -39,7 +39,11 @@ public class BashpileMainHelper {
 
     // class methods
 
-    /** Returns the translation */
+    /**
+     * Returns the translation.
+     * @throws IOException on bad input file.
+     * @throws BashpileUncheckedAssertionException on shellcheck errors.
+     */
     @VisibleForTesting
     public static @Nonnull String transpileNioFile(@Nonnull Path inputFile) throws IOException {
         final InputStream inputStream = getSourceInputStream(inputFile);
@@ -49,7 +53,11 @@ public class BashpileMainHelper {
         return assertNoShellcheckWarnings(formatted);
     }
 
-    /** Returns the translation */
+    /**
+     * Returns the translation.
+     * @throws IOException on bad input file.
+     * @throws BashpileUncheckedAssertionException on shellcheck errors.
+     */
     @VisibleForTesting
     public static @Nonnull String transpileScript(@Nonnull String bashpileScript) throws IOException {
         final InputStream inputStream = IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
@@ -75,7 +83,7 @@ public class BashpileMainHelper {
         final Path filename = path.getFileName();
         while(!Files.exists(path) && path.getParent() != null && path.getParent().getParent() != null) {
             path = path.getParent().getParent().resolve(filename);
-            LOG.trace("Looking for path " + path);
+            LOG.trace("Looking for path {}", path);
         }
         if (Files.exists(path)) {
             return path;

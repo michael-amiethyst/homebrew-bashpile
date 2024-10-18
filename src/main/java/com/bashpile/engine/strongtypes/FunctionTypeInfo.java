@@ -12,4 +12,8 @@ public record FunctionTypeInfo(List<Type> parameterTypes, Type returnType) {
     public boolean returnsStr() {
         return returnType.isStr();
     }
+
+    public boolean isEmpty() {
+        return returnType == Type.EMPTY_TYPE;
+    }
 }

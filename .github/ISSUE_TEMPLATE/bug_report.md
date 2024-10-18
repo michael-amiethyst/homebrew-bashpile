@@ -2,8 +2,8 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: ''
-assignees: ''
+labels: 'bug'
+assignees: 'michael-amiethyst'
 
 ---
 
@@ -23,9 +23,10 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
+**Additional Information:**
+ - Bashpile Version: [e.g. 0.20.0]
  - OS: [e.g. Ubuntu, OSX, Ubuntu on WSL]
- - Version [e.g. 22]
+ - OS Version: [e.g. 22]
 
 **Additional context**
 Add any other context about the problem here.

@@ -8,7 +8,6 @@ import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.Translation.toStringTranslation
 import com.bashpile.engine.Unwinder.Companion.unwindNested
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
-import com.bashpile.engine.strongtypes.SimpleType
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
 import com.bashpile.engine.strongtypes.Type
 import com.bashpile.engine.strongtypes.TypeStack
@@ -32,6 +31,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
     companion object {
 
         private val unaryPrimaryTranslations = mapOf(
+            Pair("not", "!"),
             Pair("unset", "-z"),
             Pair("isset", "-n"),
             Pair("isEmpty", "-z"),
@@ -66,8 +66,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
         // register function param types and return type
         val typeList = ctx.paramaters().typedId()
-            .map { SimpleType.valueOf(it!!) }
-            .map { Type.of(it) }
+            .map { Type.valueOf(it.type()!!) }
             .toList()
         val retType = if (ctx.type() != null) { Type.valueOf(ctx.type()) } else Type.NA_TYPE
         typeStack.putFunctionTypes(functionName, FunctionTypeInfo(typeList, retType))
@@ -148,11 +147,17 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             .map{ tr: Translation -> tr.inlineAsNeeded { unwindNested(it) } }
             .map { tr: Translation -> unwindNested(tr) }
             .map { tr: Translation ->
-                if (tr.isBasicType && !tr.body().contains("$@") && !tr.body().contains("[@]")) {
+                if (tr.isBasicType && !tr.isListAccess && !tr.metadata().contains(CONDITIONAL)) {
                     tr.body("""
-                            printf -- "${tr.unquoteBody().body()}\n"
-                            
-                            """.trimIndent()
+                        printf -- "${tr.unquoteBody().body()}\n"
+                        
+                        """.trimIndent()
+                    )
+                } else if (tr.isBasicType && !tr.isListAccess /* and a CONDITIONAL */) {
+                    // body will already contain [ ... -eq 1 ]
+                    tr.body("""
+                        if ${tr.unquoteBody().body()}; then printf -- "true"; else printf -- "false"; fi
+                        """.trimIndent()
                     )
                 } else {
                     // list or contains $@ or [@]
@@ -307,8 +312,16 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             modifiedValueBeingTested = StringUtils.removeEnd(modifiedValueBeingTested, "}")
             valueBeingTested = valueBeingTested.body("\${$modifiedValueBeingTested+default}")
         }
+
+        // translate Bashpile token to Bash and insert.  Special handling for ! ("not")
         primary = unaryPrimaryTranslations.getOrDefault(primary, primary)
-        val body = "[ $primary \"${valueBeingTested.unquoteBody().body()}\" ]"
+        val body = if (primary != "!") {
+            // put into portable [ ] test expression
+            "[ $primary \"${valueBeingTested.unquoteBody().body()}\" ]"
+        } else {
+            // valueBeingTested will have [ ] if needed
+            "$primary ${valueBeingTested.unquoteBody().body()}"
+        }
         return Translation(valueBeingTested.preamble(), body, Type.STR_TYPE, listOf(CONDITIONAL))
     }
 

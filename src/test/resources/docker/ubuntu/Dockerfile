@@ -1,17 +1,17 @@
-FROM debian
+FROM ubuntu:24.10
 LABEL authors="Michael Amiethyst"
 
 # test with while Docker Desktop is running in the background
-# docker build -t "michaelamiethystbashpile/debian" src/test/resources/docker/debian
+# docker build -t "michaelamiethystbashpile/bashpile" src/test/resources/docker/ubuntu
 # or
-# docker build --progress=plain --no-cache -t "michaelamiethystbashpile/debian" src/test/resources/docker/debian
-# docker run --rm -it michaelamiethystbashpile/debian
+# docker build --progress=plain --no-cache -t "michaelamiethystbashpile/bashpile" src/test/resources/docker/ubuntu
+# docker run --rm -it michaelamiethystbashpile/bashpile
 
 # Use bash as default shell for RUN commands
 SHELL ["/bin/bash", "-c"]
 
 # Setup system and user
-RUN apt update && apt upgrade && apt-get -y install curl git build-essential procps
+RUN apt update -y && apt upgrade -y && apt-get -y install curl git build-essential procps
 RUN useradd -ms /bin/bash dockeruser
 RUN mkdir /home/linuxbrew
 RUN chown -R dockeruser /home/linuxbrew

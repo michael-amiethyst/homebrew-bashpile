@@ -11,3 +11,12 @@ function assertGnuGetopt():
 
 function createTempFile():
     return #(mktemp)
+
+function toBashpileOutputFile(inFilename: str) -> str:
+    // TODO figure out why sed's first \. must be double escaped
+    // TODO use gsed, ensure in Docker images and brew Formula requirements
+    outFilename: str = #(printf -- "$inFilename" | sed -E 's/\\..[^.]?[^.]?[^.]?[^.]?$//g')
+    if inFilename == outFilename:
+        // no match above
+        outFilename = inFilename + ".bash"
+    return outFilename

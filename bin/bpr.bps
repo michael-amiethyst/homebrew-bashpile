@@ -11,7 +11,8 @@ assertGnuGetopt()
 // getopt
 opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
-translatedFilename: str = "command.bpt"
+DEFAULT_OUTPUT_FILENAME: readonly str = #(mktemp)
+translatedFilename: str = DEFAULT_OUTPUT_FILENAME
 commandMode: bool = false
 while true:
     switch arguments[1]:
@@ -47,8 +48,8 @@ function runTranslation(translatedFilename: str, args: list<str>)
 
 // last line of the jar's output is the generated Bash script
 if not commandMode:
-    if translatedFilename == "command.bpt":
-        translatedFilename = arguments[1] + ".bpt"
+    if translatedFilename == DEFAULT_OUTPUT_FILENAME:
+        translatedFilename = toBashpileOutputFile(arguments[1])
         if fileExists translatedFilename:
             print("Will not overwrite " + translatedFilename)
             exit 1

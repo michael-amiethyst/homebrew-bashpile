@@ -182,7 +182,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
 
     @Test
     @Order(91)
-    public void ifNotCommandWorks() {
+    public void ifNotCommandWorksWithShellString() {
         final ExecutionResults results = runText("""
                 if not #((which ls 1>/dev/null)):
                     print("false")
@@ -190,6 +190,32 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")""");
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(92)
+    public void ifNotCommandWorksWithBoolean() {
+        final ExecutionResults results = runText("""
+                theTest: bool = false
+                if not theTest:
+                    print("false")
+                else:
+                    print("true")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(93)
+    public void ifNotCommandWorksWithIsSetAndBoolean() {
+        final ExecutionResults results = runText("""
+                theTest: bool = false
+                if isset arguments[1] and not theTest:
+                    print("false")
+                else:
+                    print("true")""", "arg1");
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
     }
 
     @Test
@@ -704,6 +730,17 @@ public class ConditionalsBashpileTest extends BashpileTest {
         // output should be like:
         // if true && { [ -n "${1+default}" ] && [ "$1" == "-" ]; }; then ...
         assertTrue(results.stdin().contains("]; };"));
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(430)
+    public void printConditionalWorks() {
+        final String bashpileScript = """
+                print(4 <= 5)
+                """;
+        final ExecutionResults results = runText(bashpileScript);
+        assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
 }

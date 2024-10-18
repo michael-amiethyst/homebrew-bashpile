@@ -6,7 +6,7 @@
 
     <groupId>com.bashpile</groupId>
     <artifactId>bashpile</artifactId>
-    <version>0.23.0</version>
+    <version>0.23.1</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -218,6 +218,7 @@
                     </excludes>
                     <!-- skips surefire tests without skipping failsafe tests.
                              Property value seems to magically default to false -->
+                    <!--suppress UnresolvedMavenProperty -->
                     <skipTests>${skip.surefire.tests}</skipTests>
                 </configuration>
             </plugin>
@@ -256,6 +257,7 @@
                             <includes>
                                 <include>**/*IntegrationTest</include>
                             </includes>
+                            <!--suppress UnresolvedMavenProperty -->
                             <skip>${skip.failsafe.tests}</skip>
                         </configuration>
                     </execution>

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/stdlib.bps on 2024-09-13T13:04:00.665901-04:00[America/New_York] (timestamp 1726247040665)
+# Generated from bin/stdlib.bps on 2024-10-18T12:02:39.919159-04:00[America/New_York] (timestamp 1729267359919)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -27,4 +27,17 @@ createTempFile() {
   # no parameters to function
   # return statement, Bashpile line 12
   mktemp
+}
+# function declaration, Bashpile line 14
+toBashpileOutputFile() {
+  declare -r inFilename=$1
+  # assign statement, Bashpile line 17
+  declare outFilename
+  outFilename=$(printf -- "$inFilename" | sed -E 's/\..[^.]?[^.]?[^.]?[^.]?$//g')
+  if [ "${inFilename}" == "${outFilename}" ]; then
+    # reassign statement, Bashpile line 20
+    outFilename=${inFilename}.bash
+  fi
+  # return statement, Bashpile line 21
+  printf -- "${outFilename}"
 }
