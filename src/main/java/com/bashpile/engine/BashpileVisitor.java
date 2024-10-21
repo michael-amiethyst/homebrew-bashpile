@@ -230,8 +230,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         if (number == null) {
             throw new BashpileUncheckedAssertionException("No number in number expression.  Bad parse?");
         }
-        final Type simpleType = Type.parseNumberString(number.getText());
-        return new Translation(ctx.getText(), simpleType, NORMAL);
+        final Type type = Type.parseNumberString(number.getText());
+        return new Translation(ctx.getText(), type, NORMAL);
     }
 
     /**
