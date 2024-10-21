@@ -1,16 +1,16 @@
 package com.bashpile.engine;
 
-import com.bashpile.Asserts;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.bashpile.engine.strongtypes.SimpleType.LIST;
+import static com.bashpile.Asserts.assertNotEmpty;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /** Subclass for listOf(...) where we have the translations of the list elements */
@@ -19,8 +19,7 @@ public class ListOfTranslation extends Translation {
     // static section
 
     public static @Nonnull ListOfTranslation of(@Nonnull final List<Translation> listIn) {
-        Asserts.assertNotEmpty(listIn);
-        final ListOfTranslation ret = new ListOfTranslation(listIn.get(0).type());
+        final ListOfTranslation ret = new ListOfTranslation(assertNotEmpty(listIn).get(0).type());
         return ret.addAll(listIn);
     }
 
@@ -35,7 +34,7 @@ public class ListOfTranslation extends Translation {
     public ListOfTranslation(@Nonnull Type type) {
         super(
                 "()",
-                new Type(LIST, type.mainType().isBasic() ? type.mainType() : type.contentsType()),
+                new Type(Type.TypeNames.LIST, Optional.of(type)),
                 NORMAL
         );
     }
@@ -75,12 +74,6 @@ public class ListOfTranslation extends Translation {
     @Override
     public boolean hasPreamble() {
         return translations.stream().map(Translation::hasPreamble).reduce(true, (a, b) -> a && b);
-    }
-
-    @Nonnull
-    @Override
-    public Translation lambdaPreambleLines(@Nonnull Function<String, String> lambda) {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
 
     @Nonnull
@@ -140,12 +133,6 @@ public class ListOfTranslation extends Translation {
     @Nonnull
     @Override
     public Translation assertParagraphBody() {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
-    }
-
-    @Nonnull
-    @Override
-    public Translation assertNoBlankLinesInBody() {
         throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
 

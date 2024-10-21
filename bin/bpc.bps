@@ -1,15 +1,12 @@
 #!/usr/bin/env bpr
 
-// TODO factor this out into a library
-// check for GNU getopt vs FreeBSD getopt
-if #(getopt --help) == " --":
-    print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...")
-    exit 2
+source ${BASHPILE_HOME:=.}/bin/stdlib || source ${BASHPILE_HOME:=.}/stdlib
+assertGnuGetopt()
 
 // getopt
 opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
-DEFAULT_FILENAME: str = "command.bpt"
+DEFAULT_FILENAME: str = "command.bash"
 translatedFilename: str = DEFAULT_FILENAME
 commandMode: bool = false
 while true:
@@ -32,8 +29,7 @@ if isset arguments[1] and arguments[1] == "-":
     shift
 
 // handle arguments
-// TODO find why this isn't working: if isset arguments[1] and not commandMode:
-if isset arguments[1] and commandMode == false and translatedFilename == DEFAULT_FILENAME:
+if isset arguments[1] and not commandMode and translatedFilename == DEFAULT_FILENAME:
     dir: str = #(dirname "$1")
     filename: str = #(basename "$1" .bps)
     translatedFilename = dir + "/" + filename

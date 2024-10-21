@@ -11,7 +11,7 @@ statement
     | Function Id paramaters tags? (Arrow type)?
                             Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon functionBlock           # anonymousBlockStatement
-    | If Not? expression Colon indentedStatements
+    | If expression Colon indentedStatements
          (elseIfClauses)*
          (Else Colon indentedStatements)?       # conditionalStatement
     | Switch expression Colon INDENT
@@ -47,8 +47,10 @@ returnPsudoStatement: Return expression? Newline;
 // in operator precedence order, modeled on Java precedence at https://introcs.cs.princeton.edu/java/11precedence/
 expression
     : listAccess                        # listAccessExpression
-    | expression op=(Increment | Decrement)     # unaryPostCrementExpression
-    // prefix increment/decrement expressions here
+    | expression op=(Increment | Decrement) # unaryPostCrementExpression
+    | <assoc=right> Minus? Number       # numberExpression // covers the unary '-' as well
+    | <assoc=right> unaryPrimary
+                             expression # unaryPrimaryExpression
     | expression Colon type             # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
@@ -57,7 +59,6 @@ expression
     | expression
          op=(Multiply|Divide|Add|Minus)
                              expression # calculationExpression
-    | unaryPrimary expression           # unaryPrimaryExpression
     | expression binaryPrimary
                              expression # binaryPrimaryExpression
     | expression combiningOperator
@@ -67,7 +68,6 @@ expression
                                         # listOfBuiltinExpression
     // type expressions
     | Bool                              # boolExpression
-    | <assoc=right> Minus? Number       # numberExpression
     | String                            # stringExpression
     | Id                                # idExpression
     ;
@@ -80,7 +80,7 @@ shellStringContents: shellString
                    | ShellStringEscapeSequence;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-unaryPrimary: Isset | Unset | Empty | NotEmpty | FileExists | RegularFileExists | DirectoryExists;
+unaryPrimary: Not | Isset | Unset | Empty | NotEmpty | FileExists | RegularFileExists | DirectoryExists;
 
 // one line means logically equal precidence (e.g. LessThan in the same as MoreThanOrEquals)
 binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals

@@ -22,6 +22,7 @@ import static com.bashpile.shell.BashShell.isWindows;
 /**
  * Helper class for BashpileLexer.
  */
+// TODO find out why bpc bin/bpr.bps runs "type -t commandString:" (trailing colon is incorrect)
 public class Lexers {
 
     /**
