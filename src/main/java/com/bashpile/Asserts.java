@@ -23,23 +23,12 @@ public class Asserts {
     /** Match a line of text with a Linux line ending at the end OR the empty string */
     private static final Pattern TEXT_LINE = Pattern.compile("^[^\n]*$\n|^$");
 
-    private static final Pattern BLANK_LINE = Pattern.compile("(?m)^ *$");
-
     /** Throws up test isn't true with optional message */
     public static boolean assertTrue(final boolean test, @Nullable final String message) {
         if (!test) {
             throw new BashpileUncheckedAssertionException(message != null ? message : "True assert wasn't true");
         } // else
         return true;
-    }
-
-    /** Throws {@code BashpileUncheckedAssertionException} is the Java list has elements */
-     public static <T> @Nonnull List<T> assertEmpty(@Nonnull final List<T> list, @Nullable String message) {
-        if (!list.isEmpty()) {
-            message = message != null ? message : "List had elements when it was expected to be empty";
-            throw new BashpileUncheckedAssertionException(message);
-        }
-        return list;
     }
 
     /** Throws {@code BashpileUncheckedAssertionException} if the Java list is empty */
@@ -79,11 +68,6 @@ public class Asserts {
         }
     }
 
-    /** Ensures that there are no blank lines */
-    public static void assertNoBlankLines(@Nonnull final String str) {
-        assertNoMatch(str, BLANK_LINE);
-    }
-
     /** Checks for a complete match (i.e. whole string must match) */
     public static @Nonnull String assertMatches(@Nonnull final String str, @Nonnull final Pattern regex) {
         final Matcher matchResults = regex.matcher(str);
@@ -92,17 +76,6 @@ public class Asserts {
                     "Str [%s] didn't match regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
         }
         return str;
-    }
-
-    /**
-     * Checks for a complete match (i.e. whole string must match)
-     */
-    public static void assertNoMatch(@Nonnull final String str, @Nonnull final Pattern regex) {
-        final Matcher matchResults = regex.matcher(str);
-        if (matchResults.matches()) {
-            throw new BashpileUncheckedAssertionException(
-                    "Str [%s] matched regex %s".formatted(escapeJava(str), escapeJava(regex.pattern())));
-        }
     }
 
     public static void assertTypesCoerce(
@@ -128,9 +101,11 @@ public class Asserts {
             final int contextStartLine) {
 
         // check if the argument lengths match
-        boolean typesCoerce = actualTypes.size() == expectedTypes.size();
+        boolean typesCoerce = expectedTypes.size() == actualTypes.size();
         if (!typesCoerce) {
-            throw new TypeError("Mismatch of type list lengths for " + functionName, contextStartLine);
+            final String message = "Mismatch of type list lengths for function %s.  Expected %d arguments and found %d"
+                    .formatted(functionName, expectedTypes.size(), actualTypes.size());
+            throw new TypeError(message, contextStartLine);
         }
 
         // lazily iterate over both lists looking for a non-match
@@ -139,7 +114,8 @@ public class Asserts {
             final Type expected = expectedTypes.get(i);
             final Type actual = actualTypes.get(i++);
             // &= operator not needed
-            typesCoerce = actual.coercesTo(expected) || actual.coercesTo(expected.asContentsType());
+            typesCoerce = actual.coercesTo(expected) ||
+                    (expected.isList() && actual.coercesTo(expected.asContentsType().orElseThrow()));
         }
 
         if (!typesCoerce) {
@@ -153,8 +129,7 @@ public class Asserts {
                 message = "'%s' expected %s but found %s".formatted(
                         functionName, expectedType, actualType);
             } else {
-                message = "Tried to add %s to %s with contents of type %s".formatted(
-                        actualType, expectedType.mainType(), expectedType.contentsType());
+                message = "Tried to coerce %s to %s and failed".formatted(actualType, expectedType);
             }
             throw new TypeError(message, contextStartLine);
         }

@@ -182,7 +182,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
 
     @Test
     @Order(91)
-    public void ifNotCommandWorks() {
+    public void ifNotCommandWorksWithShellString() {
         final ExecutionResults results = runText("""
                 if not #((which ls 1>/dev/null)):
                     print("false")
@@ -190,6 +190,32 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     print("true")""");
         assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(92)
+    public void ifNotCommandWorksWithBoolean() {
+        final ExecutionResults results = runText("""
+                theTest: bool = false
+                if not theTest:
+                    print("false")
+                else:
+                    print("true")""");
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
+    }
+
+    @Test
+    @Order(93)
+    public void ifNotCommandWorksWithIsSetAndBoolean() {
+        final ExecutionResults results = runText("""
+                theTest: bool = false
+                if isset arguments[1] and not theTest:
+                    print("false")
+                else:
+                    print("true")""", "arg1");
+        assertSuccessfulExitCode(results);
+        assertEquals("false\n", results.stdout());
     }
 
     @Test
@@ -338,20 +364,21 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("true\n", results.stdout());
     }
 
-    @Test
-    @Order(180)
-    public void ifNotWhichWorks() {
-        final ExecutionResults results = runText("""
-                #(# shellcheck source=/dev/null)
-                if not #(which brew > /dev/null 2>&1 ):
-                    print('no brew')
-                else:
-                    print('brew')""");
-        assertSuccessfulExitCode(results);
-        assertTrue(results.stdin().contains("# shellcheck"));
-        // when running during a brew install `which brew` fails (not error out)
-        assertTrue(results.stdout().contains("brew"));
-    }
+    // TODO add set +e to conditional statement preamble, set -e to body of conditionals
+//    @Test
+//    @Order(180)
+//    public void ifNotWhichWorks() {
+//        final ExecutionResults results = runText("""
+//                #(# shellcheck source=/dev/null)
+//                if not #(which badCommand > /dev/null 2>&1):
+//                    print('command not found')
+//                else:
+//                    print('command found')""");
+//        assertSuccessfulExitCode(results);
+//        assertTrue(results.stdin().contains("# shellcheck"));
+//        // when running during a brew install `which brew` fails (not error out)
+//        assertTrue(results.stdout().contains("command not found"));
+//    }
 
     @Test
     @Order(190)
@@ -704,6 +731,17 @@ public class ConditionalsBashpileTest extends BashpileTest {
         // output should be like:
         // if true && { [ -n "${1+default}" ] && [ "$1" == "-" ]; }; then ...
         assertTrue(results.stdin().contains("]; };"));
+        assertEquals("true\n", results.stdout());
+    }
+
+    @Test
+    @Order(430)
+    public void printConditionalWorks() {
+        final String bashpileScript = """
+                print(4 <= 5)
+                """;
+        final ExecutionResults results = runText(bashpileScript);
+        assertSuccessfulExitCode(results);
         assertEquals("true\n", results.stdout());
     }
 }

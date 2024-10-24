@@ -2,10 +2,10 @@ FROM debian
 LABEL authors="Michael Amiethyst"
 
 # test with while Docker Desktop is running in the background
-# docker build -t "debian-bashpile" src/test/resources/docker/debian
+# docker build -t "michaelamiethystbashpile/debian-safe" src/test/resources/docker/debian/safe
 # or
-# docker build --progress=plain --no-cache -t "debian-bashpile" src/test/resources/docker/debian
-# docker run --rm -it debian-bashpile
+# docker build --progress=plain --no-cache -t "michaelamiethystbashpile/debian-safe" src/test/resources/docker/debian/safe
+# docker run --rm -it michaelamiethystbashpile/debian-safe
 
 
 # Setup system and user
