@@ -2,6 +2,7 @@ package com.bashpile.engine
 
 import com.bashpile.engine.Unwinder.Companion.unwindAll
 import com.bashpile.engine.Unwinder.Companion.unwindNested
+import com.bashpile.engine.strongtypes.TranslationMetadata.INLINE
 import com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING_OFTEN
 import com.bashpile.engine.strongtypes.Type
 import org.junit.jupiter.api.*
@@ -51,5 +52,16 @@ class UnwinderTest {
             tr.preamble().contains("$(bc <<< \"$(circleArea \"\${r1}\")\n"),
             "Mismatched inner parens"
         )
+    }
+
+    // unwind nested section
+
+    @Test
+    @Order(30)
+    fun unwindNestedWithoutParenthesisWorks() {
+        var tr = Translation("which badCommand > /dev/null 2>&1", Type.BOOL_TYPE, INLINE)
+        tr = unwindNested(tr)
+        Assertions.assertFalse(tr.body().contains("})"), "Bad parenthesis found")
+        Assertions.assertTrue(tr.metadata().contains(INLINE))
     }
 }

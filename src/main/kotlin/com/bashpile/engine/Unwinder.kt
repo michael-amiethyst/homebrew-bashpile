@@ -195,6 +195,7 @@ class Unwinder {
             val exitCodeName = "__bp_exitCode${subshellWorkaroundCounter++}"
 
             // create 5 lines of translations
+            // TODO add assert that tr.body has two $('s in it
             val subcomment = Translation.toStringTranslation("## unnest for ${tr.body()}\n")
             val export = Translation.toStringTranslation("export $subshellReturn\n")
             val assign = Translation.toStringTranslation("$subshellReturn=${tr.body()}\n")
