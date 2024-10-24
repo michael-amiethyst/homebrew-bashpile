@@ -114,7 +114,8 @@ public class Asserts {
             final Type expected = expectedTypes.get(i);
             final Type actual = actualTypes.get(i++);
             // &= operator not needed
-            typesCoerce = actual.coercesTo(expected);
+            typesCoerce = actual.coercesTo(expected) ||
+                    (expected.isList() && actual.coercesTo(expected.asContentsType().orElseThrow()));
         }
 
         if (!typesCoerce) {

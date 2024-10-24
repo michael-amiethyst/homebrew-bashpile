@@ -2,6 +2,7 @@ package com.bashpile.engine.strongtypes;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -212,6 +213,8 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> cont
 
     /**
      * Checks if this type can coerce to <code>other</code>.
+     * str does not coerce to List&lt;str&gt;.  That logic is in Asserts.
+     * @see Asserts#assertTypesCoerce(List, List, String, int)
      * @see <a href=https://developer.mozilla.org/en-US/docs/Glossary/Type_coercion>Type Coercion</a>
      */
     public boolean coercesTo(@Nonnull Type other) {
@@ -222,9 +225,6 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> cont
             return typesCoerce(mainTypeName, other.mainTypeName)
                     && (contentsType.isEmpty()
                         || contentsType.orElse(NA_TYPE).coercesTo(other.contentsType.orElse(NA_TYPE)));
-        } else if (other.isList()) {
-            return other.contentsType.isEmpty()
-                    || typesCoerce(other.contentsType.orElse(NA_TYPE).mainTypeName, mainTypeName);
         } else {
             // mismatch (e.g. list to a string, or int to a list)
             return false;
