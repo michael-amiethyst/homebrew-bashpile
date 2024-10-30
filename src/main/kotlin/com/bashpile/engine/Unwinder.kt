@@ -32,6 +32,11 @@ class Unwinder {
         private var subshellWorkaroundCounter = 0
         private val LOG = LogManager.getLogger(Unwinder::class)
 
+        /**
+         * For when [tr] is going into a command substitution or test ('[' ... ']'].
+         *
+         * A test will also disregard a failing exit code.
+         */
         @JvmStatic
         fun unwindAll(tr: Translation): Translation {
             var ret = tr
@@ -45,6 +50,14 @@ class Unwinder {
         fun unwindNested(tr: Translation): Translation {
             var ret = tr
             while (NESTED_COMMAND_SUBSTITUTION.matcher(ret.body()).find()) {
+                // assert that tr.body has two $('s in it; check that unwind is actually needed
+                val firstCommandSubstitutionIndex = tr.body().indexOf("$(")
+                Asserts.assertFalse(firstCommandSubstitutionIndex == -1, null)
+                val secondCommandSubstitutionIndex = tr.body().indexOf("$(", firstCommandSubstitutionIndex + 1)
+                Asserts.assertFalse(secondCommandSubstitutionIndex == -1,
+                    "Could not find two command substitutions ('$(') in unwindBody!  Unwind not needed!")
+
+                // unwind
                 ret = unwindOnMatch(ret, NESTED_COMMAND_SUBSTITUTION)
             }
             return ret
@@ -52,7 +65,10 @@ class Unwinder {
 
         /**
          * Returns three substrings: everything before the inline, the inline, and everything after.
-         * Ignores the arithmetic built-in $(( ))
+         *
+         * Ignores the arithmetic built-in $(( )).
+         *
+         * Returns an empty list if a command substitution isn't found.
          */
         private fun splitOnCommandSubstitution(str: String): List<String> {
             val ret = mutableListOf("", "", "")
@@ -107,6 +123,11 @@ class Unwinder {
             return if (foundCommandSubstitution) ret else listOf()
         }
 
+        /**
+         * Unwinds tr based off of pattern.
+         *
+         * Pattern defaults to [splitOnCommandSubstitution].
+         */
         private fun unwindOnMatch(tr: Translation, pattern: Pattern?): Translation {
             var ret = tr
             // extract inner command substitution
@@ -195,7 +216,6 @@ class Unwinder {
             val exitCodeName = "__bp_exitCode${subshellWorkaroundCounter++}"
 
             // create 5 lines of translations
-            // TODO add assert that tr.body has two $('s in it
             val subcomment = Translation.toStringTranslation("## unnest for ${tr.body()}\n")
             val export = Translation.toStringTranslation("export $subshellReturn\n")
             val assign = Translation.toStringTranslation("$subshellReturn=${tr.body()}\n")

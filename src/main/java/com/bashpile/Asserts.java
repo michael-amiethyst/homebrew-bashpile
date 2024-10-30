@@ -31,6 +31,14 @@ public class Asserts {
         return true;
     }
 
+    /** Throws up test isn't true with optional message */
+    public static boolean assertFalse(final boolean test, @Nullable final String message) {
+        if (test) {
+            throw new BashpileUncheckedAssertionException(message != null ? message : "False assert was actually true");
+        } // else
+        return true;
+    }
+
     /** Throws {@code BashpileUncheckedAssertionException} if the Java list is empty */
     public static <T> @Nonnull List<T> assertNotEmpty(@Nonnull final List<T> list) {
         if (list.isEmpty()) {
