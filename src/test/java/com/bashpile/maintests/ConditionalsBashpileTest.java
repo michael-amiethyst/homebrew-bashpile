@@ -364,7 +364,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("true\n", results.stdout());
     }
 
-    // TODO add set +e to conditional statement preamble, set -e to body of conditionals
+    // TODO 0.23.2 add set +e to conditional statement preamble, set -e to body of conditionals
 //    @Test
 //    @Order(180)
 //    public void ifNotWhichWorks() {
