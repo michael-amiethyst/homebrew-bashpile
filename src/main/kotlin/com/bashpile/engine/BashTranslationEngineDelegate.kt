@@ -198,6 +198,8 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             return Translation.UNKNOWN_TRANSLATION
         }
 
+        // body
+
         val comment = createCommentTranslation("return statement", lineNumber(ctx))
         val returnLineLambda = { str: String ->
             if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {

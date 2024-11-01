@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-10-18T12:02:46.994632-04:00[America/New_York] (timestamp 1729267366994)
+# Generated from bin/bpr.bps on 2024-11-01T11:05:28.435039-04:00[America/New_York] (timestamp 1730473528435)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -17,7 +17,7 @@ opts=$(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
 # assign statement, Bashpile line 13
 declare DEFAULT_OUTPUT_FILENAME
-DEFAULT_OUTPUT_FILENAME=$(mktemp)
+DEFAULT_OUTPUT_FILENAME=$("createTempFile")
 # assign statement, Bashpile line 14
 declare translatedFilename
 translatedFilename="${DEFAULT_OUTPUT_FILENAME}"

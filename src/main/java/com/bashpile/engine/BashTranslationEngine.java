@@ -441,6 +441,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final TypeError typecastError = new TypeError(
                 "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber);
         switch (expression.type().mainTypeName()) {
+            case EMPTY -> expression = expression.type(castTo); // usually for `source`d method returns
             case BOOL -> expression = TypecastUtils.typecastFromBool(expression, castTo, typecastError);
             case NUMBER -> expression = TypecastUtils.typecastFromNumber(expression, castTo, lineNumber, typecastError);
             case INT -> expression = TypecastUtils.typecastFromInt(expression, castTo, lineNumber, typecastError);
