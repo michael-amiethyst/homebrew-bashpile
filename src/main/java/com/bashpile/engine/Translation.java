@@ -370,7 +370,7 @@ public class Translation {
     public @Nonnull Translation inlineAsNeeded(@Nonnull final Function<Translation, Translation> bodyLambda) {
         if (metadata.contains(TranslationMetadata.NEEDS_INLINING_OFTEN)) {
             // function calls may have redirect to /dev/null if only side effects needed
-            String nextBody = Strings.removeEnd(body, ">/dev/null").stripTrailing();
+            String nextBody = Strings.remove(body, ">/dev/null").stripTrailing();
             // add INLINE and remove NEEDS INLINING OFTEN
             var nextMetadata = new ArrayList<>(List.of(TranslationMetadata.INLINE));
             nextMetadata.addAll(metadata);

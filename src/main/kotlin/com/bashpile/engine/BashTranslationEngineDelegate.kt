@@ -104,7 +104,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                             opts += "i" // Bash integer
                         }
                         "declare $opts $x=$${i.getAndIncrement()};"
-                    }.joinToString(" ")
+                    }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset
                 BashTranslationEngine.TAB + paramDeclarations + "\n"
             } else {
                 BashTranslationEngine.TAB + "# no parameters to function" + "\n"

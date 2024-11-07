@@ -184,6 +184,32 @@ public class ShellStringBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
     }
 
+    @Test
+    @Order(111)
+    public void shellStringWithStringFunctionWorks() {
+        final ExecutionResults results = runText("""
+                function munge(input: str) -> str:
+                    return input
+                ret: str = munge("Vulcan")
+                print(ret)""");
+        assertSuccessfulExitCode(results);
+        assertEquals("Vulcan\n", results.stdout());
+    }
+
+    @Test
+    @Order(112)
+    public void shellStringWithDoubleStringFunctionWorks() {
+        final ExecutionResults results = runText("""
+                function munge(input: str) -> str:
+                    return input
+                function randoFunc():
+                    ret: str = munge("Vulcan")
+                    print(ret)
+                randoFunc()""");
+        assertSuccessfulExitCode(results);
+        assertEquals("Vulcan\n", results.stdout());
+    }
+
     // shellLine tests
 
     @Test

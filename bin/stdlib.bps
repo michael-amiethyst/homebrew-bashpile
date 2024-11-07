@@ -9,10 +9,17 @@ function assertGnuGetopt():
         print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...")
         exit 2
 
-// TODO have scripts use this instead of mktemp directly
 // TODO throw error when function with no return type has a return statement
-function createTempFile() -> str:
-    return #(mktemp)
+/**
+ * [filename] is optional and will be the prefix of the generated file name
+ */
+function createTempFile(filename: str) -> str:
+    ret: str
+    if isset filename and isNotEmpty filename:
+        ret = #(mktemp -t $filename)
+    else:
+        ret = #(mktemp)
+    return ret
 
 function toBashpileOutputFile(inFilename: str) -> str:
     // note gsed's literal . must be double escaped

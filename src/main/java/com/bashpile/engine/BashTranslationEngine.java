@@ -283,7 +283,8 @@ public class BashTranslationEngine implements TranslationEngine {
                         .metadata(INLINE);
             }
             // add quotes if needed
-            if (rhsExprTranslation.isStr()) {
+            if (rhsExprTranslation.isStr() && rhsExprTranslation.metadata().contains(NORMAL)) {
+                // TODO call quoteBody and have quoteBody escape quotes
                 rhsExprTranslation = rhsExprTranslation.lambdaBody(str -> {
                     str = StringUtils.prependIfMissing(str, "\"");
                     return StringUtils.appendIfMissing(str, "\"");

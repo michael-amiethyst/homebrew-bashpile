@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/stdlib.bps on 2024-11-01T11:05:20.868511-04:00[America/New_York] (timestamp 1730473520868)
+# Generated from bin/stdlib.bps on 2024-11-07T11:44:07.305296-05:00[America/New_York] (timestamp 1730997847305)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -22,22 +22,35 @@ assertGnuGetopt() {
     exit 2
   fi
 }
-# function declaration, Bashpile line 13
+# function declaration, Bashpile line 15
 createTempFile() {
-  # no parameters to function
-  # return statement, Bashpile line 14
-  printf -- "mktemp"
+  set +u
+  declare -r filename=$1
+  set -u
+  # assign statement, Bashpile line 16
+  declare ret
+  if [ -n "${filename+default}" ] && [ -n "${filename}" ]; then
+    # reassign statement, Bashpile line 18
+    ret=$(mktemp -t $filename)
+  else
+    # reassign statement, Bashpile line 20
+    ret=$(mktemp)
+  fi
+  # return statement, Bashpile line 21
+  printf -- "${ret}"
 }
-# function declaration, Bashpile line 16
+# function declaration, Bashpile line 23
 toBashpileOutputFile() {
+  set +u
   declare -r inFilename=$1
-  # assign statement, Bashpile line 18
+  set -u
+  # assign statement, Bashpile line 25
   declare outFilename
   outFilename=$(printf -- "$inFilename" | gsed -E 's/\..[^.]?[^.]?[^.]?[^.]?$//g')
   if [ "${inFilename}" == "${outFilename}" ]; then
-    # reassign statement, Bashpile line 21
+    # reassign statement, Bashpile line 28
     outFilename=${inFilename}.bash
   fi
-  # return statement, Bashpile line 22
+  # return statement, Bashpile line 29
   printf -- "${outFilename}"
 }
