@@ -144,7 +144,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val comment = createCommentTranslation("print statement", lineNumber(ctx))
         val arguments: Translation = argList.expression().stream()
             .map(requireNonNull(visitor)::visit)
-            .map{ tr: Translation -> tr.inlineAsNeeded { unwindNested(it) } }
+            .map{ tr: Translation -> tr.inlineAsNeeded() }
             .map { tr: Translation -> unwindNested(tr) }
             .map { tr: Translation ->
                 if (tr.isBasicType && !tr.isListAccess && !tr.metadata().contains(CONDITIONAL)) {
@@ -230,7 +230,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         var childTranslations: List<Translation> = ctx.children
             .map { tree: ParseTree? -> visitor.visit(tree) }
             .map { tr: Translation ->
-                tr.inlineAsNeeded { tr1: Translation? -> unwindNested(tr1!!) }
+                tr.inlineAsNeeded()
             }
             .toList()
 
@@ -301,8 +301,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         var primary = ctx.unaryPrimary().text
         var valueBeingTested: Translation
         // right now all implemented primaries are string tests
-        valueBeingTested = visitor.visit(ctx.expression())
-            .inlineAsNeeded { tr: Translation? -> unwindNested(tr!!) }
+        valueBeingTested = visitor.visit(ctx.expression()).inlineAsNeeded()
 
         // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
         // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
@@ -336,7 +335,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         }
         var translations = listOf(visitor.visit(ctx.getChild(0)), visitor.visit(ctx.getChild(2)))
         translations = translations.map {
-            var ret = it.inlineAsNeeded { tr: Translation? -> unwindNested(tr!!) }
+            var ret = it.inlineAsNeeded()
             if (ret.metadata().contains(PARENTHESIZED)) {
                 // wrap in a block and add an end-of-statement
                 ret = ret.body("{ ${ret.body()}; }")

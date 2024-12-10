@@ -156,7 +156,7 @@ public class BashTranslationHelper {
             // to handle floats we use bc, but the test by default will be for if bc succeeded (had exit code 0)
             // so we need to explicitly check if the check returned true (1)
             expressionTranslation = expressionTranslation
-                    .inlineAsNeeded(Unwinder::unwindAll)
+                    .inlineAsNeeded()
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
         return expressionTranslation

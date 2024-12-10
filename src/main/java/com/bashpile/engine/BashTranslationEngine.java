@@ -290,7 +290,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     return StringUtils.appendIfMissing(str, "\"");
                 });
             }
-            rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(Unwinder::unwindNested);
+            rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
             rhsExprTranslation = unwindNested(rhsExprTranslation);
         }
         assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber);
@@ -344,7 +344,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
                     .metadata(INLINE);
         }
-        rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(Unwinder::unwindNested);
+        rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
         rhsExprTranslation = unwindNested(rhsExprTranslation);
         final Type rhsActualType = rhsExprTranslation.type();
         if (!rhsActualType.isEmpty()) {
@@ -473,7 +473,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
-                        .map(tr -> tr.inlineAsNeeded(Unwinder::unwindNested))
+                        .map(Translation::inlineAsNeeded)
                         .map(Unwinder::unwindNested)
                         .toList()
                 : List.of();
@@ -535,9 +535,9 @@ public class BashTranslationEngine implements TranslationEngine {
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
         String primary = ctx.binaryPrimary().getText();
         final Translation firstTranslation =
-                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded(Unwinder::unwindNested);
+                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded();
         final Translation secondTranslation =
-                visitor.visit(ctx.getChild(2)).inlineAsNeeded(Unwinder::unwindNested);
+                visitor.visit(ctx.getChild(2)).inlineAsNeeded();
 
         // we do some checks for strict equals and strict not equals
         final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
@@ -657,7 +657,7 @@ public class BashTranslationEngine implements TranslationEngine {
         LOG.trace("In shellString helper");
         Translation contentsTranslation = ctx.shellStringContents().stream()
                 .map(requireNonNull(visitor)::visit)
-                .map(tr -> tr.inlineAsNeeded(Unwinder::unwindNested))
+                .map(Translation::inlineAsNeeded)
                 .reduce(Translation::add)
                 .map(x -> x.lambdaBody(Strings::dedent))
                 .map(BashTranslationHelper::joinEscapedNewlines)
