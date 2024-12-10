@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/stdlib.bps on 2024-11-07T11:44:07.305296-05:00[America/New_York] (timestamp 1730997847305)
+# Generated from bin/stdlib.bps on 2024-12-10T12:13:06.940701-05:00[America/New_York] (timestamp 1733850786940)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -11,12 +11,7 @@ trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BAS
 # function declaration, Bashpile line 6
 assertGnuGetopt() {
   # no parameters to function
-  ## unnest for $( getopt --help )
-  export __bp_subshellReturn0
-  __bp_subshellReturn0=$(getopt --help)
-  __bp_exitCode0=$?
-  if [ "$__bp_exitCode0" -ne 0 ]; then exit "$__bp_exitCode0"; fi
-  if [ "${__bp_subshellReturn0}" == " --" ]; then
+  if [ "$(getopt --help)" == " --" ]; then
     # print statement, Bashpile line 8
     printf -- "FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...\n"
     exit 2

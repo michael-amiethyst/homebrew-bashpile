@@ -159,7 +159,18 @@ public class BashTranslationHelper {
                     .inlineAsNeeded(Unwinder::unwindAll)
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
-        return expressionTranslation;
+        return expressionTranslation
+                .lambdaBody(body -> {
+                    // remove $() for if statement
+                    if (!body.contains("\n") && !body.startsWith("$((") && body.endsWith(")")) {
+                        if (body.startsWith("$(")) {
+                            body = body.substring(2, body.length() - 1);
+                        } else if (body.startsWith("! $(")) {
+                            body = "! " + body.substring(body.indexOf("$(") + 2, body.length() - 1);
+                        }
+                    }
+                    return body;
+                });
     }
 
     /** Removes escaped newlines and trailing spaces */

@@ -15,7 +15,8 @@ class UnwinderTest {
     fun unwindAllWithFunctionCallWorks() {
         var tr = Translation("$(ret0)")
         tr = unwindAll(tr)
-        Assertions.assertFalse(tr.body().contains("$("), "Unwound command substitution found")
+        // unwind all disabled, being phased out
+        Assertions.assertTrue(tr.body().contains("$("), "Unwound command substitution found")
     }
 
     @Test

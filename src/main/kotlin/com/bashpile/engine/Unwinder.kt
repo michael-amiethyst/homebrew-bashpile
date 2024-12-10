@@ -14,6 +14,7 @@ import java.util.regex.Pattern
  * all with [unwindAll].  This is to prevent errored exit codes from being suppressed.  As examples,
  * in Bash `$(echo $(echo hello; exit 1))` will suppress the error code and `[ -z $(echo hello; exit 1) ]` will as well.
  */
+// TODO replace with logging to error file, see ifWithInlineErrorDoesNotErrorOut for why we can't just return an error code
 class Unwinder {
 
     companion object {
@@ -37,13 +38,10 @@ class Unwinder {
          *
          * A test will also disregard a failing exit code.
          */
+        // TODO remove
         @JvmStatic
         fun unwindAll(tr: Translation): Translation {
-            var ret = tr
-            while (!ret.body().startsWith("$((") && splitOnCommandSubstitution(ret.body()).isNotEmpty()) {
-                ret = unwindOnMatch(ret, null)
-            }
-            return ret
+            return tr
         }
 
         @JvmStatic

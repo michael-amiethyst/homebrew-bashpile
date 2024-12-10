@@ -1,20 +1,28 @@
-# 1.0 features
-1. More loops
+# 1.0 Roadmap
+1. Hardening (fix TODOs and bugs, simplify)
+2. Refactor deployment
+   1. move generated files from /bin to /target/bin
+   2. make executable directly (shebang java -jar, then the jar binary)
+   3. skip external tools with flag for GHA free runner compatability (e.g. no shfmt)
+3. Remove unwinder, create lib functions to disable/enable strict mode
+4. Change architecture to create Bashpile AST (bast) and render to String after full context / metadata known
+   1. e.g. stop parsing and re-parsing strings with regex
+5. More loops
    1. do while loop
    2. C style for loop
    3. foreach loop
-2. Logging / debug so that we can debug functions that return strings
-3. Syntax highlighting in Intellij
-4. Hashes
-5. Refs
-6. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
-    1. Maybe a 'guard' block where set +u/set -u is automatic (stop checking for unset)
-    2. Or use default so checks for set work with -u in effect
-7. String interpolation with $[]
-   1. have bpr use arguments, arguments[all] (args/argv alias?)
-8. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
-9. Enforce 'readonly' 
-   1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
+6. Logging / debug so that we can debug functions that return strings
+7. Syntax highlighting in Intellij
+8. Hashes
+9. Refs
+10. Have a way to declare 'loose mode' (not strict) for whole file and per shell-string
+     1. Maybe a 'guard' block where set +u/set -u is automatic (stop checking for unset)
+     2. Or use default so checks for set work with -u in effect
+11. String interpolation with $[]
+    1. have bpr use arguments, arguments[all] (args/argv alias?)
+12. Exceptions and raise statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+13. Enforce 'readonly' 
+    1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # Fixes and improvements
 * Near term

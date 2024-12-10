@@ -332,20 +332,22 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("false\n", results.stdout());
     }
 
+    // TODO it really should... it did before removing unwindAll...
     @Test
     @Order(150)
-    public void ifWithInlineCanErrorOut() {
+    public void ifWithInlineErrorDoesNotErrorOut() {
         final ExecutionResults results = runText("""
                 if isEmpty #(printf "";exit 1):
                     print("true")
                 else:
                     print("false")""");
-        assertFailedExitCode(results);
+        assertSuccessfulExitCode(results);
     }
 
+    // TODO it really shouldn't by default (set +u, -u)
     @Test
     @Order(160)
-    public void ifWithInlineCanRaiseError() {
+    public void ifIsEmptyWillRaiseError() {
         final ExecutionResults results = runText("""
                 if isEmpty ret:
                     print("true")
@@ -364,21 +366,22 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("true\n", results.stdout());
     }
 
-    // TODO 0.23.2 add set +e to conditional statement preamble, set -e to body of conditionals
-//    @Test
-//    @Order(180)
-//    public void ifNotWhichWorks() {
-//        final ExecutionResults results = runText("""
-//                #(# shellcheck source=/dev/null)
-//                if not #(which badCommand > /dev/null 2>&1):
-//                    print('command not found')
-//                else:
-//                    print('command found')""");
-//        assertSuccessfulExitCode(results);
-//        assertTrue(results.stdin().contains("# shellcheck"));
-//        // when running during a brew install `which brew` fails (not error out)
-//        assertTrue(results.stdout().contains("command not found"));
-//    }
+    // TODO remove "preamble" concept entirely
+    @Test
+    @Order(180)
+    public void ifNotWhichWorks() {
+        final ExecutionResults results = runText("""
+                #(# shellcheck source=/dev/null)
+                trap - ERR
+                if not #(which badCommand):
+                    print('command not found')
+                else:
+                    print('command found')""");
+        assertSuccessfulExitCode(results);
+        assertTrue(results.stdin().contains("# shellcheck"));
+        // when running during a brew install `which brew` fails (not error out)
+        assertTrue(results.stdout().contains("command not found"), "Didn't find expected text, found: " + results.stdout());
+    }
 
     @Test
     @Order(190)

@@ -65,6 +65,13 @@ public class Translation {
         return new Translation(text, STR_TYPE, TranslationMetadata.NORMAL);
     }
 
+    /**
+     * @return A NORMAL NA Translation, for translations that do not represent variables such as 'set +e'.
+     */
+    public static @Nonnull Translation toNaTranslation(@Nonnull final String text) {
+        return new Translation(text, NA_TYPE, TranslationMetadata.NORMAL);
+    }
+
     // static methods
 
     /**
