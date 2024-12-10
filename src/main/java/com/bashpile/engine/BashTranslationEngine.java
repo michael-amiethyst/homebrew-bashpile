@@ -27,7 +27,6 @@ import org.apache.logging.log4j.Logger;
 import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
-import static com.bashpile.engine.Unwinder.unwindNested;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static java.util.Objects.requireNonNull;
@@ -291,7 +290,6 @@ public class BashTranslationEngine implements TranslationEngine {
                 });
             }
             rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
-            rhsExprTranslation = unwindNested(rhsExprTranslation);
         }
         assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber);
 
@@ -345,7 +343,6 @@ public class BashTranslationEngine implements TranslationEngine {
                     .metadata(INLINE);
         }
         rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
-        rhsExprTranslation = unwindNested(rhsExprTranslation);
         final Type rhsActualType = rhsExprTranslation.type();
         if (!rhsActualType.isEmpty()) {
             Asserts.assertTypesCoerce(lhsExpectedType, rhsActualType, lhsVariableName, lineNumber(ctx));
@@ -474,7 +471,6 @@ public class BashTranslationEngine implements TranslationEngine {
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
                         .map(Translation::inlineAsNeeded)
-                        .map(Unwinder::unwindNested)
                         .toList()
                 : List.of();
 
@@ -669,7 +665,6 @@ public class BashTranslationEngine implements TranslationEngine {
             contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
         }
 
-        contentsTranslation = unwindNested(contentsTranslation);
         return contentsTranslation.unescapeBody();
     }
 }

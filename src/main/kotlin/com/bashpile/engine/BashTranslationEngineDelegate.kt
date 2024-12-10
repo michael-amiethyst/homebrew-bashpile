@@ -6,7 +6,6 @@ import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.Translation.toStringTranslation
-import com.bashpile.engine.Unwinder.Companion.unwindNested
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
 import com.bashpile.engine.strongtypes.Type
@@ -145,7 +144,6 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val arguments: Translation = argList.expression().stream()
             .map(requireNonNull(visitor)::visit)
             .map{ tr: Translation -> tr.inlineAsNeeded() }
-            .map { tr: Translation -> unwindNested(tr) }
             .map { tr: Translation ->
                 if (tr.isBasicType && !tr.isListAccess && !tr.metadata().contains(CONDITIONAL)) {
                     tr.body("""
