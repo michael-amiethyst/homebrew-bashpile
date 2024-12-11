@@ -16,7 +16,8 @@ import com.bashpile.exceptions.UserError
 import com.google.common.collect.Iterables
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang3.StringUtils.removeEnd
+import org.apache.commons.lang3.StringUtils.removeStart
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.util.Objects.requireNonNull
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
 
 
-/** For the BashTranslationEngine to have complex code be in Kotlin */
+/** For the [BashTranslationEngine] to have complex code be in Kotlin */
 class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
     companion object {
@@ -98,10 +99,8 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                         }
 
                         // normal processing
-                        var opts = "-r" // read only
-                        if (type.isInt) {
-                            opts += "i" // Bash integer
-                        }
+                        val opts = "-r" // read only
+                        // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
                         "declare $opts $x=$${i.getAndIncrement()};"
                     }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset
                 BashTranslationEngine.TAB + paramDeclarations + "\n"
@@ -205,6 +204,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             } else if (exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)) {
                 // Avoid interpreting $(( )) results as a command
                 "printf -- $str\n"
+            } else if (exprTranslation.isNumeric && exprTranslation.metadata().contains(NORMAL)) {
+                // plain number type such as int or float equaling 42
+                "printf -- $str\n"
             } else {
                 str + "\n"
             }
@@ -306,9 +308,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val isSetCheck = listOf("isset", "unset").contains(primary)
         if (isSetCheck) {
             // remove ${ and } as needed
-            var modifiedValueBeingTested = StringUtils.removeStart(valueBeingTested.body(), "$")
-            modifiedValueBeingTested = StringUtils.removeStart(modifiedValueBeingTested, "{")
-            modifiedValueBeingTested = StringUtils.removeEnd(modifiedValueBeingTested, "}")
+            var modifiedValueBeingTested = removeStart(valueBeingTested.body(), "$")
+            modifiedValueBeingTested = removeStart(modifiedValueBeingTested, "{")
+            modifiedValueBeingTested = removeEnd(modifiedValueBeingTested, "}")
             valueBeingTested = valueBeingTested.body("\${$modifiedValueBeingTested+default}")
         }
 

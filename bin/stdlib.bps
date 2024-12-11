@@ -9,7 +9,6 @@ function assertGnuGetopt():
         print("FreeBSD getopt found.  Please ensure that brew's gnu-getopt is first on the classpath.  Exiting...")
         exit 2
 
-// TODO throw error when function with no return type has a return statement
 /**
  * [filename] is optional and will be the prefix of the generated file name
  */

@@ -108,16 +108,18 @@ public class Asserts {
             @Nonnull final String functionName,
             final int contextStartLine) {
 
+        // TODO reimplement with optional arguments in mind
         // check if the argument lengths match
-        boolean typesCoerce = expectedTypes.size() == actualTypes.size();
-        if (!typesCoerce) {
-            final String message = "Mismatch of type list lengths for function %s.  Expected %d arguments and found %d"
-                    .formatted(functionName, expectedTypes.size(), actualTypes.size());
-            throw new TypeError(message, contextStartLine);
-        }
+//        boolean typesCoerce = expectedTypes.size() == actualTypes.size();
+//        if (!typesCoerce) {
+//            final String message = "Mismatch of type list lengths for function %s.  Expected %d arguments and found %d"
+//                    .formatted(functionName, expectedTypes.size(), actualTypes.size());
+//            throw new TypeError(message, contextStartLine);
+//        }
 
         // lazily iterate over both lists looking for a non-match
         int i = 0;
+        boolean typesCoerce = true;
         while (typesCoerce && i < actualTypes.size()) {
             final Type expected = expectedTypes.get(i);
             final Type actual = actualTypes.get(i++);
