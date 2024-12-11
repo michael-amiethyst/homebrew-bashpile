@@ -11,6 +11,7 @@ assertGnuGetopt()
 // getopt
 opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
+// need to declare type for sourced method return
 DEFAULT_OUTPUT_FILENAME: readonly str = createTempFile() :str
 translatedFilename: str = DEFAULT_OUTPUT_FILENAME
 commandMode: bool = false

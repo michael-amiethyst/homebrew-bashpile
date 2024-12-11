@@ -31,7 +31,7 @@ public class Asserts {
         return true;
     }
 
-    /** Throws up test isn't true with optional message */
+    /** Throws {@code BashpileUncheckedAssertionException} when the test isn't true with optional message */
     public static boolean assertFalse(final boolean test, @Nullable final String message) {
         if (test) {
             throw new BashpileUncheckedAssertionException(message != null ? message : "False assert was actually true");
