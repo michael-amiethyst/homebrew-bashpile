@@ -148,7 +148,6 @@ public class BashTranslationHelper {
 
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
     /* package */ static Translation visitGuardingExpression(Translation expressionTranslation) {
-        expressionTranslation = Unwinder.unwindAll(expressionTranslation);
         if (expressionTranslation.type().isInt() && expressionTranslation.body().startsWith("$((")) {
             // strip initial $ for (( instead of $((
             expressionTranslation = expressionTranslation.lambdaBody(body -> body.substring(1));
@@ -156,10 +155,21 @@ public class BashTranslationHelper {
             // to handle floats we use bc, but the test by default will be for if bc succeeded (had exit code 0)
             // so we need to explicitly check if the check returned true (1)
             expressionTranslation = expressionTranslation
-                    .inlineAsNeeded(Unwinder::unwindAll)
+                    .inlineAsNeeded()
                     .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
         }
-        return expressionTranslation;
+        return expressionTranslation
+                .lambdaBody(body -> {
+                    // remove $() for if statement
+                    if (!body.contains("\n") && !body.startsWith("$((") && body.endsWith(")")) {
+                        if (body.startsWith("$(")) {
+                            body = body.substring(2, body.length() - 1);
+                        } else if (body.startsWith("! $(")) {
+                            body = "! " + body.substring(body.indexOf("$(") + 2, body.length() - 1);
+                        }
+                    }
+                    return body;
+                });
     }
 
     /** Removes escaped newlines and trailing spaces */

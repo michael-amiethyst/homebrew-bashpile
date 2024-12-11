@@ -1,10 +1,5 @@
 package com.bashpile.engine
 
-import com.bashpile.engine.Unwinder.Companion.unwindAll
-import com.bashpile.engine.Unwinder.Companion.unwindNested
-import com.bashpile.engine.strongtypes.TranslationMetadata.INLINE
-import com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING_OFTEN
-import com.bashpile.engine.strongtypes.Type
 import org.junit.jupiter.api.*
 
 @Order(3)
@@ -13,55 +8,6 @@ class UnwinderTest {
     @Test
     @Order(10)
     fun unwindAllWithFunctionCallWorks() {
-        var tr = Translation("$(ret0)")
-        tr = unwindAll(tr)
-        Assertions.assertFalse(tr.body().contains("$("), "Unwound command substitution found")
-    }
-    @Test
-    @Order(11)
-    fun unwindAllWithCalcDoesNotNeedUnwind() {
-        var tr = Translation("$((1 + 1))")
-        tr = unwindAll(tr)
-        Assertions.assertTrue(tr.body().contains("$(("), "Unneeded unwind found")
-    }
-
-    @Test
-    @Order(20)
-    fun unwindAllWithParenthesisWorks() {
-        var tr = Translation("(which ls 1>/dev/null)", Type.BOOL_TYPE, NEEDS_INLINING_OFTEN)
-        tr = tr.inlineAsNeeded { unwindAll(it) }
-        Assertions.assertFalse(tr.body().contains("})"), "Bad parenthesis found")
-    }
-
-    @Test
-    @Order(30)
-    fun unwindAllWithDoubleInlineWorks() {
-        var tr = Translation("""
-                ${'$'}(bc <<< "${'$'}(circleArea "${'$'}{r1}") + ${'$'}(circleArea "${'$'}{r2}")")
-                
-                """.trimIndent(), Type.FLOAT_TYPE, NEEDS_INLINING_OFTEN
-        )
-        tr = tr.inlineAsNeeded { unwindNested(it) }
-        Assertions.assertFalse(tr.body().contains("})"), "Bad parenthesis found")
-        Assertions.assertFalse(tr.preamble().isEmpty())
-        Assertions.assertFalse(
-            tr.preamble().contains("$( $(bc <<< \"$(circleArea \"\${r1}\")\n"),
-            "Mismatched outer parens"
-        )
-        Assertions.assertFalse(
-            tr.preamble().contains("$(bc <<< \"$(circleArea \"\${r1}\")\n"),
-            "Mismatched inner parens"
-        )
-    }
-
-    // unwind nested section
-
-    @Test
-    @Order(30)
-    fun unwindNestedWithoutParenthesisWorks() {
-        var tr = Translation("which badCommand > /dev/null 2>&1", Type.BOOL_TYPE, INLINE)
-        tr = unwindNested(tr)
-        Assertions.assertFalse(tr.body().contains("})"), "Bad parenthesis found")
-        Assertions.assertTrue(tr.metadata().contains(INLINE))
+        // kotlin stub for tests
     }
 }

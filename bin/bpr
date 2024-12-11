@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-10-18T12:02:46.994632-04:00[America/New_York] (timestamp 1729267366994)
+# Generated from bin/bpr.bps on 2024-12-11T14:38:37.125343-05:00[America/New_York] (timestamp 1733945917125)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -17,7 +17,7 @@ opts=$(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
 # assign statement, Bashpile line 13
 declare DEFAULT_OUTPUT_FILENAME
-DEFAULT_OUTPUT_FILENAME=$(mktemp)
+DEFAULT_OUTPUT_FILENAME=$(createTempFile)
 # assign statement, Bashpile line 14
 declare translatedFilename
 translatedFilename="${DEFAULT_OUTPUT_FILENAME}"
@@ -64,17 +64,19 @@ set +u
 # function forward declaration, Bashpile line 46
 # function declaration, Bashpile line 89
 runTranslation() {
+  set +u
   declare -r translatedFilename=$1
   declare -x IFS=$' '
   read -r -a args <<<"$2"
   declare -x IFS=$'\n\t'
+  set -u
   # assign statement, Bashpile line 91
   declare absoluteFilename
   absoluteFilename=$(realpath "$translatedFilename")
   chmod 755 $absoluteFilename
   # assign statement, Bashpile line 94
   declare LOG_NAME
-  LOG_NAME=$(mktemp -t bpr.log)
+  LOG_NAME=$(createTempFile "bpr.log")
   # expression statement, Bashpile line 95
   "$absoluteFilename" "${args[@]}" 2>&1 | tee "$LOG_NAME"
   if cat "$LOG_NAME" | grep -E 'unexpected EOF|syntax error|command not found' >/dev/null 2>&1; then
