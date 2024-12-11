@@ -2,10 +2,8 @@ class Bashpile < Formula
   desc "The Bash Transpiler: Write in a modern language and run in a Bash5 shell!"
   homepage "https://github.com/michael-amiethyst/homebrew-bashpile"
   license "MIT"
-  # TODO change to 0.23.2 before checkin
-  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.23.1"
-  # TODO change to development before checkin
-  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "feature/hardening"
+  url "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "main", tag: "0.23.2"
+  head "https://github.com/michael-amiethyst/homebrew-bashpile", using: :git, branch: "develop"
 
   # foundational dependencies
   depends_on "openjdk"
