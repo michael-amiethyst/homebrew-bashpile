@@ -26,7 +26,7 @@ class Bashpile < Formula
     bin.install "target/bashpile.jar"
     bin.install "target/bpc"
     FileUtils.cp "#{bin}/bpc", "#{bin}/bashpilec"
-    bin.install "bin/bpr"
+    bin.install "target/bpr"
     FileUtils.cp "#{bin}/bpr", "#{bin}/bashpile"
     bin.install "target/stdlib"
   end

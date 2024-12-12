@@ -2,7 +2,7 @@
 
 /**
  * Deployed with integration tests.
- * Manually deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
+ * Manually deploy with `target/bpc --outputFile=target/bpr bin/bpr.bps`
  */
 
 source ${BASHPILE_HOME:=.}/target/stdlib || source ${BASHPILE_HOME:=.}/stdlib

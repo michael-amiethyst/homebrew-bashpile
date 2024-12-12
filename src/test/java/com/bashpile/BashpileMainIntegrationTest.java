@@ -25,35 +25,11 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
-    private static boolean bprDeployed = false;
-
-    @Test
-    @Timeout(25) // sometimes it takes a while
-    @Order(9)
-    public void bprDeploysSuccessfully() throws IOException {
-        log.info("In bprDeploysSuccessfully");
-
-        // weird, intermittent errors running bpr in Java under WSL like characters getting skipped
-        int exitCode = ExecutionResults.GENERIC_FAILURE;
-        int loops = 0;
-        ExecutionResults results = null;
-        while (exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
-            final String command = "target/bpc bin/bpr.bps";
-            results = runAndJoin(command);
-            log.trace("Output text:\n{}", results.stdout());
-            exitCode = results.exitCode();
-        }
-
-        assertSuccessfulExitCode(results);
-        bprDeployed = true;
-    }
-
     @Test
     @Timeout(10)
     @Order(10)
     public void bpcTranspiles() throws IOException {
         log.info("In bpcTranspiles test");
-        Assumptions.assumeTrue(bprDeployed);
 
         final String translatedFilename = "src/test/resources/testrigData";
         final String command = "target/bpc src/test/resources/testrigData.bps";
@@ -76,10 +52,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(11)
     public void bprWorks() throws IOException {
         log.info("In bprWorks");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
-        final String command = "bin/bpr src/test/resources/scripts/bprShebang.bps";
+        final String command = "target/bpr src/test/resources/scripts/bprShebang.bps";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -91,7 +66,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(20)
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
         log.info("In noSubCommandWithNoExtensionTranspiles");
-        Assumptions.assumeTrue(bprDeployed);
 
         final String translatedFilename = "src/test/resources/testrigData2";
         final String command = "target/bpc src/test/resources/testrigData2.bps";
@@ -114,7 +88,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(30)
     public void noSubCommandWithMissingFileFails() throws IOException {
         log.info("In noSubCommandWithMissingFileFails");
-        Assumptions.assumeTrue(bprDeployed);
 
         final String command = "target/bpc src/test/resources/testrigData.fileDoesNotExist";
         final ExecutionResults results = runAndJoin(command);
@@ -129,7 +102,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(40)
     public void outputFileFlagWithDoubleRunWorks() throws IOException {
         log.info("In outputFileFlagWithDoubleRunWorks");
-        Assumptions.assumeTrue(bprDeployed);
 
         final String translatedFilename = "src/test/resources/testrigData2.example.bps";
         final String command = "target/bpc src/test/resources/testrigData2.bps --outputFile " + translatedFilename;
@@ -154,12 +126,11 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(50)
     public void bprCreateErrorMessagesPropagate() throws IOException {
         log.info("In bprCreateErrorMessagesPropagate");
-        Assumptions.assumeTrue(bprDeployed);
 
         final String bashpileFilename = "src/test/resources/scripts/overwriteCheck.bps";
         final Path defaultOutputFile = Path.of("src/test/resources/scripts/overwriteCheck");
         assertTrue(Files.exists(defaultOutputFile), "Default output file does not exist");
-        final String command = "bin/bpr " + bashpileFilename;
+        final String command = "target/bpr " + bashpileFilename;
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -171,10 +142,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(50)
     public void bprDashCWorks() throws IOException {
         log.info("In bpr -c works");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
-        final String command = "bin/bpr -c \"print('Hello World')\"";
+        final String command = "target/bpr -c \"print('Hello World')\"";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -188,7 +158,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(60)
     public void bpcDashCWithStdinWorks() throws IOException {
         log.info("In bpc -c with stdin works");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
         final String command = "echo \"print('Hello World')\" | target/bpc -c";
@@ -206,10 +175,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(70)
     public void bprDashCWithStdinWorks() throws IOException {
         log.info("In bpr -c with stdin works");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
-        final String command = "echo \"print('Hello World')\" | bin/bpr -c";
+        final String command = "echo \"print('Hello World')\" | target/bpr -c";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -223,10 +191,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(80)
     public void bprDashCWithStdinFromDifferentDirectoryWorks() throws IOException {
         log.info("In bpr -c with stdin works");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
-        final String command = "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpr -c";
+        final String command = "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpr -c";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -241,11 +208,10 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(81)
     public void bprDashCWithStdinFromDifferentDirectoryWithOutputFileWorks() throws IOException {
         log.info("In bpr -c with stdin and outputfile works");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
         final String command =
-                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpr --outputFile command81 -c";
+                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpr --outputFile command81 -c";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -260,7 +226,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(81)
     public void bpcDashWithStdinWorks() throws IOException {
         log.info("In bpc - with stdin works");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
         final String command =
@@ -278,7 +243,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(82)
     public void bpcDashWithOutputFileWithStdinWorks() throws IOException {
         log.info("In bpc - with stdin works");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
         final String command =
@@ -299,11 +263,10 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(84)
     public void bprDashWithStdinWorks() throws IOException {
         log.info("In bpr - with stdin works");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
         final String command =
-                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/bin/bpr -";
+                "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpr -";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -317,10 +280,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(90)
     public void bprWithNoArgumentsPrintsHelp() throws IOException {
         log.info("In bpr with no arguments prints help");
-        Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
-        final String command = "bin/bpr";
+        final String command = "target/bpr";
         final ExecutionResults results = runAndJoin(command);
         log.debug("Output text:\n{}", results.stdout());
 
@@ -334,9 +296,8 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(100)
     public void bprDashCFailsGracefullyOnBadCompile() throws IOException {
         log.info("In bpr -c fails gracefully");
-        Assumptions.assumeTrue(bprDeployed);
 
-        final String command = "bin/bpr -c \"# echo\"";
+        final String command = "target/bpr -c \"# echo\"";
         final ExecutionResults results = runAndJoin(command);
 
         assertFailedExitCode(results);

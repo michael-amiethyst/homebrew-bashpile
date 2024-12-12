@@ -10,7 +10,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -107,10 +110,14 @@ public class BashpileMain implements Callable<Integer> {
                 Files.copy(System.in, temp, REPLACE_EXISTING);
                 inputFile = temp;
             }
+
+            // transpile
             String translation = inputFile != null ? BashpileMainHelper.transpileNioFile(inputFile)
                     : BashpileMainHelper.transpileScript(Objects.requireNonNull(command));
             final String bashScript = "#!/usr/bin/env bash\n\n" + translation;
             Files.writeString(transpiledFilename, bashScript);
+            makeExecutable(transpiledFilename);
+
             // last line must be the filename we created
             LOG.info("Created file is:");
             System.out.println(transpiledFilename.toAbsolutePath());
@@ -122,5 +129,17 @@ public class BashpileMain implements Callable<Integer> {
             if (temp != null) { Files.deleteIfExists(temp); }
             throw e; // should bubble to top
         }
+    }
+
+    private static void makeExecutable(Path transpiledFilename) throws IOException {
+        // make executable
+        Set<PosixFilePermission> perms = new HashSet<>();
+        perms.add(PosixFilePermission.OWNER_READ);
+        perms.add(PosixFilePermission.OWNER_WRITE);
+        perms.add(PosixFilePermission.OWNER_EXECUTE);
+        perms.add(PosixFilePermission.GROUP_EXECUTE);
+        perms.add(PosixFilePermission.OTHERS_EXECUTE);
+
+        Files.setPosixFilePermissions(transpiledFilename, perms);
     }
 }

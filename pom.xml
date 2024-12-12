@@ -270,6 +270,17 @@
                             <commandlineArgs>-c "target/bpc --outputFile target/stdlib bin/stdlib.bps"</commandlineArgs>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>Generate bpr</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>/bin/bash</executable>
+                            <commandlineArgs>-c "target/bpc --outputFile target/bpr bin/bpr.bps"</commandlineArgs>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
