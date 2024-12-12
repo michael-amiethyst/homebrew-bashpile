@@ -59,7 +59,7 @@ Multiply: '*';
 Divide  : '/';
 Add     : '+';
 Minus   : '-';
-Isset   : 'isset';
+Isset   : 'isset'; // TODO change to exits and notExists
 Unset   : 'unset';
 Empty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';

@@ -27,7 +27,6 @@ import org.apache.logging.log4j.Logger;
 import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.Translation.*;
-import static com.bashpile.engine.Unwinder.unwindNested;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static java.util.Objects.requireNonNull;
@@ -283,14 +282,14 @@ public class BashTranslationEngine implements TranslationEngine {
                         .metadata(INLINE);
             }
             // add quotes if needed
-            if (rhsExprTranslation.isStr()) {
+            if (rhsExprTranslation.isStr() && rhsExprTranslation.metadata().contains(NORMAL)) {
+                // TODO call quoteBody and have quoteBody escape quotes
                 rhsExprTranslation = rhsExprTranslation.lambdaBody(str -> {
                     str = StringUtils.prependIfMissing(str, "\"");
                     return StringUtils.appendIfMissing(str, "\"");
                 });
             }
-            rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(Unwinder::unwindNested);
-            rhsExprTranslation = unwindNested(rhsExprTranslation);
+            rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
         }
         assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber);
 
@@ -343,8 +342,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
                     .metadata(INLINE);
         }
-        rhsExprTranslation = rhsExprTranslation.inlineAsNeeded(Unwinder::unwindNested);
-        rhsExprTranslation = unwindNested(rhsExprTranslation);
+        rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
         final Type rhsActualType = rhsExprTranslation.type();
         if (!rhsActualType.isEmpty()) {
             Asserts.assertTypesCoerce(lhsExpectedType, rhsActualType, lhsVariableName, lineNumber(ctx));
@@ -441,6 +439,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final TypeError typecastError = new TypeError(
                 "Casting %s to %s is not supported".formatted(expression.type(), castTo), lineNumber);
         switch (expression.type().mainTypeName()) {
+            case EMPTY -> expression = expression.type(castTo); // usually for `source`d method returns
             case BOOL -> expression = TypecastUtils.typecastFromBool(expression, castTo, typecastError);
             case NUMBER -> expression = TypecastUtils.typecastFromNumber(expression, castTo, lineNumber, typecastError);
             case INT -> expression = TypecastUtils.typecastFromInt(expression, castTo, lineNumber, typecastError);
@@ -471,8 +470,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
-                        .map(tr -> tr.inlineAsNeeded(Unwinder::unwindNested))
-                        .map(Unwinder::unwindNested)
+                        .map(Translation::inlineAsNeeded)
                         .toList()
                 : List.of();
 
@@ -533,9 +531,9 @@ public class BashTranslationEngine implements TranslationEngine {
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
         String primary = ctx.binaryPrimary().getText();
         final Translation firstTranslation =
-                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded(Unwinder::unwindNested);
+                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded();
         final Translation secondTranslation =
-                visitor.visit(ctx.getChild(2)).inlineAsNeeded(Unwinder::unwindNested);
+                visitor.visit(ctx.getChild(2)).inlineAsNeeded();
 
         // we do some checks for strict equals and strict not equals
         final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
@@ -655,7 +653,7 @@ public class BashTranslationEngine implements TranslationEngine {
         LOG.trace("In shellString helper");
         Translation contentsTranslation = ctx.shellStringContents().stream()
                 .map(requireNonNull(visitor)::visit)
-                .map(tr -> tr.inlineAsNeeded(Unwinder::unwindNested))
+                .map(Translation::inlineAsNeeded)
                 .reduce(Translation::add)
                 .map(x -> x.lambdaBody(Strings::dedent))
                 .map(BashTranslationHelper::joinEscapedNewlines)
@@ -667,7 +665,6 @@ public class BashTranslationEngine implements TranslationEngine {
             contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
         }
 
-        contentsTranslation = unwindNested(contentsTranslation);
         return contentsTranslation.unescapeBody();
     }
 }

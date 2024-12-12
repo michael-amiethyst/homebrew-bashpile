@@ -109,7 +109,7 @@ public class BashpileMain implements Callable<Integer> {
             // delete if output file exists (e.g. we had a generated tempfile as output)
             // this indicates a failed compile
             Files.deleteIfExists(transpiledFilename);
-            return 1;
+            throw e; // should bubble to top
         }
     }
 }

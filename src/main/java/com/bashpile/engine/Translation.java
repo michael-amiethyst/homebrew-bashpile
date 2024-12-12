@@ -364,19 +364,18 @@ public class Translation {
      * Create an inline Translation if this is a {@link TranslationMetadata#NEEDS_INLINING_OFTEN} translation.
      * Does some other processing as well.
      *
-     * @param bodyLambda How to unwind if we need to add a command substitution.
      * @return Converts body to an inline and change the type metadata to {@link TranslationMetadata#INLINE}.
      */
-    public @Nonnull Translation inlineAsNeeded(@Nonnull final Function<Translation, Translation> bodyLambda) {
+    public @Nonnull Translation inlineAsNeeded() {
         if (metadata.contains(TranslationMetadata.NEEDS_INLINING_OFTEN)) {
             // function calls may have redirect to /dev/null if only side effects needed
-            String nextBody = Strings.removeEnd(body, ">/dev/null").stripTrailing();
+            String nextBody = Strings.remove(body, ">/dev/null").stripTrailing();
             // add INLINE and remove NEEDS INLINING OFTEN
             var nextMetadata = new ArrayList<>(List.of(TranslationMetadata.INLINE));
             nextMetadata.addAll(metadata);
             nextMetadata.remove(TranslationMetadata.NEEDS_INLINING_OFTEN);
             // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
-            return bodyLambda.apply(new Translation(preamble, "$( %s )".formatted(nextBody), type, nextMetadata));
+            return new Translation(preamble, "$( %s )".formatted(nextBody), type, nextMetadata);
         } // else
         return this;
     }

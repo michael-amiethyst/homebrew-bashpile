@@ -6,7 +6,6 @@ import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.Translation.toStringTranslation
-import com.bashpile.engine.Unwinder.Companion.unwindNested
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
 import com.bashpile.engine.strongtypes.Type
@@ -17,7 +16,8 @@ import com.bashpile.exceptions.UserError
 import com.google.common.collect.Iterables
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang3.StringUtils.removeEnd
+import org.apache.commons.lang3.StringUtils.removeStart
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.util.Objects.requireNonNull
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
 
 
-/** For the BashTranslationEngine to have complex code be in Kotlin */
+/** For the [BashTranslationEngine] to have complex code be in Kotlin */
 class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
     companion object {
@@ -99,12 +99,10 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                         }
 
                         // normal processing
-                        var opts = "-r" // read only
-                        if (type.isInt) {
-                            opts += "i" // Bash integer
-                        }
+                        val opts = "-r" // read only
+                        // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
                         "declare $opts $x=$${i.getAndIncrement()};"
-                    }.joinToString(" ")
+                    }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset
                 BashTranslationEngine.TAB + paramDeclarations + "\n"
             } else {
                 BashTranslationEngine.TAB + "# no parameters to function" + "\n"
@@ -144,8 +142,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val comment = createCommentTranslation("print statement", lineNumber(ctx))
         val arguments: Translation = argList.expression().stream()
             .map(requireNonNull(visitor)::visit)
-            .map{ tr: Translation -> tr.inlineAsNeeded { unwindNested(it) } }
-            .map { tr: Translation -> unwindNested(tr) }
+            .map{ tr: Translation -> tr.inlineAsNeeded() }
             .map { tr: Translation ->
                 if (tr.isBasicType && !tr.isListAccess && !tr.metadata().contains(CONDITIONAL)) {
                     tr.body("""
@@ -198,12 +195,17 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             return Translation.UNKNOWN_TRANSLATION
         }
 
+        // body
+
         val comment = createCommentTranslation("return statement", lineNumber(ctx))
         val returnLineLambda = { str: String ->
             if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {
                 "printf -- \"${Strings.unquote(str)}\"\n"
             } else if (exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)) {
                 // Avoid interpreting $(( )) results as a command
+                "printf -- $str\n"
+            } else if (exprTranslation.isNumeric && exprTranslation.metadata().contains(NORMAL)) {
+                // plain number type such as int or float equaling 42
                 "printf -- $str\n"
             } else {
                 str + "\n"
@@ -228,7 +230,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         var childTranslations: List<Translation> = ctx.children
             .map { tree: ParseTree? -> visitor.visit(tree) }
             .map { tr: Translation ->
-                tr.inlineAsNeeded { tr1: Translation? -> unwindNested(tr1!!) }
+                tr.inlineAsNeeded()
             }
             .toList()
 
@@ -299,17 +301,16 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         var primary = ctx.unaryPrimary().text
         var valueBeingTested: Translation
         // right now all implemented primaries are string tests
-        valueBeingTested = visitor.visit(ctx.expression())
-            .inlineAsNeeded { tr: Translation? -> unwindNested(tr!!) }
+        valueBeingTested = visitor.visit(ctx.expression()).inlineAsNeeded()
 
         // for isset (-n) and unset (-z) '+default' will evaluate to nothing if unset, and 'default' if set
         // see https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash for details
         val isSetCheck = listOf("isset", "unset").contains(primary)
         if (isSetCheck) {
             // remove ${ and } as needed
-            var modifiedValueBeingTested = StringUtils.removeStart(valueBeingTested.body(), "$")
-            modifiedValueBeingTested = StringUtils.removeStart(modifiedValueBeingTested, "{")
-            modifiedValueBeingTested = StringUtils.removeEnd(modifiedValueBeingTested, "}")
+            var modifiedValueBeingTested = removeStart(valueBeingTested.body(), "$")
+            modifiedValueBeingTested = removeStart(modifiedValueBeingTested, "{")
+            modifiedValueBeingTested = removeEnd(modifiedValueBeingTested, "}")
             valueBeingTested = valueBeingTested.body("\${$modifiedValueBeingTested+default}")
         }
 
@@ -334,7 +335,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         }
         var translations = listOf(visitor.visit(ctx.getChild(0)), visitor.visit(ctx.getChild(2)))
         translations = translations.map {
-            var ret = it.inlineAsNeeded { tr: Translation? -> unwindNested(tr!!) }
+            var ret = it.inlineAsNeeded()
             if (ret.metadata().contains(PARENTHESIZED)) {
                 // wrap in a block and add an end-of-statement
                 ret = ret.body("{ ${ret.body()}; }")

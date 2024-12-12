@@ -49,7 +49,6 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         // ensure generated bpc is executable
         assertSuccessfulExitCode(runAndJoin("test -x bin/bpc"));
 
-        // TODO rename to "deploysWorked" and consolidate bpc, stdlib and bpr
         bpcDeployed = true;
     }
 

@@ -156,8 +156,8 @@ public class ListOfTranslation extends Translation {
 
     @Nonnull
     @Override
-    public Translation inlineAsNeeded(@Nonnull Function<Translation, Translation> bodyLambda) {
-        translations = translations.stream().map(it -> it.inlineAsNeeded(bodyLambda)).toList();
+    public Translation inlineAsNeeded() {
+        translations = translations.stream().map(Translation::inlineAsNeeded).toList();
         return this;
     }
 

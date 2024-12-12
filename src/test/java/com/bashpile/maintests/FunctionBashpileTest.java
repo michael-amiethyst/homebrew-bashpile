@@ -66,6 +66,19 @@ class FunctionBashpileTest extends BashpileTest {
                 x * x"""));
     }
 
+    // TODO make float, list test.  Make test for optional 2nd argument, multiple optional arguments
+    @Test
+    @Order(31)
+    public void functionDeclarationReturnUndeclaredIntThrows() {
+        assertThrows(TypeError.class, () -> runText("""
+                (38. + 5) * .3
+                function functionName(x:int, y:int):
+                    return x * y
+                x:int = 7
+                functionName(x,x)
+                x * x"""));
+    }
+
     @Test
     @Order(40)
     public void functionDeclarationDoubleDeclThrows() {
@@ -163,6 +176,22 @@ class FunctionBashpileTest extends BashpileTest {
 
     @Test
     @Order(92)
+    public void functionCallOptionalArgumentWorks() {
+        final ExecutionResults results = runText("""
+                function square(first: int) -> int:
+                    ret: int
+                    if isset first and isNotEmpty first:
+                        ret = first * first
+                    else:
+                        ret = 42
+                    return ret
+                print(square())""");
+        assertSuccessfulExitCode(results);
+        assertEquals("42\n", results.stdout());
+    }
+
+    @Test
+    @Order(93)
     public void assertGnuGetoptCallNoReturnWorks() {
         final ExecutionResults results = runText("""
                 /**
