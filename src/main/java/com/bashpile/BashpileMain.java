@@ -15,6 +15,8 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 /** Entry point into the program.  Only spins up the transpiler and parses the command line with PicoCLI. */
 @CommandLine.Command(
         name = "bashpile",
@@ -78,12 +80,12 @@ public class BashpileMain implements Callable<Integer> {
             return 1;
         }
 
-        // transpile
+        // find transpiled filename
         Path transpiledFilename;
         if (outputFile != null) {
             transpiledFilename = outputFile;
         } else {
-            String filename = inputFile != null ? inputFile.toString() : "command";
+            String filename = inputFile != null && !inputFile.toString().equals("-") ? inputFile.toString() : "command";
             LOG.debug("Input file is: {}", filename);
             final Matcher matcher = FILE_EXTENSION.matcher(filename);
             if (matcher.find()) {
@@ -96,7 +98,15 @@ public class BashpileMain implements Callable<Integer> {
         // will overwrite
         LOG.info("Transpiling in directory {}.  Will create or overwrite file {}",
                 System.getProperty("user.dir"), transpiledFilename);
+        Path temp = null;
         try {
+            // handle '-' for stdin
+            if (inputFile != null && inputFile.toString().equals("-")) {
+                // create temp file then copy STDIN to it
+                temp = Files.createTempFile("stdinTemp", "bps");
+                Files.copy(System.in, temp, REPLACE_EXISTING);
+                inputFile = temp;
+            }
             String translation = inputFile != null ? BashpileMainHelper.transpileNioFile(inputFile)
                     : BashpileMainHelper.transpileScript(Objects.requireNonNull(command));
             final String bashScript = "#!/usr/bin/env bash\n\n" + translation;
@@ -109,6 +119,7 @@ public class BashpileMain implements Callable<Integer> {
             // delete if output file exists (e.g. we had a generated tempfile as output)
             // this indicates a failed compile
             Files.deleteIfExists(transpiledFilename);
+            if (temp != null) { Files.deleteIfExists(temp); }
             throw e; // should bubble to top
         }
     }
