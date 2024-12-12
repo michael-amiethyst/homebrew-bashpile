@@ -1,12 +1,13 @@
 # 1.0 Roadmap
-1. Hardening (fix TODOs and bugs, simplify)
-2. Refactor deployment
-   1. move generated files from /bin to /target/bin
-   2. make executable directly (shebang java -jar, then the jar binary)
-   3. skip external tools with flag for GHA free runner compatability (e.g. no shfmt)
-3. Remove unwinder, create lib functions to disable/enable strict mode
-4. Change architecture to create Bashpile AST (bast) and render to String after full context / metadata known
+1. Refactor deployment
+   1. Move generated files from /bin to /target/bin
+   2. Make executable directly (shebang java -jar, then the jar binary)
+   3. Skip external tools with flag for GHA free runner compatability (e.g. no shfmt)
+2. Remove unwinder, create lib functions to disable/enable strict mode
+3. Change architecture to create Bashpile AST (bast) and render to String after full context / metadata known
    1. e.g. stop parsing and re-parsing strings with regex
+4. Imports
+   1. Especially function return values into the type system
 5. More loops
    1. do while loop
    2. C style for loop
@@ -36,9 +37,8 @@
 * OOP (use / be inspired by bash infinity?) or at least structs
 * Factor out text for future localization and consistent end-user feel.
 * Regexes for Strings, files
-* imports
+* Handle colorized text
 * subshells, Bash `()`, Bashpile `&()`?
-* default values for functions
 * operator overloading for functions
 * exponents, other operators
 * commas in large values (e.g. 1,001)
