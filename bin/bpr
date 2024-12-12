@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-12-11T14:38:37.125343-05:00[America/New_York] (timestamp 1733945917125)
+# Generated from bin/bpr.bps on 2024-12-12T12:41:38.174590-05:00[America/New_York] (timestamp 1734025298174)
 #
 # strict mode header
 set -eEuo pipefail -o posix
@@ -15,26 +15,26 @@ assertGnuGetopt
 declare opts
 opts=$(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
-# assign statement, Bashpile line 13
+# assign statement, Bashpile line 14
 declare DEFAULT_OUTPUT_FILENAME
 DEFAULT_OUTPUT_FILENAME=$(createTempFile)
-# assign statement, Bashpile line 14
+# assign statement, Bashpile line 15
 declare translatedFilename
 translatedFilename="${DEFAULT_OUTPUT_FILENAME}"
-# assign statement, Bashpile line 15
+# assign statement, Bashpile line 16
 declare commandMode
 commandMode=false
-# while statement, Bashpile line 16
+# while statement, Bashpile line 17
 while true; do
-  # switch statement, Bashpile line 17
+  # switch statement, Bashpile line 18
   case $1 in
     -c | --command)
-      # reassign statement, Bashpile line 19
+      # reassign statement, Bashpile line 20
       commandMode=true
       shift
       ;;
     -o | --outputFile)
-      # reassign statement, Bashpile line 22
+      # reassign statement, Bashpile line 23
       translatedFilename=$2
       shift 2
       ;;
@@ -48,21 +48,25 @@ while true; do
   esac
 done
 if [ -n "${1+default}" ] && [ "$1" == "-" ]; then
-  # reassign statement, Bashpile line 32
+  # reassign statement, Bashpile line 33
   commandMode=true
   shift
 fi
-# assign statement, Bashpile line 36
+# assign statement, Bashpile line 37
 declare jarPath
 jarPath="$(dirname "${BASH_SOURCE[0]}")/bashpile.jar"
+if ! [ -e "${jarPath}" ]; then
+  # reassign statement, Bashpile line 39
+  jarPath=$(dirname "${BASH_SOURCE[0]}")/../target/bashpile.jar
+fi
 if ! ${commandMode} && [ -z "${1+default}" ]; then
   trap - ERR
   java -jar "$jarPath"
   exit $?
 fi
 set +u
-# function forward declaration, Bashpile line 46
-# function declaration, Bashpile line 89
+# function forward declaration, Bashpile line 49
+# function declaration, Bashpile line 92
 runTranslation() {
   set +u
   declare -r translatedFilename=$1
@@ -70,27 +74,27 @@ runTranslation() {
   read -r -a args <<<"$2"
   declare -x IFS=$'\n\t'
   set -u
-  # assign statement, Bashpile line 91
+  # assign statement, Bashpile line 94
   declare absoluteFilename
   absoluteFilename=$(realpath "$translatedFilename")
   chmod 755 $absoluteFilename
-  # assign statement, Bashpile line 94
+  # assign statement, Bashpile line 97
   declare LOG_NAME
   LOG_NAME=$(createTempFile "bpr.log")
-  # expression statement, Bashpile line 95
+  # expression statement, Bashpile line 98
   "$absoluteFilename" "${args[@]}" 2>&1 | tee "$LOG_NAME"
   if cat "$LOG_NAME" | grep -E 'unexpected EOF|syntax error|command not found' >/dev/null 2>&1; then
-    # expression statement, Bashpile line 98
+    # expression statement, Bashpile line 101
     "$absoluteFilename" "${args[@]}"
   fi
   rm $absoluteFilename 2>/dev/null || true
 }
 if ! ${commandMode}; then
   if [ "${translatedFilename}" == "${DEFAULT_OUTPUT_FILENAME}" ]; then
-    # reassign statement, Bashpile line 51
+    # reassign statement, Bashpile line 54
     translatedFilename=$(toBashpileOutputFile "$1")
     if [ -e "${translatedFilename}" ]; then
-      # print statement, Bashpile line 53
+      # print statement, Bashpile line 56
       printf -- "Will not overwrite ${translatedFilename}\n"
       exit 1
     fi
@@ -99,36 +103,36 @@ if ! ${commandMode}; then
   if [ -f "${translatedFilename}" ]; then
     rm bp_jar.log
     shift
-    # print statement, Bashpile line 59
+    # print statement, Bashpile line 62
     printf -- "Start of ${translatedFilename}\n"
-    # expression statement, Bashpile line 60
+    # expression statement, Bashpile line 63
     runTranslation "${translatedFilename}" "$@"
   else
-    # print statement, Bashpile line 62
+    # print statement, Bashpile line 65
     printf -- "Compile failed\n"
     cat bp_jar.log
     rm bp_jar.log
     exit 1
   fi
 else
-  # assign statement, Bashpile line 68
+  # assign statement, Bashpile line 71
   declare commandString
   if [ -n "${1+default}" ]; then
-    # reassign statement, Bashpile line 70
+    # reassign statement, Bashpile line 73
     commandString=$1
     shift
   else
-    # reassign statement, Bashpile line 73
+    # reassign statement, Bashpile line 76
     commandString=$(cat -)
   fi
   java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" >bp_jar.log 2>&1 || true
   if [ -f "${translatedFilename}" ]; then
     rm bp_jar.log
     sleep .2
-    # expression statement, Bashpile line 79
+    # expression statement, Bashpile line 82
     runTranslation "${translatedFilename}" "$@"
   else
-    # print statement, Bashpile line 81
+    # print statement, Bashpile line 84
     printf -- "Compile failed\n"
     cat bp_jar.log
     rm bp_jar.log

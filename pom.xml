@@ -239,7 +239,6 @@
                                     <mainClass>com.bashpile.BashpileMain</mainClass>
                                 </transformer>
                             </transformers>
-                            <outputFile>bin/bashpile.jar</outputFile>
                         </configuration>
                     </execution>
                 </executions>

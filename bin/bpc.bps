@@ -40,11 +40,11 @@ if unset BASHPILE_HOME:
     bpWhere: str = #(whereis bashpile | cut -d ' ' -f 2)
     bpHome = #(dirname "$bpWhere")
 else:
-    BASHPILE_HOME: str
-    bpHome = BASHPILE_HOME + "/bin"
+    // development location
+    bpHome = BASHPILE_HOME: str
 jarPath: str = bpHome + "/bashpile.jar"
 if not fileExists jarPath:
-    jarPath = bpHome + "/bin/bashpile.jar"
+    jarPath = bpHome + "/target/bashpile.jar"
 
 if commandMode:
     commandString: str = #(cat -)

@@ -23,7 +23,7 @@ class Bashpile < Formula
 
   def install
     system "mvn", "clean", "verify", "-Dskip.failsafe.tests=true" # Integration tests can't find dependencies on PATH
-    bin.install "bin/bashpile.jar"
+    bin.install "target/bashpile.jar"
     bin.install "bin/bpc"
     FileUtils.cp "#{bin}/bpc", "#{bin}/bashpilec"
     bin.install "bin/bpr"

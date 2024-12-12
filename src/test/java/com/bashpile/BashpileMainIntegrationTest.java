@@ -120,7 +120,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Timeout(20)
     @Order(11)
     public void bprWorks() throws IOException {
-        log.info("In noSubCommandTest");
+        log.info("In bprWorks");
         Assumptions.assumeTrue(bprDeployed);
 
         // run with our local (not installed) bpr
