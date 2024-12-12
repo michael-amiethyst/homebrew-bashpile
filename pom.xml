@@ -250,16 +250,27 @@
                 <executions>
                     <execution>
                         <id>Generate bpc</id>
-                        <phase>pre-integration-test</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
+                        <configuration>
+                            <executable>/bin/bash</executable>
+                            <commandlineArgs>bin/create-bpc</commandlineArgs>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>Generate stdlib</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>/bin/bash</executable>
+                            <commandlineArgs>-c "target/bpc --outputFile target/stdlib bin/stdlib.bps"</commandlineArgs>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <executable>/bin/bash</executable>
-                    <commandlineArgs>bin/create-bpc</commandlineArgs>
-                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>

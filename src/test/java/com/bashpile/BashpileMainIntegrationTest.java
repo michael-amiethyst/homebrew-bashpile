@@ -25,47 +25,13 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
-    private static boolean bpcDeployed = false;
-
     private static boolean bprDeployed = false;
-
-    /** bpc created with bin/create-bpc and called by maven-exec-plugin */
-    @Test
-    @Timeout(20)
-    @Order(5)
-    public void bpcDeploysSuccessfully() throws IOException {
-        log.info("In bpcDeploysSuccessfully");
-        // ensure generated bpc is executable
-        assertSuccessfulExitCode(runAndJoin("test -x target/bpc"));
-
-        bpcDeployed = true;
-    }
-
-    @Test
-    @Timeout(20)
-    @Order(6)
-    public void stdlibDeploysSuccessfully() throws IOException {
-        log.info("In stdlibDeploysSuccessfully");
-
-        int exitCode = ExecutionResults.GENERIC_FAILURE;
-        int loops = 0;
-        ExecutionResults results = null;
-        while (exitCode != ExecutionResults.SUCCESS && loops++ < 3) {
-            final String command = "target/bpc bin/stdlib.bps";
-            results = runAndJoin(command);
-            log.trace("Output text:\n{}", results.stdout());
-            exitCode = results.exitCode();
-        }
-
-        assertSuccessfulExitCode(results);
-    }
 
     @Test
     @Timeout(25) // sometimes it takes a while
     @Order(9)
     public void bprDeploysSuccessfully() throws IOException {
         log.info("In bprDeploysSuccessfully");
-        Assumptions.assumeTrue(bpcDeployed);
 
         // weird, intermittent errors running bpr in Java under WSL like characters getting skipped
         int exitCode = ExecutionResults.GENERIC_FAILURE;

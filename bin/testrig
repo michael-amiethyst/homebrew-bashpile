@@ -4,7 +4,7 @@
  * Usage: bin/testrig src/test/resources/currTest
 */
 
-source ${BASHPILE_HOME:=.}/bin/stdlib || source ${BASHPILE_HOME:=.}/stdlib
+source ${BASHPILE_HOME:=.}/target/stdlib || source ${BASHPILE_HOME:=.}/stdlib
 
 CLASS_PATH_FILE: readonly str = createTempFile("cpath.txt")
 mvn dependency:build-classpath -Dmdep.outputFile="$CLASS_PATH_FILE"

@@ -28,7 +28,7 @@ class Bashpile < Formula
     FileUtils.cp "#{bin}/bpc", "#{bin}/bashpilec"
     bin.install "bin/bpr"
     FileUtils.cp "#{bin}/bpr", "#{bin}/bashpile"
-    bin.install "bin/stdlib"
+    bin.install "target/stdlib"
   end
 
   test do

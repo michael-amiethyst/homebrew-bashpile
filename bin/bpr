@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 #
-# Generated from bin/bpr.bps on 2024-12-12T12:41:38.174590-05:00[America/New_York] (timestamp 1734025298174)
+# Generated from bin/bpr.bps on 2024-12-12T15:12:09.875052-05:00[America/New_York] (timestamp 1734034329875)
 #
 # strict mode header
 set -eEuo pipefail -o posix
 declare -x IFS=$'\n\t'
 declare -i s
 trap 's=$?; echo "Error (exit code $s) found on line $LINENO.  Command was: $BASH_COMMAND"; exit $s' ERR
-source ${BASHPILE_HOME:=.}/bin/stdlib || source ${BASHPILE_HOME:=.}/stdlib
+source ${BASHPILE_HOME:=.}/target/stdlib || source ${BASHPILE_HOME:=.}/stdlib
 # expression statement, Bashpile line 8
 assertGnuGetopt
 # assign statement, Bashpile line 11
