@@ -52,6 +52,9 @@ public class BashTranslationEngine implements TranslationEngine {
     /** This is how we enforce type checking at compile time.  Mutable. */
     private final TypeStack typeStack = new TypeStack();
 
+    /** This is how we keep track of default arguments from function declarations */
+    private final Map<String, String> defaultArgumentsMap = new HashMap<>();
+
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
@@ -161,6 +164,10 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionDeclarationStatement(
             @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
+        if (ctx.paramaters().Number() != null) {
+            String numberString = ctx.paramaters().Number().getText();
+            defaultArgumentsMap.put(ctx.Id().getText(), numberString);
+        }
         return requireNonNull(kotlinDelegate).functionDeclarationStatement(ctx, foundForwardDeclarations, typeStack);
     }
 
@@ -467,12 +474,19 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // get functionName and the argumentTranslations
         final boolean hasArgs = ctx.argumentList() != null;
-        final List<Translation> argumentTranslationsList = hasArgs
+        List<Translation> argumentTranslationsList = hasArgs
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
                         .map(Translation::inlineAsNeeded)
                         .toList()
                 : List.of();
+        argumentTranslationsList = new ArrayList<>(argumentTranslationsList); // make mutable
+
+        // add default arguments as needed
+        String defaultArguments = defaultArgumentsMap.get(id);
+        if (defaultArguments != null && argumentTranslationsList.isEmpty()) {
+            argumentTranslationsList.add(new Translation(defaultArguments, INT_TYPE, List.of()));
+        }
 
         // check types
         final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(id);

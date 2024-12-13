@@ -28,7 +28,8 @@ statement
 
 tags        : OBracket (String*) CBracket;
 // like (x: str, y: str)
-paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
+paramaters  : OParen ( typedId (Comma typedId)* )? CParen
+            | OParen ( typedId Equals Number ) CParen;
 typedId     : Id Colon modifier* type;
 type        : Type (LessThan Type MoreThan)?;
 modifier    : Exported | Readonly;

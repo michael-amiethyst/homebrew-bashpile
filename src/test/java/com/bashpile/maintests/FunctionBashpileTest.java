@@ -178,7 +178,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(92)
     public void functionCallOptionalArgumentWorks() {
         final ExecutionResults results = runText("""
-                function square(first: int) -> int:
+                function square(first: int = 0) -> int:
                     ret: int
                     if isset first and isNotEmpty first:
                         ret = first * first
@@ -191,7 +191,7 @@ class FunctionBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(93)
+    @Order(110)
     public void assertGnuGetoptCallNoReturnWorks() {
         final ExecutionResults results = runText("""
                 /**
@@ -206,7 +206,7 @@ class FunctionBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(100)
+    @Order(120)
     public void functionCallReturnEmptyBadTypeThrows() {
         assertThrows(TypeError.class, () -> runText("""
                 function world() -> str:
