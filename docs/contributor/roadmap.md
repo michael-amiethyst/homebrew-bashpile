@@ -1,9 +1,7 @@
 # 1.0 Roadmap
 1. Refactor deployment
-   1. Move generated files from /bin to /target/bin
-   2. Make executable directly (shebang java -jar, then the jar binary)
-   3. Skip external tools with flag for GHA free runner compatability (e.g. no shfmt)
-2. Remove unwinder, create lib functions to disable/enable strict mode
+   1. Skip external tools with flag for GHA free runner compatability (e.g. no shfmt)
+2. Create lib functions to disable/enable strict mode
 3. Change architecture to create Bashpile AST (bast) and render to String after full context / metadata known
    1. e.g. stop parsing and re-parsing strings with regex
 4. Imports
