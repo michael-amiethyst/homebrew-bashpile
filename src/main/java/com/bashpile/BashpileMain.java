@@ -35,7 +35,10 @@ public class BashpileMain implements Callable<Integer> {
     /** Matches stuff like a.jpeg or b.e */
     private static final Pattern FILE_EXTENSION = Pattern.compile("^(.+)?\\..[^.]?[^.]?[^.]?[^.]?$");
 
-    /** Our main */
+    /**
+     * Our main.  Hands off execution to PicoCLI.
+     * @see #call()
+     */
     public static void main(final String[] args) {
         final BashpileMain bashpile = new BashpileMain();
         final CommandLine argProcessor = new CommandLine(bashpile);
@@ -56,11 +59,12 @@ public class BashpileMain implements Callable<Integer> {
     @Nullable @SuppressWarnings("UnusedDeclaration")
     private String command;
 
-    // TODO make inputFile required
     @CommandLine.Parameters(arity = "0..1",
             description = "Use the specified Bashpile file.  -c or INPUT_FILE")
     @Nullable @SuppressWarnings("UnusedDeclaration")
     private Path inputFile;
+
+    // TODO --help, --version
 
     private CommandLine picocliCommandLine;
 

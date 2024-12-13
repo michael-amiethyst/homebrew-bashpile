@@ -191,6 +191,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(80)
     public void bprDashCWithStdinFromDifferentDirectoryWorks() throws IOException {
         log.info("In bpr -c with stdin works");
+        Assumptions.assumeTrue(Files.exists(Path.of("../homebrew-bashpile")));
 
         // run with our local (not installed) bpr
         final String command = "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpr -c";
@@ -208,6 +209,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(81)
     public void bprDashCWithStdinFromDifferentDirectoryWithOutputFileWorks() throws IOException {
         log.info("In bpr -c with stdin and outputfile works");
+        Assumptions.assumeTrue(Files.exists(Path.of("../homebrew-bashpile")));
 
         // run with our local (not installed) bpr
         final String command =
@@ -226,6 +228,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(81)
     public void bpcDashWithStdinWorks() throws IOException {
         log.info("In bpc - with stdin works");
+        Assumptions.assumeTrue(Files.exists(Path.of("../homebrew-bashpile")));
 
         // run with our local (not installed) bpr
         final String command =
@@ -241,8 +244,9 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Test
     @Timeout(20)
     @Order(82)
-    public void bpcDashWithOutputFileWithStdinWorks() throws IOException {
-        log.info("In bpc - with stdin works");
+    public void bpcDashWithOutputFileWorks() throws IOException {
+        log.info("In bpc - with outputFile Works");
+        Assumptions.assumeTrue(Files.exists(Path.of("../homebrew-bashpile")));
 
         // run with our local (not installed) bpr
         final String command =
@@ -263,6 +267,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     @Order(84)
     public void bprDashWithStdinWorks() throws IOException {
         log.info("In bpr - with stdin works");
+        Assumptions.assumeTrue(Files.exists(Path.of("../homebrew-bashpile")));
 
         // run with our local (not installed) bpr
         final String command =
