@@ -4,7 +4,9 @@
  * Usage: bin/testrigTokens src/test/resources/currTest
 */
 
-CLASS_PATH_FILE: readonly str = #(mktemp -t cpath.txt)
+source ${BASHPILE_HOME:=.}/target/stdlib  || source /usr/local/bin/stdlib || source /opt/homebrew/bin/stdlib
+
+CLASS_PATH_FILE: readonly str = createTempFile("cpath.txt")
 mvn dependency:build-classpath -Dmdep.outputFile="$CLASS_PATH_FILE"
 classPath: str = #(cat "$CLASS_PATH_FILE")
 #(java -cp target/classes:$classPath org.antlr.v4.gui.TestRig com.bashpile.Bashpile program -tokens "$@")

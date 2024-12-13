@@ -5,7 +5,7 @@
  * Manually deploy with `target/bpc --outputFile=target/bpr bin/bpr.bps`
  */
 
-source ${BASHPILE_HOME:=.}/target/stdlib || source ${BASHPILE_HOME:=.}/stdlib
+source ${BASHPILE_HOME:=.}/target/stdlib || source /usr/local/bin/stdlib || source /opt/homebrew/bin/stdlib
 assertGnuGetopt()
 
 // getopt
