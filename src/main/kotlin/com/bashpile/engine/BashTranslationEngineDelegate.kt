@@ -89,19 +89,25 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 val paramDeclarations = ctx.paramaters().typedId()
                     .map{ it.Id() }
                     .map { obj: TerminalNode -> obj.text }
-                    .map { x: String ->
-                        val type: Type = typeStack.getVariableType(x)
+                    .map { varName: String ->
+                        val type: Type = typeStack.getVariableType(varName)
 
                         // special handling for lists with 'read -a'
                         if (type.isList) {
                             return@map "declare -x IFS=$' ';" +
-                                    " read -r -a $x <<< \"$${i.getAndIncrement()}\"; declare -x IFS=$'\\n\\t';"
+                                    " read -r -a $varName <<< \"$${i.getAndIncrement()}\"; declare -x IFS=$'\\n\\t';"
                         }
 
                         // normal processing
-                        val opts = "-r" // read only
                         // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
-                        "declare $opts $x=$${i.getAndIncrement()};"
+                        if (ctx.paramaters().Number() == null) {
+                            "declare -r $varName=$${i.getAndIncrement()};"
+                        } else {
+                            // Number literal default
+                            val defaultValue = ctx.paramaters().Number().text
+                            // don't make read-only, ${1:=0} syntax to default variable $1 to 0 doesn't work, must reassign
+                            "declare $varName=$${i.getAndIncrement()}; $varName=${'$'}{$varName:=$defaultValue};"
+                        }
                     }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset
                 BashTranslationEngine.TAB + paramDeclarations + "\n"
             } else {

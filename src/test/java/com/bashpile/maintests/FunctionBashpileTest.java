@@ -183,12 +183,30 @@ class FunctionBashpileTest extends BashpileTest {
                     if isset first and isNotEmpty first:
                         ret = first * first
                     else:
+                        // with default value we should never get here
                         ret = 42
                     return ret
                 print(square())""");
         assertSuccessfulExitCode(results);
-        assertEquals("42\n", results.stdout());
+        assertEquals("0\n", results.stdout());
     }
+
+    // TODO uncomment
+//    @Test
+//    @Order(92)
+//    public void functionCallOptionalArgumentWithEmptyWorks() {
+//        final ExecutionResults results = runText("""
+//                function square(first: int = empty) -> int:
+//                    ret: int
+//                    if isset first and isNotEmpty first:
+//                        ret = first * first
+//                    else:
+//                        ret = 42
+//                    return ret
+//                print(square())""");
+//        assertSuccessfulExitCode(results);
+//        assertEquals("42\n", results.stdout());
+//    }
 
     @Test
     @Order(110)
