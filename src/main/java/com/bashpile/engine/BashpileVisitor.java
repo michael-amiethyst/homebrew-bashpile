@@ -220,17 +220,29 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     // visit type expressions
 
     @Override
-    public @Nonnull Translation visitBoolExpression(BashpileParser.BoolExpressionContext ctx) {
-        return new Translation(ctx.Bool().getText(), Type.BOOL_TYPE, NORMAL);
-    }
-
-    @Override
     public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
         final TerminalNode number = ctx.Number();
         if (number == null) {
             throw new BashpileUncheckedAssertionException("No number in number expression.  Bad parse?");
         }
         final Type type = Type.parseNumberString(number.getText());
+        return new Translation(ctx.getText(), type, NORMAL);
+    }
+
+    @Override
+    public Translation visitLiteralExpression(BashpileParser.LiteralExpressionContext ctx) {
+        Type type;
+        if (ctx.literal().String() != null) {
+            type = Type.STR_TYPE;
+        } else if (ctx.literal().Number() != null) {
+            type = Type.parseNumberString(ctx.literal().Number().getText());
+        } else if (ctx.literal().Bool() != null) {
+            type = Type.BOOL_TYPE;
+        } else if (ctx.literal().Empty() != null) {
+            type = Type.EMPTY_TYPE;
+        } else {
+            throw new BashpileUncheckedException("Unexpected literal");
+        }
         return new Translation(ctx.getText(), type, NORMAL);
     }
 

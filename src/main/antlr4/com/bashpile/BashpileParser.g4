@@ -68,10 +68,11 @@ expression
     | ListOf (OParen CParen | OParen expression (Comma expression)* CParen)
                                         # listOfBuiltinExpression
     // type expressions
-    | Bool                              # boolExpression
-    | String                            # stringExpression
+    | literal                           # literalExpression
     | Id                                # idExpression
     ;
+
+literal            : String | Number | Bool | Empty;
 
 shellString        : HashOParen shellStringContents* CParen;
 shellStringContents: shellString
