@@ -31,7 +31,7 @@ tags        : OBracket (String*) CBracket;
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen
             | OParen typedId Equals literal CParen;
 typedId     : Id Colon modifier* type;
-type        : Type (LessThan Type MoreThan)?;
+type        : types (LessThan types MoreThan)?;
 modifier    : Exported | Readonly;
 argumentList: expression (Comma expression)*;
 elseIfClauses     : ElseIf Not? expression Colon indentedStatements;
@@ -72,7 +72,8 @@ expression
     | Id                                # idExpression
     ;
 
-literal            : String | Number | Bool | Empty;
+literal : String | Number | Bool | Empty;
+types    : Unknown | Empty | BoolType | NumberType | Int | FloatType | Str | List | Map | Ref;
 
 shellString        : HashOParen shellStringContents* CParen;
 shellStringContents: shellString

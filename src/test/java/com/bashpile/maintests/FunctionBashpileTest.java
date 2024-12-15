@@ -195,7 +195,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(92)
     public void functionCallOptionalArgumentWithEmptyWorks() {
         final ExecutionResults results = runText("""
-                function square(first: int = _empty) -> int:
+                function square(first: int = empty) -> int:
                     ret: int
                     if isset first and isNotEmpty first:
                         ret = first * first

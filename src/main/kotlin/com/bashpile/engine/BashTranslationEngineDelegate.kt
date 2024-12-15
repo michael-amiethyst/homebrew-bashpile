@@ -101,7 +101,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                         // normal processing
                         // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
                         // don't make read only, empty default arguments may want to be set in the function
-                        if (ctx.paramaters().literal() == null || ctx.paramaters().literal().text == "_empty") {
+                        if (ctx.paramaters().literal() == null || ctx.paramaters().literal().text == "empty") {
                             "declare $varName=$${i.getAndIncrement()};"
                         } else {
                             // default literal

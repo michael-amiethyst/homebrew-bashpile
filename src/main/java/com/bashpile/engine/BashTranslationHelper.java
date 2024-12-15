@@ -6,7 +6,6 @@ import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -91,11 +90,11 @@ public class BashTranslationHelper {
         // extract info from context
         int lineNumber = lineNumber(ctx);
         final BashpileParser.TypeContext lhsTypeRoot = ctx.typedId().type();
-        final String lhsTypeText = lhsTypeRoot.Type(0).getText();
+        final String lhsTypeText = lhsTypeRoot.types(0).getText();
 
         // find type - the result might be a list with a contents type
         final Type.TypeNames lhsMainType = Type.TypeNames.valueOf(lhsTypeText.toUpperCase());
-        final TerminalNode contentsTypeNode = lhsTypeRoot.Type(1);
+        final BashpileParser.TypesContext contentsTypeNode = lhsTypeRoot.types(1);
         final Type lhsContentsType =
                 contentsTypeNode != null ? Type.valueOf(contentsTypeNode.getText(), lineNumber) : NA_TYPE;
         return new Type(lhsMainType, Optional.of(lhsContentsType));

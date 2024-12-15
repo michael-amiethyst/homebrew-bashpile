@@ -25,9 +25,17 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
-// TODO refator type into a Parser object
-Empty    : '_empty';
-Type     : 'unknown' | 'empty' | 'bool' | 'number' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
+// TODO refator names to style of Number: 'number', NumberValue: regex
+Empty    : 'empty';
+Unknown  : 'unknown';
+BoolType : 'bool';
+NumberType: 'number';
+Int      : 'int';
+FloatType: 'float';
+Str      : 'str';
+List     : 'list';
+Map      : 'map';
+Ref      : 'ref';
 
 Function : 'function';
 Block    : 'block';

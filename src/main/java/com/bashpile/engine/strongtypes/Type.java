@@ -102,17 +102,17 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> cont
     /** Gets the Type with mainTypeName and contentsType info */
     public static @Nonnull Type valueOf(@Nonnull BashpileParser.TypeContext ctx) {
         // guard
-        final boolean hasTypeInfo = ctx.Type(0) != null && Strings.isNotBlank(ctx.Type(0).getText());
+        final boolean hasTypeInfo = ctx.types(0) != null && Strings.isNotBlank(ctx.types(0).getText());
         Asserts.assertTrue(hasTypeInfo, "Type information somehow missing");
 
         // body
-        final String mainTypeName = ctx.Type(0).getText().toUpperCase();
+        final String mainTypeName = ctx.types(0).getText().toUpperCase();
         final int line = ctx.start.getLine();
-        boolean isSimpleType = ctx.Type(1) == null || Strings.isBlank(ctx.Type(1).getText());
+        boolean isSimpleType = ctx.types(1) == null || Strings.isBlank(ctx.types(1).getText());
         if (isSimpleType) {
             return valueOf(mainTypeName, line);
         } else {
-            final Type contentsType = valueOf(ctx.Type(1).getText(), line);
+            final Type contentsType = valueOf(ctx.types(1).getText(), line);
             return new Type(TypeNames.valueOf(mainTypeName), Optional.of(contentsType));
         }
     }

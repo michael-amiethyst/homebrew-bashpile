@@ -305,7 +305,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 subcommentTranslationOrDefault(rhsExprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
         Translation modifiers = visitModifiers(ctx.typedId().modifier());
-        final String ctxTypeString = ctx.typedId().type().Type(0).getText();
+        final String ctxTypeString = ctx.typedId().type().types(0).getText();
         final boolean isList = ctxTypeString.equalsIgnoreCase(LIST_TYPE.mainTypeName().name());
         if (isList) {
             modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
