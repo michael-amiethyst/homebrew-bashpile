@@ -100,12 +100,12 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
                         // normal processing
                         // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
-                        if (ctx.paramaters().Number() == null) {
-                            "declare -r $varName=$${i.getAndIncrement()};"
+                        // don't make read only, empty default arguments may want to be set in the function
+                        if (ctx.paramaters().literal() == null || ctx.paramaters().literal().text == "_empty") {
+                            "declare $varName=$${i.getAndIncrement()};"
                         } else {
-                            // Number literal default
-                            val defaultValue = ctx.paramaters().Number().text
-                            // don't make read-only, ${1:=0} syntax to default variable $1 to 0 doesn't work, must reassign
+                            // default literal
+                            val defaultValue = ctx.paramaters().literal().text
                             "declare $varName=$${i.getAndIncrement()}; $varName=${'$'}{$varName:=$defaultValue};"
                         }
                     }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset

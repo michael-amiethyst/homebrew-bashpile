@@ -164,9 +164,8 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionDeclarationStatement(
             @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
-        if (ctx.paramaters().Number() != null) {
-            String numberString = ctx.paramaters().Number().getText();
-            defaultArgumentsMap.put(ctx.Id().getText(), numberString);
+        if (ctx.paramaters().literal() != null) {
+            defaultArgumentsMap.put(ctx.Id().getText(), ctx.paramaters().literal().getText());
         }
         return requireNonNull(kotlinDelegate).functionDeclarationStatement(ctx, foundForwardDeclarations, typeStack);
     }

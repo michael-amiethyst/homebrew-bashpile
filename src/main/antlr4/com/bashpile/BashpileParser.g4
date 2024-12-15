@@ -29,7 +29,7 @@ statement
 tags        : OBracket (String*) CBracket;
 // like (x: str, y: str)
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen
-            | OParen ( typedId Equals Number ) CParen;
+            | OParen typedId Equals literal CParen;
 typedId     : Id Colon modifier* type;
 type        : Type (LessThan Type MoreThan)?;
 modifier    : Exported | Readonly;
@@ -82,7 +82,7 @@ shellStringContents: shellString
                    | ShellStringEscapeSequence;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-unaryPrimary: Not | Isset | Unset | Empty | NotEmpty | FileExists | RegularFileExists | DirectoryExists;
+unaryPrimary: Not | Isset | Unset | IsEmpty | NotEmpty | FileExists | RegularFileExists | DirectoryExists;
 
 // one line means logically equal precidence (e.g. LessThan in the same as MoreThanOrEquals)
 binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals

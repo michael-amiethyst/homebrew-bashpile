@@ -25,7 +25,10 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
+// TODO refator type into a Parser object
+Empty    : '_empty';
 Type     : 'unknown' | 'empty' | 'bool' | 'number' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
+
 Function : 'function';
 Block    : 'block';
 Return   : 'return';
@@ -61,7 +64,7 @@ Add     : '+';
 Minus   : '-';
 Isset   : 'isset'; // TODO change to exits and notExists
 Unset   : 'unset';
-Empty   : 'isEmpty';
+IsEmpty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';
 FileExists: 'fileExists';
 RegularFileExists: 'regularFileExists';

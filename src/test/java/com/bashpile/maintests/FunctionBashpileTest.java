@@ -191,22 +191,21 @@ class FunctionBashpileTest extends BashpileTest {
         assertEquals("0\n", results.stdout());
     }
 
-    // TODO uncomment
-//    @Test
-//    @Order(92)
-//    public void functionCallOptionalArgumentWithEmptyWorks() {
-//        final ExecutionResults results = runText("""
-//                function square(first: int = empty) -> int:
-//                    ret: int
-//                    if isset first and isNotEmpty first:
-//                        ret = first * first
-//                    else:
-//                        ret = 42
-//                    return ret
-//                print(square())""");
-//        assertSuccessfulExitCode(results);
-//        assertEquals("42\n", results.stdout());
-//    }
+    @Test
+    @Order(92)
+    public void functionCallOptionalArgumentWithEmptyWorks() {
+        final ExecutionResults results = runText("""
+                function square(first: int = _empty) -> int:
+                    ret: int
+                    if isset first and isNotEmpty first:
+                        ret = first * first
+                    else:
+                        ret = 42
+                    return ret
+                print(square())""");
+        assertSuccessfulExitCode(results);
+        assertEquals("42\n", results.stdout());
+    }
 
     @Test
     @Order(110)
