@@ -236,7 +236,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
             type = Type.STR_TYPE;
         } else if (ctx.literal().Number() != null) {
             type = Type.parseNumberString(ctx.literal().Number().getText());
-        } else if (ctx.literal().Bool() != null) {
+        } else if (ctx.literal().BoolValues() != null) {
             type = Type.BOOL_TYPE;
         } else if (ctx.literal().Empty() != null) {
             type = Type.EMPTY_TYPE;

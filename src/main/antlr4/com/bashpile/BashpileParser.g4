@@ -72,8 +72,8 @@ expression
     | Id                                # idExpression
     ;
 
-literal : String | Number | Bool | Empty;
-types    : Unknown | Empty | BoolType | NumberType | Int | FloatType | Str | List | Map | Ref;
+literal : String | Number | BoolValues | Empty;
+types    : Unknown | Empty | Bool | NumberType | Int | FloatType | Str | List | Map | Ref;
 
 shellString        : HashOParen shellStringContents* CParen;
 shellStringContents: shellString

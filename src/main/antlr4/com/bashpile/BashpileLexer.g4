@@ -28,7 +28,7 @@ tokens { INDENT, DEDENT }
 // TODO refator names to style of Number: 'number', NumberValue: regex
 Empty    : 'empty';
 Unknown  : 'unknown';
-BoolType : 'bool';
+Bool     : 'bool';
 NumberType: 'number';
 Int      : 'int';
 FloatType: 'float';
@@ -41,7 +41,7 @@ Function : 'function';
 Block    : 'block';
 Return   : 'return';
 Print    : 'print';
-Bool     : 'true' | 'false';
+BoolValues: 'true' | 'false';
 If       : 'if';
 ElseIf   : 'else-if';
 Else     : 'else';
