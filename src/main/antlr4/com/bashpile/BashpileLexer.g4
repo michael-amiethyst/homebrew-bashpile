@@ -25,13 +25,12 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
-// TODO refator names to style of Number: 'number', NumberValue: regex
 Empty    : 'empty';
 Unknown  : 'unknown';
 Bool     : 'bool';
 Number   : 'number';
 Int      : 'int';
-FloatType: 'float';
+Float    : 'float';
 Str      : 'str';
 List     : 'list';
 Map      : 'map';
@@ -98,12 +97,12 @@ ShellLine   : {isLinuxCommand(_input)}? (Id Equals (NumberValues | String))* Id 
 // must start with a letter or underscore, then may have numbers
 Id: ID_START ID_CONTINUE*;
 
-NumberValues: Float | Integer;
+NumberValues: FloatValues | IntegerValues;
 
 // future proof for octals to start with '0' like in C
-Integer: NON_ZERO_DIGIT DIGIT* | '0';
+IntegerValues: NON_ZERO_DIGIT DIGIT* | '0';
 
-Float: INT_PART? FRACTION | INT_PART '.';
+FloatValues: INT_PART? FRACTION | INT_PART '.';
 
 // newlines, whitespace and comments
 Newline      : '\r'? '\n' ' '*;

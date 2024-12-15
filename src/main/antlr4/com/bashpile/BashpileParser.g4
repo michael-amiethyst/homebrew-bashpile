@@ -73,7 +73,7 @@ expression
     ;
 
 literal : String | NumberValues | BoolValues | Empty;
-types    : Unknown | Empty | Bool | Number | Int | FloatType | Str | List | Map | Ref;
+types    : Unknown | Empty | Bool | Number | Int | Float | Str | List | Map | Ref;
 
 shellString        : HashOParen shellStringContents* CParen;
 shellStringContents: shellString
