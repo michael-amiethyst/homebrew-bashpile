@@ -221,7 +221,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public @Nonnull Translation visitNumberExpression(@Nonnull final BashpileParser.NumberExpressionContext ctx) {
-        final TerminalNode number = ctx.Number();
+        final TerminalNode number = ctx.NumberValues();
         if (number == null) {
             throw new BashpileUncheckedAssertionException("No number in number expression.  Bad parse?");
         }
@@ -234,8 +234,8 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         Type type;
         if (ctx.literal().String() != null) {
             type = Type.STR_TYPE;
-        } else if (ctx.literal().Number() != null) {
-            type = Type.parseNumberString(ctx.literal().Number().getText());
+        } else if (ctx.literal().NumberValues() != null) {
+            type = Type.parseNumberString(ctx.literal().NumberValues().getText());
         } else if (ctx.literal().BoolValues() != null) {
             type = Type.BOOL_TYPE;
         } else if (ctx.literal().Empty() != null) {

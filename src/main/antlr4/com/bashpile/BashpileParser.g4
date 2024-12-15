@@ -49,7 +49,7 @@ returnPsudoStatement: Return expression? Newline;
 expression
     : listAccess                        # listAccessExpression
     | expression op=(Increment | Decrement) # unaryPostCrementExpression
-    | <assoc=right> Minus? Number       # numberExpression // covers the unary '-' as well
+    | <assoc=right> Minus? NumberValues       # numberExpression // covers the unary '-' as well
     | <assoc=right> unaryPrimary
                              expression # unaryPrimaryExpression
     | expression Colon type             # typecastExpression
@@ -72,8 +72,8 @@ expression
     | Id                                # idExpression
     ;
 
-literal : String | Number | BoolValues | Empty;
-types    : Unknown | Empty | Bool | NumberType | Int | FloatType | Str | List | Map | Ref;
+literal : String | NumberValues | BoolValues | Empty;
+types    : Unknown | Empty | Bool | Number | Int | FloatType | Str | List | Map | Ref;
 
 shellString        : HashOParen shellStringContents* CParen;
 shellStringContents: shellString
@@ -92,6 +92,6 @@ binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
 combiningOperator: And | Or;
 
 // translates to $1, $2, etc
-argumentsBuiltin: Arguments OBracket (Number | All) CBracket;
+argumentsBuiltin: Arguments OBracket (NumberValues | All) CBracket;
 
-listAccess: Id OBracket (Minus? Number | All) CBracket;
+listAccess: Id OBracket (Minus? NumberValues | All) CBracket;

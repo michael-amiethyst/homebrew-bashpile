@@ -29,7 +29,7 @@ tokens { INDENT, DEDENT }
 Empty    : 'empty';
 Unknown  : 'unknown';
 Bool     : 'bool';
-NumberType: 'number';
+Number   : 'number';
 Int      : 'int';
 FloatType: 'float';
 Str      : 'str';
@@ -91,14 +91,14 @@ Equals  : '=';
 PlusEquals: '+=';
 
 // shell lines using Semantic Predicate
-ShellLine   : {isLinuxCommand(_input)}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
+ShellLine   : {isLinuxCommand(_input)}? (Id Equals (NumberValues | String))* Id SHELL_LINE_WORD*;
 
 // ID and Numbers
 
 // must start with a letter or underscore, then may have numbers
 Id: ID_START ID_CONTINUE*;
 
-Number: Float | Integer;
+NumberValues: Float | Integer;
 
 // future proof for octals to start with '0' like in C
 Integer: NON_ZERO_DIGIT DIGIT* | '0';

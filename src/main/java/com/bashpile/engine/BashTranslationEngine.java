@@ -594,8 +594,8 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation argumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx) {
         LOG.trace("In argumentsBuiltinExpression");
-        if (ctx.argumentsBuiltin().Number() != null) {
-            return toStringTranslation("$" + ctx.argumentsBuiltin().Number().getText());
+        if (ctx.argumentsBuiltin().NumberValues() != null) {
+            return toStringTranslation("$" + ctx.argumentsBuiltin().NumberValues().getText());
         } else {
             // arguments[all]
             return toStringTranslation("$@");
