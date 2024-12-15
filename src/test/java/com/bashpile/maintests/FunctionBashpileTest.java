@@ -178,7 +178,7 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(92)
     public void functionCallOptionalArgumentWorks() {
         final ExecutionResults results = runText("""
-                function square(first: int = 0) -> int:
+                function square(first: int = 5) -> int:
                     ret: int
                     if isset first and isNotEmpty first:
                         ret = first * first
@@ -188,7 +188,7 @@ class FunctionBashpileTest extends BashpileTest {
                     return ret
                 print(square())""");
         assertSuccessfulExitCode(results);
-        assertEquals("0\n", results.stdout());
+        assertEquals("25\n", results.stdout());
     }
 
     @Test

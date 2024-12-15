@@ -232,7 +232,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
     @Override
     public Translation visitLiteralExpression(BashpileParser.LiteralExpressionContext ctx) {
         Type type;
-        if (ctx.literal().String() != null) {
+        if (ctx.literal().StringValues() != null) {
             type = Type.STR_TYPE;
         } else if (ctx.literal().NumberValues() != null) {
             type = Type.parseNumberString(ctx.literal().NumberValues().getText());

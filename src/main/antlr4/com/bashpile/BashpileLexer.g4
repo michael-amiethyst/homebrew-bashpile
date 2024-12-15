@@ -90,7 +90,7 @@ Equals  : '=';
 PlusEquals: '+=';
 
 // shell lines using Semantic Predicate
-ShellLine   : {isLinuxCommand(_input)}? (Id Equals (NumberValues | String))* Id SHELL_LINE_WORD*;
+ShellLine   : {isLinuxCommand(_input)}? (Id Equals (NumberValues | StringValues))* Id SHELL_LINE_WORD*;
 
 // ID and Numbers
 
@@ -122,7 +122,7 @@ CBracket: ']';
 
 // strings
 
-String
+StringValues
  : '\'' ( StringEscapeSequence | ~[\\\r\n\f'] )* '\''
  | '"'  ( StringEscapeSequence | ~[\\\r\n\f"] )* '"'
  ;

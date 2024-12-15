@@ -26,7 +26,7 @@ statement
     | Newline                                   # blankStmt
     ;
 
-tags        : OBracket (String*) CBracket;
+tags        : OBracket (StringValues*) CBracket;
 // like (x: str, y: str)
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen
             | OParen typedId Equals literal CParen;
@@ -72,7 +72,7 @@ expression
     | Id                                # idExpression
     ;
 
-literal : String | NumberValues | BoolValues | Empty;
+literal : StringValues | NumberValues | BoolValues | Empty;
 types    : Unknown | Empty | Bool | Number | Int | Float | Str | List | Map | Ref;
 
 shellString        : HashOParen shellStringContents* CParen;
