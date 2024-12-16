@@ -89,7 +89,7 @@ public class BashTranslationHelper {
     /* package */ static @NotNull Type getLhsType(@NotNull BashpileParser.AssignmentStatementContext ctx) {
         // extract info from context
         int lineNumber = lineNumber(ctx);
-        final BashpileParser.TypeContext lhsTypeRoot = ctx.typedId().type();
+        final BashpileParser.ComplexTypeContext lhsTypeRoot = ctx.typedId().complexType();
         final String lhsTypeText = lhsTypeRoot.types(0).getText();
 
         // find type - the result might be a list with a contents type

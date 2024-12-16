@@ -7,8 +7,8 @@ program: statement+;
 statement
     : ShellLine Newline                         # shellLineStatement
     | While expression Colon indentedStatements # whileStatement
-    | Function Id paramaters (Arrow type)?      # functionForwardDeclarationStatement
-    | Function Id paramaters tags? (Arrow type)?
+    | Function Id paramaters (Arrow complexType)?      # functionForwardDeclarationStatement
+    | Function Id paramaters tags? (Arrow complexType)?
                             Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon functionBlock           # anonymousBlockStatement
     | If expression Colon indentedStatements
@@ -30,8 +30,8 @@ tags        : OBracket (StringValues*) CBracket;
 // like (x: str, y: str)
 paramaters  : OParen ( typedId (Comma typedId)* )? CParen
             | OParen typedId Equals literal CParen;
-typedId     : Id Colon modifier* type;
-type        : types (LessThan types MoreThan)?;
+typedId     : Id Colon modifier* complexType;
+complexType : types (LessThan types MoreThan)?;
 modifier    : Exported | Readonly;
 argumentList: expression (Comma expression)*;
 elseIfClauses     : ElseIf Not? expression Colon indentedStatements;
@@ -52,7 +52,7 @@ expression
     | <assoc=right> Minus? NumberValues       # numberExpression // covers the unary '-' as well
     | <assoc=right> unaryPrimary
                              expression # unaryPrimaryExpression
-    | expression Colon type             # typecastExpression
+    | expression Colon complexType             # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions

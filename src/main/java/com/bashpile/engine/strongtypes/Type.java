@@ -100,7 +100,7 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> cont
     }
 
     /** Gets the Type with mainTypeName and contentsType info */
-    public static @Nonnull Type valueOf(@Nonnull BashpileParser.TypeContext ctx) {
+    public static @Nonnull Type valueOf(@Nonnull BashpileParser.ComplexTypeContext ctx) {
         // guard
         final boolean hasTypeInfo = ctx.types(0) != null && Strings.isNotBlank(ctx.types(0).getText());
         Asserts.assertTrue(hasTypeInfo, "Type information somehow missing");

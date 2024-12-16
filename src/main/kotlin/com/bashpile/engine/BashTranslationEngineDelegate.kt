@@ -65,9 +65,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
         // register function param types and return type
         val typeList = ctx.paramaters().typedId()
-            .map { Type.valueOf(it.type()!!) }
+            .map { Type.valueOf(it.complexType()!!) }
             .toList()
-        val retType = if (ctx.type() != null) { Type.valueOf(ctx.type()) } else Type.NA_TYPE
+        val retType = if (ctx.complexType() != null) { Type.valueOf(ctx.complexType()) } else Type.NA_TYPE
         typeStack.putFunctionTypes(functionName, FunctionTypeInfo(typeList, retType))
 
         // Create final translation and variables
@@ -75,7 +75,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
             // register local variable types
             ctx.paramaters().typedId().forEach {
-                val mainType = Type.valueOf(it.type())
+                val mainType = Type.valueOf(it.complexType())
                 typeStack.putVariableType(it.Id().text, mainType, lineNumber(ctx))
             }
 
@@ -87,7 +87,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 // local var1=$1; local var2=$2; etc
                 val paramDeclarations = ctx.paramaters().typedId()
                     .map {
-                        val varName: String = it.Id().text;
+                        val varName: String = it.Id().text
                         val type: Type = typeStack.getVariableType(varName)
 
                         // special handling for lists with 'read -a'

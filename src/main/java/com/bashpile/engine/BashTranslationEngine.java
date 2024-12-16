@@ -305,7 +305,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 subcommentTranslationOrDefault(rhsExprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
         Translation modifiers = visitModifiers(ctx.typedId().modifier());
-        final String ctxTypeString = ctx.typedId().type().types(0).getText();
+        final String ctxTypeString = ctx.typedId().complexType().types(0).getText();
         final boolean isList = ctxTypeString.equalsIgnoreCase(LIST_TYPE.mainTypeName().name());
         if (isList) {
             modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
@@ -439,7 +439,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         LOG.trace("In typecastExpression");
-        final Type castTo = Type.valueOf(ctx.type());
+        final Type castTo = Type.valueOf(ctx.complexType());
         Translation expression = requireNonNull(visitor).visit(ctx.expression());
         final int lineNumber = lineNumber(ctx);
         final TypeError typecastError = new TypeError(
