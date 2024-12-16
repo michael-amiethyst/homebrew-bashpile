@@ -1,5 +1,18 @@
 package com.bashpile;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+
 import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.engine.BashpileVisitor;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
@@ -14,21 +27,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.bashpile.exceptions.Exceptions.asUnchecked;
+import static com.bashpile.exceptions.Exceptions.asUncheckedFunction;
+import static com.bashpile.exceptions.Exceptions.asUncheckedSupplier;
 import static com.bashpile.shell.BashShell.runAndJoin;
-import static com.bashpile.shell.ExecutionResults.*;
+import static com.bashpile.shell.ExecutionResults.SUCCESS;
 
 public class BashpileMainHelper {
 
@@ -155,7 +157,9 @@ public class BashpileMainHelper {
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         } finally {
-            asUnchecked(() -> Files.deleteIfExists(temp));
+            // let filesystem percolate a bit
+            asUncheckedFunction(() -> Thread.sleep(Duration.ofMillis(20)));
+            asUncheckedSupplier(() -> Files.deleteIfExists(temp));
         }
     }
 
@@ -191,7 +195,7 @@ public class BashpileMainHelper {
             // delete tempFile
             if (tempFile != null) {
                 final Path finalTempFile = tempFile;
-                asUnchecked(() -> Files.deleteIfExists(finalTempFile));
+                asUncheckedSupplier(() -> Files.deleteIfExists(finalTempFile));
             }
         }
     }

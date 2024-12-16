@@ -7,6 +7,7 @@ import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.Translation.toStringTranslation
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
+import com.bashpile.engine.strongtypes.ParameterInfo
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
 import com.bashpile.engine.strongtypes.Type
 import com.bashpile.engine.strongtypes.TypeStack
@@ -20,7 +21,6 @@ import org.apache.commons.lang3.StringUtils.removeStart
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.util.Objects.requireNonNull
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
 
 
@@ -48,6 +48,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         foundForwardDeclarations: Set<String>,
         typeStack: TypeStack
     ): Translation {
+
         LOG.trace("In functionDeclarationStatement")
         // avoid translating twice if was part of a forward declaration
         val functionName = ctx.Id().text
@@ -64,8 +65,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // regular processing -- no forward declaration
 
         // register function param types and return type
-        val typeList = ctx.paramaters().typedId()
-            .map { Type.valueOf(it.complexType()!!) }
+        val typeList: List<ParameterInfo> = ctx.paramaters().typedId()
+            .mapIndexed { i, typedId -> ParameterInfo(typedId.Id().text, Type.valueOf(typedId.complexType()!!),
+                    ctx.paramaters().literal(i)?.text ?: "") }
             .toList()
         val retType = if (ctx.complexType() != null) { Type.valueOf(ctx.complexType()) } else Type.NA_TYPE
         typeStack.putFunctionTypes(functionName, FunctionTypeInfo(typeList, retType))
@@ -81,30 +83,32 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
             // create Translations
             val comment = createCommentTranslation("function declaration", lineNumber(ctx))
-            val i = AtomicInteger(1)
             // the empty string or ...
             var namedParams = if (ctx.paramaters().typedId().isNotEmpty()) {
                 // local var1=$1; local var2=$2; etc
                 val paramDeclarations = ctx.paramaters().typedId()
-                    .map {
-                        val varName: String = it.Id().text
+                    .mapIndexed { index, typedIdContext ->
+                        val i: Int = index + 1
+                        val varName: String = typedIdContext.Id().text
                         val type: Type = typeStack.getVariableType(varName)
 
                         // special handling for lists with 'read -a'
                         if (type.isList) {
-                            return@map "declare -x IFS=$' ';" +
-                                    " read -r -a $varName <<< \"$${i.getAndIncrement()}\"; declare -x IFS=$'\\n\\t';"
+                            return@mapIndexed "declare -x IFS=$' ';" +
+                                    " read -r -a $varName <<< \"$$i\"; declare -x IFS=$'\\n\\t';"
                         }
 
                         // normal processing
                         // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
                         // don't make read only, empty default arguments may want to be set in the function
-                        if (ctx.paramaters().literal() == null || ctx.paramaters().literal().text == "empty") {
-                            "declare $varName=$${i.getAndIncrement()};"
+                        if (ctx.paramaters().literal() == null
+                            || ctx.paramaters().literal(index) == null
+                            || ctx.paramaters().literal(index).text == "empty") {
+                            "declare $varName=$$i;"
                         } else {
                             // default literal
-                            val defaultValue = ctx.paramaters().literal().text
-                            "declare $varName=$${i.getAndIncrement()}; $varName=${'$'}{$varName:=$defaultValue};"
+                            val defaultValue = ctx.paramaters().literal(index).text
+                            "declare $varName=$$i; $varName=${'$'}{$varName:=$defaultValue};"
                         }
                     }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset
                 BashTranslationEngine.TAB + paramDeclarations + "\n"

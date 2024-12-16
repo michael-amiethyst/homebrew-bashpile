@@ -93,7 +93,7 @@ import static com.bashpile.exceptions.Exceptions.*;
         flush();
 
         // join to threads
-        final int exitCode = asUnchecked(childProcess::waitFor);
+        final int exitCode = asUncheckedSupplier(childProcess::waitFor);
         var ignored = asUncheckedIgnoreClosedStreams(() -> childStdOutReaderFuture.get(10, TimeUnit.SECONDS));
 
         return Pair.of(exitCode, childStdOutBuffer.toString());

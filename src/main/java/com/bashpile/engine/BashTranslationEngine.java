@@ -12,6 +12,7 @@ import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
+import com.bashpile.engine.strongtypes.ParameterInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.BashpileUncheckedException;
@@ -51,9 +52,6 @@ public class BashTranslationEngine implements TranslationEngine {
 
     /** This is how we enforce type checking at compile time.  Mutable. */
     private final TypeStack typeStack = new TypeStack();
-
-    /** This is how we keep track of default arguments from function declarations */
-    private final Map<String, String> defaultArgumentsMap = new HashMap<>();
 
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
@@ -164,9 +162,6 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation functionDeclarationStatement(
             @Nonnull final BashpileParser.FunctionDeclarationStatementContext ctx) {
-        if (ctx.paramaters().literal() != null) {
-            defaultArgumentsMap.put(ctx.Id().getText(), ctx.paramaters().literal().getText());
-        }
         return requireNonNull(kotlinDelegate).functionDeclarationStatement(ctx, foundForwardDeclarations, typeStack);
     }
 
@@ -467,7 +462,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation functionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
         LOG.trace("In functionCallExpression");
-        final String id = ctx.Id().getText();
+        final String functionName = ctx.Id().getText();
 
         // check arg types
 
@@ -482,17 +477,21 @@ public class BashTranslationEngine implements TranslationEngine {
         argumentTranslationsList = new ArrayList<>(argumentTranslationsList); // make mutable
 
         // add default arguments as needed
-        String defaultArguments = defaultArgumentsMap.get(id);
-        if (defaultArguments != null && argumentTranslationsList.isEmpty()) {
-            final Type defaultParameterType = typeStack.getFunctionTypes(id).parameterTypes().get(0);
-            argumentTranslationsList.add(new Translation(defaultArguments, defaultParameterType, List.of()));
+        final List<ParameterInfo> parameterInfos = typeStack.getFunctionTypes(functionName).parameterInfos();
+        final int size = Math.max(argumentTranslationsList.size(), parameterInfos.size());
+        for (int i = 0; i < size; i++) {
+            // if argument index is out of range or null use default value
+            if (i >= argumentTranslationsList.size() || argumentTranslationsList.get(i) == null) {
+                final ParameterInfo info = parameterInfos.get(i);
+                argumentTranslationsList.add(new Translation(info.defaultValue(), info.type(), NORMAL));
+            }
         }
 
         // check types
-        final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(id);
+        final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
         final List<Type> actualTypes = argumentTranslationsList.stream().map(Translation::type).toList();
         if (!expectedTypes.isEmpty()) {
-            Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, id, lineNumber(ctx));
+            Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, functionName, lineNumber(ctx));
         } // TODO "imports" impl - ensure expectedTypes interfaces with the planned import system
 
         // extract argText and preambles from argumentTranslations
@@ -514,7 +513,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = expectedTypes.returnType();
 
         Translation ret = new Translation(
-                argumentTranslations.preamble(), id + argumentTranslations.body(), retType, List.of(NORMAL));
+                argumentTranslations.preamble(), functionName + argumentTranslations.body(), retType, List.of(NORMAL));
         // suppress output if we are printing to output as part of a work-around to return a string
         // this covers the case of calling a function without using the return
         if (retType.isStr()) {

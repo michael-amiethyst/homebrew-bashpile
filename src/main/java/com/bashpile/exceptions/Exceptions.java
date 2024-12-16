@@ -13,7 +13,7 @@ public class Exceptions {
      * @param <T> The type the supplier returns.
      * @return The result of the lambda.
      */
-    public static <T> @Nonnull T asUnchecked(final @Nonnull ThrowingSupplier<T, Exception> throwingSupplier) {
+    public static <T> @Nonnull T asUncheckedSupplier(final @Nonnull ThrowingSupplier<T, Exception> throwingSupplier) {
         try {
             return throwingSupplier.get();
         } catch (BashpileUncheckedAssertionException e) {
@@ -23,8 +23,18 @@ public class Exceptions {
         }
     }
 
+    public static void asUncheckedFunction(final @Nonnull ThrowingFunction<Exception> throwingSupplier) {
+        try {
+            throwingSupplier.apply();
+        } catch (BashpileUncheckedAssertionException e) {
+            throw e;
+        } catch (Exception ex) {
+            throw new BashpileUncheckedException(ex);
+        }
+    }
+
     /**
-     * Like {@link #asUnchecked(ThrowingSupplier)} but ignores "Stream closed" exceptions.
+     * Like {@link #asUncheckedSupplier(ThrowingSupplier)} but ignores "Stream closed" exceptions.
      *
      * @param throwingSupplier The lambda to run.  Return must be @Nonnull.
      * @param <T> The type the supplier returns.
