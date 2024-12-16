@@ -208,6 +208,17 @@ class FunctionBashpileTest extends BashpileTest {
     }
 
     @Test
+    @Order(93)
+    public void functionCallOptionalArgumentWithStringWorks() {
+        final ExecutionResults results = runText("""
+                function hello(world: str = "World") -> str:
+                    return "Hello " + world
+                print(hello())""");
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello World\n", results.stdout());
+    }
+
+    @Test
     @Order(110)
     public void assertGnuGetoptCallNoReturnWorks() {
         final ExecutionResults results = runText("""

@@ -15,7 +15,6 @@ import com.bashpile.exceptions.TypeError
 import com.bashpile.exceptions.UserError
 import com.google.common.collect.Iterables
 import org.antlr.v4.runtime.tree.ParseTree
-import org.antlr.v4.runtime.tree.TerminalNode
 import org.apache.commons.lang3.StringUtils.removeEnd
 import org.apache.commons.lang3.StringUtils.removeStart
 import org.apache.logging.log4j.LogManager
@@ -87,9 +86,8 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             var namedParams = if (ctx.paramaters().typedId().isNotEmpty()) {
                 // local var1=$1; local var2=$2; etc
                 val paramDeclarations = ctx.paramaters().typedId()
-                    .map{ it.Id() }
-                    .map { obj: TerminalNode -> obj.text }
-                    .map { varName: String ->
+                    .map {
+                        val varName: String = it.Id().text;
                         val type: Type = typeStack.getVariableType(varName)
 
                         // special handling for lists with 'read -a'

@@ -484,7 +484,8 @@ public class BashTranslationEngine implements TranslationEngine {
         // add default arguments as needed
         String defaultArguments = defaultArgumentsMap.get(id);
         if (defaultArguments != null && argumentTranslationsList.isEmpty()) {
-            argumentTranslationsList.add(new Translation(defaultArguments, INT_TYPE, List.of()));
+            final Type defaultParameterType = typeStack.getFunctionTypes(id).parameterTypes().get(0);
+            argumentTranslationsList.add(new Translation(defaultArguments, defaultParameterType, List.of()));
         }
 
         // check types
