@@ -65,18 +65,27 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // regular processing -- no forward declaration
 
         // register function param types and return type
-        val typeList: List<ParameterInfo> = ctx.paramaters().typedId()
-            .mapIndexed { i, typedId -> ParameterInfo(typedId.Id().text, Type.valueOf(typedId.complexType()!!),
-                    ctx.paramaters().literal(i)?.text ?: "") }
+        val parameters = ctx.paramaters().typedId()
+        val defaultedParameters = ctx.paramaters().defaultedTypedId()
+        var typeList: List<ParameterInfo> = parameters
+            .map { ParameterInfo(it.Id().text, Type.valueOf(it.complexType()!!), "") }
             .toList()
-        val retType = if (ctx.complexType() != null) { Type.valueOf(ctx.complexType()) } else Type.NA_TYPE
+        // TODO change to adding the two lists
+        // if no regular params, use defaulted params
+        if (typeList.isEmpty()) {
+            typeList = defaultedParameters.map {
+                    val type = Type.valueOf(it.typedId().complexType()!!)
+                    ParameterInfo(it.typedId().Id().text, type, it.literal()?.text ?: "")
+                }.toList()
+        }
+        val retType: Type = Type.valueOf(ctx.complexType())
         typeStack.putFunctionTypes(functionName, FunctionTypeInfo(typeList, retType))
 
         // Create final translation and variables
         return typeStack.pushFrame().use { _ ->
 
             // register local variable types
-            ctx.paramaters().typedId().forEach {
+            parameters.forEach {
                 val mainType = Type.valueOf(it.complexType())
                 typeStack.putVariableType(it.Id().text, mainType, lineNumber(ctx))
             }
@@ -84,12 +93,14 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             // create Translations
             val comment = createCommentTranslation("function declaration", lineNumber(ctx))
             // the empty string or ...
-            var namedParams = if (ctx.paramaters().typedId().isNotEmpty()) {
+            var joinedParams: List<Pair<String, String?>> = parameters.map { Pair(it.Id().text, null) }
+            joinedParams = joinedParams + defaultedParameters.map { Pair(it.typedId().Id().text, it.literal().text) }
+            var namedParams = if (joinedParams.isNotEmpty()) {
                 // local var1=$1; local var2=$2; etc
-                val paramDeclarations = ctx.paramaters().typedId()
-                    .mapIndexed { index, typedIdContext ->
+                val paramDeclarations = joinedParams
+                    .mapIndexed { index, idDefaultPair ->
                         val i: Int = index + 1
-                        val varName: String = typedIdContext.Id().text
+                        val varName: String = idDefaultPair.first
                         val type: Type = typeStack.getVariableType(varName)
 
                         // special handling for lists with 'read -a'
@@ -101,13 +112,11 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                         // normal processing
                         // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
                         // don't make read only, empty default arguments may want to be set in the function
-                        if (ctx.paramaters().literal() == null
-                            || ctx.paramaters().literal(index) == null
-                            || ctx.paramaters().literal(index).text == "empty") {
+                        val defaultValue = idDefaultPair.second ?: "empty"
+                        if (defaultValue == "empty") {
                             "declare $varName=$$i;"
                         } else {
-                            // default literal
-                            val defaultValue = ctx.paramaters().literal(index).text
+                            // default literal, can't use := syntax with positional var so need to default our var name
                             "declare $varName=$$i; $varName=${'$'}{$varName:=$defaultValue};"
                         }
                     }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset
@@ -237,10 +246,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // get the child translations
         var childTranslations: List<Translation> = ctx.children
             .map { tree: ParseTree? -> visitor.visit(tree) }
-            .map { tr: Translation ->
-                tr.inlineAsNeeded()
-            }
-            .toList()
+            .map { tr: Translation -> tr.inlineAsNeeded() }.toList()
 
         // child translations in the format of 'expr operator expr', so we are only interested in the first and last
         val first = childTranslations[0]

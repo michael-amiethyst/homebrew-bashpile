@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
@@ -100,8 +101,11 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> cont
     }
 
     /** Gets the Type with mainTypeName and contentsType info */
-    public static @Nonnull Type valueOf(@Nonnull BashpileParser.ComplexTypeContext ctx) {
+    public static @Nonnull Type valueOf(@Nullable BashpileParser.ComplexTypeContext ctx) {
         // guard
+        if (ctx == null) {
+            return Type.EMPTY_TYPE;
+        }
         final boolean hasTypeInfo = ctx.types(0) != null && Strings.isNotBlank(ctx.types(0).getText());
         Asserts.assertTrue(hasTypeInfo, "Type information somehow missing");
 
