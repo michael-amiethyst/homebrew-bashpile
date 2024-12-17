@@ -132,7 +132,7 @@ public class BashpileMainHelper {
      * @return The reformatted Bash script.
      */
     private static @Nonnull String format(@Nonnull final String bashScript) {
-        final Path temp = Path.of("format_temp.bash");
+        final Path temp = asUncheckedSupplier(() -> Files.createTempFile("format_temp", ".bash"));
         try {
             Files.writeString(temp, bashScript);
             if (runAndJoin("which shfmt").exitCode() != SUCCESS) {

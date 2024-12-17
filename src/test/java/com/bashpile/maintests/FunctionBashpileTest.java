@@ -390,7 +390,7 @@ class FunctionBashpileTest extends BashpileTest {
                         return 3.14 * r * r
                     r = circleAreaHelper(r)
                     return r
-                print(circleArea(.5 + 0.5))"""));
+                print(circleArea(.5))"""));
     }
 
     @Test

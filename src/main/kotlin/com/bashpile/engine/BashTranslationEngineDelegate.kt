@@ -48,53 +48,41 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         foundForwardDeclarations: Set<String>,
         typeStack: TypeStack
     ): Translation {
-
         LOG.trace("In functionDeclarationStatement")
-        // avoid translating twice if was part of a forward declaration
+        // guard - avoid translating twice if was part of a forward declaration
         val functionName = ctx.Id().text
         if (foundForwardDeclarations.contains(functionName)) {
             return Translation.UNKNOWN_TRANSLATION
         }
 
-        // check for double declaration
+        // guard - check for double declaration
         if (typeStack.containsFunction(functionName)) {
             val message = "$functionName was declared twice (function overloading is not supported)"
             throw UserError(message, lineNumber(ctx))
         }
 
-        // regular processing -- no forward declaration
+        // body
 
-        // register function param types and return type
+        // register function param types and return type in previous stackframe
         val parameters = ctx.paramaters().typedId()
         val defaultedParameters = ctx.paramaters().defaultedTypedId()
-        var typeList: List<ParameterInfo> = parameters
-            .map { ParameterInfo(it.Id().text, Type.valueOf(it.complexType()!!), "") }
-            .toList()
-        // TODO change to adding the two lists
-        // if no regular params, use defaulted params
-        if (typeList.isEmpty()) {
-            typeList = defaultedParameters.map {
-                    val type = Type.valueOf(it.typedId().complexType()!!)
-                    ParameterInfo(it.typedId().Id().text, type, it.literal()?.text ?: "")
-                }.toList()
-        }
+        val typeList: List<ParameterInfo> =
+            parameters.map { ParameterInfo(it.Id().text, Type.valueOf(it.complexType()!!), "") } +
+                    defaultedParameters.map {
+                        val type = Type.valueOf(it.typedId().complexType()!!)
+                        ParameterInfo(it.typedId().Id().text, type, it.literal()?.text ?: "")
+                    }.toList()
         val retType: Type = Type.valueOf(ctx.complexType())
         typeStack.putFunctionTypes(functionName, FunctionTypeInfo(typeList, retType))
 
         // Create final translation and variables
         return typeStack.pushFrame().use { _ ->
 
-            // register local variable types
-            parameters.forEach {
-                val mainType = Type.valueOf(it.complexType())
-                typeStack.putVariableType(it.Id().text, mainType, lineNumber(ctx))
-            }
-
-            // create Translations
-            val comment = createCommentTranslation("function declaration", lineNumber(ctx))
-            // the empty string or ...
+            // unify regular parameters and optional parameters with defaults
             var joinedParams: List<Pair<String, String?>> = parameters.map { Pair(it.Id().text, null) }
             joinedParams = joinedParams + defaultedParameters.map { Pair(it.typedId().Id().text, it.literal().text) }
+
+            // declare parameter names, include default values as needed
             var namedParams = if (joinedParams.isNotEmpty()) {
                 // local var1=$1; local var2=$2; etc
                 val paramDeclarations = joinedParams
@@ -124,6 +112,8 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             } else {
                 BashTranslationEngine.TAB + "# no parameters to function" + "\n"
             }
+
+            // create statements for the body of the function
             val blockStatements = streamContexts(
                 ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement()
             )
@@ -133,9 +123,11 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 }.reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
                 .orElseThrow()
                 .assertEmptyPreamble()
+
+            // put it all together in one big translation
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
-            // 2nd+ lines of blockbody has bad indent, but that's why we go over with shfmt
             val blockBody = Asserts.assertIsParagraph(blockStatements.body()).removeSuffix("\n")
+            // 2nd+ lines of blockbody will have a bad indent, but that's why we go over with shfmt
             val functionText = """
                 $functionName () {
                 $namedParams
@@ -143,6 +135,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 }
                 """.trimMargin() + "\n"
             val functionDeclaration = toStringTranslation(functionText)
+            val comment = createCommentTranslation("function declaration", lineNumber(ctx))
             comment.add(functionDeclaration)
         }
     }
