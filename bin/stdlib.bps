@@ -12,9 +12,9 @@ function assertGnuGetopt():
 /**
  * [filename] is optional and will be the prefix of the generated file name
  */
-function createTempFile(filename: str) -> str:
+function createTempFile(filename: str = "") -> str:
     ret: str
-    if isset filename and isNotEmpty filename:
+    if isNotEmpty filename:
         ret = #(mktemp -t $filename)
     else:
         ret = #(mktemp)
