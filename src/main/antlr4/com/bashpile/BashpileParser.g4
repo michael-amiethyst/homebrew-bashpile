@@ -29,7 +29,7 @@ statement
 tags        : OBracket (StringValues*) CBracket;
 // like (x: str, y: str)
 // TODO feature/optional-arguments - make an entry for defaultedTypedId: typedId Equals literal
-paramaters  : OParen ( typedId (Comma typedId)* )? CParen
+paramaters  : OParen ( typedId (Comma typedId)* (Comma defaultedTypedId)* )? CParen
             | OParen ( defaultedTypedId (Comma defaultedTypedId)* ) CParen;
 defaultedTypedId  : typedId Equals literal;
 typedId     : Id Colon modifier* complexType;

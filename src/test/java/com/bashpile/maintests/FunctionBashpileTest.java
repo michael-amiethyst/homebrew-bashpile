@@ -225,13 +225,28 @@ class FunctionBashpileTest extends BashpileTest {
                 function hello(world: str = "World", name: str = "James T. Kirk") -> str:
                     return "Hello " + world + ", and hello to " + name
                 print(hello())
-                print(hello("Betazed"))
-                print(hello("Ferengenar", "Rom"))""");
+                print(hello("Earth"))
+                print(hello("Ferenginar", "Rom"))""");
         assertSuccessfulExitCode(results);
         assertEquals("""
                 Hello World, and hello to James T. Kirk
-                Hello Betazed, and hello to James T. Kirk
-                Hello Ferengenar, and hello to Rom
+                Hello Earth, and hello to James T. Kirk
+                Hello Ferenginar, and hello to Rom
+                """, results.stdout());
+    }
+
+    @Test
+    @Order(100)
+    public void functionCallRegularAndDefaultedArgumentsWorks() {
+        final ExecutionResults results = runText("""
+                function hello(world: str, name: str = "James T. Kirk") -> str:
+                    return "Hello " + world + ", and hello to " + name
+                print(hello("Earth"))
+                print(hello("Ferenginar", "Rom"))""");
+        assertSuccessfulExitCode(results);
+        assertEquals("""
+                Hello Earth, and hello to James T. Kirk
+                Hello Ferenginar, and hello to Rom
                 """, results.stdout());
     }
 
