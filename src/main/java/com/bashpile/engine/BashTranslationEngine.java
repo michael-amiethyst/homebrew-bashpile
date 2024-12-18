@@ -458,6 +458,10 @@ public class BashTranslationEngine implements TranslationEngine {
         return expression;
     }
 
+    /**
+     * {@inheritDoc}
+     * @see BashTranslationEngineDelegate#functionDeclarationStatement(BashpileParser.FunctionDeclarationStatementContext, Set, TypeStack)
+     */
     @Override
     public @Nonnull Translation functionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
@@ -466,9 +470,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // check arg types
 
-        // get functionName and the argumentTranslations
-        final boolean hasArgs = ctx.argumentList() != null;
-        List<Translation> argumentTranslationsList = hasArgs
+        // get non-defaulted argumentTranslations
+        List<Translation> argumentTranslationsList = ctx.argumentList() != null
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
                         .map(Translation::inlineAsNeeded)
@@ -476,15 +479,12 @@ public class BashTranslationEngine implements TranslationEngine {
                 : List.of();
         argumentTranslationsList = new ArrayList<>(argumentTranslationsList); // make mutable
 
-        // add default arguments as needed
+        // add defaulted arguments
         final List<ParameterInfo> parameterInfos = typeStack.getFunctionTypes(functionName).parameterInfos();
-        final int size = Math.max(argumentTranslationsList.size(), parameterInfos.size());
-        for (int i = 0; i < size; i++) {
-            // if argument index is out of range or null use default value
-            if (i >= argumentTranslationsList.size() || argumentTranslationsList.get(i) == null) {
-                final ParameterInfo info = parameterInfos.get(i);
-                argumentTranslationsList.add(new Translation(info.defaultValue(), info.type(), NORMAL));
-            }
+        final int firstDefaultedIndex = Math.min(argumentTranslationsList.size(), parameterInfos.size());
+        final List<ParameterInfo> neededDefaults = parameterInfos.subList(firstDefaultedIndex, parameterInfos.size());
+        for (ParameterInfo info : neededDefaults) {
+            argumentTranslationsList.add(new Translation(info.defaultValue(), info.type(), NORMAL));
         }
 
         // check types
@@ -494,10 +494,9 @@ public class BashTranslationEngine implements TranslationEngine {
             Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, functionName, lineNumber(ctx));
         } // TODO "imports" impl - ensure expectedTypes interfaces with the planned import system
 
-        // extract argText and preambles from argumentTranslations
-        // empty list or ' arg1Text arg2Text etc.'
+        // collapse argumentTranslationsList to a single translation
         Translation argumentTranslations = UNKNOWN_TRANSLATION;
-        if (hasArgs) {
+        if (!argumentTranslationsList.isEmpty()) {
             argumentTranslations = toStringTranslation(" ").add(argumentTranslationsList.stream()
                     // only add quotes if needed
                     .map(tr -> !(tr.body().startsWith("\"") && tr.body().endsWith("\"")) ? tr.quoteBody() : tr)

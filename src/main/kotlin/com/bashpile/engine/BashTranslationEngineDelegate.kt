@@ -2,6 +2,7 @@ package com.bashpile.engine
 
 import com.bashpile.Asserts
 import com.bashpile.BashpileParser
+import com.bashpile.BashpileParser.LiteralContext
 import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
@@ -23,6 +24,15 @@ import org.apache.logging.log4j.Logger
 import java.util.Objects.requireNonNull
 import java.util.stream.Stream
 
+fun LiteralContext.getDefaultValue(): String {
+    return if (Empty() == null) {
+        text ?: ""
+    } else {
+        /* empty token translates to the empty string */
+        ""
+    }
+}
+
 
 /** For the [BashTranslationEngine] to have complex code be in Kotlin */
 class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
@@ -43,6 +53,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         private val LOG: Logger = LogManager.getLogger(BashTranslationEngineDelegate::class)
     }
 
+    /** [BashTranslationEngine.functionCallExpression] */
     fun functionDeclarationStatement(
         ctx: BashpileParser.FunctionDeclarationStatementContext,
         foundForwardDeclarations: Set<String>,
@@ -70,7 +81,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             parameters.map { ParameterInfo(it.Id().text, Type.valueOf(it.complexType()!!), "") } +
                     defaultedParameters.map {
                         val type = Type.valueOf(it.typedId().complexType()!!)
-                        ParameterInfo(it.typedId().Id().text, type, it.literal()?.text ?: "")
+                        ParameterInfo(it.typedId().Id().text, type, it.literal().getDefaultValue())
                     }.toList()
         val retType: Type = Type.valueOf(ctx.complexType())
         typeStack.putFunctionTypes(functionName, FunctionTypeInfo(typeList, retType))
@@ -80,7 +91,8 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
             // unify regular parameters and optional parameters with defaults
             var joinedParams: List<Pair<String, String?>> = parameters.map { Pair(it.Id().text, null) }
-            joinedParams = joinedParams + defaultedParameters.map { Pair(it.typedId().Id().text, it.literal().text) }
+            joinedParams = joinedParams +
+                    defaultedParameters.map { Pair(it.typedId().Id().text, it.literal().getDefaultValue()) }
 
             // declare parameter names, include default values as needed
             var namedParams = if (joinedParams.isNotEmpty()) {
@@ -99,14 +111,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
                         // normal processing
                         // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
-                        // don't make read only, empty default arguments may want to be set in the function
-                        val defaultValue = idDefaultPair.second ?: "empty"
-                        if (defaultValue == "empty") {
-                            "declare $varName=$$i;"
-                        } else {
-                            // default literal, can't use := syntax with positional var so need to default our var name
-                            "declare $varName=$$i; $varName=${'$'}{$varName:=$defaultValue};"
-                        }
+                        "declare $varName=$$i; $varName=${'$'}{$varName:=${idDefaultPair.second}};"
                     }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset
                 BashTranslationEngine.TAB + paramDeclarations + "\n"
             } else {

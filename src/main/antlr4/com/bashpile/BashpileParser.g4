@@ -27,8 +27,7 @@ statement
     ;
 
 tags        : OBracket (StringValues*) CBracket;
-// like (x: str, y: str)
-// TODO feature/optional-arguments - make an entry for defaultedTypedId: typedId Equals literal
+// like (x: str, y: str = "Jordi")
 paramaters  : OParen ( typedId (Comma typedId)* (Comma defaultedTypedId)* )? CParen
             | OParen ( defaultedTypedId (Comma defaultedTypedId)* ) CParen;
 defaultedTypedId  : typedId Equals literal;
@@ -51,10 +50,10 @@ returnPsudoStatement: Return expression? Newline;
 expression
     : listAccess                        # listAccessExpression
     | expression op=(Increment | Decrement) # unaryPostCrementExpression
-    | <assoc=right> Minus? NumberValues       # numberExpression // covers the unary '-' as well
+    | <assoc=right> Minus? NumberValues # numberExpression // covers the unary '-' as well
     | <assoc=right> unaryPrimary
                              expression # unaryPrimaryExpression
-    | expression Colon complexType             # typecastExpression
+    | expression Colon complexType      # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
