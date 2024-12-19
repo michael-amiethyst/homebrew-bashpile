@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+echo '#!/usr/bin/java -jar' > target/bpc
+/bin/cat target/bashpile.jar >> target/bpc
+/bin/chmod +x target/bpc

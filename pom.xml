@@ -6,7 +6,7 @@
 
     <groupId>com.bashpile</groupId>
     <artifactId>bashpile</artifactId>
-    <version>0.23.2</version>
+    <version>0.24.0</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -53,7 +53,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.13.0</version>
+            <version>2.14.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
@@ -239,7 +239,46 @@
                                     <mainClass>com.bashpile.BashpileMain</mainClass>
                                 </transformer>
                             </transformers>
-                            <outputFile>bin/bashpile.jar</outputFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>Generate bpc</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>/bin/bash</executable>
+                            <commandlineArgs>bin/create-bpc</commandlineArgs>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>Generate stdlib</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>/bin/bash</executable>
+                            <commandlineArgs>-c "target/bpc --outputFile target/stdlib bin/stdlib.bps"</commandlineArgs>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>Generate bpr</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>/bin/bash</executable>
+                            <commandlineArgs>-c "target/bpc --outputFile target/bpr bin/bpr.bps"</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>

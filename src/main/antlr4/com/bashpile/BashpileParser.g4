@@ -7,8 +7,8 @@ program: statement+;
 statement
     : ShellLine Newline                         # shellLineStatement
     | While expression Colon indentedStatements # whileStatement
-    | Function Id paramaters (Arrow type)?      # functionForwardDeclarationStatement
-    | Function Id paramaters tags? (Arrow type)?
+    | Function Id paramaters (Arrow complexType)?      # functionForwardDeclarationStatement
+    | Function Id paramaters tags? (Arrow complexType)?
                             Colon functionBlock # functionDeclarationStatement
     | Block tags? Colon functionBlock           # anonymousBlockStatement
     | If expression Colon indentedStatements
@@ -26,11 +26,13 @@ statement
     | Newline                                   # blankStmt
     ;
 
-tags        : OBracket (String*) CBracket;
-// like (x: str, y: str)
-paramaters  : OParen ( typedId (Comma typedId)* )? CParen;
-typedId     : Id Colon modifier* type;
-type        : Type (LessThan Type MoreThan)?;
+tags        : OBracket (StringValues*) CBracket;
+// like (x: str, y: str = "Jordi")
+paramaters  : OParen ( typedId (Comma typedId)* (Comma defaultedTypedId)* )? CParen
+            | OParen ( defaultedTypedId (Comma defaultedTypedId)* ) CParen;
+defaultedTypedId  : typedId Equals literal;
+typedId     : Id Colon modifier* complexType;
+complexType : types (LessThan types MoreThan)?;
 modifier    : Exported | Readonly;
 argumentList: expression (Comma expression)*;
 elseIfClauses     : ElseIf Not? expression Colon indentedStatements;
@@ -48,10 +50,10 @@ returnPsudoStatement: Return expression? Newline;
 expression
     : listAccess                        # listAccessExpression
     | expression op=(Increment | Decrement) # unaryPostCrementExpression
-    | <assoc=right> Minus? Number       # numberExpression // covers the unary '-' as well
+    | <assoc=right> Minus? NumberValues # numberExpression // covers the unary '-' as well
     | <assoc=right> unaryPrimary
                              expression # unaryPrimaryExpression
-    | expression Colon type             # typecastExpression
+    | expression Colon complexType      # typecastExpression
     | shellString                       # shellStringExpression
     | Id OParen argumentList? CParen    # functionCallExpression
     // operator expressions
@@ -67,10 +69,12 @@ expression
     | ListOf (OParen CParen | OParen expression (Comma expression)* CParen)
                                         # listOfBuiltinExpression
     // type expressions
-    | Bool                              # boolExpression
-    | String                            # stringExpression
+    | literal                           # literalExpression
     | Id                                # idExpression
     ;
+
+literal : StringValues | NumberValues | BoolValues | Empty;
+types    : Unknown | Empty | Bool | Number | Int | Float | Str | List | Map | Ref;
 
 shellString        : HashOParen shellStringContents* CParen;
 shellStringContents: shellString
@@ -80,7 +84,7 @@ shellStringContents: shellString
                    | ShellStringEscapeSequence;
 
 // full list at https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html
-unaryPrimary: Not | Isset | Unset | Empty | NotEmpty | FileExists | RegularFileExists | DirectoryExists;
+unaryPrimary: Not | Isset | Unset | IsEmpty | NotEmpty | FileExists | RegularFileExists | DirectoryExists;
 
 // one line means logically equal precidence (e.g. LessThan in the same as MoreThanOrEquals)
 binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
@@ -89,6 +93,6 @@ binaryPrimary: LessThan | LessThanOrEquals | MoreThan | MoreThanOrEquals
 combiningOperator: And | Or;
 
 // translates to $1, $2, etc
-argumentsBuiltin: Arguments OBracket (Number | All) CBracket;
+argumentsBuiltin: Arguments OBracket (NumberValues | All) CBracket;
 
-listAccess: Id OBracket (Minus? Number | All) CBracket;
+listAccess: Id OBracket (Minus? NumberValues | All) CBracket;

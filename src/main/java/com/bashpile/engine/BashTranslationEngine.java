@@ -12,6 +12,7 @@ import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
+import com.bashpile.engine.strongtypes.ParameterInfo;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.engine.strongtypes.TypeStack;
 import com.bashpile.exceptions.BashpileUncheckedException;
@@ -299,7 +300,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 subcommentTranslationOrDefault(rhsExprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
         Translation modifiers = visitModifiers(ctx.typedId().modifier());
-        final String ctxTypeString = ctx.typedId().type().Type(0).getText();
+        final String ctxTypeString = ctx.typedId().complexType().types(0).getText();
         final boolean isList = ctxTypeString.equalsIgnoreCase(LIST_TYPE.mainTypeName().name());
         if (isList) {
             modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
@@ -433,7 +434,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public @Nonnull Translation typecastExpression(BashpileParser.TypecastExpressionContext ctx) {
         LOG.trace("In typecastExpression");
-        final Type castTo = Type.valueOf(ctx.type());
+        final Type castTo = Type.valueOf(ctx.complexType());
         Translation expression = requireNonNull(visitor).visit(ctx.expression());
         final int lineNumber = lineNumber(ctx);
         final TypeError typecastError = new TypeError(
@@ -457,34 +458,45 @@ public class BashTranslationEngine implements TranslationEngine {
         return expression;
     }
 
+    /**
+     * {@inheritDoc}
+     * @see BashTranslationEngineDelegate#functionDeclarationStatement(BashpileParser.FunctionDeclarationStatementContext, Set, TypeStack)
+     */
     @Override
     public @Nonnull Translation functionCallExpression(
             @Nonnull final BashpileParser.FunctionCallExpressionContext ctx) {
         LOG.trace("In functionCallExpression");
-        final String id = ctx.Id().getText();
+        final String functionName = ctx.Id().getText();
 
         // check arg types
 
-        // get functionName and the argumentTranslations
-        final boolean hasArgs = ctx.argumentList() != null;
-        final List<Translation> argumentTranslationsList = hasArgs
+        // get non-defaulted argumentTranslations
+        List<Translation> argumentTranslationsList = ctx.argumentList() != null
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
                         .map(Translation::inlineAsNeeded)
                         .toList()
                 : List.of();
+        argumentTranslationsList = new ArrayList<>(argumentTranslationsList); // make mutable
+
+        // add defaulted arguments
+        final List<ParameterInfo> parameterInfos = typeStack.getFunctionTypes(functionName).parameterInfos();
+        final int firstDefaultedIndex = Math.min(argumentTranslationsList.size(), parameterInfos.size());
+        final List<ParameterInfo> neededDefaults = parameterInfos.subList(firstDefaultedIndex, parameterInfos.size());
+        for (ParameterInfo info : neededDefaults) {
+            argumentTranslationsList.add(new Translation(info.defaultValue(), info.type(), NORMAL));
+        }
 
         // check types
-        final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(id);
+        final FunctionTypeInfo expectedTypes = typeStack.getFunctionTypes(functionName);
         final List<Type> actualTypes = argumentTranslationsList.stream().map(Translation::type).toList();
         if (!expectedTypes.isEmpty()) {
-            Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, id, lineNumber(ctx));
+            Asserts.assertTypesCoerce(expectedTypes.parameterTypes(), actualTypes, functionName, lineNumber(ctx));
         } // TODO "imports" impl - ensure expectedTypes interfaces with the planned import system
 
-        // extract argText and preambles from argumentTranslations
-        // empty list or ' arg1Text arg2Text etc.'
+        // collapse argumentTranslationsList to a single translation
         Translation argumentTranslations = UNKNOWN_TRANSLATION;
-        if (hasArgs) {
+        if (!argumentTranslationsList.isEmpty()) {
             argumentTranslations = toStringTranslation(" ").add(argumentTranslationsList.stream()
                     // only add quotes if needed
                     .map(tr -> !(tr.body().startsWith("\"") && tr.body().endsWith("\"")) ? tr.quoteBody() : tr)
@@ -500,7 +512,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Type retType = expectedTypes.returnType();
 
         Translation ret = new Translation(
-                argumentTranslations.preamble(), id + argumentTranslations.body(), retType, List.of(NORMAL));
+                argumentTranslations.preamble(), functionName + argumentTranslations.body(), retType, List.of(NORMAL));
         // suppress output if we are printing to output as part of a work-around to return a string
         // this covers the case of calling a function without using the return
         if (retType.isStr()) {
@@ -581,8 +593,8 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation argumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx) {
         LOG.trace("In argumentsBuiltinExpression");
-        if (ctx.argumentsBuiltin().Number() != null) {
-            return toStringTranslation("$" + ctx.argumentsBuiltin().Number().getText());
+        if (ctx.argumentsBuiltin().NumberValues() != null) {
+            return toStringTranslation("$" + ctx.argumentsBuiltin().NumberValues().getText());
         } else {
             // arguments[all]
             return toStringTranslation("$@");

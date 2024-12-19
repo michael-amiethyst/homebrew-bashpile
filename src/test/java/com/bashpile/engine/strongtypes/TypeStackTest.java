@@ -59,19 +59,25 @@ class TypeStackTest {
 
     @Test
     void getFunctionTest() {
-        List<Type> paramTypes = List.of(FLOAT_TYPE, FLOAT_TYPE, FLOAT_TYPE);
-        fixture.putFunctionTypes("f1", new FunctionTypeInfo(paramTypes, FLOAT_TYPE));
+        List<ParameterInfo> parameterInfos = List.of(
+                new ParameterInfo("p1", FLOAT_TYPE, ""),
+                new ParameterInfo("p2", FLOAT_TYPE, ""),
+                new ParameterInfo("p3", FLOAT_TYPE, ""));
+        fixture.putFunctionTypes("f1", new FunctionTypeInfo(parameterInfos, FLOAT_TYPE));
         assertEquals(FLOAT_TYPE, fixture.getFunctionTypes("f1").returnType());
     }
 
     @Test
     void getPoppedFunctionTest() {
-        List<Type> paramTypes = List.of(FLOAT_TYPE, FLOAT_TYPE, FLOAT_TYPE);
-        fixture.putFunctionTypes("f1", new FunctionTypeInfo(paramTypes, FLOAT_TYPE));
+        List<ParameterInfo> parameterInfos = List.of(
+                new ParameterInfo("p1", FLOAT_TYPE, ""),
+                new ParameterInfo("p2", FLOAT_TYPE, ""),
+                new ParameterInfo("p3", FLOAT_TYPE, ""));
+        fixture.putFunctionTypes("f1", new FunctionTypeInfo(parameterInfos, FLOAT_TYPE));
         fixture.push();
-        fixture.putFunctionTypes("f2", new FunctionTypeInfo(paramTypes, INT_TYPE));
+        fixture.putFunctionTypes("f2", new FunctionTypeInfo(parameterInfos, INT_TYPE));
         fixture.push();
-        fixture.putFunctionTypes("f3", new FunctionTypeInfo(paramTypes, STR_TYPE));
+        fixture.putFunctionTypes("f3", new FunctionTypeInfo(parameterInfos, STR_TYPE));
         assertEquals(STR_TYPE, fixture.getFunctionTypes("f3").returnType());
         fixture.pop();
         assertEquals(FunctionTypeInfo.EMPTY, fixture.getFunctionTypes("f3"));

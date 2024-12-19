@@ -2,11 +2,13 @@ package com.bashpile.engine
 
 import com.bashpile.Asserts
 import com.bashpile.BashpileParser
+import com.bashpile.BashpileParser.LiteralContext
 import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.Translation.toStringTranslation
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
+import com.bashpile.engine.strongtypes.ParameterInfo
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
 import com.bashpile.engine.strongtypes.Type
 import com.bashpile.engine.strongtypes.TypeStack
@@ -15,14 +17,21 @@ import com.bashpile.exceptions.TypeError
 import com.bashpile.exceptions.UserError
 import com.google.common.collect.Iterables
 import org.antlr.v4.runtime.tree.ParseTree
-import org.antlr.v4.runtime.tree.TerminalNode
 import org.apache.commons.lang3.StringUtils.removeEnd
 import org.apache.commons.lang3.StringUtils.removeStart
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.util.Objects.requireNonNull
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Stream
+
+fun LiteralContext.getDefaultValue(): String {
+    return if (Empty() == null) {
+        text ?: ""
+    } else {
+        /* empty token translates to the empty string */
+        ""
+    }
+}
 
 
 /** For the [BashTranslationEngine] to have complex code be in Kotlin */
@@ -44,69 +53,72 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         private val LOG: Logger = LogManager.getLogger(BashTranslationEngineDelegate::class)
     }
 
+    /** [BashTranslationEngine.functionCallExpression] */
     fun functionDeclarationStatement(
         ctx: BashpileParser.FunctionDeclarationStatementContext,
         foundForwardDeclarations: Set<String>,
         typeStack: TypeStack
     ): Translation {
         LOG.trace("In functionDeclarationStatement")
-        // avoid translating twice if was part of a forward declaration
+        // guard - avoid translating twice if was part of a forward declaration
         val functionName = ctx.Id().text
         if (foundForwardDeclarations.contains(functionName)) {
             return Translation.UNKNOWN_TRANSLATION
         }
 
-        // check for double declaration
+        // guard - check for double declaration
         if (typeStack.containsFunction(functionName)) {
             val message = "$functionName was declared twice (function overloading is not supported)"
             throw UserError(message, lineNumber(ctx))
         }
 
-        // regular processing -- no forward declaration
+        // body
 
-        // register function param types and return type
-        val typeList = ctx.paramaters().typedId()
-            .map { Type.valueOf(it.type()!!) }
-            .toList()
-        val retType = if (ctx.type() != null) { Type.valueOf(ctx.type()) } else Type.NA_TYPE
+        // register function param types and return type in previous stackframe
+        val parameters = ctx.paramaters().typedId()
+        val defaultedParameters = ctx.paramaters().defaultedTypedId()
+        val typeList: List<ParameterInfo> =
+            parameters.map { ParameterInfo(it.Id().text, Type.valueOf(it.complexType()!!), "") } +
+                    defaultedParameters.map {
+                        val type = Type.valueOf(it.typedId().complexType()!!)
+                        ParameterInfo(it.typedId().Id().text, type, it.literal().getDefaultValue())
+                    }.toList()
+        val retType: Type = Type.valueOf(ctx.complexType())
         typeStack.putFunctionTypes(functionName, FunctionTypeInfo(typeList, retType))
 
         // Create final translation and variables
         return typeStack.pushFrame().use { _ ->
 
-            // register local variable types
-            ctx.paramaters().typedId().forEach {
-                val mainType = Type.valueOf(it.type())
-                typeStack.putVariableType(it.Id().text, mainType, lineNumber(ctx))
-            }
+            // unify regular parameters and optional parameters with defaults
+            var joinedParams: List<Pair<String, String?>> = parameters.map { Pair(it.Id().text, null) }
+            joinedParams = joinedParams +
+                    defaultedParameters.map { Pair(it.typedId().Id().text, it.literal().getDefaultValue()) }
 
-            // create Translations
-            val comment = createCommentTranslation("function declaration", lineNumber(ctx))
-            val i = AtomicInteger(1)
-            // the empty string or ...
-            var namedParams = if (ctx.paramaters().typedId().isNotEmpty()) {
+            // declare parameter names, include default values as needed
+            var namedParams = if (joinedParams.isNotEmpty()) {
                 // local var1=$1; local var2=$2; etc
-                val paramDeclarations = ctx.paramaters().typedId()
-                    .map{ it.Id() }
-                    .map { obj: TerminalNode -> obj.text }
-                    .map { x: String ->
-                        val type: Type = typeStack.getVariableType(x)
+                val paramDeclarations = joinedParams
+                    .mapIndexed { index, idDefaultPair ->
+                        val i: Int = index + 1
+                        val varName: String = idDefaultPair.first
+                        val type: Type = typeStack.getVariableType(varName)
 
                         // special handling for lists with 'read -a'
                         if (type.isList) {
-                            return@map "declare -x IFS=$' ';" +
-                                    " read -r -a $x <<< \"$${i.getAndIncrement()}\"; declare -x IFS=$'\\n\\t';"
+                            return@mapIndexed "declare -x IFS=$' ';" +
+                                    " read -r -a $varName <<< \"$$i\"; declare -x IFS=$'\\n\\t';"
                         }
 
                         // normal processing
-                        val opts = "-r" // read only
                         // don't add 'i' for Bash integer, that munges an empty optional argument to 0 automatically
-                        "declare $opts $x=$${i.getAndIncrement()};"
+                        "declare $varName=$$i; $varName=${'$'}{$varName:=${idDefaultPair.second}};"
                     }.joinToString(" ", "set +u; ", "set -u;") // some args may be unset
                 BashTranslationEngine.TAB + paramDeclarations + "\n"
             } else {
                 BashTranslationEngine.TAB + "# no parameters to function" + "\n"
             }
+
+            // create statements for the body of the function
             val blockStatements = streamContexts(
                 ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement()
             )
@@ -116,9 +128,11 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 }.reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
                 .orElseThrow()
                 .assertEmptyPreamble()
+
+            // put it all together in one big translation
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
-            // 2nd+ lines of blockbody has bad indent, but that's why we go over with shfmt
             val blockBody = Asserts.assertIsParagraph(blockStatements.body()).removeSuffix("\n")
+            // 2nd+ lines of blockbody will have a bad indent, but that's why we go over with shfmt
             val functionText = """
                 $functionName () {
                 $namedParams
@@ -126,6 +140,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 }
                 """.trimMargin() + "\n"
             val functionDeclaration = toStringTranslation(functionText)
+            val comment = createCommentTranslation("function declaration", lineNumber(ctx))
             comment.add(functionDeclaration)
         }
     }
@@ -229,10 +244,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // get the child translations
         var childTranslations: List<Translation> = ctx.children
             .map { tree: ParseTree? -> visitor.visit(tree) }
-            .map { tr: Translation ->
-                tr.inlineAsNeeded()
-            }
-            .toList()
+            .map { tr: Translation -> tr.inlineAsNeeded() }.toList()
 
         // child translations in the format of 'expr operator expr', so we are only interested in the first and last
         val first = childTranslations[0]

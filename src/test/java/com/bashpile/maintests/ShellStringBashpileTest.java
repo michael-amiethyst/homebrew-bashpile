@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ShellStringBashpileTest extends BashpileTest {
 
+    final static String jarPath = "target/bashpile.jar";
+
     /**
      * Simple one word command
      */
@@ -238,7 +240,6 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test()
     @Order(140)
     public void javaShellLineWorks() {
-        String jarPath = "bin/bashpile.jar";
         assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
@@ -250,7 +251,6 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test()
     @Order(150)
     public void javaShellLineWithVariableWorks() {
-        String jarPath = "bin/bashpile.jar";
         assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
@@ -262,7 +262,6 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test()
     @Order(160)
     public void javaShellLineWithDoubleQuotedVariableWorks() {
-        String jarPath = "bin/bashpile.jar";
         assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
@@ -274,7 +273,6 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test()
     @Order(170)
     public void javaShellLineWithSingleQuotedVariableWorks() {
-        String jarPath = "bin/bashpile.jar";
         assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
@@ -286,7 +284,6 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test()
     @Order(180)
     public void shellLineInIfStatementWorks() {
-        String jarPath = "bin/bashpile.jar";
         assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"
@@ -300,7 +297,6 @@ public class ShellStringBashpileTest extends BashpileTest {
     @Test()
     @Order(190)
     public void nestedShellLineInIfStatementWorks() {
-        String jarPath = "bin/bashpile.jar";
         assumeTrue(Files.exists(Path.of(jarPath)));
         final ExecutionResults results = runText("""
                 jarPath: str = "%s"

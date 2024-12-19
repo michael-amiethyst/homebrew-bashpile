@@ -178,7 +178,24 @@ class FunctionBashpileTest extends BashpileTest {
     @Order(92)
     public void functionCallOptionalArgumentWorks() {
         final ExecutionResults results = runText("""
-                function square(first: int) -> int:
+                function square(first: int = 5) -> int:
+                    ret: int
+                    if isset first and isNotEmpty first:
+                        ret = first * first
+                    else:
+                        // with default value we should never get here
+                        ret = 42
+                    return ret
+                print(square())""");
+        assertSuccessfulExitCode(results);
+        assertEquals("25\n", results.stdout());
+    }
+
+    @Test
+    @Order(92)
+    public void functionCallOptionalArgumentWithEmptyWorks() {
+        final ExecutionResults results = runText("""
+                function square(first: int = empty) -> int:
                     ret: int
                     if isset first and isNotEmpty first:
                         ret = first * first
@@ -192,6 +209,49 @@ class FunctionBashpileTest extends BashpileTest {
 
     @Test
     @Order(93)
+    public void functionCallOptionalArgumentWithStringWorks() {
+        final ExecutionResults results = runText("""
+                function hello(world: str = "World") -> str:
+                    return "Hello " + world
+                print(hello())""");
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello World\n", results.stdout());
+    }
+
+    @Test
+    @Order(94)
+    public void functionCallOptionalArgumentsWorks() {
+        final ExecutionResults results = runText("""
+                function hello(world: str = "World", name: str = "James T. Kirk") -> str:
+                    return "Hello " + world + ", and hello to " + name
+                print(hello())
+                print(hello("Earth"))
+                print(hello("Ferenginar", "Rom"))""");
+        assertSuccessfulExitCode(results);
+        assertEquals("""
+                Hello World, and hello to James T. Kirk
+                Hello Earth, and hello to James T. Kirk
+                Hello Ferenginar, and hello to Rom
+                """, results.stdout());
+    }
+
+    @Test
+    @Order(100)
+    public void functionCallRegularAndDefaultedArgumentsWorks() {
+        final ExecutionResults results = runText("""
+                function hello(world: str, name: str = "James T. Kirk") -> str:
+                    return "Hello " + world + ", and hello to " + name
+                print(hello("Earth"))
+                print(hello("Ferenginar", "Rom"))""");
+        assertSuccessfulExitCode(results);
+        assertEquals("""
+                Hello Earth, and hello to James T. Kirk
+                Hello Ferenginar, and hello to Rom
+                """, results.stdout());
+    }
+
+    @Test
+    @Order(110)
     public void assertGnuGetoptCallNoReturnWorks() {
         final ExecutionResults results = runText("""
                 /**
@@ -206,7 +266,7 @@ class FunctionBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(100)
+    @Order(120)
     public void functionCallReturnEmptyBadTypeThrows() {
         assertThrows(TypeError.class, () -> runText("""
                 function world() -> str:
@@ -345,7 +405,7 @@ class FunctionBashpileTest extends BashpileTest {
                         return 3.14 * r * r
                     r = circleAreaHelper(r)
                     return r
-                print(circleArea(.5 + 0.5))"""));
+                print(circleArea(.5))"""));
     }
 
     @Test
