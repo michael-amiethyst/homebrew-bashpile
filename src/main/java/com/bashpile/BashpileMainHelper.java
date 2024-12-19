@@ -1,10 +1,22 @@
 package com.bashpile;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+
 import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.engine.BashpileVisitor;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
-import com.bashpile.shell.BashShell;
 import com.bashpile.shell.ExecutionResults;
 import com.google.common.annotations.VisibleForTesting;
 import org.antlr.v4.runtime.CharStream;
@@ -15,19 +27,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.bashpile.exceptions.Exceptions.asUnchecked;
+import static com.bashpile.exceptions.Exceptions.asUncheckedFunction;
+import static com.bashpile.exceptions.Exceptions.asUncheckedSupplier;
+import static com.bashpile.shell.BashShell.runAndJoin;
+import static com.bashpile.shell.ExecutionResults.SUCCESS;
 
 public class BashpileMainHelper {
 
@@ -129,12 +132,16 @@ public class BashpileMainHelper {
      * @return The reformatted Bash script.
      */
     private static @Nonnull String format(@Nonnull final String bashScript) {
-        final Path temp = Path.of("format_temp.bash");
+        final Path temp = asUncheckedSupplier(() -> Files.createTempFile("format_temp", ".bash"));
         try {
             Files.writeString(temp, bashScript);
-            final ExecutionResults shfmtResults = BashShell.runAndJoin(
+            if (runAndJoin("which shfmt").exitCode() != SUCCESS) {
+                LOG.warn("shfmt not found on PATH.  Skipping formatting (is it installed?)");
+                return bashScript;
+            }
+            final ExecutionResults shfmtResults = runAndJoin(
                     "shfmt -i 2 -ci -bn %s".formatted(temp.toString()));
-            if (shfmtResults.exitCode() != ExecutionResults.SUCCESS) {
+            if (shfmtResults.exitCode() != SUCCESS) {
                 final String message = """
                         Script was unable to format with shfmt.  Command: %s
                         shfmt code: %d, output: %s
@@ -150,7 +157,9 @@ public class BashpileMainHelper {
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         } finally {
-            asUnchecked(() -> Files.deleteIfExists(temp));
+            // let filesystem percolate a bit
+            asUncheckedFunction(() -> Thread.sleep(Duration.ofMillis(20)));
+            asUncheckedSupplier(() -> Files.deleteIfExists(temp));
         }
     }
 
@@ -161,15 +170,20 @@ public class BashpileMainHelper {
      * @return The translatedShellScript for chaining.
      */
     public static @Nonnull String assertNoShellcheckWarnings(@Nonnull final String translatedShellScript) {
-        final Path tempFile = Path.of("temp.bps");
+        Path tempFile = null;
         try {
+            if (runAndJoin("which shellcheck").exitCode() != SUCCESS) {
+                LOG.warn("shellcheck not found on PATH.  Skipping (is it installed?)");
+                return translatedShellScript;
+            }
+            tempFile = Files.createTempFile("assert", "bps");
             Files.writeString(tempFile, translatedShellScript);
             // ignore many errors that don't apply
             final String excludes = Stream.of(2034, 2050, 2071, 2072, 2157)
                     .map(i -> "--exclude=SC" + i).collect(Collectors.joining(" "));
-            final ExecutionResults shellcheckResults = BashShell.runAndJoin(
+            final ExecutionResults shellcheckResults = runAndJoin(
                     "shellcheck --shell=bash --severity=warning %s %s".formatted(excludes, tempFile));
-            if (shellcheckResults.exitCode() != ExecutionResults.SUCCESS) {
+            if (shellcheckResults.exitCode() != SUCCESS) {
                 final String message = "Script failed shellcheck.  Script:\n%s\nShellcheck output:\n%s".formatted(
                         translatedShellScript, shellcheckResults.stdout());
                 throw new BashpileUncheckedAssertionException(message);
@@ -178,7 +192,11 @@ public class BashpileMainHelper {
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         } finally {
-            asUnchecked(() -> Files.deleteIfExists(tempFile));
+            // delete tempFile
+            if (tempFile != null) {
+                final Path finalTempFile = tempFile;
+                asUncheckedSupplier(() -> Files.deleteIfExists(finalTempFile));
+            }
         }
     }
 }

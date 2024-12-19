@@ -25,19 +25,19 @@ public class ContextUtils {
 
     /** Returns the list access index text (e.g. "5" from "[5]") or null if it cannot be found */
     public static @Nullable String getListAccessorIndexText(@Nonnull final BashpileParser.ReassignmentStatementContext ctx) {
-        if (ctx.listAccess() == null || ctx.listAccess().Number() == null) {
+        if (ctx.listAccess() == null || ctx.listAccess().NumberValues() == null) {
             return null;
         }
         final String minus = ctx.listAccess().Minus() != null ? "-" : "";
-        return minus + ctx.listAccess().Number().getText();
+        return minus + ctx.listAccess().NumberValues().getText();
     }
 
     /** Returns the list access index text (e.g. "5" from "[5]") or null if it cannot be found */
     public static @Nullable Integer getListAccessorIndex(@Nonnull final BashpileParser.ListAccessExpressionContext ctx) {
-        if (ctx.listAccess() == null || ctx.listAccess().Number() == null) {
+        if (ctx.listAccess() == null || ctx.listAccess().NumberValues() == null) {
             return null;
         }
         final String minus = ctx.listAccess().Minus() != null ? "-" : "";
-        return Integer.parseInt(minus + ctx.listAccess().Number().getText());
+        return Integer.parseInt(minus + ctx.listAccess().NumberValues().getText());
     }
 }

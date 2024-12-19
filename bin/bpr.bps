@@ -2,10 +2,10 @@
 
 /**
  * Deployed with integration tests.
- * Manually deploy with `bin/bpc --outputFile=bin/bpr bin/bpr.bps`
+ * Manually deploy with `target/bpc --outputFile=target/bpr bin/bpr.bps`
  */
 
-source ${BASHPILE_HOME:=.}/bin/stdlib || source ${BASHPILE_HOME:=.}/stdlib
+source ${BASHPILE_HOME:=.}/target/stdlib || source /usr/local/bin/stdlib || source /opt/homebrew/bin/stdlib
 assertGnuGetopt()
 
 // getopt
@@ -36,6 +36,8 @@ if isset arguments[1] and arguments[1] == "-":
 
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
+if not fileExists jarPath:
+    jarPath = #(dirname "${BASH_SOURCE[0]}") + "/../target/bashpile.jar"
 
 // if not enough arguments (commandMode may read from STDIN)
 if not commandMode and unset arguments[1]:
@@ -94,6 +96,7 @@ function runTranslation(translatedFilename: str, args: list<str>):
     // Needed because we invoke the JAR directly and don't go through bpc (which sets permissions)
     chmod 755 $absoluteFilename
     LOG_NAME: readonly str = createTempFile("bpr.log") :str
+    trap 'rm $absoluteFilename' ERR # in case running the generated script crashes
     #("$absoluteFilename" "${args[@]}" 2>&1 | tee "$LOG_NAME")
     if #(cat "$LOG_NAME" | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
         // this needs an explicit shell string to handle the ./"$absoluteFilename"

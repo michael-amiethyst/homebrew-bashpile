@@ -35,3 +35,5 @@ hs_err_pid*
 # Maven files
 target/
 dependency-reduced-pom.xml
+/src/main/antlr4/com/bashpile/BashpileLexer.tokens
+/src/main/antlr4/com/bashpile/gen/

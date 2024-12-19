@@ -25,12 +25,22 @@ tokens { INDENT, DEDENT }
 }
 
 // keywords
-Type     : 'unknown' | 'empty' | 'bool' | 'number' | 'int' | 'float' | 'str' | 'list' | 'map' | 'ref';
+Empty    : 'empty';
+Unknown  : 'unknown';
+Bool     : 'bool';
+Number   : 'number';
+Int      : 'int';
+Float    : 'float';
+Str      : 'str';
+List     : 'list';
+Map      : 'map';
+Ref      : 'ref';
+
 Function : 'function';
 Block    : 'block';
 Return   : 'return';
 Print    : 'print';
-Bool     : 'true' | 'false';
+BoolValues: 'true' | 'false';
 If       : 'if';
 ElseIf   : 'else-if';
 Else     : 'else';
@@ -61,7 +71,7 @@ Add     : '+';
 Minus   : '-';
 Isset   : 'isset'; // TODO change to exits and notExists
 Unset   : 'unset';
-Empty   : 'isEmpty';
+IsEmpty   : 'isEmpty';
 NotEmpty: 'isNotEmpty';
 FileExists: 'fileExists';
 RegularFileExists: 'regularFileExists';
@@ -80,19 +90,19 @@ Equals  : '=';
 PlusEquals: '+=';
 
 // shell lines using Semantic Predicate
-ShellLine   : {isLinuxCommand(_input)}? (Id Equals (Number | String))* Id SHELL_LINE_WORD*;
+ShellLine   : {isLinuxCommand(_input)}? (Id Equals (NumberValues | StringValues))* Id SHELL_LINE_WORD*;
 
 // ID and Numbers
 
 // must start with a letter or underscore, then may have numbers
 Id: ID_START ID_CONTINUE*;
 
-Number: Float | Integer;
+NumberValues: FloatValues | IntegerValues;
 
 // future proof for octals to start with '0' like in C
-Integer: NON_ZERO_DIGIT DIGIT* | '0';
+IntegerValues: NON_ZERO_DIGIT DIGIT* | '0';
 
-Float: INT_PART? FRACTION | INT_PART '.';
+FloatValues: INT_PART? FRACTION | INT_PART '.';
 
 // newlines, whitespace and comments
 Newline      : '\r'? '\n' ' '*;
@@ -112,7 +122,7 @@ CBracket: ']';
 
 // strings
 
-String
+StringValues
  : '\'' ( StringEscapeSequence | ~[\\\r\n\f'] )* '\''
  | '"'  ( StringEscapeSequence | ~[\\\r\n\f"] )* '"'
  ;

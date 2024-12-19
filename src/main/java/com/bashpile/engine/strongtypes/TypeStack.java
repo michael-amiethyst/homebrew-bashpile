@@ -44,10 +44,16 @@ public class TypeStack {
                 // .stream() starts at the bottom of the stack so, we need to get the last match
                 .reduce((first, second) -> second);
 
-        if (topmostOptional.isPresent()) {
-            return topmostOptional.get().get(variableName);
-        } // else
-        return NOT_FOUND_TYPE;
+        // return a variable, or a parameter, or NOT_FOUND
+        return topmostOptional.map(x -> x.get(variableName)).orElse(frames.stream()
+                .map(TypeStackframe::functions)
+                .flatMap(x -> x.values().stream())
+                .flatMap(x -> x.parameterInfos().stream())
+                .filter(x -> x.name().equals(variableName))
+                // .stream() starts at the bottom of the stack so, we need to get the last match
+                .reduce((first, second) -> second)
+                .map(ParameterInfo::type)
+                .orElse(NOT_FOUND_TYPE));
     }
 
     /** Checks if the variable is defined */
