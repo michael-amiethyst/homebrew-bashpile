@@ -3,23 +3,21 @@
    1. Rename stdlib to bashpile-stdlib
    2. Install to /etc/bashpile folder
 2. Move generated docs to /target, find a place to host
-3. Change architecture to create Bashpile AST (bast) and render to String after full context / metadata known
-   1. e.g. stop parsing and re-parsing strings with regex
-4. Imports
+3. Imports
    1. Especially function return values into the type system
-5. More loops
+4. More loops
    1. do while loop
    2. C style for loop
    3. foreach loop
-6. Logging / debug so that we can debug functions that return strings
-7. Syntax highlighting in Intellij
-8. Hashes
-9. Refs
-10. String interpolation with $[]
-    1. have bpr use arguments, arguments[all] (args/argv alias?)
-11. Exceptions and raise/throw statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+5. Logging / debug so that we can debug functions that return strings
+6. Syntax highlighting in Intellij
+7. Hashes
+8. Refs
+9. String interpolation with $[]
+   1. have bpr use arguments, arguments[all] (args/argv alias?)
+10. Exceptions and raise/throw statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
     1. finally blocks
-12. Enforce 'readonly' 
+11. Enforce 'readonly' 
     1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # Fixes and improvements
