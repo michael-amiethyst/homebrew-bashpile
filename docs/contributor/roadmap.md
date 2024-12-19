@@ -2,22 +2,21 @@
 1. Create lib functions to disable/enable strict mode
    1. Rename stdlib to bashpile-stdlib
    2. Install to /etc/bashpile folder
-2. Move generated docs to /target, find a place to host
-3. Imports
+2. Imports
    1. Especially function return values into the type system
-4. More loops
+3. More loops
    1. do while loop
    2. C style for loop
    3. foreach loop
-5. Logging / debug so that we can debug functions that return strings
-6. Syntax highlighting in Intellij
-7. Hashes
-8. Refs
-9. String interpolation with $[]
+4. Logging / debug so that we can debug functions that return strings
+5. Syntax highlighting in Intellij
+6. Hashes
+7. Refs
+8. String interpolation with $[]
    1. have bpr use arguments, arguments[all] (args/argv alias?)
-10. Exceptions and raise/throw statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
-    1. finally blocks
-11. Enforce 'readonly' 
+9. Exceptions and raise/throw statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+   1. finally blocks
+10. Enforce 'readonly' 
     1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
 
 # Fixes and improvements

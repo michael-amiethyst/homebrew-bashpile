@@ -4,7 +4,7 @@
  * Usage: bin/testrigTokens src/test/resources/currTest
 */
 
-source ${BASHPILE_HOME:=.}/target/stdlib  || source /usr/local/bin/stdlib || source /opt/homebrew/bin/stdlib
+source ${BASHPILE_HOME:=.}/target/bashpile-stdlib  || source /usr/local/bin/bashpile-stdlib || source /opt/homebrew/bin/bashpile-stdlib
 
 CLASS_PATH_FILE: readonly str = createTempFile("cpath.txt")
 mvn dependency:build-classpath -Dmdep.outputFile="$CLASS_PATH_FILE"

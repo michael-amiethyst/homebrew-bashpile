@@ -260,14 +260,14 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>Generate stdlib</id>
+                        <id>Generate bashpile-stdlib</id>
                         <phase>package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
                             <executable>/bin/bash</executable>
-                            <commandlineArgs>-c "target/bpc --outputFile target/stdlib bin/stdlib.bps"</commandlineArgs>
+                            <commandlineArgs>-c "target/bpc --outputFile target/bashpile-stdlib bin/stdlib.bps"</commandlineArgs>
                         </configuration>
                     </execution>
                     <execution>
