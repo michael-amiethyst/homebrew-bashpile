@@ -175,6 +175,7 @@ class StatementBashpileTest extends BashpileTest {
                 print(someVar)""");
         assertSuccessfulExitCode(results);
         assertEquals("0\n1\n", results.stdout());
+        assertEquals(results.stdout().indexOf("%d"), results.stdout().lastIndexOf("%d"), "Too many setups");
     }
 
     @Test

@@ -16,6 +16,8 @@ import static com.bashpile.engine.strongtypes.Type.INT_TYPE;
 public class TypecastUtils {
     // TODO consistent C style number casts, we can't check for correctness of non-literals (but we allow them)
 
+    public static BashTranslationEngine engine = null;
+
     /* package */ static @Nonnull Translation typecastFromBool(
             @Nonnull Translation expression,
             @Nonnull final Type castTo,
@@ -105,9 +107,11 @@ public class TypecastUtils {
             String varName = StringUtils.stripStart(expression.body(), "${");
             varName = StringUtils.stripEnd(varName, "}");
             if (!varName.matches("\\d")) {
-                return expression.addPreamble("""
-                                %s="$(printf '%%d' "%s" 2>/dev/null || true)"
-                                """.formatted(varName, expression))
+                String setupStatementText = """
+                        %s="$(printf '%%d' "%s" 2>/dev/null || true)"
+                        """.formatted(varName, expression);
+                engine.addExpressionSetup(new Translation(setupStatementText));
+                return expression.addPreamble(setupStatementText)
                         .type(INT_TYPE);
             } else {
                 // trying to reassign $1, $2, etc

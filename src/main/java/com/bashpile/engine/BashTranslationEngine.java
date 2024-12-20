@@ -56,6 +56,12 @@ public class BashTranslationEngine implements TranslationEngine {
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
+    /**
+     * When an expression needs a statement inserted before the expression
+     * Were called preambles
+     */
+    private List<Translation> expressionSetups = new ArrayList<>();
+
     /** The Bashpile script input file or literal text */
     private final @Nonnull String origin;
 
@@ -72,12 +78,26 @@ public class BashTranslationEngine implements TranslationEngine {
     public BashTranslationEngine(@Nonnull final String origin) {
         // escape newlines -- origin may be multi-line script
         this.origin = StringEscapeUtils.escapeJava(origin);
+        TypecastUtils.engine = this;
     }
 
     @Override
     public void setVisitor(@Nonnull final BashpileVisitor visitor) {
         this.visitor = visitor;
         kotlinDelegate = new BashTranslationEngineDelegate(visitor);
+    }
+
+    public void addExpressionSetup(@Nonnull final Translation setup) {
+        expressionSetups.add(setup);
+    }
+
+    public Translation getExpressionSetup() {
+        try {
+            return expressionSetups.stream().reduce(Translation::add).orElseThrow();
+        } finally {
+            // the list is drained, reset
+            expressionSetups = new ArrayList<>();
+        }
     }
 
     // header translations
