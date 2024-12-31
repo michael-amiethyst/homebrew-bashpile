@@ -61,29 +61,6 @@ public class ListOfTranslation extends Translation {
 
     @Nonnull
     @Override
-    public Translation addPreamble(@Nonnull String additionalPreamble) {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
-    }
-
-    @Nonnull
-    @Override
-    public Translation assertEmptyPreamble() {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
-    }
-
-    @Override
-    public boolean hasPreamble() {
-        return translations.stream().map(Translation::hasPreamble).reduce(true, (a, b) -> a && b);
-    }
-
-    @Nonnull
-    @Override
-    public Translation mergePreamble() {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
-    }
-
-    @Nonnull
-    @Override
     public Translation body(@Nonnull String nextBody) {
         throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
@@ -166,11 +143,6 @@ public class ListOfTranslation extends Translation {
         return "ListTranslation{" +
                 "translations=" + translations +
                 '}';
-    }
-
-    @Override
-    public @Nonnull String preamble() {
-        return translations.stream().map(Translation::preamble).collect(Collectors.joining("\n")).trim();
     }
 
     @Override

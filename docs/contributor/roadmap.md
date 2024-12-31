@@ -1,12 +1,9 @@
 # 1.0 Roadmap
-1. Create lib functions to disable/enable strict mode
-   1. Rename stdlib to bashpile-stdlib
-   2. Install to /etc/bashpile folder
-2. Move generated docs to /target, find a place to host
-3. Change architecture to create Bashpile AST (bast) and render to String after full context / metadata known
-   1. e.g. stop parsing and re-parsing strings with regex
-4. Imports
-   1. Especially function return values into the type system
+1. Convert Translation to a tree structure instead of a string concat model
+2. Change Translation payload from String (body) to bastData (that renders to string)
+3. Create lib functions to disable/enable strict mode
+   1. Install to /etc/bashpile folder
+4. Integrate imports into the type system
 5. More loops
    1. do while loop
    2. C style for loop

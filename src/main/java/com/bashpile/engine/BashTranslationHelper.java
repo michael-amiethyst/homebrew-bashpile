@@ -72,14 +72,6 @@ public class BashTranslationHelper {
         return toStringTranslation("# %s, Bashpile line %d\n".formatted(name, lineNumber));
     }
 
-    /* package */ static @Nonnull Translation subcommentTranslationOrDefault(
-            final boolean subcommentNeeded, @Nonnull final String name) {
-        if (subcommentNeeded) {
-            return toStringTranslation("## %s\n".formatted(name));
-        }
-        return UNKNOWN_TRANSLATION;
-    }
-
     /**
      * Get left hand side's type.
      *
@@ -189,10 +181,7 @@ public class BashTranslationHelper {
                 %s
                     ;;
                 """.formatted(pattern.body(), statements.body());
-        return toStringTranslation(template)
-                .lambdaBodyLines(x -> "    " + x)
-                .addPreamble(pattern.preamble())
-                .addPreamble(statements.preamble());
+        return toStringTranslation(template).lambdaBodyLines(x -> "    " + x);
     }
 
     // helpers to helpers

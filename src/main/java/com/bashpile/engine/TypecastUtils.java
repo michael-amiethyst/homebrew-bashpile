@@ -9,12 +9,15 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static com.bashpile.engine.strongtypes.Type.INT_TYPE;
 
 /** Computations not checked for parsability or anything that starts with $ (Bash variable) */
 public class TypecastUtils {
     // TODO consistent C style number casts, we can't check for correctness of non-literals (but we allow them)
+
+    public static BashTranslationEngine engine = null;
 
     /* package */ static @Nonnull Translation typecastFromBool(
             @Nonnull Translation expression,
@@ -105,13 +108,19 @@ public class TypecastUtils {
             String varName = StringUtils.stripStart(expression.body(), "${");
             varName = StringUtils.stripEnd(varName, "}");
             if (!varName.matches("\\d")) {
-                return expression.addPreamble("""
-                                %s="$(printf '%%d' "%s" 2>/dev/null || true)"
-                                """.formatted(varName, expression))
-                        .type(INT_TYPE);
+                String setupStatementText;
+                // only convert normal variables with printf (not calculations, etc.)
+                if (expression.metadata().isEmpty()
+                        || (expression.metadata().size() == 1 && expression.metadata().contains(NORMAL))) {
+                    setupStatementText = """
+                            %s="$(printf '%%d' "%s" 2>/dev/null || true)"
+                            """.formatted(varName, expression);
+                    engine.addExpressionSetup(new Translation(setupStatementText));
+                }
+                return expression.type(INT_TYPE);
             } else {
-                // trying to reassign $1, $2, etc
-                // too complex to set an individual varable with the command 'set', throw
+                // trying to reassign $1, $2, etc.
+                // too complex to set an individual variable with the command 'set', throw
                 final String message = "Could not cast $1, $2, etc.  Assign to a local variable and typecast that.";
                 throw new TypeError(message, lineNumber);
             }

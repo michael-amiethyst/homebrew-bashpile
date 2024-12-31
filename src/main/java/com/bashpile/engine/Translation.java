@@ -11,14 +11,12 @@ import javax.annotation.Nonnull;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
-import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
 
 import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.engine.strongtypes.Type.*;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
@@ -47,8 +45,6 @@ public class Translation {
     private static final Pattern INT_PATTERN = Pattern.compile("\\d+");
 
     private static final Pattern FLOAT_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
-
-    @Nonnull private String preamble;
 
     @Nonnull private final String body;
 
@@ -97,27 +93,6 @@ public class Translation {
 
     // constructors
 
-    /**
-     * @param preamble This is text that needs to be emitted before the rest of the translation.<br>
-     *                 This is to handle the case of a nested command substitution, since they are not supported well
-     *                 in Bash (errored exit codes are ignored) we need to assign the inner command substitution to a
-     *                 variable and have the <code>body</code> just be the variable.
-     * @param body     The target shell script (e.g. Bash) literal text.
-     * @param type     The Bashpile type.  For Shell Strings and Command Substitutions this is the type of the result.
-     *                 E.g. $(expr 1 + 1) could have a type of int.
-     * @param metadata Further information on the type (e.g. is this a subshell?)
-     */
-    public Translation(
-            @Nonnull String preamble,
-            @Nonnull String body,
-            @Nonnull Type type,
-            @Nonnull List<TranslationMetadata> metadata) {
-        this.preamble = preamble;
-        this.body = body;
-        this.type = type;
-        this.metadata = metadata;
-    }
-
     public Translation(@Nonnull final String text) {
         this(text, UNKNOWN_TYPE, List.of());
     }
@@ -126,18 +101,26 @@ public class Translation {
             @Nonnull final String text,
             @Nonnull final Type type,
             @Nonnull final TranslationMetadata translationMetadata) {
-        this("", text, type, List.of(translationMetadata));
-    }
-
-    public Translation(
-            @Nonnull final String text,
-            @Nonnull final Type type,
-            @Nonnull final List<TranslationMetadata> translationMetadata) {
-        this("", text, type, translationMetadata);
+        this(text, type, List.of(translationMetadata));
     }
 
     /**
-     * Accumulates all the stream translations' preambles and bodies into the result
+     * @param body     The target shell script (e.g. Bash) literal text.
+     * @param type     The Bashpile type.  For Shell Strings and Command Substitutions this is the type of the result.
+     *                 E.g. $(expr 1 + 1) could have a type of int.
+     * @param metadata Further information on the type (e.g. is this a subshell?)
+     */
+    public Translation(
+            @Nonnull final String body,
+            @Nonnull final Type type,
+            @Nonnull final List<TranslationMetadata> metadata) {
+        this.body = body;
+        this.type = type;
+        this.metadata = metadata;
+    }
+
+    /**
+     * Accumulates all the stream translations' bodies into the result
      */
     public static @Nonnull Translation toTranslation(@Nonnull final Stream<Translation> stream) {
         return stream.reduce(Translation::add).orElseThrow();
@@ -146,7 +129,7 @@ public class Translation {
     // instance methods
 
     /**
-     * Concatenates other's preamble and body to this preamble and body
+     * Concatenates other's body, type and metadata to this object's
      */
     public @Nonnull Translation add(@Nonnull final Translation other) {
         final List<TranslationMetadata> nextMetadata =
@@ -156,40 +139,7 @@ public class Translation {
         nextType = nextType.isUnknown() ? other.type : nextType;
         // favor INT or FLOAT over NUMBER
         nextType = nextType.isNumber() && other.type.isNumeric() ? other.type : nextType;
-        return new Translation(preamble + other.preamble, body + other.body, nextType, nextMetadata);
-    }
-
-    // preamble instance methods
-
-    /**
-     * Appends additionalPreamble to this object's preamble
-     */
-    public @Nonnull Translation addPreamble(@Nonnull final String additionalPreamble) {
-        return new Translation(preamble + additionalPreamble, body, type, metadata);
-    }
-
-    /**
-     * Ensures this translation has no preamble
-     */
-    public @Nonnull Translation assertEmptyPreamble() {
-        if (hasPreamble()) {
-            throw new BashpileUncheckedAssertionException("Found preamble in translation: " + this.body);
-        }
-        return this;
-    }
-
-    /**
-     * Checks if this translation has a preamble
-     */
-    public boolean hasPreamble() {
-        return !isEmpty(preamble);
-    }
-
-    /**
-     * Prepends the preamble to the body
-     */
-    public @Nonnull Translation mergePreamble() {
-        return new Translation(preamble + body, type, metadata);
+        return new Translation(body + other.body, nextType, nextMetadata);
     }
 
     // body instance methods
@@ -198,7 +148,7 @@ public class Translation {
      * Replaces the body
      */
     public @Nonnull Translation body(@Nonnull final String nextBody) {
-        return new Translation(preamble, nextBody, type, metadata);
+        return new Translation(nextBody, type, metadata);
     }
 
     /**
@@ -274,7 +224,7 @@ public class Translation {
      * Apply arbitrary function to body.  E.g. `str -> str`.
      */
     public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
-        return new Translation(preamble, lambda.apply(body), type, metadata);
+        return new Translation(lambda.apply(body), type, metadata);
     }
 
     /**
@@ -298,7 +248,7 @@ public class Translation {
      * Replaces the type.
      */
     public @Nonnull Translation type(@Nonnull final Type typecastType) {
-        return new Translation(preamble, body, typecastType, metadata);
+        return new Translation(body, typecastType, metadata);
     }
 
     /** Is the type basic (e.g. not a List, Hash or Ref)? */
@@ -350,14 +300,14 @@ public class Translation {
      * Replaces the type metadata
      */
     public @Nonnull Translation metadata(@Nonnull final TranslationMetadata meta) {
-        return new Translation(preamble, body, type, List.of(meta));
+        return new Translation(body, type, List.of(meta));
     }
 
     /**
      * Replaces the type metadata
      */
     public @Nonnull Translation metadata(@Nonnull final List<TranslationMetadata> meta) {
-        return new Translation(preamble, body, type, meta);
+        return new Translation(body, type, meta);
     }
 
     /**
@@ -375,14 +325,14 @@ public class Translation {
             nextMetadata.addAll(metadata);
             nextMetadata.remove(TranslationMetadata.NEEDS_INLINING_OFTEN);
             // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
-            return new Translation(preamble, "$( %s )".formatted(nextBody), type, nextMetadata);
+            return new Translation("$( %s )".formatted(nextBody), type, nextMetadata);
         } // else
         return this;
     }
 
     @Override
     public String toString() {
-        return assertEmptyPreamble().body;
+        return body;
     }
 
     // helpers
@@ -397,17 +347,6 @@ public class Translation {
             return tr.type(STR_TYPE);
         } else {
             return tr;
-        }
-    }
-
-    /**
-     * Drains the preamble; blanks out the preamble as a side effect to indicate that it has been handled and not lost.
-     */
-    public @Nonnull String preamble() {
-        try {
-            return preamble;
-        } finally {
-            preamble = "";
         }
     }
 
@@ -428,15 +367,14 @@ public class Translation {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
         var that = (Translation) obj;
-        return Objects.equals(this.preamble, that.preamble) &&
-                Objects.equals(this.body, that.body) &&
+        return Objects.equals(this.body, that.body) &&
                 Objects.equals(this.type, that.type) &&
                 Objects.equals(this.metadata, that.metadata);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(preamble, body, type, metadata);
+        return Objects.hash(body, type, metadata);
     }
 
 }

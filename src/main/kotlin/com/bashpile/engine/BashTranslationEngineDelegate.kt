@@ -127,7 +127,6 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                     .lambdaBody { it.replace("exit 1", "return 1") }
                 }.reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
                 .orElseThrow()
-                .assertEmptyPreamble()
 
             // put it all together in one big translation
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
@@ -183,9 +182,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             }
             .reduce { tr: Translation, otherTranslation: Translation? -> tr.add(otherTranslation!!) }
             .orElseThrow()
-        val subcomment = subcommentTranslationOrDefault(arguments.hasPreamble(), "print statement body")
-        return comment.add(subcomment.add(arguments).mergePreamble())
-
+        return comment.add(arguments)
     }
 
     fun returnPsudoStatement(ctx: BashpileParser.ReturnPsudoStatementContext, typeStack: TypeStack): Translation {
@@ -227,7 +224,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             }
         }
         exprTranslation = exprTranslation.body(Strings.lambdaLastLine(exprTranslation.body(), returnLineLambda))
-        return comment.add(exprTranslation.mergePreamble())
+        return comment.add(exprTranslation)
     }
 
     fun parenthesisExpression(ctx: BashpileParser.ParenthesisExpressionContext): Translation {
@@ -335,7 +332,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             // valueBeingTested will have [ ] if needed
             "$primary ${valueBeingTested.unquoteBody().body()}"
         }
-        return Translation(valueBeingTested.preamble(), body, Type.STR_TYPE, listOf(CONDITIONAL))
+        return Translation(body, Type.STR_TYPE, listOf(CONDITIONAL))
     }
 
     fun combiningExpression(ctx: BashpileParser.CombiningExpressionContext): Translation {
@@ -356,9 +353,6 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         }
 
         val body = "${translations[0].unquoteBody().body()} $operator ${translations[1].unquoteBody().body()}"
-        return toStringTranslation(body)
-            .addPreamble(translations[0].preamble())
-            .addPreamble(translations[1].preamble())
-            .metadata(CONDITIONAL)
+        return toStringTranslation(body).metadata(CONDITIONAL)
     }
 }
