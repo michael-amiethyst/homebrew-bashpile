@@ -357,8 +357,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation assignment = toStringTranslation(assignmentBody);
 
         // order is comment, variable declaration, assignment
-        final Translation subcommentToAssignment = variableDeclaration.add(assignment);
-        return comment.add(getExpressionSetup()).add(subcommentToAssignment).type(NA_TYPE).metadata(NORMAL);
+        return comment.add(getExpressionSetup()).add(variableDeclaration).add(assignment)
+                .type(NA_TYPE).metadata(NORMAL);
     }
 
     @Override
@@ -408,7 +408,6 @@ public class BashTranslationEngine implements TranslationEngine {
                 .formatted(lhsVariableName, listAccessor, assignOperator, rhsExprTranslation.body());
         final Translation reassignment = toStringTranslation(reassignmentBody);
 
-        // order is: comment, reassignment
         return comment.add(reassignment).assertParagraphBody().type(NA_TYPE).metadata(NORMAL);
     }
 
@@ -424,7 +423,6 @@ public class BashTranslationEngine implements TranslationEngine {
         // change $(( )) to _=$(( )) to avoid executing a number.  Fixes ShellCheck error SC2084
         expr = expr.lambdaBody(body -> !body.startsWith("$((") ? body : "_=" + body).add(NEWLINE);
         final Translation comment = createCommentTranslation("expression statement", lineNumber(ctx));
-        // order is: comment, expr
         return comment.add(expr).type(expr.type()).metadata(expr.metadata());
     }
 
