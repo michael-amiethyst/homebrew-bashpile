@@ -86,7 +86,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
                     final Translation r = this.visit(antlrParseTree);
                     return translator.getExpressionSetup().add(r);
                 })
-                .map(Translation::assertEmptyPreamble)
                 .reduce(Translation::add)
                 .orElseThrow();
 

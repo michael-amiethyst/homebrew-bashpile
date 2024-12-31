@@ -11,7 +11,6 @@ import javax.annotation.Nonnull;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
-import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
 
@@ -121,7 +120,7 @@ public class Translation {
     }
 
     /**
-     * Accumulates all the stream translations' preambles and bodies into the result
+     * Accumulates all the stream translations' bodies into the result
      */
     public static @Nonnull Translation toTranslation(@Nonnull final Stream<Translation> stream) {
         return stream.reduce(Translation::add).orElseThrow();
@@ -130,7 +129,7 @@ public class Translation {
     // instance methods
 
     /**
-     * Concatenates other's preamble and body to this preamble and body
+     * Concatenates other's body, type and metadata to this object's
      */
     public @Nonnull Translation add(@Nonnull final Translation other) {
         final List<TranslationMetadata> nextMetadata =
@@ -141,39 +140,6 @@ public class Translation {
         // favor INT or FLOAT over NUMBER
         nextType = nextType.isNumber() && other.type.isNumeric() ? other.type : nextType;
         return new Translation(body + other.body, nextType, nextMetadata);
-    }
-
-    // preamble instance methods
-
-    /**
-     * Appends additionalPreamble to this object's preamble
-     */
-    public @Nonnull Translation addPreamble(@Nonnull final String additionalPreamble) {
-        return new Translation(body, type, metadata);
-    }
-
-    /**
-     * Ensures this translation has no preamble
-     */
-    public @Nonnull Translation assertEmptyPreamble() {
-        if (hasPreamble()) {
-            throw new BashpileUncheckedAssertionException("Found preamble in translation: " + this.body);
-        }
-        return this;
-    }
-
-    /**
-     * Checks if this translation has a preamble
-     */
-    public boolean hasPreamble() {
-        return false;
-    }
-
-    /**
-     * Prepends the preamble to the body
-     */
-    public @Nonnull Translation mergePreamble() {
-        return new Translation(body, type, metadata);
     }
 
     // body instance methods
@@ -366,7 +332,7 @@ public class Translation {
 
     @Override
     public String toString() {
-        return assertEmptyPreamble().body;
+        return body;
     }
 
     // helpers
@@ -382,13 +348,6 @@ public class Translation {
         } else {
             return tr;
         }
-    }
-
-    /**
-     * Drains the preamble; blanks out the preamble as a side effect to indicate that it has been handled and not lost.
-     */
-    public @Nonnull String preamble() {
-        return "";
     }
 
     public @Nonnull String body() {
