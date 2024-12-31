@@ -24,7 +24,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.engine.BashTranslationHelper.*;
@@ -58,8 +57,8 @@ public class BashTranslationEngine implements TranslationEngine {
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
     /**
-     * When an expression needs a statement inserted before the expression
-     * Were called preambles
+     * When an expression needs a statement inserted before the expression.
+     * <p>Replaces preambles.</p>
      */
     private List<Translation> expressionSetups = new ArrayList<>();
 
@@ -92,7 +91,7 @@ public class BashTranslationEngine implements TranslationEngine {
         expressionSetups.add(setup);
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Translation getExpressionSetup() {
         try {
