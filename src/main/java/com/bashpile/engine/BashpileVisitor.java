@@ -21,7 +21,8 @@ import static com.bashpile.engine.Translation.NEWLINE;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**
- * Antlr4 calls these methods.
+ * Antlr4 calls these methods.  Delegates to the {@code TranslationEngine}.
+ * @see TranslationEngine
  */
 public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
@@ -79,7 +80,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         // save root for later usage
         contextRoot = ctx;
 
-        final Translation statementTranslation = ctx.statement().stream()
+        final Translation statementsTranslations = ctx.statement().stream()
                 .map(this::visit)
                 .map(Translation::assertEmptyPreamble)
                 .reduce(Translation::add)
@@ -88,11 +89,15 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         // add header, libs and statements
         return translator.originHeader()
                 .add(translator.strictModeHeader())
-                .add(translator.importsHeaders())
-                .add(statementTranslation);
+                .add(statementsTranslations);
     }
 
     // visit statements
+
+    @Override
+    public Translation visitImportStatement(BashpileParser.ImportStatementContext ctx) {
+        return translator.importStatement(ctx);
+    }
 
     @Override
     public Translation visitWhileStatement(BashpileParser.WhileStatementContext ctx) {

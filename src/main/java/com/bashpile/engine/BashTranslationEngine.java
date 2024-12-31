@@ -139,14 +139,32 @@ public class BashTranslationEngine implements TranslationEngine {
         return toStringTranslation("# strict mode header\n%s".formatted(strictMode));
     }
 
-    @Override
-    public @Nonnull Translation importsHeaders() {
-        // stub
-        String text = "";
-        return toStringTranslation(text);
-    }
-
     // statement translations
+
+    @Override
+    public Translation importStatement(BashpileParser.ImportStatementContext ctx) {
+        final String libraryName = Strings.unquote(ctx.StringValues().getText());
+        // try to source 3 locations, develop, OSX location, Linux location
+        // 'source ... || source ...' does not work
+        // dot ('.') is more portable than 'source'
+        final String trText = """
+                declare stdlibPath
+                stdlibPath="${BASHPILE_HOME:=.}/target/%s"
+                if ! [ -e "${stdlibPath}" ]; then
+                  stdlibPath="/usr/local/bin/%s"
+                fi
+                if ! [ -e "${stdlibPath}" ]; then
+                  stdlibPath="/opt/homebrew/bin/%s"
+                fi
+                # To fix shellcheck SC1090
+                # shellcheck source=/dev/null
+                . "$stdlibPath"
+                """.formatted(libraryName, libraryName, libraryName);
+
+        final Translation comment = createCommentTranslation("import statement", lineNumber(ctx));
+        final Translation importTranslation = new Translation(trText);
+        return comment.add(importTranslation);
+    }
 
     @Override
     public Translation whileStatement(BashpileParser.WhileStatementContext ctx) {

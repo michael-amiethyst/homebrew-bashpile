@@ -53,6 +53,7 @@ Exported : 'exported';
 Readonly : 'readonly';
 ListOf   : 'listOf';
 While    : 'while';
+Import   : 'import';
 
 // operators, in precidence order
 // opening parenthesis

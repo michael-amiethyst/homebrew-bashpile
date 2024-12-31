@@ -38,7 +38,7 @@ abstract public class BashpileTest {
     }
 
     /** Runs {@code bashText} in a Bash environment */
-    protected @Nonnull ExecutionResults runText(@Nonnull final String bashText, @Nullable String... args) {
+    protected static @Nonnull ExecutionResults runText(@Nonnull final String bashText, @Nullable String... args) {
         LOG.debug("Start of:\n{}", bashText);
         try {
             return execute(BashpileMainHelper.transpileScript(bashText), args);
@@ -48,7 +48,7 @@ abstract public class BashpileTest {
     }
 
     /** Runs {@code file} from src/test/resources/scripts as a script in a Bash environment. */
-    protected @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
+    protected static @Nonnull ExecutionResults runPath(@Nonnull final Path file) {
         final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
         LOG.debug("Start of {}", filename);
         try {
@@ -60,7 +60,7 @@ abstract public class BashpileTest {
 
     // helpers
 
-    private @Nonnull ExecutionResults execute(@Nonnull final String bashScript, @Nullable final String[] args) {
+    private static @Nonnull ExecutionResults execute(@Nonnull final String bashScript, @Nullable final String[] args) {
         LOG.debug("In {}", System.getProperty("user.dir"));
         try {
             return BashShell.runAndJoin(bashScript, args);

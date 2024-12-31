@@ -14,6 +14,22 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileTest extends BashpileTest {
 
+    /** Add a stub 'bashpile-stdlib' file for testing the import statement */
+    @BeforeAll
+    public static void setup() {
+        final ExecutionResults results = runText("touch ./target/bashpile-stdlib");
+        assertSuccessfulExitCode(results);
+    }
+
+    /** Remove the stub for a real implementation to be generated later */
+    @AfterAll
+    public static void cleanup() {
+        final ExecutionResults results = runText("rm ./target/bashpile-stdlib");
+        assertSuccessfulExitCode(results);
+    }
+
+    // tests
+
     @Test
     @Order(10)
     public void assignBoolWorks() {
@@ -462,5 +478,12 @@ class StatementBashpileTest extends BashpileTest {
                 """);
         assertSuccessfulExitCode(results);
         assertEquals("Other\n", results.stdout());
+    }
+
+    @Test
+    @Order(170)
+    public void importWorks() {
+        ExecutionResults results = runText("import 'bashpile-stdlib'");
+        assertSuccessfulExitCode(results);
     }
 }
