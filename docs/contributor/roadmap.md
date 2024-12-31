@@ -4,8 +4,7 @@
 3. Change Translation payload from String (body) to bastData (that renders to string)
 4. Create lib functions to disable/enable strict mode
    1. Install to /etc/bashpile folder
-5. Imports
-   1. Especially function return values into the type system
+5. Integrate imports into the type system
 6. More loops
    1. do while loop
    2. C style for loop

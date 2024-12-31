@@ -543,7 +543,6 @@ public class BashTranslationEngine implements TranslationEngine {
                     // only add quotes if needed
                     .map(tr -> !(tr.body().startsWith("\"") && tr.body().endsWith("\"")) ? tr.quoteBody() : tr)
                     .reduce((left, right) -> new Translation(
-                            left.preamble() + right.preamble(),
                             left.body() + " " + right.body(),
                             right.type(),
                             right.metadata()))
@@ -553,8 +552,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // lookup return type of this function
         final Type retType = expectedTypes.returnType();
 
-        Translation ret = new Translation(
-                argumentTranslations.preamble(), functionName + argumentTranslations.body(), retType, List.of(NORMAL));
+        Translation ret = new Translation(functionName + argumentTranslations.body(), retType, List.of(NORMAL));
         // suppress output if we are printing to output as part of a work-around to return a string
         // this covers the case of calling a function without using the return
         if (retType.isStr()) {

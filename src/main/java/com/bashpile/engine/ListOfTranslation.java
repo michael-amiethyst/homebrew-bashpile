@@ -169,11 +169,6 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public @Nonnull String preamble() {
-        return translations.stream().map(Translation::preamble).collect(Collectors.joining("\n")).trim();
-    }
-
-    @Override
     public  @Nonnull Type type() {
         return super.type();
     }

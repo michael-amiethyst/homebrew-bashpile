@@ -335,7 +335,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             // valueBeingTested will have [ ] if needed
             "$primary ${valueBeingTested.unquoteBody().body()}"
         }
-        return Translation(valueBeingTested.preamble(), body, Type.STR_TYPE, listOf(CONDITIONAL))
+        return Translation(body, Type.STR_TYPE, listOf(CONDITIONAL))
     }
 
     fun combiningExpression(ctx: BashpileParser.CombiningExpressionContext): Translation {

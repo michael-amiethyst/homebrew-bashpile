@@ -366,7 +366,6 @@ public class ConditionalsBashpileTest extends BashpileTest {
         assertEquals("true\n", results.stdout());
     }
 
-    // TODO remove "preamble" concept entirely
     @Test
     @Order(180)
     public void ifNotWhichWorks() {

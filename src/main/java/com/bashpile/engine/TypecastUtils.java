@@ -108,8 +108,8 @@ public class TypecastUtils {
             String varName = StringUtils.stripStart(expression.body(), "${");
             varName = StringUtils.stripEnd(varName, "}");
             if (!varName.matches("\\d")) {
-                String setupStatementText = "";
-                // only convert normal variables with printf (not calculations, etc)
+                String setupStatementText;
+                // only convert normal variables with printf (not calculations, etc.)
                 if (expression.metadata().isEmpty()
                         || (expression.metadata().size() == 1 && expression.metadata().contains(NORMAL))) {
                     setupStatementText = """
@@ -117,10 +117,10 @@ public class TypecastUtils {
                             """.formatted(varName, expression);
                     engine.addExpressionSetup(new Translation(setupStatementText));
                 }
-                return expression.addPreamble(setupStatementText).type(INT_TYPE);
+                return expression.type(INT_TYPE);
             } else {
-                // trying to reassign $1, $2, etc
-                // too complex to set an individual varable with the command 'set', throw
+                // trying to reassign $1, $2, etc.
+                // too complex to set an individual variable with the command 'set', throw
                 final String message = "Could not cast $1, $2, etc.  Assign to a local variable and typecast that.";
                 throw new TypeError(message, lineNumber);
             }
