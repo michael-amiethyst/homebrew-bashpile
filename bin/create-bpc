@@ -3,3 +3,4 @@
 echo '#!/usr/bin/java -jar' > target/bpc
 /bin/cat target/bashpile.jar >> target/bpc
 /bin/chmod +x target/bpc
+printf "Created bpc in directory %s" "$PWD"

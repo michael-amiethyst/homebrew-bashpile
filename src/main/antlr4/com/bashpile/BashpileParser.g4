@@ -5,7 +5,8 @@ program: statement+;
 
 // statements, in descending order of complexity
 statement
-    : ShellLine Newline                         # shellLineStatement
+    : Import StringValues                       # importStatement
+    | ShellLine Newline                         # shellLineStatement
     | While expression Colon indentedStatements # whileStatement
     | Function Id paramaters (Arrow complexType)?      # functionForwardDeclarationStatement
     | Function Id paramaters tags? (Arrow complexType)?

@@ -1,9 +1,14 @@
 package com.bashpile.engine;
 
+import javax.annotation.Nonnull;
+
 import com.bashpile.BashpileParser;
 
 /**
  * Methods translate small parser rules (e.g. statements and expressions) to the target language.
+ * Exists to allow for other implementations in the future (e.g. sh, ksh, Bash3).
+ * Currently only has {@code BashTranslationEngine}.
+ * @see BashTranslationEngine
  */
 public interface TranslationEngine {
 
@@ -13,6 +18,12 @@ public interface TranslationEngine {
      * So you make a TranslationEngine, pass to the BashpileVisitor then set the visitor.
      */
     void setVisitor(final BashpileVisitor visitor);
+
+    /**
+     * Some expressions need a statement executed beforehand, after the expression is translated this buffer is filled.
+     * Calling this also drains the buffer.
+     */
+    @Nonnull Translation getExpressionSetup();
 
     // headers
 
@@ -24,10 +35,9 @@ public interface TranslationEngine {
      */
     Translation strictModeHeader();
 
-    /** To source our bundled libraries */
-    Translation importsHeaders();
-
     // statement translations
+
+    Translation importStatement(BashpileParser.ImportStatementContext ctx);
 
     /** Translates a while loop */
     Translation whileStatement(final BashpileParser.WhileStatementContext ctx);

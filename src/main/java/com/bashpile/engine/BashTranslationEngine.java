@@ -56,6 +56,12 @@ public class BashTranslationEngine implements TranslationEngine {
     /** All the functions hoisted so far, so we can ensure we don't emit them twice */
     private final Set<String> foundForwardDeclarations = new HashSet<>();
 
+    /**
+     * When an expression needs a statement inserted before the expression.
+     * <p>Replaces preambles.</p>
+     */
+    private List<Translation> expressionSetups = new ArrayList<>();
+
     /** The Bashpile script input file or literal text */
     private final @Nonnull String origin;
 
@@ -72,12 +78,28 @@ public class BashTranslationEngine implements TranslationEngine {
     public BashTranslationEngine(@Nonnull final String origin) {
         // escape newlines -- origin may be multi-line script
         this.origin = StringEscapeUtils.escapeJava(origin);
+        TypecastUtils.engine = this;
     }
 
     @Override
     public void setVisitor(@Nonnull final BashpileVisitor visitor) {
         this.visitor = visitor;
         kotlinDelegate = new BashTranslationEngineDelegate(visitor);
+    }
+
+    public void addExpressionSetup(@Nonnull final Translation setup) {
+        expressionSetups.add(setup);
+    }
+
+    @Nonnull
+    @Override
+    public Translation getExpressionSetup() {
+        try {
+            return expressionSetups.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
+        } finally {
+            // the list is drained, reset
+            expressionSetups = new ArrayList<>();
+        }
     }
 
     // header translations
@@ -119,14 +141,32 @@ public class BashTranslationEngine implements TranslationEngine {
         return toStringTranslation("# strict mode header\n%s".formatted(strictMode));
     }
 
-    @Override
-    public @Nonnull Translation importsHeaders() {
-        // stub
-        String text = "";
-        return toStringTranslation(text);
-    }
-
     // statement translations
+
+    @Override
+    public Translation importStatement(BashpileParser.ImportStatementContext ctx) {
+        final String libraryName = Strings.unquote(ctx.StringValues().getText());
+        // try to source 3 locations, develop, OSX location, Linux location
+        // 'source ... || source ...' does not work
+        // dot ('.') is more portable than 'source'
+        final String trText = """
+                declare stdlibPath
+                stdlibPath="${BASHPILE_HOME:=.}/target/%s"
+                if ! [ -e "${stdlibPath}" ]; then
+                  stdlibPath="/usr/local/bin/%s"
+                fi
+                if ! [ -e "${stdlibPath}" ]; then
+                  stdlibPath="/opt/homebrew/bin/%s"
+                fi
+                # To fix shellcheck SC1090
+                # shellcheck source=/dev/null
+                . "$stdlibPath"
+                """.formatted(libraryName, libraryName, libraryName);
+
+        final Translation comment = createCommentTranslation("import statement", lineNumber(ctx));
+        final Translation importTranslation = new Translation(trText);
+        return comment.add(importTranslation);
+    }
 
     @Override
     public Translation whileStatement(BashpileParser.WhileStatementContext ctx) {
@@ -138,8 +178,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation whileTranslation = Translation.toStringTranslation("""
                 while %s; do
                 %sdone
-                """.formatted(gate.body(), bodyStatements.body()))
-                .addPreamble(gate.preamble()).addPreamble(bodyStatements.preamble());
+                """.formatted(gate.body(), bodyStatements.body()));
         return comment.add(whileTranslation);
     }
 
@@ -156,7 +195,7 @@ public class BashTranslationEngine implements TranslationEngine {
         foundForwardDeclarations.add(ctx.Id().getText());
 
         // add translations
-        return comment.add(hoistedFunction.assertEmptyPreamble());
+        return comment.add(hoistedFunction);
     }
 
     @Override
@@ -222,13 +261,13 @@ public class BashTranslationEngine implements TranslationEngine {
                     else
                     %s""".formatted(elseBlockStatements).stripTrailing();
         }
-        final String ifBlock = ifBlockStatements.mergePreamble().body().stripTrailing();
+        final String ifBlock = ifBlockStatements.body().stripTrailing();
         final String conditional = """
                 if %s; then
                 %s%s%s
                 fi
                 """.formatted(guard.body(), ifBlock, elseIfBlock, elseBlock);
-        return toStringTranslation(guard.preamble() + conditional);
+        return toStringTranslation(conditional);
     }
 
     @SuppressWarnings("UnstableApiUsage") // for Streams.zip
@@ -259,8 +298,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 %sesac
                 """.formatted(expressionTranslation.body(), cases.body());
         final Translation comment = createCommentTranslation("switch statement", lineNumber(ctx));
-        return comment.add(toStringTranslation(template))
-                .addPreamble(expressionTranslation.preamble()).addPreamble(cases.preamble());
+        return comment.add(toStringTranslation(template));
     }
 
     @Override
@@ -296,8 +334,6 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create translations
         final Translation comment = createCommentTranslation("assign statement", lineNumber);
-        final Translation subcomment =
-                subcommentTranslationOrDefault(rhsExprTranslation.hasPreamble(), "assign statement body");
         // 'readonly' not enforced
         Translation modifiers = visitModifiers(ctx.typedId().modifier());
         final String ctxTypeString = ctx.typedId().complexType().types(0).getText();
@@ -317,12 +353,11 @@ public class BashTranslationEngine implements TranslationEngine {
         }
         // merge expr into the assignment
         final String assignmentBody = rhsExprExists ? "%s=%s\n".formatted(lhsVariableName, rhsExprTranslation.body()) : "";
-        final Translation assignment =
-                toStringTranslation(assignmentBody).addPreamble(rhsExprTranslation.preamble());
+        final Translation assignment = toStringTranslation(assignmentBody);
 
-        // order is comment, preamble, subcomment, variable declaration, assignment
-        final Translation subcommentToAssignment = subcomment.add(variableDeclaration).add(assignment);
-        return comment.add(subcommentToAssignment.mergePreamble()).type(NA_TYPE).metadata(NORMAL);
+        // order is comment, variable declaration, assignment
+        return comment.add(getExpressionSetup()).add(variableDeclaration).add(assignment)
+                .type(NA_TYPE).metadata(NORMAL);
     }
 
     @Override
@@ -351,8 +386,6 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // create translations
         final Translation comment = createCommentTranslation("reassign statement", lineNumber(ctx));
-        final Translation subcomment =
-                subcommentTranslationOrDefault(rhsExprTranslation.hasPreamble(), "reassignment statement body");
         final String assignOperator = ctx.assignmentOperator().getText();
         String listAccessor = "";
         if (lhsExpectedType.isList()) {
@@ -372,12 +405,9 @@ public class BashTranslationEngine implements TranslationEngine {
         // merge rhsExprTranslation into reassignment
         final String reassignmentBody = "%s%s%s%s\n"
                 .formatted(lhsVariableName, listAccessor, assignOperator, rhsExprTranslation.body());
-        final Translation reassignment =
-                toStringTranslation(reassignmentBody).addPreamble(rhsExprTranslation.preamble());
+        final Translation reassignment = toStringTranslation(reassignmentBody);
 
-        // order is: comment, preamble, subcomment, reassignment
-        final Translation preambleToReassignment = subcomment.add(reassignment).mergePreamble();
-        return comment.add(preambleToReassignment).assertParagraphBody().type(NA_TYPE).metadata(NORMAL);
+        return comment.add(reassignment).assertParagraphBody().type(NA_TYPE).metadata(NORMAL);
     }
 
     @Override
@@ -392,11 +422,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // change $(( )) to _=$(( )) to avoid executing a number.  Fixes ShellCheck error SC2084
         expr = expr.lambdaBody(body -> !body.startsWith("$((") ? body : "_=" + body).add(NEWLINE);
         final Translation comment = createCommentTranslation("expression statement", lineNumber(ctx));
-        final Translation subcomment =
-                subcommentTranslationOrDefault(expr.hasPreamble(), "expression statement body");
-        // order is: comment, preamble, subcomment, expr
-        final Translation exprStatement = subcomment.add(expr).mergePreamble();
-        return comment.add(exprStatement).type(expr.type()).metadata(expr.metadata());
+        return comment.add(expr).type(expr.type()).metadata(expr.metadata());
     }
 
     @Override
@@ -413,9 +439,8 @@ public class BashTranslationEngine implements TranslationEngine {
         final int lineNumber = ctx.start.getLine();
         if (expressionTranslation.isInt()) {
             // arithmetic built-in when possible
-            final String preamble = expressionTranslation.preamble();
             final String body = "$((%s%s))".formatted(expressionTranslation.removeVariableBrackets(), opText);
-            return new Translation(body, INT_TYPE, List.of(CALCULATION)).addPreamble(preamble);
+            return new Translation(body, INT_TYPE, List.of(CALCULATION));
         } else if (expressionTranslation.isNumeric()) {
             // bc tool can't assign to shell variables, only bc variables.
             // bc variables can't have uppercase, and to "export" them back to the shell we would need a whole
@@ -501,7 +526,6 @@ public class BashTranslationEngine implements TranslationEngine {
                     // only add quotes if needed
                     .map(tr -> !(tr.body().startsWith("\"") && tr.body().endsWith("\"")) ? tr.quoteBody() : tr)
                     .reduce((left, right) -> new Translation(
-                            left.preamble() + right.preamble(),
                             left.body() + " " + right.body(),
                             right.type(),
                             right.metadata()))
@@ -511,14 +535,13 @@ public class BashTranslationEngine implements TranslationEngine {
         // lookup return type of this function
         final Type retType = expectedTypes.returnType();
 
-        Translation ret = new Translation(
-                argumentTranslations.preamble(), functionName + argumentTranslations.body(), retType, List.of(NORMAL));
+        Translation ret = new Translation(functionName + argumentTranslations.body(), retType, List.of(NORMAL));
         // suppress output if we are printing to output as part of a work-around to return a string
         // this covers the case of calling a function without using the return
         if (retType.isStr()) {
             ret = ret.lambdaBody("%s >/dev/null"::formatted);
         }
-        ret = ret.metadata(NEEDS_INLINING_OFTEN).mergePreamble();
+        ret = ret.metadata(NEEDS_INLINING_OFTEN);
         return ret;
     }
 
@@ -581,8 +604,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
         body = body.formatted(not, firstTranslation.unquoteBody().body(), primary,
                 secondTranslation.unquoteBody().body());
-        return new Translation(body, BOOL_TYPE, CONDITIONAL).addPreamble(firstTranslation.preamble())
-                .addPreamble(secondTranslation.preamble());
+        return new Translation(body, BOOL_TYPE, CONDITIONAL);
     }
 
     @Override

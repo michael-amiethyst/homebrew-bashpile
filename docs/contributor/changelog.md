@@ -36,3 +36,4 @@
 * 0.23.1 - Bugfixes (#47 and #48) and refactoring
 * 0.23.2 - Start of optional arguments (only 1), TODO fixes
 * 0.24.0 - Optional arguments and default arguments more generally
+* 0.25.0 - Start of transition to having a Bashpile Abstract Syntax Tree instead of string munging, import statements
