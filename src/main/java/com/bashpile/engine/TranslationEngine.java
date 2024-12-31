@@ -1,5 +1,7 @@
 package com.bashpile.engine;
 
+import javax.annotation.Nonnull;
+
 import com.bashpile.BashpileParser;
 
 /**
@@ -16,6 +18,12 @@ public interface TranslationEngine {
      * So you make a TranslationEngine, pass to the BashpileVisitor then set the visitor.
      */
     void setVisitor(final BashpileVisitor visitor);
+
+    /**
+     * Some expressions need a statement executed beforehand, after the expression is translated this buffer is filled.
+     * Calling this also drains the buffer.
+     */
+    @Nonnull Translation getExpressionSetup();
 
     // headers
 

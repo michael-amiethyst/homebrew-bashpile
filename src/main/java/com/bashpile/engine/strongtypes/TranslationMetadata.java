@@ -2,8 +2,6 @@ package com.bashpile.engine.strongtypes;
 
 import com.bashpile.engine.Translation;
 
-import java.util.function.Function;
-
 /**
  * Additional information about a Translation's Type.
  * So we can have a Command that evaluates to an int for example.
@@ -13,7 +11,7 @@ public enum TranslationMetadata {
     NORMAL,
     /**
      * Calc expressions (`bc`) frequently need to be inlines, but not always.
-     * @see Translation#inlineAsNeeded(Function)
+     * @see Translation#inlineAsNeeded()
      */
     NEEDS_INLINING_OFTEN,
     CALCULATION,

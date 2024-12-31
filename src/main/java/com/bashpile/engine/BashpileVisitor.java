@@ -81,7 +81,11 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         contextRoot = ctx;
 
         final Translation statementsTranslations = ctx.statement().stream()
-                .map(this::visit)
+                .map(antlrParseTree -> {
+                    // this replaces the "preambles" concept
+                    final Translation r = this.visit(antlrParseTree);
+                    return translator.getExpressionSetup().add(r);
+                })
                 .map(Translation::assertEmptyPreamble)
                 .reduce(Translation::add)
                 .orElseThrow();

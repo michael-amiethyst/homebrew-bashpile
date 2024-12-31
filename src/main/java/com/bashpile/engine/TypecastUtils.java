@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import static com.bashpile.engine.strongtypes.TranslationMetadata.CALCULATION;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static com.bashpile.engine.strongtypes.Type.INT_TYPE;
 
@@ -107,12 +108,16 @@ public class TypecastUtils {
             String varName = StringUtils.stripStart(expression.body(), "${");
             varName = StringUtils.stripEnd(varName, "}");
             if (!varName.matches("\\d")) {
-                String setupStatementText = """
-                        %s="$(printf '%%d' "%s" 2>/dev/null || true)"
-                        """.formatted(varName, expression);
-                engine.addExpressionSetup(new Translation(setupStatementText));
-                return expression.addPreamble(setupStatementText)
-                        .type(INT_TYPE);
+                String setupStatementText = "";
+                // only convert normal variables with printf (not calculations, etc)
+                if (expression.metadata().isEmpty()
+                        || (expression.metadata().size() == 1 && expression.metadata().contains(NORMAL))) {
+                    setupStatementText = """
+                            %s="$(printf '%%d' "%s" 2>/dev/null || true)"
+                            """.formatted(varName, expression);
+                    engine.addExpressionSetup(new Translation(setupStatementText));
+                }
+                return expression.addPreamble(setupStatementText).type(INT_TYPE);
             } else {
                 // trying to reassign $1, $2, etc
                 // too complex to set an individual varable with the command 'set', throw

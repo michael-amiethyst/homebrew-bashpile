@@ -24,6 +24,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.engine.BashTranslationHelper.*;
@@ -91,9 +92,11 @@ public class BashTranslationEngine implements TranslationEngine {
         expressionSetups.add(setup);
     }
 
+    @NotNull
+    @Override
     public Translation getExpressionSetup() {
         try {
-            return expressionSetups.stream().reduce(Translation::add).orElseThrow();
+            return expressionSetups.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
         } finally {
             // the list is drained, reset
             expressionSetups = new ArrayList<>();
@@ -360,7 +363,8 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // order is comment, preamble, subcomment, variable declaration, assignment
         final Translation subcommentToAssignment = subcomment.add(variableDeclaration).add(assignment);
-        return comment.add(subcommentToAssignment.mergePreamble()).type(NA_TYPE).metadata(NORMAL);
+        subcommentToAssignment.preamble(); // drain preamble, use expressionSetup instead
+        return comment.add(getExpressionSetup()).add(subcommentToAssignment).type(NA_TYPE).metadata(NORMAL);
     }
 
     @Override
