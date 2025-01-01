@@ -291,7 +291,7 @@ class FunctionBashpileTest extends BashpileTest {
         assertEquals(1, results.stdoutLines().size()
                 , "Wrong length, was: " + join(results.stdoutLines()));
         assertEquals(1,
-                results.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
+                results.stdinLines().stream().map(String::trim).filter(x -> x.startsWith("circleArea")).count(),
                 "Wrong circleArea count");
         assertEquals("6.28", results.stdoutLines().get(0), "Wrong return");
     }
@@ -334,7 +334,7 @@ class FunctionBashpileTest extends BashpileTest {
         assertEquals(1, results.stdoutLines().size(),
                 "Wrong length, was: " + join(results.stdoutLines()));
         assertEquals(1,
-                results.stdinLines().stream().filter(x -> x.startsWith("circleArea")).count(),
+                results.stdinLines().stream().map(String::trim).filter(x -> x.startsWith("circleArea")).count(),
                 "Wrong circleArea count");
         assertEquals("6.28", results.stdoutLines().get(0), "Wrong return");
     }
