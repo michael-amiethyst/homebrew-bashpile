@@ -140,9 +140,12 @@ public class ListOfTranslation extends Translation {
 
     @Override
     public String toString() {
-        return "ListTranslation{" +
-                "translations=" + translations +
-                '}';
+        return body();
+    }
+
+    @Override
+    public String getData() {
+        return body();
     }
 
     @Override

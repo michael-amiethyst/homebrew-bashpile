@@ -23,5 +23,7 @@ public enum TranslationMetadata {
     /** Something like "[ 4 < 5 ]" */
     CONDITIONAL,
     /** Parenthesis were removed */
-    PARENTHESIZED
+    PARENTHESIZED,
+    /** Like '-r' */
+    OPTION
 }
