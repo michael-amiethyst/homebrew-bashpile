@@ -1,10 +1,11 @@
-package com.bashpile.engine;
+package com.bashpile.engine.bast;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
@@ -16,12 +17,14 @@ import org.apache.commons.lang3.StringUtils;
 
 import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.Strings.lambdaAllLines;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
+import static org.apache.commons.lang3.StringUtils.stripStart;
 
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
  */
-public class Translation {
+public class Translation implements TreeNode<String> {
 
     // static constants
 
@@ -29,13 +32,13 @@ public class Translation {
      * The Bashpile version of NIL or NULL
      */
     public static final Translation EMPTY_TRANSLATION =
-            new Translation("", EMPTY_TYPE, TranslationMetadata.NORMAL);
+            new Translation("", EMPTY_TYPE, NORMAL);
 
     /**
      * An empty translation with an empty string an UNKNOWN type
      */
     public static final Translation UNKNOWN_TRANSLATION =
-            new Translation("", UNKNOWN_TYPE, TranslationMetadata.NORMAL);
+            new Translation("", UNKNOWN_TYPE, NORMAL);
 
     /**
      * A '\n' as a Translation
@@ -46,11 +49,15 @@ public class Translation {
 
     private static final Pattern FLOAT_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
 
+    // class fields
+
     @Nonnull private final String body;
 
     @Nonnull private final Type type;
 
     @Nonnull private final List<TranslationMetadata> metadata;
+
+    @Nonnull private final List<Translation> children = new ArrayList<>();
 
     // static initializers
 
@@ -58,7 +65,7 @@ public class Translation {
      * @return A NORMAL STR Translation.
      */
     public static @Nonnull Translation toStringTranslation(@Nonnull final String text) {
-        return new Translation(text, STR_TYPE, TranslationMetadata.NORMAL);
+        return new Translation(text, STR_TYPE, NORMAL);
     }
 
     // static methods
@@ -131,15 +138,25 @@ public class Translation {
     /**
      * Concatenates other's body, type and metadata to this object's
      */
-    public @Nonnull Translation add(@Nonnull final Translation other) {
-        final List<TranslationMetadata> nextMetadata =
-                Streams.concat(metadata.stream(), other.metadata.stream()).toList();
-        // favor anything over UNKNOWN
-        Type nextType = type;
-        nextType = nextType.isUnknown() ? other.type : nextType;
-        // favor INT or FLOAT over NUMBER
-        nextType = nextType.isNumber() && other.type.isNumeric() ? other.type : nextType;
-        return new Translation(body + other.body, nextType, nextMetadata);
+    public @Nonnull Translation add(@Nonnull final TreeNode<String> node) {
+        // TODO TREES only concat on toString
+
+        // new style
+        final Translation other = (Translation) node;
+        children.add(other);
+
+        if (!metadata.contains(OPTION) || !other.metadata.contains(OPTION)) {
+            // old style concat
+            final List<TranslationMetadata> nextMetadata =
+                    Streams.concat(metadata.stream(), other.metadata.stream()).toList();
+            // favor anything over UNKNOWN
+            Type nextType = type;
+            nextType = nextType.isUnknown() ? other.type : nextType;
+            // favor INT or FLOAT over NUMBER
+            nextType = nextType.isNumber() && other.type.isNumeric() ? other.type : nextType;
+            return new Translation(body + other.body, nextType, nextMetadata);
+        } // else
+        return this;
     }
 
     // body instance methods
@@ -184,17 +201,9 @@ public class Translation {
      */
     public @Nonnull Translation removeVariableBrackets() {
         return lambdaBody(body -> {
-            final String nextBody = StringUtils.stripStart(body, "${");
+            final String nextBody = stripStart(body, "${");
             return StringUtils.stripEnd(nextBody, "}");
         });
-    }
-
-    /**
-     * Adds to the start of the current options or creates the option at the start
-     */
-    public @Nonnull Translation addOption(final String additionalOption) {
-        return lambdaBody(str ->
-                str.contains("-") ? str.replace("-", "-" + additionalOption) : "-" + additionalOption + str);
     }
 
     /**
@@ -317,13 +326,13 @@ public class Translation {
      * @return Converts body to an inline and change the type metadata to {@link TranslationMetadata#INLINE}.
      */
     public @Nonnull Translation inlineAsNeeded() {
-        if (metadata.contains(TranslationMetadata.NEEDS_INLINING_OFTEN)) {
+        if (metadata.contains(NEEDS_INLINING_OFTEN)) {
             // function calls may have redirect to /dev/null if only side effects needed
             String nextBody = Strings.remove(body, ">/dev/null").stripTrailing();
             // add INLINE and remove NEEDS INLINING OFTEN
-            var nextMetadata = new ArrayList<>(List.of(TranslationMetadata.INLINE));
+            var nextMetadata = new ArrayList<>(List.of(INLINE));
             nextMetadata.addAll(metadata);
-            nextMetadata.remove(TranslationMetadata.NEEDS_INLINING_OFTEN);
+            nextMetadata.remove(NEEDS_INLINING_OFTEN);
             // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
             return new Translation("$( %s )".formatted(nextBody), type, nextMetadata);
         } // else
@@ -332,6 +341,16 @@ public class Translation {
 
     @Override
     public String toString() {
+        return getData();
+    }
+
+    @Override
+    public String getData() {
+        if (metadata.contains(OPTION) && children.stream().allMatch(tr -> tr.metadata.contains(OPTION))) {
+            final String stripChars = " -";
+            return "-" + stripStart(body, stripChars)
+                    + children.stream().map(tr -> stripStart(tr.body, stripChars)).collect(Collectors.joining());
+        }
         return body;
     }
 
@@ -351,7 +370,7 @@ public class Translation {
     }
 
     public @Nonnull String body() {
-        return body;
+        return getData();
     }
 
     public @Nonnull Type type() {

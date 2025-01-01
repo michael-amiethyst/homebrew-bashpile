@@ -1,6 +1,6 @@
 package com.bashpile.engine.strongtypes;
 
-import com.bashpile.engine.Translation;
+import com.bashpile.engine.bast.Translation;
 
 /**
  * Additional information about a Translation's Type.
@@ -23,5 +23,7 @@ public enum TranslationMetadata {
     /** Something like "[ 4 < 5 ]" */
     CONDITIONAL,
     /** Parenthesis were removed */
-    PARENTHESIZED
+    PARENTHESIZED,
+    /** Like '-r' */
+    OPTION
 }

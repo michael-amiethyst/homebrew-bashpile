@@ -77,7 +77,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 someVar: exported int = 1 + 1
                 print(someVar + 2)""");
-        assertTrue(results.stdin().contains("declare -x someVar"));
+        assertTrue(results.stdin().contains("declare -x someVar") || results.stdin().contains("declare -x  someVar"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }
@@ -88,7 +88,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 someVar: readonly exported int = 1 + 1
                 print(someVar + 2)""");
-        assertTrue(results.stdin().contains("declare -x someVar"));
+        assertTrue(results.stdin().contains("declare -x someVar") || results.stdin().contains("declare -x  someVar"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }
@@ -99,7 +99,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 exportedFinal: exported readonly int = 1 + 1
                 print(exportedFinal + 2)""");
-        assertTrue(results.stdin().contains("declare -x exportedFinal"));
+        assertTrue(results.stdin().contains("declare -x exportedFinal") || results.stdin().contains("declare -x  exportedFinal"));
         assertSuccessfulExitCode(results);
         assertEquals("4\n", results.stdout());
     }

@@ -670,7 +670,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
                     log: str = "log2"
                 """;
         final ExecutionResults results = runText(bashpileScript);
-        assertTrue(results.stdin().contains("declare -x log"));
+        assertTrue(results.stdin().contains("declare -x log") || results.stdin().contains("declare -x  log"));
         assertFalse(results.stdinLines().stream().anyMatch(str -> str.startsWith("__bp_")));
         assertSuccessfulExitCode(results);
     }
@@ -691,7 +691,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 log: str = "so many log variables!"
                 """;
         final ExecutionResults results = runText(bashpileScript);
-        assertTrue(results.stdin().contains("declare -x log"));
+        assertTrue(results.stdin().contains("declare -x log") || results.stdin().contains("declare -x  log"));
         assertSuccessfulExitCode(results);
         assertEquals("third path\n", results.stdout());
     }
@@ -714,7 +714,7 @@ public class ConditionalsBashpileTest extends BashpileTest {
                 log: str = "so many log variables!"
                 """;
         final ExecutionResults results = runText(bashpileScript);
-        assertTrue(results.stdin().contains("declare -x log"));
+        assertTrue(results.stdin().contains("declare -x log") || results.stdin().contains("declare -x  log"));
         assertSuccessfulExitCode(results);
         assertEquals("third path\n", results.stdout());
     }

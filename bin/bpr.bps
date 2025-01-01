@@ -95,7 +95,7 @@ function runTranslation(translatedFilename: str, args: list<str>):
     absoluteFilename: str = #(realpath "$translatedFilename")
     // Needed because we invoke the JAR directly and don't go through bpc (which sets permissions)
     chmod 755 $absoluteFilename
-    LOG_NAME: readonly str = createTempFile("bpr.log") :str
+    LOG_NAME: readonly str = createTempFile("bpr.XXXXXXXX.log") :str
     trap 'rm $absoluteFilename' ERR # in case running the generated script crashes
     #("$absoluteFilename" "${args[@]}" 2>&1 | tee "$LOG_NAME")
     if #(cat "$LOG_NAME" | grep -E 'unexpected EOF|syntax error|command not found' > /dev/null 2>&1):
