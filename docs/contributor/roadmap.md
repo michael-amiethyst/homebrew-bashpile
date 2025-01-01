@@ -1,23 +1,25 @@
 # 1.0 Roadmap
-1. Convert Translation to a tree structure instead of a string concat model
-2. Change Translation payload from String (body) to bastData (that renders to string)
-3. Create lib functions to disable/enable strict mode
+1. Change Translation payload from String (body) to bastData (that renders to string)
+2. Create lib functions to disable/enable strict mode
    1. Install to /etc/bashpile folder
-4. Integrate imports into the type system
-5. More loops
+3. Integrate imports into the type system
+4. More loops
    1. do while loop
    2. C style for loop
    3. foreach loop
-6. Logging / debug so that we can debug functions that return strings
-7. Syntax highlighting in Intellij
-8. Hashes
-9. Refs
-10. String interpolation with $[]
-    1. have bpr use arguments, arguments[all] (args/argv alias?)
-11. Exceptions and raise/throw statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+5. Logging / debug so that we can debug functions that return strings
+6. Syntax highlighting in Intellij
+7. Hashes
+8. Refs
+9. String interpolation with $[]
+   1. have bpr use arguments, arguments[all] (args/argv alias?)
+10. Exceptions and raise/throw statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
     1. finally blocks
-12. Enforce 'readonly' 
+11. Enforce 'readonly' 
     1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
+12. Improve runtime
+    1. Caching in /etc?
+    2. Use graalvm?
 
 # Fixes and improvements
 * Near term

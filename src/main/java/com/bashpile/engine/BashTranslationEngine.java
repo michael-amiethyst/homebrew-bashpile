@@ -11,6 +11,8 @@ import javax.annotation.Nullable;
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
+import com.bashpile.engine.bast.ListOfTranslation;
+import com.bashpile.engine.bast.Translation;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.ParameterInfo;
 import com.bashpile.engine.strongtypes.Type;
@@ -27,7 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.engine.BashTranslationHelper.*;
-import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.bast.Translation.*;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static java.util.Objects.requireNonNull;
@@ -158,10 +160,14 @@ public class BashTranslationEngine implements TranslationEngine {
                 if ! [ -e "${stdlibPath}" ]; then
                   stdlibPath="/opt/homebrew/bin/%s"
                 fi
+                if ! [ -e "${stdlibPath}" ]; then
+                  printf "Could not find '%%s' from directory '%%s'.  It's at '%%s'" "%s" "$(pwd)" "$(which %s)" 1>&2
+                  exit 2
+                fi
                 # To fix shellcheck SC1090
                 # shellcheck source=/dev/null
                 . "$stdlibPath"
-                """.formatted(libraryName, libraryName, libraryName);
+                """.formatted(libraryName, libraryName, libraryName, libraryName, libraryName);
 
         final Translation comment = createCommentTranslation("import statement", lineNumber(ctx));
         final Translation importTranslation = new Translation(trText);
@@ -339,12 +345,12 @@ public class BashTranslationEngine implements TranslationEngine {
         final String ctxTypeString = ctx.typedId().complexType().types(0).getText();
         final boolean isList = ctxTypeString.equalsIgnoreCase(LIST_TYPE.mainTypeName().name());
         if (isList) {
-            modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
             // make the declaration for a Bash non-associative array
-            modifiers = modifiers.addOption("a");
+            final Translation arrayOption = toStringTranslation("a").metadata(OPTION);
+            modifiers = modifiers.add(arrayOption);
         }
         final Translation variableDeclaration =
-                toStringTranslation("declare %s%s\n".formatted(modifiers.body(), lhsVariableName));
+                toStringTranslation("declare %s %s\n".formatted(modifiers.body(), lhsVariableName));
 
         final boolean isListAssignment = lhsType.isList() && rhsExprTranslation.isList();
         if (isListAssignment && !rhsExprTranslation.isListOf()) {

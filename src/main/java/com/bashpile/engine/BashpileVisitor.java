@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import com.bashpile.BashpileParser;
 import com.bashpile.BashpileParserBaseVisitor;
+import com.bashpile.engine.bast.Translation;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
@@ -17,7 +18,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.bashpile.engine.Translation.NEWLINE;
+import static com.bashpile.engine.bast.Translation.NEWLINE;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NORMAL;
 
 /**

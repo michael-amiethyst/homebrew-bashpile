@@ -6,13 +6,13 @@
 
     <groupId>com.bashpile</groupId>
     <artifactId>bashpile</artifactId>
-    <version>0.25.0</version>
+    <version>0.26.0</version>
     <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.source>20</maven.compiler.source>
         <maven.compiler.target>20</maven.compiler.target>
-        <antlr.version>4.13.0</antlr.version>
+        <antlr.version>4.13.1</antlr.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.version>2.0.0-RC2</kotlin.version>
     </properties>
@@ -266,8 +266,8 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>/bin/bash</executable>
-                            <commandlineArgs>-c "target/bpc --outputFile target/bashpile-stdlib bin/stdlib.bps"</commandlineArgs>
+                            <executable>target/bpc</executable>
+                            <commandlineArgs>--outputFile target/bashpile-stdlib bin/stdlib.bps</commandlineArgs>
                         </configuration>
                     </execution>
                     <execution>
@@ -277,8 +277,8 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>/bin/bash</executable>
-                            <commandlineArgs>-c "target/bpc --outputFile target/bpr bin/bpr.bps"</commandlineArgs>
+                            <executable>target/bpc</executable>
+                            <commandlineArgs>--outputFile target/bpr bin/bpr.bps</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>

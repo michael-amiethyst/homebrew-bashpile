@@ -2,6 +2,7 @@ package com.bashpile.engine;
 
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
+import com.bashpile.engine.bast.Translation;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -21,8 +22,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.bashpile.engine.BashTranslationEngine.TAB;
-import static com.bashpile.engine.Translation.UNKNOWN_TRANSLATION;
-import static com.bashpile.engine.Translation.toStringTranslation;
+import static com.bashpile.engine.bast.Translation.UNKNOWN_TRANSLATION;
+import static com.bashpile.engine.bast.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.Type.NA_TYPE;
 
 /**

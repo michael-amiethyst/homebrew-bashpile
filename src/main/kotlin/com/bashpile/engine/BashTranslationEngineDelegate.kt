@@ -6,7 +6,8 @@ import com.bashpile.BashpileParser.LiteralContext
 import com.bashpile.BashpileParser.UnaryPrimaryExpressionContext
 import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
-import com.bashpile.engine.Translation.toStringTranslation
+import com.bashpile.engine.bast.Translation
+import com.bashpile.engine.bast.Translation.toStringTranslation
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
 import com.bashpile.engine.strongtypes.ParameterInfo
 import com.bashpile.engine.strongtypes.TranslationMetadata.*

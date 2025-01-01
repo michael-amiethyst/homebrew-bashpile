@@ -1,4 +1,4 @@
-package com.bashpile.engine;
+package com.bashpile.engine.bast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +49,8 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public @Nonnull Translation add(@Nonnull Translation other) {
-        translations.add(other);
+    public @Nonnull Translation add(@Nonnull final TreeNode<String> other) {
+        translations.add((Translation) other);
         return this;
     }
 
@@ -87,12 +87,6 @@ public class ListOfTranslation extends Translation {
     public @Nonnull Translation parenthesizeBody() {
         // always parenthesized
         return this;
-    }
-
-    @Nonnull
-    @Override
-    public Translation addOption(String additionalOption) {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
 
     @Nonnull
@@ -140,9 +134,12 @@ public class ListOfTranslation extends Translation {
 
     @Override
     public String toString() {
-        return "ListTranslation{" +
-                "translations=" + translations +
-                '}';
+        return body();
+    }
+
+    @Override
+    public String getData() {
+        return body();
     }
 
     @Override

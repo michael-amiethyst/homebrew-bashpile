@@ -3,6 +3,7 @@ package com.bashpile.engine;
 import javax.annotation.Nonnull;
 
 import com.bashpile.BashpileParser;
+import com.bashpile.engine.bast.Translation;
 
 /**
  * Methods translate small parser rules (e.g. statements and expressions) to the target language.
@@ -23,7 +24,8 @@ public interface TranslationEngine {
      * Some expressions need a statement executed beforehand, after the expression is translated this buffer is filled.
      * Calling this also drains the buffer.
      */
-    @Nonnull Translation getExpressionSetup();
+    @Nonnull
+    Translation getExpressionSetup();
 
     // headers
 
