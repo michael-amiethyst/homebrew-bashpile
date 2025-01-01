@@ -266,8 +266,8 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>/bin/bash</executable>
-                            <commandlineArgs>-c "target/bpc --outputFile target/bashpile-stdlib bin/stdlib.bps"</commandlineArgs>
+                            <executable>target/bpc</executable>
+                            <commandlineArgs>--outputFile target/bashpile-stdlib bin/stdlib.bps</commandlineArgs>
                         </configuration>
                     </execution>
                     <execution>
@@ -277,8 +277,8 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>/bin/bash</executable>
-                            <commandlineArgs>-c "target/bpc --outputFile target/bpr bin/bpr.bps"</commandlineArgs>
+                            <executable>target/bpc</executable>
+                            <commandlineArgs>--outputFile target/bpr bin/bpr.bps</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>
