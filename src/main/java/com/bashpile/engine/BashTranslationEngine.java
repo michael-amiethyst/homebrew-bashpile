@@ -155,18 +155,19 @@ public class BashTranslationEngine implements TranslationEngine {
                 declare stdlibPath
                 stdlibPath="${BASHPILE_HOME:=.}/target/%s"
                 if ! [ -e "${stdlibPath}" ]; then
-                  stdlibPath="${BASHPILE_HOME:=.}/%s"
-                fi
-                if ! [ -e "${stdlibPath}" ]; then
                   stdlibPath="/usr/local/bin/%s"
                 fi
                 if ! [ -e "${stdlibPath}" ]; then
                   stdlibPath="/opt/homebrew/bin/%s"
                 fi
+                if ! [ -e "${stdlibPath}" ]; then
+                  printf "Could not find '%%s' from directory '%%s'.  It's at '%%s'" "%s" "$(pwd)" "$(which %s)" 1>&2
+                  exit 2
+                fi
                 # To fix shellcheck SC1090
                 # shellcheck source=/dev/null
                 . "$stdlibPath"
-                """.formatted(libraryName, libraryName, libraryName, libraryName);
+                """.formatted(libraryName, libraryName, libraryName, libraryName, libraryName);
 
         final Translation comment = createCommentTranslation("import statement", lineNumber(ctx));
         final Translation importTranslation = new Translation(trText);
