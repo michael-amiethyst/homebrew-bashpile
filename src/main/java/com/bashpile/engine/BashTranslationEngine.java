@@ -341,12 +341,12 @@ public class BashTranslationEngine implements TranslationEngine {
         final String ctxTypeString = ctx.typedId().complexType().types(0).getText();
         final boolean isList = ctxTypeString.equalsIgnoreCase(LIST_TYPE.mainTypeName().name());
         if (isList) {
-            modifiers = modifiers.body().isEmpty() ? toStringTranslation(" ") : modifiers;
             // make the declaration for a Bash non-associative array
-            modifiers = modifiers.addOption("a");
+            final Translation arrayOption = toStringTranslation("a").metadata(OPTION);
+            modifiers = modifiers.add(arrayOption);
         }
         final Translation variableDeclaration =
-                toStringTranslation("declare %s%s\n".formatted(modifiers.body(), lhsVariableName));
+                toStringTranslation("declare %s %s\n".formatted(modifiers.body(), lhsVariableName));
 
         final boolean isListAssignment = lhsType.isList() && rhsExprTranslation.isList();
         if (isListAssignment && !rhsExprTranslation.isListOf()) {

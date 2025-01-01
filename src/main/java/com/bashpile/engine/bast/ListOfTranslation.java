@@ -91,12 +91,6 @@ public class ListOfTranslation extends Translation {
 
     @Nonnull
     @Override
-    public Translation addOption(String additionalOption) {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
-    }
-
-    @Nonnull
-    @Override
     public Translation lambdaBody(@Nonnull Function<String, String> lambda) {
         throw new UnsupportedOperationException("Not supported for ListTranslations");
     }

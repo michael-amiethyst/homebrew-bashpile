@@ -17,14 +17,6 @@ class TranslationTest {
     }
 
     @Test
-    void addOptionWorks() {
-        final Translation noOption = toStringTranslation("Hello");
-        final Translation option = toStringTranslation("-x");
-        assertEquals("-iHello", noOption.addOption("i").toString());
-        assertEquals("-ix", option.addOption("i").getData());
-    }
-
-    @Test
     void addOptionWithMetadataWorks() {
         final Translation option1 = toStringTranslation("-r").metadata(TranslationMetadata.OPTION);
         final Translation option2 = toStringTranslation("-x").metadata(TranslationMetadata.OPTION);

@@ -207,14 +207,6 @@ public class Translation implements TreeNode<String> {
     }
 
     /**
-     * Adds to the start of the current options or creates the option at the start
-     */
-    public @Nonnull Translation addOption(final String additionalOption) {
-        return lambdaBody(str ->
-                str.contains("-") ? str.replace("-", "-" + additionalOption) : "-" + additionalOption + str);
-    }
-
-    /**
      * Change index from one string with all data to a true array.
      * @see <a href="https://stackoverflow.com/questions/52590446/bash-array-using-vs-difference-between-the-two">StackOverflow, Bash Arrays -- * vs @</a>
      * @return this
