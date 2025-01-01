@@ -155,6 +155,9 @@ public class BashTranslationEngine implements TranslationEngine {
                 declare stdlibPath
                 stdlibPath="${BASHPILE_HOME:=.}/target/%s"
                 if ! [ -e "${stdlibPath}" ]; then
+                  stdlibPath="${BASHPILE_HOME:=.}/%s"
+                fi
+                if ! [ -e "${stdlibPath}" ]; then
                   stdlibPath="/usr/local/bin/%s"
                 fi
                 if ! [ -e "${stdlibPath}" ]; then
@@ -163,7 +166,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 # To fix shellcheck SC1090
                 # shellcheck source=/dev/null
                 . "$stdlibPath"
-                """.formatted(libraryName, libraryName, libraryName);
+                """.formatted(libraryName, libraryName, libraryName, libraryName);
 
         final Translation comment = createCommentTranslation("import statement", lineNumber(ctx));
         final Translation importTranslation = new Translation(trText);
