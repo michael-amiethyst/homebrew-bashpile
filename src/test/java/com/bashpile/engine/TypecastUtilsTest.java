@@ -1,5 +1,6 @@
 package com.bashpile.engine;
 
+import com.bashpile.engine.bast.Translation;
 import com.bashpile.exceptions.TypeError;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;

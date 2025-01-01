@@ -1,5 +1,6 @@
 package com.bashpile.engine;
 
+import com.bashpile.engine.bast.Translation;
 import com.bashpile.engine.strongtypes.Type;
 import com.bashpile.exceptions.TypeError;
 import org.apache.commons.lang3.StringUtils;

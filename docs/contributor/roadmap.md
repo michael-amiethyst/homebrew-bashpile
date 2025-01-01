@@ -17,6 +17,9 @@
     1. finally blocks
 11. Enforce 'readonly' 
     1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
+12. Improve runtime
+    1. Caching in /etc?
+    2. Use graalvm?
 
 # Fixes and improvements
 * Near term

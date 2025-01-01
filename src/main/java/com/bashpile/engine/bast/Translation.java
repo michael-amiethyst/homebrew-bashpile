@@ -1,4 +1,4 @@
-package com.bashpile.engine;
+package com.bashpile.engine.bast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import static com.bashpile.engine.strongtypes.Type.*;
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
  */
-public class Translation {
+public class Translation implements TreeNode<String> {
 
     // static constants
 
@@ -131,7 +131,9 @@ public class Translation {
     /**
      * Concatenates other's body, type and metadata to this object's
      */
-    public @Nonnull Translation add(@Nonnull final Translation other) {
+    public @Nonnull Translation add(@Nonnull final TreeNode<String> node) {
+        // TODO TREES maintain internal list and only concat on toString
+        final Translation other = (Translation) node;
         final List<TranslationMetadata> nextMetadata =
                 Streams.concat(metadata.stream(), other.metadata.stream()).toList();
         // favor anything over UNKNOWN
@@ -332,6 +334,11 @@ public class Translation {
 
     @Override
     public String toString() {
+        return body;
+    }
+
+    @Override
+    public String getData() {
         return body;
     }
 

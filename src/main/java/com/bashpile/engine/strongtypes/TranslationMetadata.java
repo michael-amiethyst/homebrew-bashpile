@@ -1,6 +1,6 @@
 package com.bashpile.engine.strongtypes;
 
-import com.bashpile.engine.Translation;
+import com.bashpile.engine.bast.Translation;
 
 /**
  * Additional information about a Translation's Type.

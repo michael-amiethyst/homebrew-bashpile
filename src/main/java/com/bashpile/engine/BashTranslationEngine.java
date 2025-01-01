@@ -11,6 +11,8 @@ import javax.annotation.Nullable;
 import com.bashpile.Asserts;
 import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
+import com.bashpile.engine.bast.ListOfTranslation;
+import com.bashpile.engine.bast.Translation;
 import com.bashpile.engine.strongtypes.FunctionTypeInfo;
 import com.bashpile.engine.strongtypes.ParameterInfo;
 import com.bashpile.engine.strongtypes.Type;
@@ -27,7 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import static com.bashpile.Asserts.assertTypesCoerce;
 import static com.bashpile.engine.BashTranslationHelper.*;
-import static com.bashpile.engine.Translation.*;
+import static com.bashpile.engine.bast.Translation.*;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
 import static java.util.Objects.requireNonNull;

@@ -1,4 +1,4 @@
-package com.bashpile.engine;
+package com.bashpile.engine.bast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +49,8 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public @Nonnull Translation add(@Nonnull Translation other) {
-        translations.add(other);
+    public @Nonnull Translation add(@Nonnull final TreeNode<String> other) {
+        translations.add((Translation) other);
         return this;
     }
 
