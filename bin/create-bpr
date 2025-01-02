@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+export PATH="$HOME/.jenv/shims:/usr/local/bin:/usr/bin:/bin:$PATH"
+eval "$(jenv init -)"
+target/bpc --outputFile target/bpr bin/bpr.bps
+printf "Created bpr in directory %s/target" "$PWD"

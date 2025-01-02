@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+export PATH="$HOME/.jenv/shims:/usr/local/bin:/usr/bin:/bin:$PATH"
+eval "$(jenv init -)"
+target/bpc --outputFile target/bashpile-stdlib bin/stdlib.bps
+printf "Created bashpile-stdlib in directory %s/target" "$PWD"

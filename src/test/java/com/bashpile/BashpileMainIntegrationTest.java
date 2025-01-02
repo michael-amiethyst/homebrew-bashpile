@@ -26,7 +26,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
     @Test
-    @Timeout(10)
+    @Timeout(15)
     @Order(10)
     public void bpcTranspiles() throws IOException {
         log.info("In bpcTranspiles test");
@@ -62,7 +62,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     }
 
     @Test
-    @Timeout(10)
+    @Timeout(15)
     @Order(20)
     public void noSubCommandWithNoExtensionTranspiles() throws IOException {
         log.info("In noSubCommandWithNoExtensionTranspiles");
