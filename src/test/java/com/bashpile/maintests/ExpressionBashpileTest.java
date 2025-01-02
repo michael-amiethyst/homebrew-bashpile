@@ -3,6 +3,8 @@ package com.bashpile.maintests;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.shell.ExecutionResults;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ExpressionBashpileTest extends BashpileTest {
 
+    private static final Logger LOG = LogManager.getLogger(ExpressionBashpileTest.class);
+
     @Test
     @Order(10)
     public void printCalcWithIntsWorks() {
@@ -28,6 +32,7 @@ class ExpressionBashpileTest extends BashpileTest {
     @Order(11)
     public void printCalcWithFloatsWorks() {
         final ExecutionResults results = runText("print(.1 + .1)");
+        LOG.debug("Translated Bash was:\n{}", results.stdin());
         assertSuccessfulExitCode(results);
         assertEquals(".2\n", results.stdout());
     }

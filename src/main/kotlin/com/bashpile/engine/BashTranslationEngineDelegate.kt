@@ -8,6 +8,7 @@ import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.bast.Translation
 import com.bashpile.engine.bast.Translation.toStringTranslation
+import com.bashpile.engine.bast.TreeNode
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
 import com.bashpile.engine.strongtypes.ParameterInfo
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
@@ -124,14 +125,16 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement()
             )
                 .map { visitor.visit(it) }
+            val rawBlockAccumulator = blockStatements
                 .map { tr: Translation -> tr.lambdaBodyLines { BashTranslationEngine.TAB + it }
                     .lambdaBody { it.replace("exit 1", "return 1") }
-                }.reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
-                .orElseThrow()
+                }.toList()
+            val blockAccumulator = rawBlockAccumulator
+                .reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
 
             // put it all together in one big translation
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
-            val blockBody = Asserts.assertIsParagraph(blockStatements.body()).removeSuffix("\n")
+            val blockBody = Asserts.assertIsParagraph(blockAccumulator.body()).removeSuffix("\n")
             // 2nd+ lines of blockbody will have a bad indent, but that's why we go over with shfmt
             val functionText = """
                 $functionName () {
@@ -154,8 +157,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             """.trimIndent())
 
         // body
-        val comment = createCommentTranslation("print statement", lineNumber(ctx))
-        val arguments: Translation = argList.expression().stream()
+        val lineNumber = lineNumber(ctx)
+        val comment = createCommentTranslation("print statement", lineNumber)
+        val arguments: Stream<TreeNode<String>> = argList.expression().stream()
             .map(requireNonNull(visitor)::visit)
             .map{ tr: Translation -> tr.inlineAsNeeded() }
             .map { tr: Translation ->
@@ -181,9 +185,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                     )
                 }
             }
-            .reduce { tr: Translation, otherTranslation: Translation? -> tr.add(otherTranslation!!) }
-            .orElseThrow()
-        return comment.add(arguments)
+        return comment.addAll(arguments) as Translation
     }
 
     fun returnPsudoStatement(ctx: BashpileParser.ReturnPsudoStatementContext, typeStack: TypeStack): Translation {
