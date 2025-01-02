@@ -14,6 +14,8 @@ import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.Strings.lambdaAllLines;
@@ -48,6 +50,8 @@ public class Translation implements TreeNode<String> {
     private static final Pattern INT_PATTERN = Pattern.compile("\\d+");
 
     private static final Pattern FLOAT_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
+
+    private static final Logger LOG = LogManager.getLogger(Translation.class);
 
     // class fields
 
@@ -346,6 +350,7 @@ public class Translation implements TreeNode<String> {
 
     @Override
     public String getData() {
+        LOG.trace("Processing getData for hash {}", body.hashCode());
         if (metadata.contains(OPTION) && children.stream().allMatch(tr -> tr.metadata.contains(OPTION))) {
             final String stripChars = " -";
             return "-" + stripStart(body, stripChars)
