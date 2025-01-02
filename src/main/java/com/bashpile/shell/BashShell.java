@@ -80,13 +80,8 @@ public class BashShell implements Closeable {
     public static @Nonnull BashShell runAsync(@Nonnull String bashString, @Nullable String[] args)
             throws IOException {
         args = Objects.requireNonNullElse(args, new String[0]);
-        // info for large runs, trace for small commands
         final String message = "Executing bash text:\n" + bashString;
-        if (bashString.length() > 20) {
-            LOG.info(message);
-        } else {
-            LOG.trace(message);
-        }
+        LOG.trace(message);
 
         // run our CommandLine process in background threads
         final IoManager commandLine = IoManager.of(spawnLinuxProcess());

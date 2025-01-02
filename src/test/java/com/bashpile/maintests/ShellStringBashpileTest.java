@@ -2,6 +2,8 @@ package com.bashpile.maintests;
 
 import com.bashpile.Strings;
 import com.bashpile.shell.ExecutionResults;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,8 @@ public class ShellStringBashpileTest extends BashpileTest {
 
     /** May not exist if run with 'clean' step */
     private final static String jarPath = "target/bashpile.jar";
+
+    private final static Logger LOG = LogManager.getLogger(ShellStringBashpileTest.class);
 
     /**
      * Simple one word command
@@ -208,6 +212,7 @@ public class ShellStringBashpileTest extends BashpileTest {
                     ret: str = munge("Vulcan")
                     print(ret)
                 randoFunc()""");
+        LOG.debug("Bash translation was:\n{}", results.stdin());
         assertSuccessfulExitCode(results);
         assertEquals("Vulcan\n", results.stdout());
     }

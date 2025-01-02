@@ -52,8 +52,8 @@ class LexerBashpileTest extends BashpileTest {
     @Order(31)
     public void snakeCaseBoolFails() {
         assertThrows(BashpileUncheckedAssertionException.class, () -> runText("""
-                bool-var: bool = false
-                print(bool-var)"""));
+                snake-case-bool-fails: bool = false
+                print(snake-case-bool-fails)"""));
     }
 
     @Test
@@ -117,7 +117,7 @@ class LexerBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 // no leading 0
                 print(.5)
-                                
+                
                 // leading whole number
                 print(1.7)""");
         assertSuccessfulExitCode(results);
@@ -135,10 +135,10 @@ class LexerBashpileTest extends BashpileTest {
                     This language is
                     really starting to shape up.
                     It will replace Bash.
-                                
+                
                     /* Nested comment test */
                 */
-                                
+                
                 print((38. + 4) * .5)
                 // anonymous block
                 block:

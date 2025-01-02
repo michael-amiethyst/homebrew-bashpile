@@ -38,3 +38,4 @@
 * 0.24.0 - Optional arguments and default arguments more generally
 * 0.25.0 - Import statements, refactored out the "preambles" concept
 * 0.26.0 - Refactored Translations into a Tree<String> structure, GHA fixes
+* 0.27.0 - Refactoring Translations to render children on getData() call

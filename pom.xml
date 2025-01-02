@@ -6,7 +6,7 @@
 
     <groupId>com.bashpile</groupId>
     <artifactId>bashpile</artifactId>
-    <version>0.26.0</version>
+    <version>0.27.0</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -266,8 +266,8 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>target/bpc</executable>
-                            <commandlineArgs>--outputFile target/bashpile-stdlib bin/stdlib.bps</commandlineArgs>
+                            <executable>/bin/bash</executable>
+                            <commandlineArgs>bin/create-bashpile-stdlib</commandlineArgs>
                         </configuration>
                     </execution>
                     <execution>
@@ -277,8 +277,8 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>target/bpc</executable>
-                            <commandlineArgs>--outputFile target/bpr bin/bpr.bps</commandlineArgs>
+                            <executable>/bin/bash</executable>
+                            <commandlineArgs>bin/create-bpr</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>

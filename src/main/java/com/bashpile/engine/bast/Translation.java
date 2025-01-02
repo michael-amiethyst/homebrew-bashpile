@@ -14,6 +14,8 @@ import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.Strings.lambdaAllLines;
@@ -48,6 +50,8 @@ public class Translation implements TreeNode<String> {
     private static final Pattern INT_PATTERN = Pattern.compile("\\d+");
 
     private static final Pattern FLOAT_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
+
+    private static final Logger LOG = LogManager.getLogger(Translation.class);
 
     // class fields
 
@@ -141,9 +145,7 @@ public class Translation implements TreeNode<String> {
     public @Nonnull Translation add(@Nonnull final TreeNode<String> node) {
         // TODO TREES only concat on toString
 
-        // new style
         final Translation other = (Translation) node;
-        children.add(other);
 
         if (!metadata.contains(OPTION) || !other.metadata.contains(OPTION)) {
             // old style concat
@@ -154,8 +156,15 @@ public class Translation implements TreeNode<String> {
             nextType = nextType.isUnknown() ? other.type : nextType;
             // favor INT or FLOAT over NUMBER
             nextType = nextType.isNumber() && other.type.isNumeric() ? other.type : nextType;
-            return new Translation(body + other.body, nextType, nextMetadata);
-        } // else
+            return new Translation(getData() + other.getData(), nextType, nextMetadata);
+        } // else new style trees
+        children.add(other);
+        return this;
+    }
+
+    @Override
+    public TreeNode<String> addAll(Stream<TreeNode<String>> stream) {
+        children.addAll(stream.map(node -> (Translation) node).toList());
         return this;
     }
 
@@ -233,14 +242,16 @@ public class Translation implements TreeNode<String> {
      * Apply arbitrary function to body.  E.g. `str -> str`.
      */
     public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
-        return new Translation(lambda.apply(body), type, metadata);
+        final Translation tr = new Translation(lambda.apply(getData()), type, metadata);
+        tr.children.addAll(this.children);
+        return tr;
     }
 
     /**
      * Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax.
      */
     public @Nonnull Translation lambdaBodyLines(@Nonnull final Function<String, String> lambda) {
-        return this.body(lambdaAllLines(body, lambda));
+        return this.body(lambdaAllLines(getData(), lambda));
     }
 
     /**
@@ -346,12 +357,13 @@ public class Translation implements TreeNode<String> {
 
     @Override
     public String getData() {
+        LOG.trace("Processing getData for hash {}", body.hashCode());
         if (metadata.contains(OPTION) && children.stream().allMatch(tr -> tr.metadata.contains(OPTION))) {
             final String stripChars = " -";
             return "-" + stripStart(body, stripChars)
                     + children.stream().map(tr -> stripStart(tr.body, stripChars)).collect(Collectors.joining());
         }
-        return body;
+        return body + children.stream().map(Translation::getData).collect(Collectors.joining());
     }
 
     // helpers

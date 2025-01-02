@@ -1,5 +1,5 @@
 # 1.0 Roadmap
-1. Change Translation payload from String (body) to bastData (that renders to string)
+1. Change Translation from string munging to rendering children during getData() call
 2. Create lib functions to disable/enable strict mode
    1. Install to /etc/bashpile folder
 3. Integrate imports into the type system
