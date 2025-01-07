@@ -61,7 +61,7 @@ abstract public class BashpileTest {
     // helpers
 
     private static @Nonnull ExecutionResults execute(@Nonnull final String bashScript, @Nullable final String[] args) {
-        LOG.debug("In {}", System.getProperty("user.dir"));
+        LOG.trace("In directory {}", System.getProperty("user.dir"));
         try {
             return BashShell.runAndJoin(bashScript, args);
         } catch (UserError | AssertionError e) {

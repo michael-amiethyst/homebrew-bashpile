@@ -4,6 +4,8 @@ import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.bashpile.exceptions.UserError;
 import com.bashpile.shell.ExecutionResults;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.*;
 
 import java.util.List;
@@ -13,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Order(30)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StatementBashpileTest extends BashpileTest {
+
+    private static final Logger LOG = LogManager.getLogger(StatementBashpileTest.class);
 
     /** Add a stub 'bashpile-stdlib' file for testing the import statement */
     @BeforeAll
@@ -242,6 +246,7 @@ class StatementBashpileTest extends BashpileTest {
                 i: int = 0
                 while i < 3:
                     print(i++)""");
+        LOG.debug("Bash script is: {}", results.stdin());
         assertSuccessfulExitCode(results);
         assertEquals("0\n1\n2\n", results.stdout());
     }
@@ -253,8 +258,11 @@ class StatementBashpileTest extends BashpileTest {
                 i: int = 3
                 while i > 0:
                     print(i--)""");
+        LOG.debug("Translated:\n{}", results.stdin());
         assertSuccessfulExitCode(results);
         assertEquals("3\n2\n1\n", results.stdout());
+        assertEquals(results.stdin().indexOf("printf"), results.stdin().lastIndexOf("printf"),
+                "There should only be one printf statement");
     }
 
     @Test

@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -166,6 +167,11 @@ public class Translation implements TreeNode<String> {
     public TreeNode<String> addAll(Stream<TreeNode<String>> stream) {
         children.addAll(stream.map(node -> (Translation) node).toList());
         return this;
+    }
+
+    @VisibleForTesting
+    public List<TreeNode<String>> getChildren() {
+        return children.stream().map(x -> (TreeNode<String>) x).toList();
     }
 
     // body instance methods
