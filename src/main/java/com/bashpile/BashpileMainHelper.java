@@ -15,6 +15,7 @@ import javax.annotation.Nonnull;
 
 import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.engine.BashpileVisitor;
+import com.bashpile.engine.bast.Translation;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.shell.ExecutionResults;
@@ -75,7 +76,7 @@ public class BashpileMainHelper {
     /** Returns an input stream of inputFile (without a Shebang line) or defaults to the bashpileScript as an IS */
     private static @Nonnull InputStream getSourceInputStream(@Nonnull final Path inputFile) throws IOException {
         List<String> lines = Files.readAllLines(findFile(inputFile));
-        if (SHEBANG.matcher(lines.get(0)).matches()) {
+        if (SHEBANG.matcher(lines.getFirst()).matches()) {
             lines = lines.subList(1, lines.size());
         }
         return IOUtils.toInputStream(String.join("\n", lines), StandardCharsets.UTF_8);
@@ -122,7 +123,8 @@ public class BashpileMainHelper {
     private static @Nonnull String transpile(@Nonnull final String origin, @Nonnull final ParseTree tree) {
         // visitor and engine linked in visitor constructor
         final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine(origin));
-        return bashpileLogic.visit(tree).body();
+        final Translation visited = bashpileLogic.visit(tree);
+        return visited.getData();
     }
 
     /**

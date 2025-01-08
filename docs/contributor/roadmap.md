@@ -1,23 +1,24 @@
 # 1.0 Roadmap
 1. Change Translation from string munging to rendering children during getData() call
-2. Create lib functions to disable/enable strict mode
+2. Only run shfmt/shellcheck on option (--format/--debug)
+3. Create lib functions to disable/enable strict mode
    1. Install to /etc/bashpile folder
-3. Integrate imports into the type system
-4. More loops
+4. Integrate imports into the type system
+5. More loops
    1. do while loop
    2. C style for loop
    3. foreach loop
-5. Logging / debug so that we can debug functions that return strings
-6. Syntax highlighting in Intellij
-7. Hashes
-8. Refs
-9. String interpolation with $[]
-   1. have bpr use arguments, arguments[all] (args/argv alias?)
-10. Exceptions and raise/throw statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
+6. Logging / debug so that we can debug functions that return strings
+7. Syntax highlighting in Intellij
+8. Hashes
+9. Refs
+10. String interpolation with $[]
+    1. have bpr use arguments, arguments[all] (args/argv alias?)
+11. Exceptions and raise/throw statements (see ConditionalsBashpileTest.ifWithInlineCanRaiseError)
     1. finally blocks
-11. Enforce 'readonly' 
+12. Enforce 'readonly' 
     1. Currently on the honor system, has to be implemented by Bashpile, not by `declare` due to workaround
-12. Improve runtime
+13. Improve runtime
     1. Caching in /etc?
     2. Use graalvm?
 

@@ -8,6 +8,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.*;
 
+import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,19 +21,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class StatementBashpileTest extends BashpileTest {
 
     private static final Logger LOG = LogManager.getLogger(StatementBashpileTest.class);
+    private static final Path stdlibPath = Path.of("./target/bashpile-stdlib");
 
     /** Add a stub 'bashpile-stdlib' file for testing the import statement */
     @BeforeAll
-    public static void setup() {
-        final ExecutionResults results = runText("touch ./target/bashpile-stdlib");
-        assertSuccessfulExitCode(results);
+    public static void setup() throws IOException {
+        try {
+            Files.createFile(stdlibPath);
+        } catch (FileAlreadyExistsException e) {
+            // ignore
+        }
     }
 
     /** Remove the stub for a real implementation to be generated later */
     @AfterAll
-    public static void cleanup() {
-        final ExecutionResults results = runText("rm ./target/bashpile-stdlib");
-        assertSuccessfulExitCode(results);
+    public static void cleanup() throws IOException {
+        Files.deleteIfExists(stdlibPath);
     }
 
     // tests
@@ -291,6 +298,7 @@ class StatementBashpileTest extends BashpileTest {
         final ExecutionResults results = runText("""
                 world:str="world"
                 print("hello " + world)""");
+        LOG.debug("stringConcatWorks() translated Bash script was:\n{}", results.stdin());
         assertSuccessfulExitCode(results);
         assertEquals("hello world\n", results.stdout());
     }

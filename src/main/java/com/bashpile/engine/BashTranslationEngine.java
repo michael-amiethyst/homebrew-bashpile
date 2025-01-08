@@ -195,7 +195,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // create translations
         final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(requireNonNull(visitor), ctx);
-        final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
+        final Translation hoistedFunction = visitor.visit(functionDeclCtx);
 
         // register that this forward declaration has been handled
         foundForwardDeclarations.add(ctx.Id().getText());
@@ -640,7 +640,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // guard, checks types
         final List<Pair<Integer, Translation>> translations = IntStream.range(0, ctx.expression().size())
                 .mapToObj(it -> Pair.of(it, requireNonNull(visitor).visit(ctx.expression(it)))).toList();
-        final Type listType = translations.get(0).getRight().type();
+        final Type listType = translations.getFirst().getRight().type();
         final AtomicReference<List<BashpileUncheckedException>> errors = new AtomicReference<>();
         errors.set(List.of());
         translations.stream().skip(1).forEachOrdered(tr -> {
@@ -651,7 +651,7 @@ public class BashTranslationEngine implements TranslationEngine {
             }
         });
         if (!errors.get().isEmpty()) {
-            throw errors.get().get(0);
+            throw errors.get().getFirst();
         }
 
         // body

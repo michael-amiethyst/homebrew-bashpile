@@ -19,7 +19,7 @@ public class ListOfTranslation extends Translation {
     // static section
 
     public static @Nonnull ListOfTranslation of(@Nonnull final List<Translation> listIn) {
-        final ListOfTranslation ret = new ListOfTranslation(assertNotEmpty(listIn).get(0).type());
+        final ListOfTranslation ret = new ListOfTranslation(assertNotEmpty(listIn).getFirst().type());
         return ret.addAll(listIn);
     }
 

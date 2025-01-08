@@ -62,7 +62,7 @@ public class Translation implements TreeNode<String> {
 
     @Nonnull private final List<TranslationMetadata> metadata;
 
-    @Nonnull private final List<Translation> children = new ArrayList<>();
+    @Nonnull private final List<Translation> children;
 
     // static initializers
 
@@ -126,9 +126,25 @@ public class Translation implements TreeNode<String> {
             @Nonnull final String body,
             @Nonnull final Type type,
             @Nonnull final List<TranslationMetadata> metadata) {
+        this(body, type, metadata, List.of());
+    }
+
+    /**
+     * @param body     The target shell script (e.g. Bash) literal text.
+     * @param type     The Bashpile type.  For Shell Strings and Command Substitutions this is the type of the result.
+     *                 E.g. $(expr 1 + 1) could have a type of int.
+     * @param metadata Further information on the type (e.g. is this a subshell?)
+     * @param children The tree-children.
+     */
+    public Translation(
+            @Nonnull final String body,
+            @Nonnull final Type type,
+            @Nonnull final List<TranslationMetadata> metadata,
+            @Nonnull final List<Translation> children) {
         this.body = body;
         this.type = type;
         this.metadata = metadata;
+        this.children = List.copyOf(children);
     }
 
     /**
@@ -144,29 +160,16 @@ public class Translation implements TreeNode<String> {
      * Concatenates other's body, type and metadata to this object's
      */
     public @Nonnull Translation add(@Nonnull final TreeNode<String> node) {
-        // TODO TREES only concat on toString
-
-        final Translation other = (Translation) node;
-
-        if (!metadata.contains(OPTION) || !other.metadata.contains(OPTION)) {
-            // old style concat
-            final List<TranslationMetadata> nextMetadata =
-                    Streams.concat(metadata.stream(), other.metadata.stream()).toList();
-            // favor anything over UNKNOWN
-            Type nextType = type;
-            nextType = nextType.isUnknown() ? other.type : nextType;
-            // favor INT or FLOAT over NUMBER
-            nextType = nextType.isNumber() && other.type.isNumeric() ? other.type : nextType;
-            return new Translation(getData() + other.getData(), nextType, nextMetadata);
-        } // else new style trees
-        children.add(other);
-        return this;
+        final List<Translation> modifiedChildren =
+                Streams.concat(children.stream(), Stream.of((Translation) node)).toList();
+        return new Translation(this.body, this.type, this.metadata, modifiedChildren);
     }
 
     @Override
     public TreeNode<String> addAll(Stream<TreeNode<String>> stream) {
-        children.addAll(stream.map(node -> (Translation) node).toList());
-        return this;
+        final List<Translation> modifiedChildren =
+                Streams.concat(children.stream(), stream.map(x->(Translation) x)).toList();
+        return new Translation(this.body, this.type, this.metadata, modifiedChildren);
     }
 
     @VisibleForTesting
@@ -180,6 +183,7 @@ public class Translation implements TreeNode<String> {
      * Replaces the body
      */
     public @Nonnull Translation body(@Nonnull final String nextBody) {
+        // do not include children, assume that they were consumed during the creation of nextBody
         return new Translation(nextBody, type, metadata);
     }
 
@@ -248,16 +252,16 @@ public class Translation implements TreeNode<String> {
      * Apply arbitrary function to body.  E.g. `str -> str`.
      */
     public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
-        final Translation tr = new Translation(lambda.apply(getData()), type, metadata);
-        tr.children.addAll(this.children);
-        return tr;
+        final List<Translation> modifiedChildren = children.stream().map(tr -> tr.lambdaBody(lambda)).toList();
+        return new Translation(lambda.apply(body), type, metadata, modifiedChildren);
     }
 
     /**
      * Apply arbitrary function to every line in the body.  A function is specified by the `str -> str` syntax.
      */
     public @Nonnull Translation lambdaBodyLines(@Nonnull final Function<String, String> lambda) {
-        return this.body(lambdaAllLines(getData(), lambda));
+        final List<Translation> modifiedChildren = children.stream().map(tr -> tr.lambdaBodyLines(lambda)).toList();
+        return new Translation(lambdaAllLines(body, lambda), type, metadata, modifiedChildren);
     }
 
     /**
@@ -274,7 +278,7 @@ public class Translation implements TreeNode<String> {
      * Replaces the type.
      */
     public @Nonnull Translation type(@Nonnull final Type typecastType) {
-        return new Translation(body, typecastType, metadata);
+        return new Translation(body, typecastType, metadata, children);
     }
 
     /** Is the type basic (e.g. not a List, Hash or Ref)? */
@@ -326,14 +330,14 @@ public class Translation implements TreeNode<String> {
      * Replaces the type metadata
      */
     public @Nonnull Translation metadata(@Nonnull final TranslationMetadata meta) {
-        return new Translation(body, type, List.of(meta));
+        return new Translation(body, type, List.of(meta), children);
     }
 
     /**
      * Replaces the type metadata
      */
     public @Nonnull Translation metadata(@Nonnull final List<TranslationMetadata> meta) {
-        return new Translation(body, type, meta);
+        return new Translation(body, type, meta, children);
     }
 
     /**
@@ -345,7 +349,7 @@ public class Translation implements TreeNode<String> {
     public @Nonnull Translation inlineAsNeeded() {
         if (metadata.contains(NEEDS_INLINING_OFTEN)) {
             // function calls may have redirect to /dev/null if only side effects needed
-            String nextBody = Strings.remove(body, ">/dev/null").stripTrailing();
+            String nextBody = Strings.remove(body(), ">/dev/null").stripTrailing();
             // add INLINE and remove NEEDS INLINING OFTEN
             var nextMetadata = new ArrayList<>(List.of(INLINE));
             nextMetadata.addAll(metadata);

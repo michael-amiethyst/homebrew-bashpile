@@ -23,7 +23,7 @@ class TranslationTest {
         final Translation option1 = toStringTranslation("-r").metadata(TranslationMetadata.OPTION);
         final Translation option2 = toStringTranslation("-x").metadata(TranslationMetadata.OPTION);
         assertEquals("-rx", option1.add(option2).toString());
-        assertEquals("-rxx", option1.add(option2).getData());
+        assertEquals("-rx", option1.add(option2).getData());
     }
 
     @Test
