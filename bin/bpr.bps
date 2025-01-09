@@ -9,12 +9,13 @@ import "bashpile-stdlib"
 assertGnuGetopt()
 
 // getopt
-opts: str = #(getopt -o co: --long command,outputFile: -n 'Bashpile Runner' -- "$@")
+opts: str = #(getopt -o co:f --long command,outputFile:,format -n 'Bashpile Runner' -- "$@")
 eval set -- "$opts"
 // need to declare type for sourced method return
 DEFAULT_OUTPUT_FILENAME: readonly str = createTempFile() :str
 translatedFilename: str = DEFAULT_OUTPUT_FILENAME
 commandMode: bool = false
+flags: str = "-"
 while true:
     switch arguments[1]:
         case "-c" or "--command":
@@ -23,6 +24,9 @@ while true:
         case "-o" or "--outputFile":
             translatedFilename = arguments[2]
             shift 2
+        case "-f":
+            flags = flags + "f"
+            shift
         case "--":
             shift
             break
@@ -33,6 +37,10 @@ while true:
 if isset arguments[1] and arguments[1] == "-":
     commandMode = true
     shift
+
+// clean up flags
+if flags == "-":
+    flags = ""
 
 // get script directory and jar location
 jarPath: str = #(dirname "${BASH_SOURCE[0]}") + "/bashpile.jar"
@@ -56,14 +64,14 @@ if not commandMode:
         if fileExists translatedFilename:
             print("Will not overwrite " + translatedFilename)
             exit 1
-    java -jar "$jarPath" --outputFile="$translatedFilename" "$1" > bp_jar.log 2>&1 || true
+    java -jar "$jarPath" $flags --outputFile="$translatedFilename" "$1" > bp_jar.log 2>&1 || true
     if regularFileExists translatedFilename:
         rm bp_jar.log
         shift
         print("Start of " + translatedFilename)
         runTranslation(translatedFilename, arguments[all])
     else:
-        print("Compile failed")
+        print("Compile failed.  Jar options were #($@)")
         cat bp_jar.log
         rm bp_jar.log
         exit 1
@@ -75,7 +83,7 @@ else:
         shift
     else:
         commandString = #(cat -)
-    java -jar "$jarPath" --outputFile="$translatedFilename" -c "$commandString" > bp_jar.log 2>&1 || true
+    java -jar "$jarPath" $flags --outputFile="$translatedFilename" -c "$commandString" > bp_jar.log 2>&1 || true
     if regularFileExists translatedFilename:
         rm bp_jar.log
         // let filesystem percolate to avoid 'No such file or directory' errors on calling our translatedFilename

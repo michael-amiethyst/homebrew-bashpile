@@ -373,7 +373,8 @@ public class Translation implements TreeNode<String> {
             return "-" + stripStart(body, stripChars)
                     + children.stream().map(tr -> stripStart(tr.body, stripChars)).collect(Collectors.joining());
         }
-        return body + children.stream().map(Translation::getData).collect(Collectors.joining());
+        final String processedBody = (new Translation(body)).inlineAsNeeded().body;
+        return processedBody + children.stream().map(Translation::getData).collect(Collectors.joining());
     }
 
     // helpers

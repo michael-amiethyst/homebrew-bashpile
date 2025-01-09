@@ -39,7 +39,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            final String lastLine = lines.get(lines.size() - 1);
+            final String lastLine = lines.getLast();
             assertTrue(lastLine.endsWith(translatedFilename),
                     "Expected last line to end with %s but was %s".formatted(translatedFilename, lastLine));
         } finally {
@@ -77,7 +77,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             final List<String> lines = results.stdoutLines();
-            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
+            assertTrue(lines.getLast().endsWith(translatedFilename));
         } finally {
             Files.deleteIfExists(translatedPath);
         }
@@ -111,7 +111,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
             assertSuccessfulExitCode(results);
             List<String> lines = results.stdoutLines();
-            assertTrue(lines.get(lines.size() - 1).endsWith(translatedFilename));
+            assertTrue(lines.getLast().endsWith(translatedFilename));
 
             // 2nd run to verify overwrites OK
             results = runAndJoin(command);
@@ -166,7 +166,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         assertSuccessfulExitCode(results);
         // last line is the created filename
-        final String filename = results.stdoutLines().get(results.stdoutLines().size() - 1);
+        final String filename = results.stdoutLines().getLast();
         Files.deleteIfExists(Path.of(filename));
     }
 
@@ -309,5 +309,21 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         assertFalse(results.stdout().contains("No such file or directory"));
         // set -e text
         assertFalse(results.stdout().contains("Error (exit code 1) found on line "));
+    }
+
+    @Test
+    @Timeout(20)
+    @Order(110)
+    public void bprDashFWorks() throws IOException {
+        log.info("In bpr -f works");
+
+        final String command = "target/bpr -fc \"ls\"";
+        final ExecutionResults results = runAndJoin(command);
+
+        assertSuccessfulExitCode(results);
+        assertFalse(results.stdout().contains("No such file or directory"));
+        assertFalse(results.stdout().contains("Error (exit code 1) found on line "));
+        // TODO reenable after verbose mode implemented (message from bpc suppressed)
+//        assertTrue(results.stdout().contains("shfmt"), "Formatting program (shfmt) not run.");
     }
 }

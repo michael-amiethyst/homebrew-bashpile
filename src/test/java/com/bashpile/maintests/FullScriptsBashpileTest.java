@@ -40,8 +40,8 @@ if isset arguments[1] and arguments[1] == "-":
 else:
     #(java -jar "$jarPath" "$@")
                 """;
-        final String results = BashpileMainHelper.transpileScript(bashpileScript);
-        LOG.info("BPC: " + results);
+        final String results = BashpileMainHelper.transpileScript(bashpileScript, false);
+        LOG.info("BPC: {}", results);
     }
 
 }

@@ -49,12 +49,14 @@ public class BashpileMainHelper {
      * @throws BashpileUncheckedAssertionException on shellcheck errors.
      */
     @VisibleForTesting
-    public static @Nonnull String transpileNioFile(@Nonnull Path inputFile) throws IOException {
+    public static @Nonnull String transpileNioFile(@Nonnull Path inputFile, boolean format) throws IOException {
         final InputStream inputStream = getSourceInputStream(inputFile);
         final String sourceName = inputFile.toString();
-        final String parsed = parse(sourceName, inputStream);
-        final String formatted = format(parsed);
-        return assertNoShellcheckWarnings(formatted);
+        String ret = parse(sourceName, inputStream);
+        if (format) {
+            ret = format(ret);
+        }
+        return assertNoShellcheckWarnings(ret);
     }
 
     /**
@@ -63,12 +65,14 @@ public class BashpileMainHelper {
      * @throws BashpileUncheckedAssertionException on shellcheck errors.
      */
     @VisibleForTesting
-    public static @Nonnull String transpileScript(@Nonnull String bashpileScript) throws IOException {
+    public static @Nonnull String transpileScript(@Nonnull String bashpileScript, boolean format) throws IOException {
         final InputStream inputStream = IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
-        final String parsed = parse(bashpileScript, inputStream);
-        LOG.trace("Parsed Bashpile script became:\n{}", parsed);
-        final String formatted = format(parsed);
-        return assertNoShellcheckWarnings(formatted);
+        String ret = parse(bashpileScript, inputStream);
+        LOG.trace("Parsed Bashpile script became:\n{}", ret);
+        if (format) {
+            ret = format(ret);
+        }
+        return assertNoShellcheckWarnings(ret);
     }
 
     // helpers
@@ -141,6 +145,7 @@ public class BashpileMainHelper {
                 LOG.warn("shfmt not found on PATH.  Skipping formatting (is it installed?)");
                 return bashScript;
             }
+            LOG.info("Running shfmt");
             final ExecutionResults shfmtResults = runAndJoin(
                     "shfmt -i 2 -ci -bn %s".formatted(temp.toString()));
             if (shfmtResults.exitCode() != SUCCESS) {
