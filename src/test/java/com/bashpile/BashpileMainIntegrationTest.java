@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import static com.bashpile.shell.BashShell.runAndJoin;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,6 +27,10 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
     private static final Logger log = LogManager.getLogger(BashpileMainIntegrationTest.class);
 
+    private static @Nonnull ExecutionResults runWithSdkMan(@Nonnull final String command) throws IOException {
+        return runAndJoin(". ./bin/sdkman-include.lib\n%s".formatted(command));
+    }
+
     @Test
     @Timeout(15)
     @Order(10)
@@ -34,7 +40,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         final String translatedFilename = "src/test/resources/testrigData";
         final String command = "target/bpc src/test/resources/testrigData.bps";
         try {
-            final ExecutionResults results = runAndJoin(command);
+            final ExecutionResults results = runWithSdkMan(command);
             log.debug("Output text:\n{}", results.stdout());
 
             assertSuccessfulExitCode(results);
@@ -55,7 +61,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // run with our local (not installed) bpr
         final String command = "target/bpr src/test/resources/scripts/bprShebang.bps";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -71,7 +77,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         final String command = "target/bpc src/test/resources/testrigData2.bps";
         Path translatedPath = Path.of(translatedFilename);
         Files.deleteIfExists(translatedPath);
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         try {
             log.debug("Output text:\n{}", results.stdout());
 
@@ -90,7 +96,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In noSubCommandWithMissingFileFails");
 
         final String command = "target/bpc src/test/resources/testrigData.fileDoesNotExist";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertFailedExitCode(results);
@@ -105,7 +111,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         final String translatedFilename = "src/test/resources/testrigData2.example.bps";
         final String command = "target/bpc src/test/resources/testrigData2.bps --outputFile " + translatedFilename;
-        ExecutionResults results = runAndJoin(command);
+        ExecutionResults results = runWithSdkMan(command);
         try {
             log.debug("Output text:\n{}", results.stdout());
 
@@ -114,7 +120,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
             assertTrue(lines.getLast().endsWith(translatedFilename));
 
             // 2nd run to verify overwrites OK
-            results = runAndJoin(command);
+            results = runWithSdkMan(command);
             assertSuccessfulExitCode(results);
         } finally {
             Files.deleteIfExists(Path.of(translatedFilename));
@@ -131,7 +137,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         final Path defaultOutputFile = Path.of("src/test/resources/scripts/overwriteCheck");
         assertTrue(Files.exists(defaultOutputFile), "Default output file does not exist");
         final String command = "target/bpr " + bashpileFilename;
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertFailedExitCode(results);
@@ -145,7 +151,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // run with our local (not installed) bpr
         final String command = "target/bpr -c \"print('Hello World')\"";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -161,7 +167,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // run with our local (not installed) bpr
         final String command = "echo \"print('Hello World')\" | target/bpc -c";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -178,7 +184,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // run with our local (not installed) bpr
         final String command = "echo \"print('Hello World')\" | target/bpr -c";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -195,7 +201,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // run with our local (not installed) bpr
         final String command = "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpr -c";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -214,7 +220,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         // run with our local (not installed) bpr
         final String command =
                 "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpr --outputFile command81 -c";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -233,7 +239,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         // run with our local (not installed) bpr
         final String command =
                 "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpc -";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -251,7 +257,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         // run with our local (not installed) bpr
         final String command =
                 "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpc --outputFile dashOutput.bash -";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -272,7 +278,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         // run with our local (not installed) bpr
         final String command =
                 "cd ..; echo \"print('Hello World')\" | homebrew-bashpile/target/bpr -";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertSuccessfulExitCode(results);
@@ -288,7 +294,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
 
         // run with our local (not installed) bpr
         final String command = "target/bpr";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
         log.debug("Output text:\n{}", results.stdout());
 
         assertFailedExitCode(results);
@@ -303,7 +309,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In bpr -c fails gracefully");
 
         final String command = "target/bpr -c \"# echo\"";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
 
         assertFailedExitCode(results);
         assertFalse(results.stdout().contains("No such file or directory"));
@@ -318,7 +324,7 @@ public class BashpileMainIntegrationTest extends BashpileTest {
         log.info("In bpr -f works");
 
         final String command = "target/bpr -fc \"ls\"";
-        final ExecutionResults results = runAndJoin(command);
+        final ExecutionResults results = runWithSdkMan(command);
 
         assertSuccessfulExitCode(results);
         assertFalse(results.stdout().contains("No such file or directory"));

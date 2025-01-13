@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Library for the create scripts (create bpc, bpr, stdlib, etc)
+
+export PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
+
+if ! which sdk >/dev/null; then
+  export SDKMAN_DIR="$HOME/.sdkman"
+  [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+fi
+
+sdk use java 21.0.5-graal >/dev/null
