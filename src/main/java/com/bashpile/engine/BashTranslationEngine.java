@@ -13,10 +13,7 @@ import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
 import com.bashpile.engine.bast.ListOfTranslation;
 import com.bashpile.engine.bast.Translation;
-import com.bashpile.engine.strongtypes.FunctionTypeInfo;
-import com.bashpile.engine.strongtypes.ParameterInfo;
-import com.bashpile.engine.strongtypes.Type;
-import com.bashpile.engine.strongtypes.TypeStack;
+import com.bashpile.engine.strongtypes.*;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.google.common.collect.Streams;
@@ -329,7 +326,6 @@ public class BashTranslationEngine implements TranslationEngine {
             }
             // add quotes if needed
             if (rhsExprTranslation.isStr() && rhsExprTranslation.metadata().contains(NORMAL)) {
-                // TODO call quoteBody and have quoteBody escape quotes
                 rhsExprTranslation = rhsExprTranslation.lambdaBody(str -> {
                     str = StringUtils.prependIfMissing(str, "\"");
                     return StringUtils.appendIfMissing(str, "\"");
@@ -384,7 +380,6 @@ public class BashTranslationEngine implements TranslationEngine {
                     .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
                     .metadata(INLINE);
         }
-        rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
         final Type rhsActualType = rhsExprTranslation.type();
         if (!rhsActualType.isEmpty()) {
             Asserts.assertTypesCoerce(lhsExpectedType, rhsActualType, lhsVariableName, lineNumber(ctx));
@@ -447,7 +442,7 @@ public class BashTranslationEngine implements TranslationEngine {
         if (expressionTranslation.isInt()) {
             // arithmetic built-in when possible
             final String body = "$((%s%s))".formatted(expressionTranslation.removeVariableBrackets(), opText);
-            return new Translation(body, INT_TYPE, List.of(CALCULATION));
+            return new Translation(body, INT_TYPE, Set.of(CALCULATION));
         } else if (expressionTranslation.isNumeric()) {
             // bc tool can't assign to shell variables, only bc variables.
             // bc variables can't have uppercase, and to "export" them back to the shell we would need a whole
@@ -542,7 +537,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // lookup return type of this function
         final Type retType = expectedTypes.returnType();
 
-        Translation ret = new Translation(functionName + argumentTranslations.body(), retType, List.of(NORMAL));
+        Translation ret = new Translation(functionName + argumentTranslations.body(), retType, Set.of(NORMAL));
         // suppress output if we are printing to output as part of a work-around to return a string
         // this covers the case of calling a function without using the return
         if (retType.isStr()) {
@@ -697,7 +692,9 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(Translation::inlineAsNeeded)
                 .reduce((l, r) -> {
                     if (l.isStr() && r.isStr()) {
-                        return new Translation(l.getData() + r.getData(), Type.STR_TYPE, NORMAL);
+                        Set<TranslationMetadata> nextMeta = new TreeSet<>(l.metadata());
+                        nextMeta.addAll(r.metadata());
+                        return new Translation(l.getData() + r.getData(), Type.STR_TYPE, nextMeta);
                     } // else
                     return l.add(r);
                 })

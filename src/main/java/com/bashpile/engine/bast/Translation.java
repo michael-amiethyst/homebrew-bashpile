@@ -1,8 +1,6 @@
 package com.bashpile.engine.bast;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -60,7 +58,7 @@ public class Translation implements TreeNode<String> {
 
     @Nonnull private final Type type;
 
-    @Nonnull private final List<TranslationMetadata> metadata;
+    @Nonnull private final Set<TranslationMetadata> metadata;
 
     @Nonnull private final List<Translation> children;
 
@@ -106,14 +104,14 @@ public class Translation implements TreeNode<String> {
     // constructors
 
     public Translation(@Nonnull final String text) {
-        this(text, UNKNOWN_TYPE, List.of());
+        this(text, UNKNOWN_TYPE, Set.of());
     }
 
     public Translation(
             @Nonnull final String text,
             @Nonnull final Type type,
             @Nonnull final TranslationMetadata translationMetadata) {
-        this(text, type, List.of(translationMetadata));
+        this(text, type, Set.of(translationMetadata));
     }
 
     /**
@@ -125,7 +123,7 @@ public class Translation implements TreeNode<String> {
     public Translation(
             @Nonnull final String body,
             @Nonnull final Type type,
-            @Nonnull final List<TranslationMetadata> metadata) {
+            @Nonnull final Set<TranslationMetadata> metadata) {
         this(body, type, metadata, List.of());
     }
 
@@ -139,7 +137,7 @@ public class Translation implements TreeNode<String> {
     public Translation(
             @Nonnull final String body,
             @Nonnull final Type type,
-            @Nonnull final List<TranslationMetadata> metadata,
+            @Nonnull final Set<TranslationMetadata> metadata,
             @Nonnull final List<Translation> children) {
         this.body = body;
         this.type = type;
@@ -330,18 +328,18 @@ public class Translation implements TreeNode<String> {
      * Replaces the type metadata
      */
     public @Nonnull Translation metadata(@Nonnull final TranslationMetadata meta) {
-        return new Translation(body, type, List.of(meta), children);
+        return new Translation(body, type, Set.of(meta), children);
     }
 
     /**
      * Replaces the type metadata
      */
-    public @Nonnull Translation metadata(@Nonnull final List<TranslationMetadata> meta) {
+    public @Nonnull Translation metadata(@Nonnull final Set<TranslationMetadata> meta) {
         return new Translation(body, type, meta, children);
     }
 
     public @Nonnull Translation removeMetadata(@Nonnull final TranslationMetadata meta) {
-        var nextMetadata = new ArrayList<>(metadata);
+        var nextMetadata = new TreeSet<>(metadata);
         nextMetadata.remove(meta);
         return new Translation(body, type, nextMetadata, children);
     }
@@ -357,7 +355,7 @@ public class Translation implements TreeNode<String> {
             // function calls may have redirect to /dev/null if only side effects needed
             String nextBody = Strings.remove(body, ">/dev/null").stripTrailing();
             // add INLINE and remove NEEDS INLINING OFTEN
-            var nextMetadata = new ArrayList<>(List.of(INLINE));
+            var nextMetadata = new TreeSet<>(List.of(INLINE));
             nextMetadata.addAll(metadata);
             nextMetadata.remove(NEEDS_INLINING);
             // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
@@ -406,7 +404,7 @@ public class Translation implements TreeNode<String> {
         return type;
     }
 
-    public @Nonnull List<TranslationMetadata> metadata() {
+    public @Nonnull Set<TranslationMetadata> metadata() {
         return metadata;
     }
 

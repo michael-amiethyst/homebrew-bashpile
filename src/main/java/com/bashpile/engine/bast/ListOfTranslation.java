@@ -2,6 +2,7 @@ package com.bashpile.engine.bast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -121,7 +122,7 @@ public class ListOfTranslation extends Translation {
 
     @Nonnull
     @Override
-    public Translation metadata(@Nonnull List<TranslationMetadata> meta) {
+    public Translation metadata(@Nonnull Set<TranslationMetadata> meta) {
         throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
 
@@ -148,7 +149,7 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public @Nonnull List<TranslationMetadata> metadata() {
+    public @Nonnull Set<TranslationMetadata> metadata() {
         return super.metadata();
     }
 }

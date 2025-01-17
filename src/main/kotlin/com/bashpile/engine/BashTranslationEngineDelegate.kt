@@ -264,7 +264,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 } else ret
             }
             val translationsString = childTranslations.joinToString(" ") { it.body() }
-            Translation(translationsString, Type.INT_TYPE, listOf(CALCULATION))
+            Translation(translationsString, Type.INT_TYPE, setOf(CALCULATION))
                 .body("$(( $translationsString ))")
         } else if (Translation.areNumericExpressions(first, second)) {
             // Numbers -- We need the Basic Calculator to process
@@ -277,7 +277,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             }
             // first happy path executed, assume no nesting
             val translationsString = childTranslations.joinToString(" ") { it.body() }
-            Translation(translationsString, Type.NUMBER_TYPE, listOf(NEEDS_INLINING, CALCULATION))
+            Translation(translationsString, Type.NUMBER_TYPE, setOf(NEEDS_INLINING, CALCULATION))
                 .body("bc <<< \"$translationsString\"")
         } else if (Translation.areStringExpressions(first, second)) {
             // Strings -- only addition supported
@@ -340,7 +340,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             // valueBeingTested will have [ ] if needed
             "$primary ${valueBeingTested.unquoteBody().body()}"
         }
-        return Translation(body, Type.STR_TYPE, listOf(CONDITIONAL))
+        return Translation(body, Type.STR_TYPE, setOf(CONDITIONAL))
     }
 
     fun combiningExpression(ctx: BashpileParser.CombiningExpressionContext): Translation {
