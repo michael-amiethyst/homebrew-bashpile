@@ -134,7 +134,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
             // put it all together in one big translation
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
-            val blockBody = Asserts.assertIsParagraph(blockAccumulator.body()).removeSuffix("\n")
+            val blockBody = blockAccumulator.body()
             // 2nd+ lines of blockbody will have a bad indent, but that's why we go over with shfmt
             val functionText = """
                 $functionName () {
@@ -213,20 +213,25 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // body
 
         val comment = createCommentTranslation("return statement", lineNumber(ctx))
+        // e.g. a constant like "42"
+        val isNormalNumber = exprTranslation.isNumeric && exprTranslation.metadata().contains(NORMAL)
+        // e.g. $(( ... ))
+        val isIntCalculation = exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)
+        // e.g. $(bc ...)
+        val isNumericCalculation = exprTranslation.isNumeric && exprTranslation.metadata().contains(CALCULATION)
         val returnLineLambda = { str: String ->
             if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {
                 "printf -- \"${Strings.unquote(str)}\"\n"
-            } else if (exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)) {
-                // Avoid interpreting $(( )) results as a command
-                "printf -- $str\n"
-            } else if (exprTranslation.isNumeric && exprTranslation.metadata().contains(NORMAL)) {
-                // plain number type such as int or float equaling 42
-                "printf -- $str\n"
+            } else if (isNormalNumber || isIntCalculation || isNumericCalculation ) {
+                "printf -- \"$str\"\n"
             } else {
                 str + "\n"
             }
         }
         exprTranslation = exprTranslation.body(Strings.lambdaLastLine(exprTranslation.body(), returnLineLambda))
+        if (isNumericCalculation) {
+            exprTranslation = exprTranslation.removeMetadata(NEEDS_INLINING)
+        }
         return comment.add(exprTranslation)
     }
 
@@ -272,7 +277,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             }
             // first happy path executed, assume no nesting
             val translationsString = childTranslations.joinToString(" ") { it.body() }
-            Translation(translationsString, Type.NUMBER_TYPE, listOf(NEEDS_INLINING_OFTEN, CALCULATION))
+            Translation(translationsString, Type.NUMBER_TYPE, listOf(NEEDS_INLINING, CALCULATION))
                 .body("bc <<< \"$translationsString\"")
         } else if (Translation.areStringExpressions(first, second)) {
             // Strings -- only addition supported

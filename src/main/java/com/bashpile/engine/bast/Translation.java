@@ -340,20 +340,26 @@ public class Translation implements TreeNode<String> {
         return new Translation(body, type, meta, children);
     }
 
+    public @Nonnull Translation removeMetadata(@Nonnull final TranslationMetadata meta) {
+        var nextMetadata = new ArrayList<>(metadata);
+        nextMetadata.remove(meta);
+        return new Translation(body, type, nextMetadata, children);
+    }
+
     /**
-     * Create an inline Translation if this is a {@link TranslationMetadata#NEEDS_INLINING_OFTEN} translation.
+     * Create an inline Translation if this is a {@link TranslationMetadata#NEEDS_INLINING} translation.
      * Does some other processing as well.
      *
      * @return Converts body to an inline and change the type metadata to {@link TranslationMetadata#INLINE}.
      */
     public @Nonnull Translation inlineAsNeeded() {
-        if (metadata.contains(NEEDS_INLINING_OFTEN)) {
+        if (metadata.contains(NEEDS_INLINING)) {
             // function calls may have redirect to /dev/null if only side effects needed
-            String nextBody = Strings.remove(body(), ">/dev/null").stripTrailing();
+            String nextBody = Strings.remove(body, ">/dev/null").stripTrailing();
             // add INLINE and remove NEEDS INLINING OFTEN
             var nextMetadata = new ArrayList<>(List.of(INLINE));
             nextMetadata.addAll(metadata);
-            nextMetadata.remove(NEEDS_INLINING_OFTEN);
+            nextMetadata.remove(NEEDS_INLINING);
             // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
             return new Translation("$( %s )".formatted(nextBody), type, nextMetadata);
         } // else
@@ -373,7 +379,7 @@ public class Translation implements TreeNode<String> {
             return "-" + stripStart(body, stripChars)
                     + children.stream().map(tr -> stripStart(tr.body, stripChars)).collect(Collectors.joining());
         }
-        final String processedBody = (new Translation(body)).inlineAsNeeded().body;
+        final String processedBody = new Translation(body, type, metadata).inlineAsNeeded().body;
         return processedBody + children.stream().map(Translation::getData).collect(Collectors.joining());
     }
 

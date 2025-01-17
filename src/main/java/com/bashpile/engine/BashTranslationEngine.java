@@ -178,7 +178,7 @@ public class BashTranslationEngine implements TranslationEngine {
     public Translation whileStatement(BashpileParser.WhileStatementContext ctx) {
         LOG.trace("In whileStatement");
         final Translation comment = createCommentTranslation("while statement", lineNumber(ctx));
-        final Translation gate = requireNonNull(visitor).visit(ctx.expression());
+        final Translation gate = requireNonNull(visitor).visit(ctx.expression()).removeMetadata(NEEDS_INLINING);
         final Translation bodyStatements = ctx.indentedStatements().statement().stream()
                 .map(visitor::visit).reduce(Translation::add).orElseThrow().lambdaBodyLines(x -> "    " + x);
         final Translation whileTranslation = Translation.toStringTranslation("""
@@ -232,7 +232,8 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         LOG.trace("In conditionalStatement");
         // handle initial if
-        Translation guard = visitGuardingExpression(requireNonNull(visitor).visit(ctx.expression()));
+        final Translation guard = visitGuardingExpression(requireNonNull(visitor).visit(ctx.expression()))
+                .removeMetadata(NEEDS_INLINING);
         Translation ifBlockStatements;
         try (var ignored = typeStack.pushFrame()) {
             ifBlockStatements = visitBodyStatements(ctx.indentedStatements(0).statement(), visitor);
@@ -334,7 +335,6 @@ public class BashTranslationEngine implements TranslationEngine {
                     return StringUtils.appendIfMissing(str, "\"");
                 });
             }
-            rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
         }
         assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber);
 
@@ -427,8 +427,9 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation expr = requireNonNull(visitor).visit(ctx.expression());
         // change $(( )) to _=$(( )) to avoid executing a number.  Fixes ShellCheck error SC2084
         expr = expr.lambdaBody(body -> !body.startsWith("$((") ? body : "_=" + body).add(NEWLINE);
+        expr = expr.removeMetadata(NEEDS_INLINING);
         final Translation comment = createCommentTranslation("expression statement", lineNumber(ctx));
-        return comment.add(expr).type(expr.type()).metadata(expr.metadata());
+        return comment.add(expr);
     }
 
     @Override
@@ -547,7 +548,7 @@ public class BashTranslationEngine implements TranslationEngine {
         if (retType.isStr()) {
             ret = ret.lambdaBody("%s >/dev/null"::formatted);
         }
-        ret = ret.metadata(NEEDS_INLINING_OFTEN);
+        ret = ret.metadata(NEEDS_INLINING);
         return ret;
     }
 
@@ -694,7 +695,12 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation contentsTranslation = ctx.shellStringContents().stream()
                 .map(requireNonNull(visitor)::visit)
                 .map(Translation::inlineAsNeeded)
-                .reduce(Translation::add)
+                .reduce((l, r) -> {
+                    if (l.isStr() && r.isStr()) {
+                        return new Translation(l.getData() + r.getData(), Type.STR_TYPE, NORMAL);
+                    } // else
+                    return l.add(r);
+                })
                 .map(x -> x.lambdaBody(Strings::dedent))
                 .map(BashTranslationHelper::joinEscapedNewlines)
                 .orElseThrow()
@@ -702,7 +708,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // a subshell does NOT need inlining often, see conditionalStatement
         if (!Strings.inParentheses(contentsTranslation.body())) {
-            contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
+            contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING);
         }
 
         return contentsTranslation.unescapeBody();
