@@ -5,10 +5,8 @@ import java.util.List;
 
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.shell.ExecutionResults;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -17,11 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Technically "print()" is a statement, but we need it to get any output at all.
  */
 @Order(10)
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LexerBashpileTest extends BashpileTest {
 
     @Test
-    @Order(10)
     public void printWorks() {
         final ExecutionResults results = runText("print()");
         assertSuccessfulExitCode(results);
@@ -29,7 +25,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(20)
     public void multilinePrintWorks() {
         final ExecutionResults results = runText("""
                 print()
@@ -39,7 +34,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(30)
     public void boolWorks() {
         final ExecutionResults results = runText("""
                 var: bool = false
@@ -49,7 +43,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(31)
     public void snakeCaseBoolFails() {
         assertThrows(BashpileUncheckedException.class, () -> runText("""
                 snake-case-bool-fails: bool = false
@@ -57,7 +50,14 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(40)
+    public void snakeCaseFileWorks() {
+        final ExecutionResults results = runText("""
+                src/test/resources/scripts/snake-case-file-works""");
+        assertSuccessfulExitCode(results);
+        assertEquals("Hello World\n", results.stdout());
+    }
+
+    @Test
     public void intWorks() {
         final ExecutionResults results = runText("print(1701)");
         assertSuccessfulExitCode(results);
@@ -65,7 +65,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(50)
     public void parenIntWorks() {
         final ExecutionResults results = runText("print(((1701)))");
         assertSuccessfulExitCode(results);
@@ -73,7 +72,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(60)
     public void stringWorks() {
         final ExecutionResults results = runText("""
                 print("NCC-1701")""");
@@ -82,7 +80,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(70)
     public void parenStringWorks() {
         final ExecutionResults results = runText("""
                 print(((("hello"))))""");
@@ -91,7 +88,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(80)
     public void escapedStringWorks() {
         final ExecutionResults results = runPath(Path.of("escapedString.bps"));
         assertSuccessfulExitCode(results);
@@ -99,7 +95,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(100)
     public void floatsWork() {
         final ExecutionResults results = runText("""
                 print(.5)
@@ -112,7 +107,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(110)
     public void commentsWork() {
         final ExecutionResults results = runText("""
                 // no leading 0
@@ -128,7 +122,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(120)
     public void blockCommentsWork() {
         final ExecutionResults results = runText("""
                 /*
@@ -156,7 +149,6 @@ class LexerBashpileTest extends BashpileTest {
     }
 
     @Test
-    @Order(130)
     public void bashpileDocsWork() {
         final ExecutionResults results = runText("""
                 /**
