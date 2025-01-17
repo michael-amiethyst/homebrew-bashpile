@@ -54,6 +54,28 @@ public class BashpileMainIntegrationTest extends BashpileTest {
     }
 
     @Test
+    @Timeout(15)
+    @Order(11)
+    public void bpcWithBadCompileMakesNoFiles() throws IOException {
+        log.info("In bpcTranspiles test");
+
+        final Path translatedFilename = Path.of("command.bash");
+        final String command = "target/bpc -c '@'";
+        try {
+            final ExecutionResults results = runWithSdkMan(command);
+            log.debug("Output text:\n{}", results.stdout());
+
+            assertFailedExitCode(results);
+            final List<String> lines = results.stdoutLines();
+            final String lastLine = lines.getLast();
+            assertFalse(lastLine.endsWith(translatedFilename.toString()),
+                    "Expected last line to end with %s but was %s".formatted(translatedFilename, lastLine));
+        } finally {
+            Files.deleteIfExists(translatedFilename);
+        }
+    }
+
+    @Test
     @Timeout(20)
     @Order(11)
     public void bprWorks() throws IOException {

@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -61,6 +62,9 @@ public class BashpileMainHelper {
 
     /**
      * Returns the translation.
+     *
+     * @param bashpileScript The script to compile to Bash.
+     * @param format True means we run shfmt on the output (expensive external call).
      * @throws IOException on bad input file.
      * @throws BashpileUncheckedAssertionException on shellcheck errors.
      */
@@ -114,13 +118,23 @@ public class BashpileMainHelper {
         // lexer
         final CharStream input = CharStreams.fromStream(is);
         final BashpileLexer lexer = new BashpileLexer(input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(ThrowingErrorListener.INSTANCE);
         final CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-        // parser
+        // setup parser
         final BashpileParser parser = new BashpileParser(tokens);
-        final ParseTree tree = parser.program();
+        parser.removeErrorListeners();
+        parser.addErrorListener(ThrowingErrorListener.INSTANCE);
 
-        return transpile(origin, tree);
+        // run parser and rethrow parse exceptions
+        try {
+            // parse at the root EBNF rule -- program
+            final ParseTree tree = parser.program();
+            return transpile(origin, tree);
+        } catch (ParseCancellationException e) {
+            throw new BashpileUncheckedException(e);
+        }
     }
 
     /** Returns bash text block */

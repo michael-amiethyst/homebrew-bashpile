@@ -1,14 +1,14 @@
 package com.bashpile.maintests;
 
-import com.bashpile.exceptions.BashpileUncheckedAssertionException;
+import java.nio.file.Path;
+import java.util.List;
+
+import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.shell.ExecutionResults;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import java.nio.file.Path;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,7 +51,7 @@ class LexerBashpileTest extends BashpileTest {
     @Test
     @Order(31)
     public void snakeCaseBoolFails() {
-        assertThrows(BashpileUncheckedAssertionException.class, () -> runText("""
+        assertThrows(BashpileUncheckedException.class, () -> runText("""
                 snake-case-bool-fails: bool = false
                 print(snake-case-bool-fails)"""));
     }
@@ -164,7 +164,7 @@ class LexerBashpileTest extends BashpileTest {
                     really starting to shape up.
                     It will replace Bash.
                 */
-                                
+                
                 // commented-out bashpileDoc
                 /*
                 /**
@@ -172,10 +172,10 @@ class LexerBashpileTest extends BashpileTest {
                 Bash came to us, complex and
                 tricky.  A new day dawns.
                 */*/
-                                
+                
                 // no leading 0
                 print(.5)
-                                
+                
                 // leading whole number
                 print(1.7)
                 """);

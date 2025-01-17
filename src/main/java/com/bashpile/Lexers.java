@@ -12,6 +12,8 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -144,8 +146,10 @@ public class Lexers {
                 COMMAND_TO_VALIDITY_CACHE.put(command, ret);
                 return ret;
             } else if (FILE_PATTERN.matcher(command).matches() && !BASHPILE_KEYWORDS.contains(command)) {
-                COMMAND_TO_VALIDITY_CACHE.put(command, true);
-                return true;
+                final Path path = Path.of(command);
+                final boolean valid = Files.exists(path) && Files.isRegularFile(path) && Files.isExecutable(path);
+                COMMAND_TO_VALIDITY_CACHE.put(command, valid);
+                return valid;
             } else {
                 COMMAND_TO_VALIDITY_CACHE.put(command, false);
                 return false;
