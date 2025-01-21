@@ -501,7 +501,6 @@ public class BashTranslationEngine implements TranslationEngine {
         List<Translation> argumentTranslationsList = ctx.argumentList() != null
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
-                        .map(Translation::inlineAsNeeded)
                         .toList()
                 : List.of();
         argumentTranslationsList = new ArrayList<>(argumentTranslationsList); // make mutable
@@ -524,13 +523,13 @@ public class BashTranslationEngine implements TranslationEngine {
         // collapse argumentTranslationsList to a single translation
         Translation argumentTranslations = UNKNOWN_TRANSLATION;
         if (!argumentTranslationsList.isEmpty()) {
-            argumentTranslations = toStringTranslation(" ").add(argumentTranslationsList.stream()
-                    // only add quotes if needed
-                    .map(tr -> !(tr.body().startsWith("\"") && tr.body().endsWith("\"")) ? tr.quoteBody() : tr)
+            argumentTranslations = new Translation(" ").add(argumentTranslationsList.stream()
+                    .map(Translation::ensureQuoted)
+                    // metadata is processed during the .body() calls so no metadata in final Translation
                     .reduce((left, right) -> new Translation(
                             left.body() + " " + right.body(),
-                            right.type(),
-                            right.metadata()))
+                            left.type().add(right.type()),
+                            Set.of()))
                     .orElseThrow());
         }
 
@@ -617,11 +616,12 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation argumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx) {
         LOG.trace("In argumentsBuiltinExpression");
+        // argument value could be anything, so use default unknown type
         if (ctx.argumentsBuiltin().NumberValues() != null) {
-            return toStringTranslation("$" + ctx.argumentsBuiltin().NumberValues().getText());
+            return new Translation("$" + ctx.argumentsBuiltin().NumberValues().getText());
         } else {
             // arguments[all]
-            return toStringTranslation("$@");
+            return new Translation("$@");
         }
     }
 

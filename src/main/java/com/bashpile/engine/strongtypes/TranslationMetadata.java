@@ -24,6 +24,8 @@ public enum TranslationMetadata {
     CONDITIONAL,
     /** Parenthesis were removed */
     PARENTHESIZED,
+    /** Surrounds with double quotes during toString rendering */
+    QUOTE,
     /** Like '-r' */
     OPTION
 }

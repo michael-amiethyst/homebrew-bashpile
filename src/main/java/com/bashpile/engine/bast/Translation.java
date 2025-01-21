@@ -2,6 +2,7 @@ package com.bashpile.engine.bast;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -11,6 +12,7 @@ import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -338,6 +340,10 @@ public class Translation implements TreeNode<String> {
         return new Translation(body, type, meta, children);
     }
 
+    public @Nonnull Translation addMetadata(@Nonnull final TranslationMetadata meta) {
+        return new Translation(body, type, Sets.union(metadata, Set.of(meta)), children);
+    }
+
     public @Nonnull Translation removeMetadata(@Nonnull final TranslationMetadata meta) {
         var nextMetadata = new TreeSet<>(metadata);
         nextMetadata.remove(meta);
@@ -364,6 +370,20 @@ public class Translation implements TreeNode<String> {
         return this;
     }
 
+    /** Only add quotes (as metadata) as needed */
+    public @Nonnull Translation ensureQuoted() {
+        Translation tr = new Translation(body, type, metadata, children);
+        Predicate<TreeNode<String>> alreadyQuoted = c -> {
+            final String renderedBody = ((Translation) c).body();
+            return renderedBody.startsWith("\"") && renderedBody.endsWith("\"");
+        };
+        boolean allQuoted = tr.getChildren().stream().allMatch(alreadyQuoted);
+        if (tr.metadata().contains(CALCULATION) || tr.body.equals("$@")) {
+            allQuoted &= alreadyQuoted.test(tr);
+        }
+        return allQuoted ? tr : tr.addMetadata(TranslationMetadata.QUOTE);
+    }
+
     @Override
     public String toString() {
         return getData();
@@ -378,7 +398,13 @@ public class Translation implements TreeNode<String> {
                     + children.stream().map(tr -> stripStart(tr.body, stripChars)).collect(Collectors.joining());
         }
         final String processedBody = new Translation(body, type, metadata).inlineAsNeeded().body;
-        return processedBody + children.stream().map(Translation::getData).collect(Collectors.joining());
+        String ret = processedBody + children.stream().map(Translation::getData).collect(Collectors.joining());
+        if (!metadata.contains(QUOTE)) {
+            return ret;
+        } else {
+            return """
+                    "%s\"""".formatted(processedBody);
+        }
     }
 
     // helpers

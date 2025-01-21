@@ -168,7 +168,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                         printf -- "${tr.unquoteBody().body()}\n"
                         
                         """.trimIndent()
-                    )
+                    ).removeMetadata(QUOTE) // we add quotes in the new body
                 } else if (tr.isBasicType && !tr.isListAccess /* and a CONDITIONAL */) {
                     // body will already contain [ ... -eq 1 ]
                     tr.body("""
