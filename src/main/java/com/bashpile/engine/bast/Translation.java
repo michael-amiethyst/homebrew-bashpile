@@ -253,6 +253,7 @@ public class Translation implements TreeNode<String> {
      */
     public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
         final List<Translation> modifiedChildren = children.stream().map(tr -> tr.lambdaBody(lambda)).toList();
+        // KEEP metadata
         return new Translation(lambda.apply(body), type, metadata, modifiedChildren);
     }
 
@@ -261,6 +262,7 @@ public class Translation implements TreeNode<String> {
      */
     public @Nonnull Translation lambdaBodyLines(@Nonnull final Function<String, String> lambda) {
         final List<Translation> modifiedChildren = children.stream().map(tr -> tr.lambdaBodyLines(lambda)).toList();
+        // KEEP metadata
         return new Translation(lambdaAllLines(body, lambda), type, metadata, modifiedChildren);
     }
 
@@ -356,6 +358,7 @@ public class Translation implements TreeNode<String> {
      *
      * @return Converts body to an inline and change the type metadata to {@link TranslationMetadata#INLINE}.
      */
+    // TODO feature/bast - Remove external calls to make private
     public @Nonnull Translation inlineAsNeeded() {
         if (metadata.contains(NEEDS_INLINING)) {
             // function calls may have redirect to /dev/null if only side effects needed

@@ -2,7 +2,9 @@ package com.bashpile.engine.bast;
 
 import java.util.stream.Stream;
 
+import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
+import com.bashpile.engine.strongtypes.Type;
 import org.junit.jupiter.api.Test;
 
 import static com.bashpile.engine.bast.Translation.toStringTranslation;
@@ -59,5 +61,18 @@ class TranslationTest {
         assertFalse(t2.getChildren().isEmpty());
         assertEquals(t1.getChildren().size(), t2.getChildren().size());
         assertFalse(t2.getChildren().getFirst().getData().contains("ls"));
+    }
+
+    @Test
+    public void getDataCanBeCalledRepeatedly() {
+        Translation tr = new Translation("ls", Type.STR_TYPE, TranslationMetadata.NEEDS_INLINING);
+        // should have a single $ at start of string
+        String[] parts = tr.getData().split("\\$");
+        assertEquals(2, parts.length);
+        assertTrue(Strings.isBlank(parts[0]));
+        // even if called twice
+        parts = tr.getData().split("\\$");
+        assertEquals(2, parts.length);
+        assertTrue(Strings.isBlank(parts[0]));
     }
 }

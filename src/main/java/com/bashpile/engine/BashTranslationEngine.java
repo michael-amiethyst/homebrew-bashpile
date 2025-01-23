@@ -566,10 +566,8 @@ public class BashTranslationEngine implements TranslationEngine {
         LOG.trace("In binaryPrimaryExpression");
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
         String primary = ctx.binaryPrimary().getText();
-        final Translation firstTranslation =
-                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded();
-        final Translation secondTranslation =
-                visitor.visit(ctx.getChild(2)).inlineAsNeeded();
+        final Translation firstTranslation = requireNonNull(visitor).visit(ctx.getChild(0));
+        final Translation secondTranslation = visitor.visit(ctx.getChild(2));
 
         // we do some checks for strict equals and strict not equals
         final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
