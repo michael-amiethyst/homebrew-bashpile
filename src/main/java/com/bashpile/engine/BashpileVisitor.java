@@ -65,7 +65,7 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
         final Optional<Translation> optional = IntStream.range(0, ctx.getChildCount())
                 .mapToObj(ctx::getChild)
                 .map(this::visit)
-                .reduce(Translation::add);
+                .reduce(Translation::addChild);
         if (optional.isPresent()) {
             return optional.get();
         } else {
@@ -85,15 +85,15 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
                 .map(antlrParseTree -> {
                     // this replaces the "preambles" concept
                     final Translation r = this.visit(antlrParseTree);
-                    return translator.getExpressionSetup().add(r);
+                    return translator.getExpressionSetup().addChild(r);
                 })
-                .reduce(Translation::add)
+                .reduce(Translation::addChild)
                 .orElseThrow();
 
         // add header, libs and statements
         return translator.originHeader()
-                .add(translator.strictModeHeader())
-                .add(statementsTranslations);
+                .addChild(translator.strictModeHeader())
+                .addChild(statementsTranslations);
     }
 
     // visit statements
@@ -284,6 +284,6 @@ public class BashpileVisitor extends BashpileParserBaseVisitor<Translation> {
 
     @Override
     public Translation visitShellLineStatement(BashpileParser.ShellLineStatementContext ctx) {
-        return visit(ctx.ShellLine()).add(NEWLINE);
+        return visit(ctx.ShellLine()).addChild(NEWLINE);
     }
 }

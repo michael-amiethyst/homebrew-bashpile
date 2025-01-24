@@ -50,7 +50,7 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public @Nonnull Translation add(@Nonnull final TreeNode<String> other) {
+    public @Nonnull Translation addChild(@Nonnull final TreeNode<String> other) {
         translations.add((Translation) other);
         return this;
     }
@@ -133,7 +133,7 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public String getData() {
+    public String render() {
         return body();
     }
 

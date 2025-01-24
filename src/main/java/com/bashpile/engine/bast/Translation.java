@@ -13,7 +13,6 @@ import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,6 +21,8 @@ import static com.bashpile.Asserts.assertIsParagraph;
 import static com.bashpile.Strings.lambdaAllLines;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
+import static com.google.common.collect.Sets.union;
+import static com.google.common.collect.Streams.concat;
 import static org.apache.commons.lang3.StringUtils.stripStart;
 
 /**
@@ -151,7 +152,7 @@ public class Translation implements TreeNode<String> {
      * Accumulates all the stream translations' bodies into the result
      */
     public static @Nonnull Translation toTranslation(@Nonnull final Stream<Translation> stream) {
-        return stream.reduce(Translation::add).orElseThrow();
+        return stream.reduce(Translation::addChild).orElseThrow();
     }
 
     // instance methods
@@ -159,16 +160,22 @@ public class Translation implements TreeNode<String> {
     /**
      * Concatenates other's body, type and metadata to this object's
      */
-    public @Nonnull Translation add(@Nonnull final TreeNode<String> node) {
-        final List<Translation> modifiedChildren =
-                Streams.concat(children.stream(), Stream.of((Translation) node)).toList();
+    public @Nonnull Translation append(@Nonnull final TreeNode<String> right) {
+        final Translation l = this;
+        final Translation r = (Translation) right;
+        return new Translation(
+                l.render() + r.render(), Type.STR_TYPE, union(l.getMetadata(), r.getMetadata()));
+    }
+
+    public @Nonnull Translation addChild(@Nonnull final TreeNode<String> node) {
+        final List<Translation> modifiedChildren = concat(children.stream(), Stream.of((Translation) node)).toList();
         return new Translation(this.body, this.type, this.metadata, modifiedChildren);
     }
 
     @Override
-    public TreeNode<String> addAll(Stream<TreeNode<String>> stream) {
+    public TreeNode<String> addAllChildren(Stream<TreeNode<String>> stream) {
         final List<Translation> modifiedChildren =
-                Streams.concat(children.stream(), stream.map(x->(Translation) x)).toList();
+                concat(children.stream(), stream.map(x->(Translation) x)).toList();
         return new Translation(this.body, this.type, this.metadata, modifiedChildren);
     }
 
@@ -336,7 +343,7 @@ public class Translation implements TreeNode<String> {
     ////////////////////////////////////
 
     /** Returns a deep copy of the metadata */
-    public @Nonnull Set<TranslationMetadata> getMetadata() {
+    protected @Nonnull Set<TranslationMetadata> getMetadata() {
         return new TreeSet<>(metadata);
     }
 
@@ -352,9 +359,7 @@ public class Translation implements TreeNode<String> {
     }
 
     public @Nonnull Translation removeMetadata(@Nonnull final TranslationMetadata meta) {
-        var nextMetadata = new TreeSet<>(metadata);
-        nextMetadata.remove(meta);
-        return new Translation(body, type, nextMetadata, children);
+        return new Translation(body, type, Sets.difference(metadata, Set.of(meta)), children);
     }
 
     public boolean hasMetadata() {
@@ -410,11 +415,11 @@ public class Translation implements TreeNode<String> {
 
     @Override
     public String toString() {
-        return getData();
+        return render();
     }
 
     @Override
-    public String getData() {
+    public String render() {
         LOG.trace("Processing getData for hash {}", body.hashCode());
         if (metadata.contains(OPTION) && children.stream().allMatch(tr -> tr.metadata.contains(OPTION))) {
             final String stripChars = " -";
@@ -422,7 +427,7 @@ public class Translation implements TreeNode<String> {
                     + children.stream().map(tr -> stripStart(tr.body, stripChars)).collect(Collectors.joining());
         }
         final String processedBody = new Translation(body, type, metadata).inlineAsNeeded().body;
-        String ret = processedBody + children.stream().map(Translation::getData).collect(Collectors.joining());
+        String ret = processedBody + children.stream().map(Translation::render).collect(Collectors.joining());
         if (!metadata.contains(QUOTE)) {
             return ret;
         } else {
@@ -447,7 +452,7 @@ public class Translation implements TreeNode<String> {
     }
 
     public @Nonnull String body() {
-        return getData();
+        return render();
     }
 
     public @Nonnull Type type() {

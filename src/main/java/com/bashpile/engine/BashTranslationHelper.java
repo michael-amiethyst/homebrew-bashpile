@@ -65,7 +65,7 @@ public class BashTranslationHelper {
         return statements.stream()
                 .map(visitor::visit)
                 .map(tr -> tr.lambdaBodyLines(str -> TAB + str))
-                .reduce(Translation::add)
+                .reduce(Translation::addChild)
                 .orElseThrow();
     }
 
@@ -174,7 +174,7 @@ public class BashTranslationHelper {
         final Translation pattern = patternAndStatementPair.getLeft();
         final Translation statements = patternAndStatementPair.getRight().stream()
                 .map(tr -> tr.lambdaBodyLines(x -> "    " + x))
-                .reduce(Translation::add)
+                .reduce(Translation::addChild)
                 .orElseThrow();
         // second string is indented so will be inline with the ';;'
         final String template = """

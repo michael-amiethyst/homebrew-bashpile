@@ -142,7 +142,7 @@ public class BashpileMainHelper {
         // visitor and engine linked in visitor constructor
         final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine(origin));
         final Translation visited = bashpileLogic.visit(tree);
-        return visited.getData();
+        return visited.render();
     }
 
     /**

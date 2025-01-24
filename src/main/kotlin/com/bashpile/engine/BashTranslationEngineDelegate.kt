@@ -130,7 +130,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                     .lambdaBody { it.replace("exit 1", "return 1") }
                 }.toList()
             val blockAccumulator = rawBlockAccumulator
-                .reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
+                .reduce { obj: Translation, other: Translation? -> obj.addChild(other!!) }
 
             // put it all together in one big translation
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
@@ -144,7 +144,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 """.trimMargin() + "\n"
             val functionDeclaration = toStringTranslation(functionText)
             val comment = createCommentTranslation("function declaration", lineNumber(ctx))
-            comment.add(functionDeclaration)
+            comment.addChild(functionDeclaration)
         }
     }
 
@@ -185,7 +185,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                     )
                 }
             }
-        return comment.addAll(arguments) as Translation
+        return comment.addAllChildren(arguments) as Translation
     }
 
     fun returnPsudoStatement(ctx: BashpileParser.ReturnPsudoStatementContext, typeStack: TypeStack): Translation {
@@ -232,7 +232,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         if (isNumericCalculation) {
             exprTranslation = exprTranslation.removeMetadata(NEEDS_INLINING)
         }
-        return comment.add(exprTranslation)
+        return comment.addChild(exprTranslation)
     }
 
     fun parenthesisExpression(ctx: BashpileParser.ParenthesisExpressionContext): Translation {
