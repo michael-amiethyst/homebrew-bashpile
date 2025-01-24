@@ -44,7 +44,7 @@ public class BashTranslationHelper {
         if (ctx == null || ctx.isEmpty()) {
             return UNKNOWN_TRANSLATION;
         }
-        final long lineNumber = lineNumber(ctx.get(0));
+        final long lineNumber = lineNumber(ctx.getFirst());
 
         // check readonly declarations
         final long readonlys = ctx.stream().filter(typeCtx -> typeCtx.Readonly() != null).count();

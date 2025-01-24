@@ -116,13 +116,7 @@ public class ListOfTranslation extends Translation {
 
     @Nonnull
     @Override
-    public Translation metadata(@Nonnull TranslationMetadata meta) {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
-    }
-
-    @Nonnull
-    @Override
-    public Translation metadata(@Nonnull Set<TranslationMetadata> meta) {
+    public Translation replaceMetadata(@Nonnull TranslationMetadata meta) {
         throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
 
@@ -149,7 +143,7 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public @Nonnull Set<TranslationMetadata> metadata() {
-        return super.metadata();
+    public @Nonnull Set<TranslationMetadata> getMetadata() {
+        return super.getMetadata();
     }
 }

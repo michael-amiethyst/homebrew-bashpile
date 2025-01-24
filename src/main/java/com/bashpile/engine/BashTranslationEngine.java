@@ -29,6 +29,7 @@ import static com.bashpile.engine.BashTranslationHelper.*;
 import static com.bashpile.engine.bast.Translation.*;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.*;
 import static com.bashpile.engine.strongtypes.Type.*;
+import static com.google.common.collect.Sets.union;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -319,13 +320,13 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation rhsExprTranslation = UNKNOWN_TRANSLATION;
         if (rhsExprExists) {
             rhsExprTranslation = requireNonNull(visitor).visit(ctx.expression());
-            if (rhsExprTranslation.metadata().contains(CONDITIONAL)) {
+            if (rhsExprTranslation.hasMetadata(CONDITIONAL)) {
                 rhsExprTranslation = rhsExprTranslation
                         .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
-                        .metadata(INLINE);
+                        .replaceMetadata(INLINE);
             }
             // add quotes if needed
-            if (rhsExprTranslation.isStr() && rhsExprTranslation.metadata().contains(NORMAL)) {
+            if (rhsExprTranslation.isStr() && rhsExprTranslation.hasMetadata(NORMAL)) {
                 rhsExprTranslation = rhsExprTranslation.lambdaBody(str -> {
                     str = StringUtils.prependIfMissing(str, "\"");
                     return StringUtils.appendIfMissing(str, "\"");
@@ -342,7 +343,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean isList = ctxTypeString.equalsIgnoreCase(LIST_TYPE.mainTypeName().name());
         if (isList) {
             // make the declaration for a Bash non-associative array
-            final Translation arrayOption = toStringTranslation("a").metadata(OPTION);
+            final Translation arrayOption = toStringTranslation("a").replaceMetadata(OPTION);
             modifiers = modifiers.add(arrayOption);
         }
         final Translation variableDeclaration =
@@ -359,7 +360,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // order is comment, variable declaration, assignment
         return comment.add(getExpressionSetup()).add(variableDeclaration).add(assignment)
-                .type(NA_TYPE).metadata(NORMAL);
+                .type(NA_TYPE).replaceMetadata(NORMAL);
     }
 
     @Override
@@ -375,10 +376,10 @@ public class BashTranslationEngine implements TranslationEngine {
         // get expression and it's type
         Translation rhsExprTranslation;
         rhsExprTranslation = requireNonNull(visitor).visit(ctx.expression());
-        if (rhsExprTranslation.metadata().contains(CONDITIONAL)) {
+        if (rhsExprTranslation.hasMetadata(CONDITIONAL)) {
             rhsExprTranslation = rhsExprTranslation
                     .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
-                    .metadata(INLINE);
+                    .replaceMetadata(INLINE);
         }
         final Type rhsActualType = rhsExprTranslation.type();
         if (!rhsActualType.isEmpty()) {
@@ -408,7 +409,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 .formatted(lhsVariableName, listAccessor, assignOperator, rhsExprTranslation.body());
         final Translation reassignment = toStringTranslation(reassignmentBody);
 
-        return comment.add(reassignment).assertParagraphBody().type(NA_TYPE).metadata(NORMAL);
+        return comment.add(reassignment).assertParagraphBody().type(NA_TYPE).replaceMetadata(NORMAL);
     }
 
     @Override
@@ -542,7 +543,7 @@ public class BashTranslationEngine implements TranslationEngine {
         if (retType.isStr()) {
             ret = ret.lambdaBody("%s >/dev/null"::formatted);
         }
-        ret = ret.metadata(NEEDS_INLINING);
+        ret = ret.replaceMetadata(NEEDS_INLINING);
         return ret;
     }
 
@@ -690,9 +691,9 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(Translation::inlineAsNeeded)
                 .reduce((l, r) -> {
                     if (l.isStr() && r.isStr()) {
-                        Set<TranslationMetadata> nextMeta = new TreeSet<>(l.metadata());
-                        nextMeta.addAll(r.metadata());
-                        return new Translation(l.getData() + r.getData(), Type.STR_TYPE, nextMeta);
+                        // TODO feature/bast encapsulate in .append, change .add to .addChild
+                        return new Translation(
+                                l.getData() + r.getData(), Type.STR_TYPE, union(l.getMetadata(), r.getMetadata()));
                     } // else
                     return l.add(r);
                 })
@@ -703,7 +704,7 @@ public class BashTranslationEngine implements TranslationEngine {
 
         // a subshell does NOT need inlining often, see conditionalStatement
         if (!Strings.inParentheses(contentsTranslation.body())) {
-            contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING);
+            contentsTranslation = contentsTranslation.replaceMetadata(NEEDS_INLINING);
         }
 
         return contentsTranslation.unescapeBody();

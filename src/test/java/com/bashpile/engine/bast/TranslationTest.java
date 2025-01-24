@@ -21,9 +21,9 @@ class TranslationTest {
     }
 
     @Test
-    public void addOptionWithMetadataWorks() {
-        final Translation option1 = toStringTranslation("-r").metadata(TranslationMetadata.OPTION);
-        final Translation option2 = toStringTranslation("-x").metadata(TranslationMetadata.OPTION);
+    public void addOptionWithReplaceMetadataWorks() {
+        final Translation option1 = toStringTranslation("-r").replaceMetadata(TranslationMetadata.OPTION);
+        final Translation option2 = toStringTranslation("-x").replaceMetadata(TranslationMetadata.OPTION);
         assertEquals("-rx", option1.add(option2).toString());
         assertEquals("-rx", option1.add(option2).getData());
     }
@@ -75,4 +75,6 @@ class TranslationTest {
         assertEquals(2, parts.length);
         assertTrue(Strings.isBlank(parts[0]));
     }
+
+    // TODO feature/bast write test to ensure that lambdaBody only changes the render and not the body field
 }

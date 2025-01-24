@@ -52,7 +52,7 @@ public class TypecastUtils {
             @Nonnull final Type castTo,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        if (!expression.metadata().contains(CALCULATION)) {
+        if (!expression.hasMetadata(CALCULATION)) {
             // parse expression to a BigInteger
             try {
                 new BigInteger(expression.body());
@@ -111,8 +111,7 @@ public class TypecastUtils {
             if (!varName.matches("\\d")) {
                 String setupStatementText;
                 // only convert normal variables with printf (not calculations, etc.)
-                if (expression.metadata().isEmpty()
-                        || (expression.metadata().size() == 1 && expression.metadata().contains(NORMAL))) {
+                if (expression.hasMetadata() || expression.metadataOnlyHas(NORMAL)) {
                     setupStatementText = """
                             %s="$(printf '%%d' "%s" 2>/dev/null || true)"
                             """.formatted(varName, expression);

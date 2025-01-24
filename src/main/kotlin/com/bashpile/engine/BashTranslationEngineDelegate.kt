@@ -163,7 +163,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             .map(requireNonNull(visitor)::visit)
             .map{ tr: Translation -> tr.inlineAsNeeded() }
             .map { tr: Translation ->
-                if (tr.isBasicType && !tr.isListAccess && !tr.metadata().contains(CONDITIONAL)) {
+                if (tr.isBasicType && !tr.isListAccess && !tr.hasMetadata(CONDITIONAL)) {
                     tr.body("""
                         printf -- "${tr.unquoteBody().body()}\n"
                         
@@ -214,11 +214,11 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
 
         val comment = createCommentTranslation("return statement", lineNumber(ctx))
         // e.g. a constant like "42"
-        val isNormalNumber = exprTranslation.isNumeric && exprTranslation.metadata().contains(NORMAL)
+        val isNormalNumber = exprTranslation.isNumeric && exprTranslation.hasMetadata(NORMAL)
         // e.g. $(( ... ))
-        val isIntCalculation = exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)
+        val isIntCalculation = exprTranslation.type() == Type.INT_TYPE && exprTranslation.hasMetadata(CALCULATION)
         // e.g. $(bc ...)
-        val isNumericCalculation = exprTranslation.isNumeric && exprTranslation.metadata().contains(CALCULATION)
+        val isNumericCalculation = exprTranslation.isNumeric && exprTranslation.hasMetadata(CALCULATION)
         val returnLineLambda = { str: String ->
             if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {
                 "printf -- \"${Strings.unquote(str)}\"\n"
@@ -241,7 +241,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val ret: Translation = visitor.visit(ctx.expression())
 
         // only add parenthesis back in for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
-        return ret.metadata(ret.metadata() + PARENTHESIZED)
+        return ret.addMetadata(PARENTHESIZED)
     }
 
     fun calculationExpression(ctx: BashpileParser.CalculationExpressionContext): Translation {
@@ -259,8 +259,8 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             // Integers, we can use the $(( )) syntax
             childTranslations = childTranslations.map {
                 val ret = it.lambdaBody { body -> body.removeSurrounding("$(( ", " ))") }
-                if (ret.metadata().contains(PARENTHESIZED)) {
-                    ret.metadata(it.metadata() - PARENTHESIZED).parenthesizeBody()
+                if (ret.hasMetadata(PARENTHESIZED)) {
+                    ret.removeMetadata(PARENTHESIZED).parenthesizeBody()
                 } else ret
             }
             val translationsString = childTranslations.joinToString(" ") { it.body() }
@@ -269,10 +269,10 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         } else if (Translation.areNumericExpressions(first, second)) {
             // Numbers -- We need the Basic Calculator to process
             childTranslations = childTranslations.map {
-                if (it.metadata().contains(CALCULATION) && it.type() != Type.INT_TYPE) { unwrapCalculation(it) } else it
+                if (it.hasMetadata(CALCULATION) && it.type() != Type.INT_TYPE) { unwrapCalculation(it) } else it
             }.map {
-                if (it.metadata().contains(PARENTHESIZED)) {
-                    it.metadata(it.metadata() - PARENTHESIZED).parenthesizeBody()
+                if (it.hasMetadata(PARENTHESIZED)) {
+                    it.removeMetadata(PARENTHESIZED).parenthesizeBody()
                 } else it
             }
             // first happy path executed, assume no nesting
@@ -353,7 +353,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         var translations = listOf(visitor.visit(ctx.getChild(0)), visitor.visit(ctx.getChild(2)))
         translations = translations.map {
             var ret = it.inlineAsNeeded()
-            if (ret.metadata().contains(PARENTHESIZED)) {
+            if (ret.hasMetadata(PARENTHESIZED)) {
                 // wrap in a block and add an end-of-statement
                 ret = ret.body("{ ${ret.body()}; }")
             }
@@ -361,6 +361,6 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         }
 
         val body = "${translations[0].unquoteBody().body()} $operator ${translations[1].unquoteBody().body()}"
-        return toStringTranslation(body).metadata(CONDITIONAL)
+        return toStringTranslation(body).replaceMetadata(CONDITIONAL)
     }
 }

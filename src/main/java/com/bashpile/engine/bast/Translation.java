@@ -251,6 +251,7 @@ public class Translation implements TreeNode<String> {
     /**
      * Apply arbitrary function to body.  E.g. `str -> str`.
      */
+    // TODO feature/bast queue up lambdaBody methods to apply during getData/render so it can be re-rendered when the metadata changes
     public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
         final List<Translation> modifiedChildren = children.stream().map(tr -> tr.lambdaBody(lambda)).toList();
         // KEEP metadata
@@ -274,7 +275,9 @@ public class Translation implements TreeNode<String> {
         return this;
     }
 
-    // type and typeMetadata instance methods
+    /////////////////////////////////////////
+    // type related instance methods
+    /////////////////////////////////////////
 
     /**
      * Replaces the type.
@@ -328,18 +331,20 @@ public class Translation implements TreeNode<String> {
         return type.isStr();
     }
 
-    /**
-     * Replaces the type metadata
-     */
-    public @Nonnull Translation metadata(@Nonnull final TranslationMetadata meta) {
-        return new Translation(body, type, Set.of(meta), children);
+    ////////////////////////////////////
+    // metadata related instance methods
+    ////////////////////////////////////
+
+    /** Returns a deep copy of the metadata */
+    public @Nonnull Set<TranslationMetadata> getMetadata() {
+        return new TreeSet<>(metadata);
     }
 
     /**
      * Replaces the type metadata
      */
-    public @Nonnull Translation metadata(@Nonnull final Set<TranslationMetadata> meta) {
-        return new Translation(body, type, meta, children);
+    public @Nonnull Translation replaceMetadata(@Nonnull final TranslationMetadata meta) {
+        return new Translation(body, type, Set.of(meta), children);
     }
 
     public @Nonnull Translation addMetadata(@Nonnull final TranslationMetadata meta) {
@@ -351,6 +356,22 @@ public class Translation implements TreeNode<String> {
         nextMetadata.remove(meta);
         return new Translation(body, type, nextMetadata, children);
     }
+
+    public boolean hasMetadata() {
+        return metadata.isEmpty();
+    }
+
+    public boolean hasMetadata(@Nonnull final TranslationMetadata meta) {
+        return metadata.contains(meta);
+    }
+
+    public boolean metadataOnlyHas(@Nonnull final TranslationMetadata meta) {
+        return metadata.size() == 1 && hasMetadata(meta);
+    }
+
+    /////////////////////////
+    // Other instance methods
+    /////////////////////////
 
     /**
      * Create an inline Translation if this is a {@link TranslationMetadata#NEEDS_INLINING} translation.
@@ -381,7 +402,7 @@ public class Translation implements TreeNode<String> {
             return renderedBody.startsWith("\"") && renderedBody.endsWith("\"");
         };
         boolean allQuoted = tr.getChildren().stream().allMatch(alreadyQuoted);
-        if (tr.metadata().contains(CALCULATION) || tr.body.equals("$@")) {
+        if (tr.hasMetadata(CALCULATION) || tr.body.equals("$@")) {
             allQuoted &= alreadyQuoted.test(tr);
         }
         return allQuoted ? tr : tr.addMetadata(TranslationMetadata.QUOTE);
@@ -431,10 +452,6 @@ public class Translation implements TreeNode<String> {
 
     public @Nonnull Type type() {
         return type;
-    }
-
-    public @Nonnull Set<TranslationMetadata> metadata() {
-        return metadata;
     }
 
     @Override
