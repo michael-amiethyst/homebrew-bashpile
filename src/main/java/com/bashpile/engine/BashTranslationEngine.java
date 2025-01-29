@@ -181,7 +181,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final Translation whileTranslation = Translation.toStringTranslation("""
                 while %s; do
                 %sdone
-                """.formatted(gate.body(), bodyStatements.body()));
+                """.formatted(gate.render(), bodyStatements.render()));
         return comment.addChild(whileTranslation);
     }
 
@@ -220,7 +220,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     ctx.functionBlock().statement(), requireNonNull(visitor));
             // define function and then call immediately with no arguments
             final Translation selfCallingAnonymousFunction = toStringTranslation("%s () {\n%s}; %s\n"
-                    .formatted(anonymousFunctionName, blockStatements.body(), anonymousFunctionName));
+                    .formatted(anonymousFunctionName, blockStatements.render(), anonymousFunctionName));
             return comment.addChild(selfCallingAnonymousFunction);
         }
     }
@@ -265,12 +265,12 @@ public class BashTranslationEngine implements TranslationEngine {
                     else
                     %s""".formatted(elseBlockStatements).stripTrailing();
         }
-        final String ifBlock = ifBlockStatements.body().stripTrailing();
+        final String ifBlock = ifBlockStatements.render().stripTrailing();
         final String conditional = """
                 if %s; then
                 %s%s%s
                 fi
-                """.formatted(guard.body(), ifBlock, elseIfBlock, elseBlock);
+                """.formatted(guard.render(), ifBlock, elseIfBlock, elseBlock);
         return toStringTranslation(conditional);
     }
 
@@ -285,7 +285,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(x -> x.lambdaBody(str -> str.replace("||", "|")))
                 .map(tr -> {
                     // unquote a catchAll
-                    if (tr.body().equals("\"*\"")) {
+                    if (tr.render().equals("\"*\"")) {
                         tr = tr.unquoteBody();
                     }
                     return tr;
@@ -300,7 +300,7 @@ public class BashTranslationEngine implements TranslationEngine {
         final String template = """
                 case %s in
                 %sesac
-                """.formatted(expressionTranslation.body(), cases.body());
+                """.formatted(expressionTranslation.render(), cases.render());
         final Translation comment = createCommentTranslation("switch statement", lineNumber(ctx));
         return comment.addChild(toStringTranslation(template));
     }
@@ -346,7 +346,7 @@ public class BashTranslationEngine implements TranslationEngine {
             modifiers = modifiers.addChild(arrayOption);
         }
         final Translation variableDeclaration =
-                toStringTranslation("declare %s %s\n".formatted(modifiers.body(), lhsVariableName));
+                toStringTranslation("declare %s %s\n".formatted(modifiers.render(), lhsVariableName));
 
         final boolean isListAssignment = lhsType.isList() && rhsExprTranslation.isList();
         if (isListAssignment && !rhsExprTranslation.isListOf()) {
@@ -354,7 +354,8 @@ public class BashTranslationEngine implements TranslationEngine {
             rhsExprTranslation = rhsExprTranslation.quoteBody().parenthesizeBody().toTrueArray();
         }
         // merge expr into the assignment
-        final String assignmentBody = rhsExprExists ? "%s=%s\n".formatted(lhsVariableName, rhsExprTranslation.body()) : "";
+        final String assignmentBody = rhsExprExists ?
+                "%s=%s\n".formatted(lhsVariableName, rhsExprTranslation.render()) : "";
         final Translation assignment = toStringTranslation(assignmentBody);
 
         // order is comment, variable declaration, assignment
@@ -405,7 +406,7 @@ public class BashTranslationEngine implements TranslationEngine {
         }
         // merge rhsExprTranslation into reassignment
         final String reassignmentBody = "%s%s%s%s\n"
-                .formatted(lhsVariableName, listAccessor, assignOperator, rhsExprTranslation.body());
+                .formatted(lhsVariableName, listAccessor, assignOperator, rhsExprTranslation.render());
         final Translation reassignment = toStringTranslation(reassignmentBody);
 
         return comment.addChild(reassignment).assertParagraphBody().type(NA_TYPE).replaceMetadata(NORMAL);
@@ -527,7 +528,7 @@ public class BashTranslationEngine implements TranslationEngine {
                     .map(Translation::ensureQuoted)
                     // metadata is processed during the .body() calls so no metadata in final Translation
                     .reduce((left, right) -> new Translation(
-                            left.body() + " " + right.body(),
+                            left.render() + " " + right.render(),
                             left.type().add(right.type()),
                             Set.of()))
                     .orElseThrow());
@@ -536,7 +537,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // lookup return type of this function
         final Type retType = expectedTypes.returnType();
 
-        Translation ret = new Translation(functionName + argumentTranslations.body(), retType, Set.of(NORMAL));
+        Translation ret = new Translation(functionName + argumentTranslations.render(), retType, Set.of(NORMAL));
         // suppress output if we are printing to output as part of a work-around to return a string
         // this covers the case of calling a function without using the return
         if (retType.isStr()) {
@@ -601,8 +602,8 @@ public class BashTranslationEngine implements TranslationEngine {
                 case "<", ">" -> primary = "\\" + primary;
             }
         }
-        body = body.formatted(not, firstTranslation.unquoteBody().body(), primary,
-                secondTranslation.unquoteBody().body());
+        body = body.formatted(not, firstTranslation.unquoteBody().render(), primary,
+                secondTranslation.unquoteBody().render());
         return new Translation(body, BOOL_TYPE, CONDITIONAL);
     }
 
@@ -700,7 +701,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 .type(UNKNOWN_TYPE);
 
         // a subshell does NOT need inlining often, see conditionalStatement
-        if (!Strings.inParentheses(contentsTranslation.body())) {
+        if (!Strings.inParentheses(contentsTranslation.render())) {
             contentsTranslation = contentsTranslation.replaceMetadata(NEEDS_INLINING);
         }
 

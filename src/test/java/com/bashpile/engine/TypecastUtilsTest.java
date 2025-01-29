@@ -79,7 +79,7 @@ class TypecastUtilsTest {
         Translation str = new Translation("1.5", STR_TYPE, Set.of());
         Translation converted = TypecastUtils.typecastFromStr(str, INT_TYPE, 0, error);
         assertEquals(INT_TYPE, converted.type());
-        assertEquals("1", converted.body());
+        assertEquals("1", converted.render());
     }
 
     @Test

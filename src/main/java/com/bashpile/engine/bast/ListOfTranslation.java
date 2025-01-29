@@ -42,11 +42,7 @@ public class ListOfTranslation extends Translation {
 
     @Override
     public @Nonnull String body() {
-        String data = translations.stream().map(Translation::body).collect(Collectors.joining(" "));
-        if (quoteBody) {
-            data = "\"%s\"".formatted(data);
-        }
-        return "(%s)".formatted(data);
+        return super.body();
     }
 
     @Override
@@ -129,12 +125,16 @@ public class ListOfTranslation extends Translation {
 
     @Override
     public String toString() {
-        return body();
+        return render();
     }
 
     @Override
     public String render() {
-        return body();
+        String data = translations.stream().map(Translation::render).collect(Collectors.joining(" "));
+        if (quoteBody) {
+            data = "\"%s\"".formatted(data);
+        }
+        return "(%s)".formatted(data);
     }
 
     @Override

@@ -140,7 +140,7 @@ public class BashTranslationHelper {
 
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
     /* package */ static Translation visitGuardingExpression(Translation expressionTranslation) {
-        if (expressionTranslation.type().isInt() && expressionTranslation.body().startsWith("$((")) {
+        if (expressionTranslation.type().isInt() && expressionTranslation.render().startsWith("$((")) {
             // strip initial $ for (( instead of $((
             expressionTranslation = expressionTranslation.lambdaBody(body -> body.substring(1));
         } else if (expressionTranslation.type().isNumeric()) {
@@ -181,7 +181,7 @@ public class BashTranslationHelper {
                 %s)
                 %s
                     ;;
-                """.formatted(pattern.body(), statements.body());
+                """.formatted(pattern.render(), statements.render());
         return toStringTranslation(template).lambdaBodyLines(x -> "    " + x);
     }
 

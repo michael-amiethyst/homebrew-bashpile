@@ -310,7 +310,7 @@ public class Translation implements TreeNode<String> {
 
     /** Does this expand a list or reference all elements of a list? */
     public boolean isListAccess() {
-        return body().contains("$@") || body().contains("[@]");
+        return render().contains("$@") || render().contains("[@]");
     }
 
     /** Is the type UNKNOWN? */
@@ -403,7 +403,7 @@ public class Translation implements TreeNode<String> {
     public @Nonnull Translation ensureQuoted() {
         Translation tr = new Translation(body, type, metadata, children);
         Predicate<TreeNode<String>> alreadyQuoted = c -> {
-            final String renderedBody = ((Translation) c).body();
+            final String renderedBody = c.render();
             return renderedBody.startsWith("\"") && renderedBody.endsWith("\"");
         };
         boolean allQuoted = tr.getChildren().stream().allMatch(alreadyQuoted);
@@ -451,8 +451,9 @@ public class Translation implements TreeNode<String> {
         }
     }
 
-    public @Nonnull String body() {
-        return render();
+    @VisibleForTesting
+    /* package */ @Nonnull String body() {
+        return body;
     }
 
     public @Nonnull Type type() {

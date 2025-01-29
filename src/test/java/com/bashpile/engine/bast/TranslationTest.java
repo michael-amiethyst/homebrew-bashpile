@@ -8,6 +8,7 @@ import com.bashpile.engine.strongtypes.Type;
 import org.junit.jupiter.api.Test;
 
 import static com.bashpile.engine.bast.Translation.toStringTranslation;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TranslationTest {
@@ -65,7 +66,7 @@ class TranslationTest {
 
     @Test
     public void renderCanBeCalledRepeatedly() {
-        Translation tr = new Translation("ls", Type.STR_TYPE, TranslationMetadata.NEEDS_INLINING);
+        final Translation tr = new Translation("ls", Type.STR_TYPE, NEEDS_INLINING);
         // should have a single $ at start of string
         String[] parts = tr.render().split("\\$");
         assertEquals(2, parts.length);
@@ -74,6 +75,18 @@ class TranslationTest {
         parts = tr.render().split("\\$");
         assertEquals(2, parts.length);
         assertTrue(Strings.isBlank(parts[0]));
+    }
+
+    @Test
+    public void lambdaBodyCanRerender() {
+        Translation tr = new Translation("ls", Type.STR_TYPE, NEEDS_INLINING);
+        tr = tr.lambdaBody("%s > /dev/null"::formatted);
+        assertNotEquals(tr.render(), tr.body());
+        assertEquals("$( ls > /dev/null )", tr.render());
+        tr = tr.addMetadata(TranslationMetadata.QUOTE);
+        assertEquals("\"$( ls > /dev/null )\"", tr.render());
+        tr = tr.removeMetadata(NEEDS_INLINING);
+        assertEquals("\"ls > /dev/null\"", tr.render());
     }
 
     // TODO feature/bast write test to ensure that lambdaBody only changes the render and not the body field
