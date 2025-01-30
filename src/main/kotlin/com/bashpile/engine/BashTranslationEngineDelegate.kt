@@ -8,7 +8,6 @@ import com.bashpile.Strings
 import com.bashpile.engine.BashTranslationHelper.*
 import com.bashpile.engine.bast.Translation
 import com.bashpile.engine.bast.Translation.toStringTranslation
-import com.bashpile.engine.bast.TreeNode
 import com.bashpile.engine.strongtypes.FunctionTypeInfo
 import com.bashpile.engine.strongtypes.ParameterInfo
 import com.bashpile.engine.strongtypes.TranslationMetadata.*
@@ -159,7 +158,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // body
         val lineNumber = lineNumber(ctx)
         val comment = createCommentTranslation("print statement", lineNumber)
-        val arguments: Stream<TreeNode<String>> = argList.expression().stream()
+        val arguments: MutableList<Translation>? = argList.expression().stream()
             .map(requireNonNull(visitor)::visit)
             .map{ tr: Translation -> tr.inlineAsNeeded() }
             .map { tr: Translation ->
@@ -184,7 +183,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                             """.trimIndent()
                     )
                 }
-            }
+            }.toList()
         return comment.addAllChildren(arguments) as Translation
     }
 

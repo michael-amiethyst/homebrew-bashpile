@@ -28,7 +28,7 @@ import static org.apache.commons.lang3.StringUtils.stripStart;
 /**
  * A target shell (e.g. Bash) translation of some Bashpile script.  Immutable.
  */
-public class Translation implements TreeNode<String> {
+public class Translation implements TreeNode<String, Translation> {
 
     // static constants
 
@@ -160,28 +160,28 @@ public class Translation implements TreeNode<String> {
     /**
      * Concatenates other's body, type and metadata to this object's
      */
-    public @Nonnull Translation append(@Nonnull final TreeNode<String> right) {
+    public @Nonnull Translation append(@Nonnull final Translation r) {
         final Translation l = this;
-        final Translation r = (Translation) right;
         return new Translation(
                 l.render() + r.render(), Type.STR_TYPE, union(l.getMetadata(), r.getMetadata()));
     }
 
-    public @Nonnull Translation addChild(@Nonnull final TreeNode<String> node) {
-        final List<Translation> modifiedChildren = concat(children.stream(), Stream.of((Translation) node)).toList();
+    @Override
+    public @Nonnull Translation addChild(@Nonnull final Translation node) {
+        final List<Translation> modifiedChildren = concat(children.stream(), Stream.of(node)).toList();
         return new Translation(this.body, this.type, this.metadata, modifiedChildren);
     }
 
     @Override
-    public TreeNode<String> addAllChildren(Stream<TreeNode<String>> stream) {
-        final List<Translation> modifiedChildren =
-                concat(children.stream(), stream.map(x->(Translation) x)).toList();
+    public Translation addAllChildren(List<Translation> adds) {
+        final List<Translation> modifiedChildren = new ArrayList<>(children);
+        modifiedChildren.addAll(adds);
         return new Translation(this.body, this.type, this.metadata, modifiedChildren);
     }
 
     @VisibleForTesting
-    public List<TreeNode<String>> getChildren() {
-        return children.stream().map(x -> (TreeNode<String>) x).toList();
+    public List<Translation> getChildren() {
+        return new ArrayList<>(children);
     }
 
     // body instance methods
@@ -205,21 +205,26 @@ public class Translation implements TreeNode<String> {
      * Put quotes around body
      */
     public @Nonnull Translation quoteBody() {
-        return lambdaBody("\"%s\""::formatted);
+        // replace any previous quotes with metadata quotes
+        return unquoteBody().addMetadata(QUOTE);
     }
 
     /**
      * Remove quotes around body
      */
     public @Nonnull Translation unquoteBody() {
-        return lambdaBody(Strings::unquote);
+        // quotes may be from other sources than metadata (e.g. parsing)
+        return lambdaBody(Strings::unquote).removeMetadata(QUOTE);
     }
 
     /**
      * Put parenthesis around body
      */
     public @Nonnull Translation parenthesizeBody() {
-        return lambdaBody("(%s)"::formatted);
+        Translation tr = new Translation("", type, Set.of());
+        tr = tr.addChild(toStringTranslation("("));
+        tr = tr.addChild(new Translation(body, type, metadata, children));
+        return tr.addChild(toStringTranslation(")"));
     }
 
     /**
@@ -402,7 +407,7 @@ public class Translation implements TreeNode<String> {
     /** Only add quotes (as metadata) as needed */
     public @Nonnull Translation ensureQuoted() {
         Translation tr = new Translation(body, type, metadata, children);
-        Predicate<TreeNode<String>> alreadyQuoted = c -> {
+        Predicate<Translation> alreadyQuoted = c -> {
             final String renderedBody = c.render();
             return renderedBody.startsWith("\"") && renderedBody.endsWith("\"");
         };
@@ -432,7 +437,7 @@ public class Translation implements TreeNode<String> {
             return ret;
         } else {
             return """
-                    "%s\"""".formatted(processedBody);
+                    "%s\"""".formatted(ret);
         }
     }
 

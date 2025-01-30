@@ -1,9 +1,9 @@
 package com.bashpile.engine.bast;
 
-import java.util.stream.Stream;
+import java.util.List;
 
-public interface TreeNode<T> {
+public interface TreeNode<T, U extends TreeNode<T, U>> {
     T render();
-    TreeNode<T> addChild(TreeNode<T> child);
-    TreeNode<T> addAllChildren(Stream<TreeNode<T>> stream);
+    U addChild(U child);
+    U addAllChildren(List<U> stream);
 }

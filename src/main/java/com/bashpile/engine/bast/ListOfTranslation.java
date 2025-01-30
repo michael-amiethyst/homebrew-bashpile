@@ -46,8 +46,8 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public @Nonnull Translation addChild(@Nonnull final TreeNode<String> other) {
-        translations.add((Translation) other);
+    public @Nonnull Translation addChild(@Nonnull final Translation other) {
+        translations.add(other);
         return this;
     }
 

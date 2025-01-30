@@ -325,11 +325,9 @@ public class BashTranslationEngine implements TranslationEngine {
                         .replaceMetadata(INLINE);
             }
             // add quotes if needed
-            if (rhsExprTranslation.isStr() && rhsExprTranslation.hasMetadata(NORMAL)) {
-                rhsExprTranslation = rhsExprTranslation.lambdaBody(str -> {
-                    str = StringUtils.prependIfMissing(str, "\"");
-                    return StringUtils.appendIfMissing(str, "\"");
-                });
+            if (rhsExprTranslation.isStr() && rhsExprTranslation.isBasicType()
+                    && rhsExprTranslation.hasMetadata(NORMAL)) {
+                rhsExprTranslation = rhsExprTranslation.quoteBody();
             }
         }
         assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber);

@@ -1,7 +1,5 @@
 package com.bashpile.engine.bast;
 
-import java.util.stream.Stream;
-
 import com.bashpile.Strings;
 import com.bashpile.engine.strongtypes.TranslationMetadata;
 import com.bashpile.engine.strongtypes.Type;
@@ -9,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.bashpile.engine.bast.Translation.toStringTranslation;
 import static com.bashpile.engine.strongtypes.TranslationMetadata.NEEDS_INLINING;
+import static com.bashpile.engine.strongtypes.TranslationMetadata.QUOTE;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TranslationTest {
@@ -32,7 +31,7 @@ class TranslationTest {
     @Test
     public void lambdaBodyPreservesChildren() {
         Translation t1 = new Translation("printf \"aoeu\" >/dev/null\n");
-        t1 = (Translation) t1.addAllChildren(Stream.of(new Translation("ls\n")));
+        t1 = t1.addChild(new Translation("ls\n"));
         Translation t2 = t1.lambdaBody(body -> body.replace(">/dev/null", ""));
 
         assertFalse(t1.getChildren().isEmpty());
@@ -43,7 +42,7 @@ class TranslationTest {
     @Test
     public void lambdaBodyAppliesToChildren() {
         Translation t1 = new Translation("printf \"aoeu\" >/dev/null\n");
-        t1 = (Translation) t1.addAllChildren(Stream.of(new Translation("ls\n")));
+        t1 = t1.addChild(new Translation("ls\n"));
         Translation t2 = t1.lambdaBody(body -> body.replace("ls", ""));
 
         assertFalse(t1.getChildren().isEmpty());
@@ -55,7 +54,7 @@ class TranslationTest {
     @Test
     public void lambdaBodyLinesPreservesChildren() {
         Translation t1 = new Translation("printf \"aoeu\" >/dev/null\n");
-        t1 = (Translation) t1.addAllChildren(Stream.of(new Translation("ls\n")));
+        t1 = t1.addChild(new Translation("ls\n"));
         Translation t2 = t1.lambdaBodyLines(body -> body.replace("ls", ""));
 
         assertFalse(t1.getChildren().isEmpty());
@@ -83,12 +82,13 @@ class TranslationTest {
         tr = tr.lambdaBody("%s > /dev/null"::formatted);
         assertNotEquals(tr.render(), tr.body());
         assertEquals("$( ls > /dev/null )", tr.render());
-        tr = tr.addMetadata(TranslationMetadata.QUOTE);
+        tr = tr.addMetadata(QUOTE);
         assertEquals("\"$( ls > /dev/null )\"", tr.render());
         tr = tr.removeMetadata(NEEDS_INLINING);
         assertEquals("\"ls > /dev/null\"", tr.render());
+        tr = tr.removeMetadata(QUOTE);
+        assertEquals("ls > /dev/null", tr.render());
     }
 
-    // TODO feature/bast write test to ensure that lambdaBody only changes the render and not the body field
     // TODO feature/bast write test to ensure that append only changes the render and not the body field.  Why is append needed?  addChild should have the same result
 }
