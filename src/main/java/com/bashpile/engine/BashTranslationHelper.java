@@ -44,7 +44,7 @@ public class BashTranslationHelper {
         if (ctx == null || ctx.isEmpty()) {
             return UNKNOWN_TRANSLATION;
         }
-        final long lineNumber = lineNumber(ctx.get(0));
+        final long lineNumber = lineNumber(ctx.getFirst());
 
         // check readonly declarations
         final long readonlys = ctx.stream().filter(typeCtx -> typeCtx.Readonly() != null).count();
@@ -65,7 +65,7 @@ public class BashTranslationHelper {
         return statements.stream()
                 .map(visitor::visit)
                 .map(tr -> tr.lambdaBodyLines(str -> TAB + str))
-                .reduce(Translation::add)
+                .reduce(Translation::addChild)
                 .orElseThrow();
     }
 
@@ -140,7 +140,7 @@ public class BashTranslationHelper {
 
     /** Preforms any munging needed for the initial condition of an if statement (i.e. if GUARD ...). */
     /* package */ static Translation visitGuardingExpression(Translation expressionTranslation) {
-        if (expressionTranslation.type().isInt() && expressionTranslation.body().startsWith("$((")) {
+        if (expressionTranslation.type().isInt() && expressionTranslation.render().startsWith("$((")) {
             // strip initial $ for (( instead of $((
             expressionTranslation = expressionTranslation.lambdaBody(body -> body.substring(1));
         } else if (expressionTranslation.type().isNumeric()) {
@@ -174,14 +174,14 @@ public class BashTranslationHelper {
         final Translation pattern = patternAndStatementPair.getLeft();
         final Translation statements = patternAndStatementPair.getRight().stream()
                 .map(tr -> tr.lambdaBodyLines(x -> "    " + x))
-                .reduce(Translation::add)
+                .reduce(Translation::addChild)
                 .orElseThrow();
         // second string is indented so will be inline with the ';;'
         final String template = """
                 %s)
                 %s
                     ;;
-                """.formatted(pattern.body(), statements.body());
+                """.formatted(pattern.render(), statements.render());
         return toStringTranslation(template).lambdaBodyLines(x -> "    " + x);
     }
 

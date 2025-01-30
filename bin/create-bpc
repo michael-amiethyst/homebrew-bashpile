@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
+# source Java
+. ./bin/sdkman-include.lib
+
+# create shebang file with Java Jar binary info
 echo '#!/usr/bin/env -S java -jar' > target/bpc
 /bin/cat target/bashpile.jar >> target/bpc
 /bin/chmod +x target/bpc
-printf "Created bpc in directory %s" "$PWD"
+printf "Created bpc in directory %s/target using Java version %s" "$PWD" "$(java --version)"

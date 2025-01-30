@@ -15,6 +15,7 @@ import javax.annotation.Nonnull;
 
 import com.bashpile.engine.BashTranslationEngine;
 import com.bashpile.engine.BashpileVisitor;
+import com.bashpile.engine.bast.Translation;
 import com.bashpile.exceptions.BashpileUncheckedAssertionException;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.shell.ExecutionResults;
@@ -22,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -48,26 +50,33 @@ public class BashpileMainHelper {
      * @throws BashpileUncheckedAssertionException on shellcheck errors.
      */
     @VisibleForTesting
-    public static @Nonnull String transpileNioFile(@Nonnull Path inputFile) throws IOException {
+    public static @Nonnull String transpileNioFile(@Nonnull Path inputFile, boolean format) throws IOException {
         final InputStream inputStream = getSourceInputStream(inputFile);
         final String sourceName = inputFile.toString();
-        final String parsed = parse(sourceName, inputStream);
-        final String formatted = format(parsed);
-        return assertNoShellcheckWarnings(formatted);
+        String ret = parse(sourceName, inputStream);
+        if (format) {
+            ret = format(ret);
+        }
+        return assertNoShellcheckWarnings(ret);
     }
 
     /**
      * Returns the translation.
+     *
+     * @param bashpileScript The script to compile to Bash.
+     * @param format True means we run shfmt on the output (expensive external call).
      * @throws IOException on bad input file.
      * @throws BashpileUncheckedAssertionException on shellcheck errors.
      */
     @VisibleForTesting
-    public static @Nonnull String transpileScript(@Nonnull String bashpileScript) throws IOException {
+    public static @Nonnull String transpileScript(@Nonnull String bashpileScript, boolean format) throws IOException {
         final InputStream inputStream = IOUtils.toInputStream(bashpileScript, StandardCharsets.UTF_8);
-        final String parsed = parse(bashpileScript, inputStream);
-        LOG.debug("Parsed Bashpile script became:\n{}", parsed);
-        final String formatted = format(parsed);
-        return assertNoShellcheckWarnings(formatted);
+        String ret = parse(bashpileScript, inputStream);
+        LOG.trace("Parsed Bashpile script became:\n{}", ret);
+        if (format) {
+            ret = format(ret);
+        }
+        return assertNoShellcheckWarnings(ret);
     }
 
     // helpers
@@ -75,7 +84,7 @@ public class BashpileMainHelper {
     /** Returns an input stream of inputFile (without a Shebang line) or defaults to the bashpileScript as an IS */
     private static @Nonnull InputStream getSourceInputStream(@Nonnull final Path inputFile) throws IOException {
         List<String> lines = Files.readAllLines(findFile(inputFile));
-        if (SHEBANG.matcher(lines.get(0)).matches()) {
+        if (SHEBANG.matcher(lines.getFirst()).matches()) {
             lines = lines.subList(1, lines.size());
         }
         return IOUtils.toInputStream(String.join("\n", lines), StandardCharsets.UTF_8);
@@ -109,20 +118,31 @@ public class BashpileMainHelper {
         // lexer
         final CharStream input = CharStreams.fromStream(is);
         final BashpileLexer lexer = new BashpileLexer(input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(ThrowingErrorListener.INSTANCE);
         final CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-        // parser
+        // setup parser
         final BashpileParser parser = new BashpileParser(tokens);
-        final ParseTree tree = parser.program();
+        parser.removeErrorListeners();
+        parser.addErrorListener(ThrowingErrorListener.INSTANCE);
 
-        return transpile(origin, tree);
+        // run parser and rethrow parse exceptions
+        try {
+            // parse at the root EBNF rule -- program
+            final ParseTree tree = parser.program();
+            return transpile(origin, tree);
+        } catch (ParseCancellationException e) {
+            throw new BashpileUncheckedException(e);
+        }
     }
 
     /** Returns bash text block */
     private static @Nonnull String transpile(@Nonnull final String origin, @Nonnull final ParseTree tree) {
         // visitor and engine linked in visitor constructor
         final BashpileVisitor bashpileLogic = new BashpileVisitor(new BashTranslationEngine(origin));
-        return bashpileLogic.visit(tree).body();
+        final Translation visited = bashpileLogic.visit(tree);
+        return visited.render();
     }
 
     /**
@@ -139,6 +159,7 @@ public class BashpileMainHelper {
                 LOG.warn("shfmt not found on PATH.  Skipping formatting (is it installed?)");
                 return bashScript;
             }
+            LOG.info("Running shfmt");
             final ExecutionResults shfmtResults = runAndJoin(
                     "shfmt -i 2 -ci -bn %s".formatted(temp.toString()));
             if (shfmtResults.exitCode() != SUCCESS) {

@@ -1,6 +1,9 @@
 package com.bashpile.engine.bast;
 
-public interface TreeNode<T> {
-    T getData();
-    TreeNode<T> add(TreeNode<T> child);
+import java.util.List;
+
+public interface TreeNode<T, U extends TreeNode<T, U>> {
+    T render();
+    U addChild(U child);
+    U addAllChildren(List<U> stream);
 }

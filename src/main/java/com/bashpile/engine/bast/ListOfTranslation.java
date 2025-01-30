@@ -2,6 +2,7 @@ package com.bashpile.engine.bast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ public class ListOfTranslation extends Translation {
     // static section
 
     public static @Nonnull ListOfTranslation of(@Nonnull final List<Translation> listIn) {
-        final ListOfTranslation ret = new ListOfTranslation(assertNotEmpty(listIn).get(0).type());
+        final ListOfTranslation ret = new ListOfTranslation(assertNotEmpty(listIn).getFirst().type());
         return ret.addAll(listIn);
     }
 
@@ -41,16 +42,12 @@ public class ListOfTranslation extends Translation {
 
     @Override
     public @Nonnull String body() {
-        String data = translations.stream().map(Translation::body).collect(Collectors.joining(" "));
-        if (quoteBody) {
-            data = "\"%s\"".formatted(data);
-        }
-        return "(%s)".formatted(data);
+        return super.body();
     }
 
     @Override
-    public @Nonnull Translation add(@Nonnull final TreeNode<String> other) {
-        translations.add((Translation) other);
+    public @Nonnull Translation addChild(@Nonnull final Translation other) {
+        translations.add(other);
         return this;
     }
 
@@ -115,13 +112,7 @@ public class ListOfTranslation extends Translation {
 
     @Nonnull
     @Override
-    public Translation metadata(@Nonnull TranslationMetadata meta) {
-        throw new UnsupportedOperationException("Not supported for ListTranslations");
-    }
-
-    @Nonnull
-    @Override
-    public Translation metadata(@Nonnull List<TranslationMetadata> meta) {
+    public Translation replaceMetadata(@Nonnull TranslationMetadata meta) {
         throw new UnsupportedOperationException("Not supported for ListTranslations");
     }
 
@@ -134,12 +125,16 @@ public class ListOfTranslation extends Translation {
 
     @Override
     public String toString() {
-        return body();
+        return render();
     }
 
     @Override
-    public String getData() {
-        return body();
+    public String render() {
+        String data = translations.stream().map(Translation::render).collect(Collectors.joining(" "));
+        if (quoteBody) {
+            data = "\"%s\"".formatted(data);
+        }
+        return "(%s)".formatted(data);
     }
 
     @Override
@@ -148,7 +143,7 @@ public class ListOfTranslation extends Translation {
     }
 
     @Override
-    public @Nonnull List<TranslationMetadata> metadata() {
-        return super.metadata();
+    public @Nonnull Set<TranslationMetadata> getMetadata() {
+        return super.getMetadata();
     }
 }

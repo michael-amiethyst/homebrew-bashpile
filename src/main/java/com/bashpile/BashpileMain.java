@@ -18,6 +18,8 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.bashpile.BashpileMainHelper.transpileNioFile;
+import static com.bashpile.BashpileMainHelper.transpileScript;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /** Entry point into the program.  Only spins up the transpiler and parses the command line with PicoCLI. */
@@ -63,6 +65,10 @@ public class BashpileMain implements Callable<Integer> {
             description = "Use the specified Bashpile file.  -c or INPUT_FILE")
     @Nullable @SuppressWarnings("UnusedDeclaration")
     private Path inputFile;
+
+    @CommandLine.Option(names = {"-f", "--format"}, description = "Pretty Print with shfmt", defaultValue = "false")
+    @SuppressWarnings("UnusedDeclaration")
+    private boolean format;
 
     // TODO --help, --version
 
@@ -116,8 +122,8 @@ public class BashpileMain implements Callable<Integer> {
             }
 
             // transpile
-            String translation = inputFile != null ? BashpileMainHelper.transpileNioFile(inputFile)
-                    : BashpileMainHelper.transpileScript(Objects.requireNonNull(command));
+            String translation = inputFile != null ? transpileNioFile(inputFile, format)
+                    : transpileScript(Objects.requireNonNull(command), format);
             final String bashScript = "#!/usr/bin/env bash\n\n" + translation;
             Files.writeString(transpiledFilename, bashScript);
             makeExecutable(transpiledFilename);

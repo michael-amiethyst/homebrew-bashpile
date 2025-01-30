@@ -13,10 +13,7 @@ import com.bashpile.BashpileParser;
 import com.bashpile.Strings;
 import com.bashpile.engine.bast.ListOfTranslation;
 import com.bashpile.engine.bast.Translation;
-import com.bashpile.engine.strongtypes.FunctionTypeInfo;
-import com.bashpile.engine.strongtypes.ParameterInfo;
-import com.bashpile.engine.strongtypes.Type;
-import com.bashpile.engine.strongtypes.TypeStack;
+import com.bashpile.engine.strongtypes.*;
 import com.bashpile.exceptions.BashpileUncheckedException;
 import com.bashpile.exceptions.TypeError;
 import com.google.common.collect.Streams;
@@ -97,7 +94,7 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation getExpressionSetup() {
         try {
-            return expressionSetups.stream().reduce(Translation::add).orElse(EMPTY_TRANSLATION);
+            return expressionSetups.stream().reduce(Translation::addChild).orElse(EMPTY_TRANSLATION);
         } finally {
             // the list is drained, reset
             expressionSetups = new ArrayList<>();
@@ -171,21 +168,21 @@ public class BashTranslationEngine implements TranslationEngine {
 
         final Translation comment = createCommentTranslation("import statement", lineNumber(ctx));
         final Translation importTranslation = new Translation(trText);
-        return comment.add(importTranslation);
+        return comment.addChild(importTranslation);
     }
 
     @Override
     public Translation whileStatement(BashpileParser.WhileStatementContext ctx) {
         LOG.trace("In whileStatement");
         final Translation comment = createCommentTranslation("while statement", lineNumber(ctx));
-        final Translation gate = requireNonNull(visitor).visit(ctx.expression());
+        final Translation gate = requireNonNull(visitor).visit(ctx.expression()).removeMetadata(NEEDS_INLINING);
         final Translation bodyStatements = ctx.indentedStatements().statement().stream()
-                .map(visitor::visit).reduce(Translation::add).orElseThrow().lambdaBodyLines(x -> "    " + x);
+                .map(visitor::visit).reduce(Translation::addChild).orElseThrow().lambdaBodyLines(x -> "    " + x);
         final Translation whileTranslation = Translation.toStringTranslation("""
                 while %s; do
                 %sdone
-                """.formatted(gate.body(), bodyStatements.body()));
-        return comment.add(whileTranslation);
+                """.formatted(gate.render(), bodyStatements.render()));
+        return comment.addChild(whileTranslation);
     }
 
     @Override
@@ -195,13 +192,13 @@ public class BashTranslationEngine implements TranslationEngine {
         // create translations
         final Translation comment = createCommentTranslation("function forward declaration", lineNumber(ctx));
         final ParserRuleContext functionDeclCtx = getFunctionDeclCtx(requireNonNull(visitor), ctx);
-        final Translation hoistedFunction = visitor.visit(functionDeclCtx).lambdaBody(String::stripTrailing);
+        final Translation hoistedFunction = visitor.visit(functionDeclCtx);
 
         // register that this forward declaration has been handled
         foundForwardDeclarations.add(ctx.Id().getText());
 
         // add translations
-        return comment.add(hoistedFunction);
+        return comment.addChild(hoistedFunction);
     }
 
     @Override
@@ -223,8 +220,8 @@ public class BashTranslationEngine implements TranslationEngine {
                     ctx.functionBlock().statement(), requireNonNull(visitor));
             // define function and then call immediately with no arguments
             final Translation selfCallingAnonymousFunction = toStringTranslation("%s () {\n%s}; %s\n"
-                    .formatted(anonymousFunctionName, blockStatements.body(), anonymousFunctionName));
-            return comment.add(selfCallingAnonymousFunction);
+                    .formatted(anonymousFunctionName, blockStatements.render(), anonymousFunctionName));
+            return comment.addChild(selfCallingAnonymousFunction);
         }
     }
 
@@ -232,7 +229,8 @@ public class BashTranslationEngine implements TranslationEngine {
     public @Nonnull Translation conditionalStatement(BashpileParser.ConditionalStatementContext ctx) {
         LOG.trace("In conditionalStatement");
         // handle initial if
-        Translation guard = visitGuardingExpression(requireNonNull(visitor).visit(ctx.expression()));
+        final Translation guard = visitGuardingExpression(requireNonNull(visitor).visit(ctx.expression()))
+                .removeMetadata(NEEDS_INLINING);
         Translation ifBlockStatements;
         try (var ignored = typeStack.pushFrame()) {
             ifBlockStatements = visitBodyStatements(ctx.indentedStatements(0).statement(), visitor);
@@ -267,12 +265,12 @@ public class BashTranslationEngine implements TranslationEngine {
                     else
                     %s""".formatted(elseBlockStatements).stripTrailing();
         }
-        final String ifBlock = ifBlockStatements.body().stripTrailing();
+        final String ifBlock = ifBlockStatements.render().stripTrailing();
         final String conditional = """
                 if %s; then
                 %s%s%s
                 fi
-                """.formatted(guard.body(), ifBlock, elseIfBlock, elseBlock);
+                """.formatted(guard.render(), ifBlock, elseIfBlock, elseBlock);
         return toStringTranslation(conditional);
     }
 
@@ -287,7 +285,7 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(x -> x.lambdaBody(str -> str.replace("||", "|")))
                 .map(tr -> {
                     // unquote a catchAll
-                    if (tr.body().equals("\"*\"")) {
+                    if (tr.render().equals("\"*\"")) {
                         tr = tr.unquoteBody();
                     }
                     return tr;
@@ -297,14 +295,14 @@ public class BashTranslationEngine implements TranslationEngine {
                 .map(x -> x.stream().map(visitor::visit).toList());
         final Translation cases = Streams.zip(patterns, statementsLists, Pair::of)
                 .map(BashTranslationHelper::toCase)
-                .reduce(Translation::add)
+                .reduce(Translation::addChild)
                 .orElseThrow();
         final String template = """
                 case %s in
                 %sesac
-                """.formatted(expressionTranslation.body(), cases.body());
+                """.formatted(expressionTranslation.render(), cases.render());
         final Translation comment = createCommentTranslation("switch statement", lineNumber(ctx));
-        return comment.add(toStringTranslation(template));
+        return comment.addChild(toStringTranslation(template));
     }
 
     @Override
@@ -321,20 +319,16 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation rhsExprTranslation = UNKNOWN_TRANSLATION;
         if (rhsExprExists) {
             rhsExprTranslation = requireNonNull(visitor).visit(ctx.expression());
-            if (rhsExprTranslation.metadata().contains(CONDITIONAL)) {
+            if (rhsExprTranslation.hasMetadata(CONDITIONAL)) {
                 rhsExprTranslation = rhsExprTranslation
                         .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
-                        .metadata(INLINE);
+                        .replaceMetadata(INLINE);
             }
             // add quotes if needed
-            if (rhsExprTranslation.isStr() && rhsExprTranslation.metadata().contains(NORMAL)) {
-                // TODO call quoteBody and have quoteBody escape quotes
-                rhsExprTranslation = rhsExprTranslation.lambdaBody(str -> {
-                    str = StringUtils.prependIfMissing(str, "\"");
-                    return StringUtils.appendIfMissing(str, "\"");
-                });
+            if (rhsExprTranslation.isStr() && rhsExprTranslation.isBasicType()
+                    && rhsExprTranslation.hasMetadata(NORMAL)) {
+                rhsExprTranslation = rhsExprTranslation.quoteBody();
             }
-            rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
         }
         assertTypesCoerce(lhsType, rhsExprTranslation.type(), ctx.typedId().Id().getText(), lineNumber);
 
@@ -346,11 +340,11 @@ public class BashTranslationEngine implements TranslationEngine {
         final boolean isList = ctxTypeString.equalsIgnoreCase(LIST_TYPE.mainTypeName().name());
         if (isList) {
             // make the declaration for a Bash non-associative array
-            final Translation arrayOption = toStringTranslation("a").metadata(OPTION);
-            modifiers = modifiers.add(arrayOption);
+            final Translation arrayOption = toStringTranslation("a").replaceMetadata(OPTION);
+            modifiers = modifiers.addChild(arrayOption);
         }
         final Translation variableDeclaration =
-                toStringTranslation("declare %s %s\n".formatted(modifiers.body(), lhsVariableName));
+                toStringTranslation("declare %s %s\n".formatted(modifiers.render(), lhsVariableName));
 
         final boolean isListAssignment = lhsType.isList() && rhsExprTranslation.isList();
         if (isListAssignment && !rhsExprTranslation.isListOf()) {
@@ -358,12 +352,13 @@ public class BashTranslationEngine implements TranslationEngine {
             rhsExprTranslation = rhsExprTranslation.quoteBody().parenthesizeBody().toTrueArray();
         }
         // merge expr into the assignment
-        final String assignmentBody = rhsExprExists ? "%s=%s\n".formatted(lhsVariableName, rhsExprTranslation.body()) : "";
+        final String assignmentBody = rhsExprExists ?
+                "%s=%s\n".formatted(lhsVariableName, rhsExprTranslation.render()) : "";
         final Translation assignment = toStringTranslation(assignmentBody);
 
         // order is comment, variable declaration, assignment
-        return comment.add(getExpressionSetup()).add(variableDeclaration).add(assignment)
-                .type(NA_TYPE).metadata(NORMAL);
+        return comment.addChild(getExpressionSetup()).addChild(variableDeclaration).addChild(assignment)
+                .type(NA_TYPE).replaceMetadata(NORMAL);
     }
 
     @Override
@@ -379,12 +374,11 @@ public class BashTranslationEngine implements TranslationEngine {
         // get expression and it's type
         Translation rhsExprTranslation;
         rhsExprTranslation = requireNonNull(visitor).visit(ctx.expression());
-        if (rhsExprTranslation.metadata().contains(CONDITIONAL)) {
+        if (rhsExprTranslation.hasMetadata(CONDITIONAL)) {
             rhsExprTranslation = rhsExprTranslation
                     .lambdaBody("$(if %s; then echo true; else echo false; fi)"::formatted)
-                    .metadata(INLINE);
+                    .replaceMetadata(INLINE);
         }
-        rhsExprTranslation = rhsExprTranslation.inlineAsNeeded();
         final Type rhsActualType = rhsExprTranslation.type();
         if (!rhsActualType.isEmpty()) {
             Asserts.assertTypesCoerce(lhsExpectedType, rhsActualType, lhsVariableName, lineNumber(ctx));
@@ -410,10 +404,10 @@ public class BashTranslationEngine implements TranslationEngine {
         }
         // merge rhsExprTranslation into reassignment
         final String reassignmentBody = "%s%s%s%s\n"
-                .formatted(lhsVariableName, listAccessor, assignOperator, rhsExprTranslation.body());
+                .formatted(lhsVariableName, listAccessor, assignOperator, rhsExprTranslation.render());
         final Translation reassignment = toStringTranslation(reassignmentBody);
 
-        return comment.add(reassignment).assertParagraphBody().type(NA_TYPE).metadata(NORMAL);
+        return comment.addChild(reassignment).assertParagraphBody().type(NA_TYPE).replaceMetadata(NORMAL);
     }
 
     @Override
@@ -426,9 +420,10 @@ public class BashTranslationEngine implements TranslationEngine {
         LOG.trace("In expressionStatement");
         Translation expr = requireNonNull(visitor).visit(ctx.expression());
         // change $(( )) to _=$(( )) to avoid executing a number.  Fixes ShellCheck error SC2084
-        expr = expr.lambdaBody(body -> !body.startsWith("$((") ? body : "_=" + body).add(NEWLINE);
+        expr = expr.lambdaBody(body -> !body.startsWith("$((") ? body : "_=" + body).addChild(NEWLINE);
+        expr = expr.removeMetadata(NEEDS_INLINING);
         final Translation comment = createCommentTranslation("expression statement", lineNumber(ctx));
-        return comment.add(expr).type(expr.type()).metadata(expr.metadata());
+        return comment.addChild(expr);
     }
 
     @Override
@@ -446,7 +441,7 @@ public class BashTranslationEngine implements TranslationEngine {
         if (expressionTranslation.isInt()) {
             // arithmetic built-in when possible
             final String body = "$((%s%s))".formatted(expressionTranslation.removeVariableBrackets(), opText);
-            return new Translation(body, INT_TYPE, List.of(CALCULATION));
+            return new Translation(body, INT_TYPE, Set.of(CALCULATION));
         } else if (expressionTranslation.isNumeric()) {
             // bc tool can't assign to shell variables, only bc variables.
             // bc variables can't have uppercase, and to "export" them back to the shell we would need a whole
@@ -505,7 +500,6 @@ public class BashTranslationEngine implements TranslationEngine {
         List<Translation> argumentTranslationsList = ctx.argumentList() != null
                 ? ctx.argumentList().expression().stream()
                         .map(requireNonNull(visitor)::visit)
-                        .map(Translation::inlineAsNeeded)
                         .toList()
                 : List.of();
         argumentTranslationsList = new ArrayList<>(argumentTranslationsList); // make mutable
@@ -528,26 +522,26 @@ public class BashTranslationEngine implements TranslationEngine {
         // collapse argumentTranslationsList to a single translation
         Translation argumentTranslations = UNKNOWN_TRANSLATION;
         if (!argumentTranslationsList.isEmpty()) {
-            argumentTranslations = toStringTranslation(" ").add(argumentTranslationsList.stream()
-                    // only add quotes if needed
-                    .map(tr -> !(tr.body().startsWith("\"") && tr.body().endsWith("\"")) ? tr.quoteBody() : tr)
+            argumentTranslations = new Translation(" ").addChild(argumentTranslationsList.stream()
+                    .map(Translation::ensureQuoted)
+                    // metadata is processed during the .body() calls so no metadata in final Translation
                     .reduce((left, right) -> new Translation(
-                            left.body() + " " + right.body(),
-                            right.type(),
-                            right.metadata()))
+                            left.render() + " " + right.render(),
+                            left.type().add(right.type()),
+                            Set.of()))
                     .orElseThrow());
         }
 
         // lookup return type of this function
         final Type retType = expectedTypes.returnType();
 
-        Translation ret = new Translation(functionName + argumentTranslations.body(), retType, List.of(NORMAL));
+        Translation ret = new Translation(functionName + argumentTranslations.render(), retType, Set.of(NORMAL));
         // suppress output if we are printing to output as part of a work-around to return a string
         // this covers the case of calling a function without using the return
         if (retType.isStr()) {
             ret = ret.lambdaBody("%s >/dev/null"::formatted);
         }
-        ret = ret.metadata(NEEDS_INLINING_OFTEN);
+        ret = ret.replaceMetadata(NEEDS_INLINING);
         return ret;
     }
 
@@ -571,10 +565,8 @@ public class BashTranslationEngine implements TranslationEngine {
         LOG.trace("In binaryPrimaryExpression");
         Asserts.assertEquals(3, ctx.getChildCount(), "Should be 3 parts");
         String primary = ctx.binaryPrimary().getText();
-        final Translation firstTranslation =
-                requireNonNull(visitor).visit(ctx.getChild(0)).inlineAsNeeded();
-        final Translation secondTranslation =
-                visitor.visit(ctx.getChild(2)).inlineAsNeeded();
+        final Translation firstTranslation = requireNonNull(visitor).visit(ctx.getChild(0));
+        final Translation secondTranslation = visitor.visit(ctx.getChild(2));
 
         // we do some checks for strict equals and strict not equals
         final boolean noTypeMatch = !(firstTranslation.type().equals(secondTranslation.type()));
@@ -608,8 +600,8 @@ public class BashTranslationEngine implements TranslationEngine {
                 case "<", ">" -> primary = "\\" + primary;
             }
         }
-        body = body.formatted(not, firstTranslation.unquoteBody().body(), primary,
-                secondTranslation.unquoteBody().body());
+        body = body.formatted(not, firstTranslation.unquoteBody().render(), primary,
+                secondTranslation.unquoteBody().render());
         return new Translation(body, BOOL_TYPE, CONDITIONAL);
     }
 
@@ -621,11 +613,12 @@ public class BashTranslationEngine implements TranslationEngine {
     @Override
     public Translation argumentsBuiltinExpression(BashpileParser.ArgumentsBuiltinExpressionContext ctx) {
         LOG.trace("In argumentsBuiltinExpression");
+        // argument value could be anything, so use default unknown type
         if (ctx.argumentsBuiltin().NumberValues() != null) {
-            return toStringTranslation("$" + ctx.argumentsBuiltin().NumberValues().getText());
+            return new Translation("$" + ctx.argumentsBuiltin().NumberValues().getText());
         } else {
             // arguments[all]
-            return toStringTranslation("$@");
+            return new Translation("$@");
         }
     }
 
@@ -640,7 +633,7 @@ public class BashTranslationEngine implements TranslationEngine {
         // guard, checks types
         final List<Pair<Integer, Translation>> translations = IntStream.range(0, ctx.expression().size())
                 .mapToObj(it -> Pair.of(it, requireNonNull(visitor).visit(ctx.expression(it)))).toList();
-        final Type listType = translations.get(0).getRight().type();
+        final Type listType = translations.getFirst().getRight().type();
         final AtomicReference<List<BashpileUncheckedException>> errors = new AtomicReference<>();
         errors.set(List.of());
         translations.stream().skip(1).forEachOrdered(tr -> {
@@ -651,7 +644,7 @@ public class BashTranslationEngine implements TranslationEngine {
             }
         });
         if (!errors.get().isEmpty()) {
-            throw errors.get().get(0);
+            throw errors.get().getFirst();
         }
 
         // body
@@ -694,15 +687,20 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation contentsTranslation = ctx.shellStringContents().stream()
                 .map(requireNonNull(visitor)::visit)
                 .map(Translation::inlineAsNeeded)
-                .reduce(Translation::add)
+                .reduce((l, r) -> {
+                    if (l.isStr() && r.isStr()) {
+                        return l.append(r);
+                    } // else
+                    return l.addChild(r);
+                })
                 .map(x -> x.lambdaBody(Strings::dedent))
                 .map(BashTranslationHelper::joinEscapedNewlines)
                 .orElseThrow()
                 .type(UNKNOWN_TYPE);
 
         // a subshell does NOT need inlining often, see conditionalStatement
-        if (!Strings.inParentheses(contentsTranslation.body())) {
-            contentsTranslation = contentsTranslation.metadata(NEEDS_INLINING_OFTEN);
+        if (!Strings.inParentheses(contentsTranslation.render())) {
+            contentsTranslation = contentsTranslation.replaceMetadata(NEEDS_INLINING);
         }
 
         return contentsTranslation.unescapeBody();

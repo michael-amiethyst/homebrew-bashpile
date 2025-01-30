@@ -11,18 +11,18 @@ import static org.junit.jupiter.api.Assertions.*;
 class ListOfTranslationTest {
 
     @Test
-    void addWorks() {
+    void addChildWorks() {
         Translation list = new ListOfTranslation(Type.STR_TYPE);
-        list = list.add(toStringTranslation("Hello")).add(toStringTranslation("World"));
+        list = list.addChild(toStringTranslation("Hello")).addChild(toStringTranslation("World"));
         assertEquals("(Hello World)", list.toString());
-        assertEquals("(Hello World)", list.getData());
+        assertEquals("(Hello World)", list.render());
     }
 
     @Test
-    void addAllWorks() {
+    void addChildAllWorks() {
         ListOfTranslation list = new ListOfTranslation(Type.STR_TYPE);
         list = list.addAll(List.of(toStringTranslation("Hello"), toStringTranslation("World")));
         assertEquals("(Hello World)", list.toString());
-        assertEquals("(Hello World)", list.getData());
+        assertEquals("(Hello World)", list.render());
     }
 }

@@ -39,9 +39,9 @@ abstract public class BashpileTest {
 
     /** Runs {@code bashText} in a Bash environment */
     protected static @Nonnull ExecutionResults runText(@Nonnull final String bashText, @Nullable String... args) {
-        LOG.debug("Start of:\n{}", bashText);
+        LOG.trace("Start of:\n{}", bashText);
         try {
-            return execute(BashpileMainHelper.transpileScript(bashText), args);
+            return execute(BashpileMainHelper.transpileScript(bashText, false), args);
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }
@@ -52,7 +52,7 @@ abstract public class BashpileTest {
         final Path filename = !file.isAbsolute() ? Path.of("src/test/resources/scripts/" + file) : file;
         LOG.debug("Start of {}", filename);
         try {
-            return execute(BashpileMainHelper.transpileNioFile(filename), null);
+            return execute(BashpileMainHelper.transpileNioFile(filename, false), null);
         } catch (IOException e) {
             throw new BashpileUncheckedException(e);
         }
@@ -61,7 +61,7 @@ abstract public class BashpileTest {
     // helpers
 
     private static @Nonnull ExecutionResults execute(@Nonnull final String bashScript, @Nullable final String[] args) {
-        LOG.debug("In {}", System.getProperty("user.dir"));
+        LOG.trace("In directory {}", System.getProperty("user.dir"));
         try {
             return BashShell.runAndJoin(bashScript, args);
         } catch (UserError | AssertionError e) {

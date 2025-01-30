@@ -215,6 +215,16 @@ public record Type(@Nonnull TypeNames mainTypeName, @Nonnull Optional<Type> cont
                 && (contentsType.isEmpty() || contentsType.orElseThrow().mainTypeName.equals(NA));
     }
 
+    public @Nonnull Type add(@Nonnull Type other) {
+        Asserts.assertTrue(other.coercesTo(this),
+                "Bad type add.  Tried to add %s and %s".formatted(this, other));
+        // favor anything over UNKNOWN
+        Type nextType = this;
+        nextType = nextType.isUnknown() ? other : nextType;
+        // favor INT or FLOAT over NUMBER
+        return nextType.isNumber() && other.isNumeric() ? other : nextType;
+    }
+
     /**
      * Checks if this type can coerce to <code>other</code>.
      * str does not coerce to List&lt;str&gt;.  That logic is in Asserts.

@@ -124,14 +124,16 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 ctx.functionBlock().statement(), ctx.functionBlock().returnPsudoStatement()
             )
                 .map { visitor.visit(it) }
+            val rawBlockAccumulator = blockStatements
                 .map { tr: Translation -> tr.lambdaBodyLines { BashTranslationEngine.TAB + it }
                     .lambdaBody { it.replace("exit 1", "return 1") }
-                }.reduce { obj: Translation, other: Translation? -> obj.add(other!!) }
-                .orElseThrow()
+                }.toList()
+            val blockAccumulator = rawBlockAccumulator
+                .reduce { obj: Translation, other: Translation? -> obj.addChild(other!!) }
 
             // put it all together in one big translation
             namedParams = Asserts.assertIsLine(namedParams).removeSuffix("\n")
-            val blockBody = Asserts.assertIsParagraph(blockStatements.body()).removeSuffix("\n")
+            val blockBody = blockAccumulator.render()
             // 2nd+ lines of blockbody will have a bad indent, but that's why we go over with shfmt
             val functionText = """
                 $functionName () {
@@ -141,7 +143,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                 """.trimMargin() + "\n"
             val functionDeclaration = toStringTranslation(functionText)
             val comment = createCommentTranslation("function declaration", lineNumber(ctx))
-            comment.add(functionDeclaration)
+            comment.addChild(functionDeclaration)
         }
     }
 
@@ -154,36 +156,35 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             """.trimIndent())
 
         // body
-        val comment = createCommentTranslation("print statement", lineNumber(ctx))
-        val arguments: Translation = argList.expression().stream()
+        val lineNumber = lineNumber(ctx)
+        val comment = createCommentTranslation("print statement", lineNumber)
+        val arguments: MutableList<Translation>? = argList.expression().stream()
             .map(requireNonNull(visitor)::visit)
             .map{ tr: Translation -> tr.inlineAsNeeded() }
             .map { tr: Translation ->
-                if (tr.isBasicType && !tr.isListAccess && !tr.metadata().contains(CONDITIONAL)) {
+                if (tr.isBasicType && !tr.isListAccess && !tr.hasMetadata(CONDITIONAL)) {
                     tr.body("""
-                        printf -- "${tr.unquoteBody().body()}\n"
+                        printf -- "${tr.unquoteBody().render()}\n"
                         
                         """.trimIndent()
-                    )
+                    ).removeMetadata(QUOTE) // we add quotes in the new body
                 } else if (tr.isBasicType && !tr.isListAccess /* and a CONDITIONAL */) {
                     // body will already contain [ ... -eq 1 ]
                     tr.body("""
-                        if ${tr.unquoteBody().body()}; then printf -- "true"; else printf -- "false"; fi
+                        if ${tr.unquoteBody().render()}; then printf -- "true"; else printf -- "false"; fi
                         """.trimIndent()
                     )
                 } else {
                     // list or contains $@ or [@]
                     // change the Internal Field Separator to a space just for this subshell (parens)
                     tr.body("""
-                            (declare -x IFS=${'$'}' '; printf -- "%s\n" "${tr.toStringArray().unquoteBody().body()}")
+                            (declare -x IFS=${'$'}' '; printf -- "%s\n" "${tr.toStringArray().unquoteBody().render()}")
                             
                             """.trimIndent()
                     )
                 }
-            }
-            .reduce { tr: Translation, otherTranslation: Translation? -> tr.add(otherTranslation!!) }
-            .orElseThrow()
-        return comment.add(arguments)
+            }.toList()
+        return comment.addAllChildren(arguments) as Translation
     }
 
     fun returnPsudoStatement(ctx: BashpileParser.ReturnPsudoStatementContext, typeStack: TypeStack): Translation {
@@ -211,21 +212,26 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         // body
 
         val comment = createCommentTranslation("return statement", lineNumber(ctx))
+        // e.g. a constant like "42"
+        val isNormalNumber = exprTranslation.isNumeric && exprTranslation.hasMetadata(NORMAL)
+        // e.g. $(( ... ))
+        val isIntCalculation = exprTranslation.type() == Type.INT_TYPE && exprTranslation.hasMetadata(CALCULATION)
+        // e.g. $(bc ...)
+        val isNumericCalculation = exprTranslation.isNumeric && exprTranslation.hasMetadata(CALCULATION)
         val returnLineLambda = { str: String ->
             if (functionTypes.returnsStr() || ctx.expression() is BashpileParser.NumberExpressionContext) {
                 "printf -- \"${Strings.unquote(str)}\"\n"
-            } else if (exprTranslation.type() == Type.INT_TYPE && exprTranslation.metadata().contains(CALCULATION)) {
-                // Avoid interpreting $(( )) results as a command
-                "printf -- $str\n"
-            } else if (exprTranslation.isNumeric && exprTranslation.metadata().contains(NORMAL)) {
-                // plain number type such as int or float equaling 42
-                "printf -- $str\n"
+            } else if (isNormalNumber || isIntCalculation || isNumericCalculation ) {
+                "printf -- \"$str\"\n"
             } else {
                 str + "\n"
             }
         }
-        exprTranslation = exprTranslation.body(Strings.lambdaLastLine(exprTranslation.body(), returnLineLambda))
-        return comment.add(exprTranslation)
+        exprTranslation = exprTranslation.body(Strings.lambdaLastLine(exprTranslation.render(), returnLineLambda))
+        if (isNumericCalculation) {
+            exprTranslation = exprTranslation.removeMetadata(NEEDS_INLINING)
+        }
+        return comment.addChild(exprTranslation)
     }
 
     fun parenthesisExpression(ctx: BashpileParser.ParenthesisExpressionContext): Translation {
@@ -234,7 +240,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val ret: Translation = visitor.visit(ctx.expression())
 
         // only add parenthesis back in for necessary operations (e.g. "(((5)))" becomes "5" outside of a calc)
-        return ret.metadata(ret.metadata() + PARENTHESIZED)
+        return ret.addMetadata(PARENTHESIZED)
     }
 
     fun calculationExpression(ctx: BashpileParser.CalculationExpressionContext): Translation {
@@ -252,25 +258,25 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             // Integers, we can use the $(( )) syntax
             childTranslations = childTranslations.map {
                 val ret = it.lambdaBody { body -> body.removeSurrounding("$(( ", " ))") }
-                if (ret.metadata().contains(PARENTHESIZED)) {
-                    ret.metadata(it.metadata() - PARENTHESIZED).parenthesizeBody()
+                if (ret.hasMetadata(PARENTHESIZED)) {
+                    ret.removeMetadata(PARENTHESIZED).parenthesizeBody()
                 } else ret
             }
-            val translationsString = childTranslations.joinToString(" ") { it.body() }
-            Translation(translationsString, Type.INT_TYPE, listOf(CALCULATION))
+            val translationsString = childTranslations.joinToString(" ") { it.render() }
+            Translation(translationsString, Type.INT_TYPE, setOf(CALCULATION))
                 .body("$(( $translationsString ))")
         } else if (Translation.areNumericExpressions(first, second)) {
             // Numbers -- We need the Basic Calculator to process
             childTranslations = childTranslations.map {
-                if (it.metadata().contains(CALCULATION) && it.type() != Type.INT_TYPE) { unwrapCalculation(it) } else it
+                if (it.hasMetadata(CALCULATION) && it.type() != Type.INT_TYPE) { unwrapCalculation(it) } else it
             }.map {
-                if (it.metadata().contains(PARENTHESIZED)) {
-                    it.metadata(it.metadata() - PARENTHESIZED).parenthesizeBody()
+                if (it.hasMetadata(PARENTHESIZED)) {
+                    it.removeMetadata(PARENTHESIZED).parenthesizeBody()
                 } else it
             }
             // first happy path executed, assume no nesting
-            val translationsString = childTranslations.joinToString(" ") { it.body() }
-            Translation(translationsString, Type.NUMBER_TYPE, listOf(NEEDS_INLINING_OFTEN, CALCULATION))
+            val translationsString = childTranslations.joinToString(" ") { it.render() }
+            Translation(translationsString, Type.NUMBER_TYPE, setOf(NEEDS_INLINING, CALCULATION))
                 .body("bc <<< \"$translationsString\"")
         } else if (Translation.areStringExpressions(first, second)) {
             // Strings -- only addition supported
@@ -281,7 +287,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
                     .map { it.lambdaBody { str: String? -> Strings.unparenthesize(str!!) } })
         } else if (first.isNotFound || second.isNotFound) {
             // found no matching types
-            val message = "`${first.body()}` or `${second.body()}` are undefined"
+            val message = "`${first.render()}` or `${second.render()}` are undefined"
             throw UserError(message, lineNumber(ctx))
         } else {
             // throw type error for all others
@@ -297,7 +303,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             .trim()
         }
         var parens = false
-        if (ret.body().startsWith("(") && ret.body().endsWith(")")) {
+        if (ret.render().startsWith("(") && ret.render().endsWith(")")) {
             parens = true
             ret = ret.lambdaBody { body -> body.removeSurrounding("(", ")") }
         }
@@ -318,7 +324,7 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         val isSetCheck = listOf("isset", "unset").contains(primary)
         if (isSetCheck) {
             // remove ${ and } as needed
-            var modifiedValueBeingTested = removeStart(valueBeingTested.body(), "$")
+            var modifiedValueBeingTested = removeStart(valueBeingTested.render(), "$")
             modifiedValueBeingTested = removeStart(modifiedValueBeingTested, "{")
             modifiedValueBeingTested = removeEnd(modifiedValueBeingTested, "}")
             valueBeingTested = valueBeingTested.body("\${$modifiedValueBeingTested+default}")
@@ -328,12 +334,12 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         primary = unaryPrimaryTranslations.getOrDefault(primary, primary)
         val body = if (primary != "!") {
             // put into portable [ ] test expression
-            "[ $primary \"${valueBeingTested.unquoteBody().body()}\" ]"
+            "[ $primary \"${valueBeingTested.unquoteBody().render()}\" ]"
         } else {
             // valueBeingTested will have [ ] if needed
-            "$primary ${valueBeingTested.unquoteBody().body()}"
+            "$primary ${valueBeingTested.unquoteBody().render()}"
         }
-        return Translation(body, Type.STR_TYPE, listOf(CONDITIONAL))
+        return Translation(body, Type.STR_TYPE, setOf(CONDITIONAL))
     }
 
     fun combiningExpression(ctx: BashpileParser.CombiningExpressionContext): Translation {
@@ -346,14 +352,14 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
         var translations = listOf(visitor.visit(ctx.getChild(0)), visitor.visit(ctx.getChild(2)))
         translations = translations.map {
             var ret = it.inlineAsNeeded()
-            if (ret.metadata().contains(PARENTHESIZED)) {
+            if (ret.hasMetadata(PARENTHESIZED)) {
                 // wrap in a block and add an end-of-statement
-                ret = ret.body("{ ${ret.body()}; }")
+                ret = ret.body("{ ${ret.render()}; }")
             }
             ret
         }
 
-        val body = "${translations[0].unquoteBody().body()} $operator ${translations[1].unquoteBody().body()}"
-        return toStringTranslation(body).metadata(CONDITIONAL)
+        val body = "${translations[0].unquoteBody().render()} $operator ${translations[1].unquoteBody().render()}"
+        return toStringTranslation(body).replaceMetadata(CONDITIONAL)
     }
 }

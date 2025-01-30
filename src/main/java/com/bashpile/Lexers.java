@@ -7,9 +7,13 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.misc.Interval;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +42,7 @@ public class Lexers {
     private static final Pattern WINDOWS_FILE_PATTERN =
             Pattern.compile("^([A-Za-z]):\\\\([a-zA-Z_.][a-zA-Z0-9_\\-.]*)+");
 
-    private static final Pattern FILE_PATTERN = Pattern.compile("^(?:/?[a-zA-Z_.-][a-zA-Z0-9_.-\\\\]*)+");
+    private static final Pattern FILE_PATTERN = Pattern.compile("^(?:/?[a-zA-Z_.-][a-zA-Z0-9_.\\\\-]*)+");
 
     /** A regex for a Bash assignment */
     private static final Pattern ASSIGN_PATTERN =
@@ -49,6 +53,8 @@ public class Lexers {
 
     /** Should be excluded from being a Linux command */
     private static final List<String> BASHPILE_KEYWORDS = List.of("return", "readonly", "unset", "else-if");
+
+    private static final Logger LOG = LogManager.getLogger(Lexers.class);
 
     /**
      * Checks if the command portion of the input Bash line is a valid Bash command.
@@ -129,6 +135,7 @@ public class Lexers {
         try {
             // may need a 'and not find with createsStatementRegex' when we add file path recognition to shell lines
             if (COMMAND_PATTERN.matcher(command).matches() || FILE_PATTERN.matcher(command).matches()) {
+                LOG.trace("Running external 'type' command on {}", command);
                 ExecutionResults results = BashShell.runAndJoin("type -t " + command);
                 // exclude keywords like 'function'
 
@@ -139,8 +146,10 @@ public class Lexers {
                 COMMAND_TO_VALIDITY_CACHE.put(command, ret);
                 return ret;
             } else if (FILE_PATTERN.matcher(command).matches() && !BASHPILE_KEYWORDS.contains(command)) {
-                COMMAND_TO_VALIDITY_CACHE.put(command, true);
-                return true;
+                final Path path = Path.of(command);
+                final boolean valid = Files.exists(path) && Files.isRegularFile(path) && Files.isExecutable(path);
+                COMMAND_TO_VALIDITY_CACHE.put(command, valid);
+                return valid;
             } else {
                 COMMAND_TO_VALIDITY_CACHE.put(command, false);
                 return false;

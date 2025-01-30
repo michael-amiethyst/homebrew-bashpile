@@ -52,15 +52,15 @@ public class TypecastUtils {
             @Nonnull final Type castTo,
             final int lineNumber,
             @Nonnull final TypeError typecastError) {
-        if (!expression.metadata().contains(CALCULATION)) {
+        if (!expression.hasMetadata(CALCULATION)) {
             // parse expression to a BigInteger
             try {
-                new BigInteger(expression.body());
+                new BigInteger(expression.render());
             } catch (final NumberFormatException e) {
                 // TODO allow for non-literals like for typecastFromFloat
                 String message = "Couldn't parse '%s' to an INT.  " +
                         "Typecasts only work on literals, was this an ID or function call?";
-                throw new TypeError(message.formatted(expression.body()), lineNumber);
+                throw new TypeError(message.formatted(expression.render()), lineNumber);
             }
         }
 
@@ -98,7 +98,7 @@ public class TypecastUtils {
         expression = expression.unquoteBody();
         BigDecimal expressionValue = null;
         try {
-            expressionValue = new BigDecimal(expression.body());
+            expressionValue = new BigDecimal(expression.render());
         } catch (final NumberFormatException e) {
             // expressionValue is still null if it is not a literal (e.g. variable or function call)
         }
@@ -106,13 +106,12 @@ public class TypecastUtils {
             return expression.body(expressionValue.toBigInteger().toString()).type(INT_TYPE).unquoteBody();
         } else {
             // if a variable reference then typecast to int (round down) with printf
-            String varName = StringUtils.stripStart(expression.body(), "${");
+            String varName = StringUtils.stripStart(expression.render(), "${");
             varName = StringUtils.stripEnd(varName, "}");
             if (!varName.matches("\\d")) {
                 String setupStatementText;
                 // only convert normal variables with printf (not calculations, etc.)
-                if (expression.metadata().isEmpty()
-                        || (expression.metadata().size() == 1 && expression.metadata().contains(NORMAL))) {
+                if (expression.hasMetadata() || expression.metadataOnlyHas(NORMAL)) {
                     setupStatementText = """
                             %s="$(printf '%%d' "%s" 2>/dev/null || true)"
                             """.formatted(varName, expression);
@@ -136,29 +135,29 @@ public class TypecastUtils {
         switch (castTo.mainTypeName()) {
             case BOOL -> {
                 expression = expression.unquoteBody();
-                if (Type.isNumberString(expression.body())) {
+                if (Type.isNumberString(expression.render())) {
                     expression = typecastFromFloat(expression, castTo, lineNumber, typecastError);
-                } else if (expression.body().equalsIgnoreCase("true")
-                        || expression.body().equalsIgnoreCase("false")) {
-                    expression = expression.body(expression.body().toLowerCase()).type(castTo);
+                } else if (expression.render().equalsIgnoreCase("true")
+                        || expression.render().equalsIgnoreCase("false")) {
+                    expression = expression.body(expression.render().toLowerCase()).type(castTo);
                 } else {
                     throw new TypeError("""
                             Could not cast STR to BOOL.
                             Only 'true' and 'false' allowed (capitalization ignored) or numbers for a C style cast.
-                            Text was %s.""".formatted(expression.body()), lineNumber);
+                            Text was %s.""".formatted(expression.render()), lineNumber);
                 }
             }
             case INT -> expression = typecastToInt(expression, lineNumber);
             case FLOAT -> {
                 expression = expression.unquoteBody().type(castTo);
                 // verify the body parses as a valid number for non-variables
-                if (!expression.body().startsWith("$")) {
+                if (!expression.render().startsWith("$")) {
                     try {
-                        Type.parseNumberString(expression.body());
+                        Type.parseNumberString(expression.render());
                     } catch (NumberFormatException e) {
                         throw new TypeError("""
                                     Could not cast STR to FLOAT.  Is not a FLOAT.  Text was %s."""
-                                .formatted(expression.body()), lineNumber);
+                                .formatted(expression.render()), lineNumber);
                     }
                 }
             }

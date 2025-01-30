@@ -10,10 +10,10 @@ public enum TranslationMetadata {
     /** Just a translation with no special handing needed */
     NORMAL,
     /**
-     * Calc expressions (`bc`) frequently need to be inlines, but not always.
+     * For commands such as 'bc' or 'ls'.
      * @see Translation#inlineAsNeeded()
      */
-    NEEDS_INLINING_OFTEN,
+    NEEDS_INLINING,
     CALCULATION,
     /**
      * Our name for Bash command substitution, i.e. $(commands).
@@ -24,6 +24,8 @@ public enum TranslationMetadata {
     CONDITIONAL,
     /** Parenthesis were removed */
     PARENTHESIZED,
+    /** Surrounds with double quotes during toString rendering */
+    QUOTE,
     /** Like '-r' */
     OPTION
 }
