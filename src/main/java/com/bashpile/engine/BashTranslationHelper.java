@@ -148,7 +148,8 @@ public class BashTranslationHelper {
             // so we need to explicitly check if the check returned true (1)
             expressionTranslation = expressionTranslation
                     .inlineAsNeeded()
-                    .lambdaBody("[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"::formatted);
+                    // the surroundWith call is like "[ \"$(bc <<< \"%s == 0\")\" -eq 1 ]"
+                    .surroundWith("[ \"$(bc <<< \"", " == 0\")\" -eq 1 ]");
         }
         return expressionTranslation
                 .lambdaBody(body -> {
@@ -164,7 +165,7 @@ public class BashTranslationHelper {
                 });
     }
 
-    /** Removes escaped newlines and trailing spaces */
+    /** Removes escaped newlines and trailing spaces, e.g. '\' at the end of the line just before the linebreak */
     /* package */ static @Nonnull Translation joinEscapedNewlines(@Nonnull final Translation tr) {
         return tr.lambdaBody(x -> escapedNewline.matcher(x).replaceAll(""));
     }

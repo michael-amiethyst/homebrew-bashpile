@@ -170,7 +170,7 @@ class ExpressionBashpileTest extends BashpileTest {
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
         assertEquals("0", lines.get(0));
-        assertEquals("2.5", lines.get(1));
+        assertEquals("2.5", lines.get(1), "Unexpected output %s, input was:\n%s".formatted(lines.get(1), results.stdin()));
         assertEquals("Genre: true crime", lines.get(2));
     }
 
@@ -343,7 +343,7 @@ class ExpressionBashpileTest extends BashpileTest {
         final ExecutionResults results = runText(bashpile, "Hello", "World");
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
-        assertEquals("Hello", lines.get(0));
+        assertEquals("Hello", lines.getFirst());
     }
 
     @Test
@@ -354,7 +354,7 @@ class ExpressionBashpileTest extends BashpileTest {
         final ExecutionResults results = runText(bashpile, "Hello", "World");
         assertSuccessfulExitCode(results);
         final List<String> lines = results.stdoutLines();
-        assertEquals("Hello World", lines.get(0));
+        assertEquals("Hello World", lines.getFirst());
     }
 
     @Test

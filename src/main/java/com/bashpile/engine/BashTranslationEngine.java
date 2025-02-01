@@ -687,13 +687,7 @@ public class BashTranslationEngine implements TranslationEngine {
         Translation contentsTranslation = ctx.shellStringContents().stream()
                 .map(requireNonNull(visitor)::visit)
                 .map(Translation::inlineAsNeeded)
-                .reduce((l, r) -> {
-                    if (l.isStr() && r.isStr()) {
-                        return l.append(r);
-                    } // else
-                    return l.addChild(r);
-                })
-                .map(x -> x.lambdaBody(Strings::dedent))
+                .reduce(Translation::addChild)
                 .map(BashTranslationHelper::joinEscapedNewlines)
                 .orElseThrow()
                 .type(UNKNOWN_TYPE);

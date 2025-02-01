@@ -221,10 +221,14 @@ public class Translation implements TreeNode<String, Translation> {
      * Put parenthesis around body
      */
     public @Nonnull Translation parenthesizeBody() {
+        return surroundWith("(", ")");
+    }
+
+    public @Nonnull Translation surroundWith(final @Nonnull String prefix, final @Nonnull String suffix) {
         Translation tr = new Translation("", type, Set.of());
-        tr = tr.addChild(toStringTranslation("("));
+        tr = tr.addChild(toStringTranslation(prefix));
         tr = tr.addChild(new Translation(body, type, metadata, children));
-        return tr.addChild(toStringTranslation(")"));
+        return tr.addChild(toStringTranslation(suffix));
     }
 
     /**
@@ -263,7 +267,6 @@ public class Translation implements TreeNode<String, Translation> {
     /**
      * Apply arbitrary function to body.  E.g. `str -> str`.
      */
-    // TODO feature/bast queue up lambdaBody methods to apply during getData/render so it can be re-rendered when the metadata changes
     public @Nonnull Translation lambdaBody(@Nonnull final Function<String, String> lambda) {
         final List<Translation> modifiedChildren = children.stream().map(tr -> tr.lambdaBody(lambda)).toList();
         // KEEP metadata
@@ -393,13 +396,10 @@ public class Translation implements TreeNode<String, Translation> {
     public @Nonnull Translation inlineAsNeeded() {
         if (metadata.contains(NEEDS_INLINING)) {
             // function calls may have redirect to /dev/null if only side effects needed
-            String nextBody = Strings.remove(body, ">/dev/null").stripTrailing();
-            // add INLINE and remove NEEDS INLINING OFTEN
-            var nextMetadata = new TreeSet<>(List.of(INLINE));
-            nextMetadata.addAll(metadata);
-            nextMetadata.remove(NEEDS_INLINING);
+            Translation ret = lambdaBody(str -> Strings.remove(str, ">/dev/null"));
+            ret = ret.removeMetadata(NEEDS_INLINING);
             // in Bash $((subshell)) is an arithmetic operator in Bash but $( (subshell) ) isn't
-            return new Translation("$( %s )".formatted(nextBody), type, nextMetadata);
+            return ret.surroundWith("$( ", " )").addMetadata(INLINE);
         } // else
         return this;
     }
@@ -431,8 +431,12 @@ public class Translation implements TreeNode<String, Translation> {
             return "-" + stripStart(body, stripChars)
                     + children.stream().map(tr -> stripStart(tr.body, stripChars)).collect(Collectors.joining());
         }
-        final String processedBody = new Translation(body, type, metadata).inlineAsNeeded().body;
-        String ret = processedBody + children.stream().map(Translation::render).collect(Collectors.joining());
+
+        // TODO feature/bast is splitting up body and children needed with BAST?
+        final Translation inlinedTranslation = new Translation(body, type, metadata).inlineAsNeeded();
+        // only make recursive call if needed
+        final String processedBody = inlinedTranslation.children.isEmpty() ? body : inlinedTranslation.render();
+        final String ret = processedBody + children.stream().map(Translation::render).collect(Collectors.joining());
         if (!metadata.contains(QUOTE)) {
             return ret;
         } else {

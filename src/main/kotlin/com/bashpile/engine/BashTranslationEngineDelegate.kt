@@ -163,8 +163,9 @@ class BashTranslationEngineDelegate(private val visitor: BashpileVisitor) {
             .map{ tr: Translation -> tr.inlineAsNeeded() }
             .map { tr: Translation ->
                 if (tr.isBasicType && !tr.isListAccess && !tr.hasMetadata(CONDITIONAL)) {
+                    val unquoted = if (!tr.hasMetadata(INLINE)) tr.unquoteBody() else tr
                     tr.body("""
-                        printf -- "${tr.unquoteBody().render()}\n"
+                        printf -- "${unquoted.render()}\n"
                         
                         """.trimIndent()
                     ).removeMetadata(QUOTE) // we add quotes in the new body
