@@ -1,6 +1,8 @@
 # Bashpile
 The Bash transpiler - Write in a modern language and run in any Bash shell
 
+This is the old Java version.  The most recent Kotlin re-write is [here](https://github.com/michael-amiethyst/homebrew-core).  It has feature parity with this version.
+
 Full docs at [the wiki](https://github.com/michael-amiethyst/homebrew-bashpile/wiki).
 
 ## Features
